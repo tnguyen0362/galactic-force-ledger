@@ -16,3 +16,23 @@
 
 4. **No audio assets.** No upload/licensing path via MCP; voice lines exist as subtitle-ready text and cue IDs
    only. Every story beat is readable without audio, per spec.
+
+## 2026-11-23 — Studio lost the place (blocks all in-editor work)
+
+`list_roblox_studios` now returns a single instance, and it is not usable:
+
+```json
+{"studios":[{"id":"a828ce66-ff1a-43c5-b662-dc096996bcc4","mode":"Unavailable","name":null,"state":"Place is not open"}]}
+```
+
+The previous instance id `586a4e54-321f-4609-aee4-e09dbc1e269c` is gone, and every tool call against it returns
+`The requested studio_id is not connected — that Roblox Studio instance may have been closed or its place unloaded.`
+
+**What this blocks:** every place-side action — `execute_luau`, `save_place`, `start_stop_play`, `screen_capture`.
+No row can be built, saved or captured until `Playtest1` is open again.
+
+**What is safe to do meanwhile:** repository work only — ledger accuracy, review notes, documentation, and reading
+source through the file system. Nothing in this file should be counted as a place change.
+
+**To unblock:** open `Playtest1` in Roblox Studio (Team Create), then call `list_roblox_studios` to get the new id and
+replace the hard-coded id in the loop's habits. Last saved place version before the disconnect: **232**.
