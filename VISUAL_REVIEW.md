@@ -760,3 +760,31 @@ What the frame shows as failures:
 
 Camera positions are authored in world space around the station and clip through nothing in these two
 shots, but shots 9-11 aim past the hull toward the mission area and have not been inspected frame by frame.
+
+## LC-022 — First Spear runs, three of five steps advance (v180)
+
+Frame `V180_first_spear_step4` catches two systems on screen at once: the tutorial panel reads
+`OPERATION FIRST SPEAR 4/5  Dodge out of the marked zone  Left Shift / B` while the opening cinematic
+is still playing underneath it — letterbox bars, subtitle "Veyr is out there with a Bastion Walker and
+a gun line.", "SPACE to skip". **The intro and the tutorial do not know about each other.**
+
+Step machine, measured by watching real server-side state:
+```
+begin          step=1 move   targets=3 spawned
+walk to marker step=2 shoot
+destroy target step=3 reload   (target hp 0)
+fire + reload  step=4 dodge    <- advanced only after ammo was actually spent
+dodge request  step=4 dodge    <- does NOT advance (see below)
+ability cast   step=4 dodge    <- never reached
+```
+So **LC-022 is 3/5 proven**. Movement, shooting and reloading complete from real state; dodge and ability
+do not. `dodgeCount` is incremented at the top of the `RequestDodge` handler and the code reads correctly,
+so the failure is in the tutorial's baseline capture rather than the counter — the next pass needs
+`dodgeBase`/`abilityBase` snapshotted on *step entry* and logged, not inferred.
+
+Fixed while here: a respawn during the tutorial used to call `start(player)` and wipe progress back to
+step 1 (observed twice). It now refuses to restart when progress exists.
+
+Frame defects: the deck is pure white, the orange light pools read as flat decals, and the two overlays
+sit on top of each other with no priority rule. The training targets that the step asks you to shoot are
+behind the camera in this shot.
