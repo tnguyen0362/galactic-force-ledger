@@ -1306,3 +1306,18 @@ strafe blend, aim blend, airborne tuck and breathing. Three of the six states th
 - No foot-plant locking, so the cycle drifts against the ground at speed.
 - The roll is a static tuck: the body does not rotate *over the ground*, it just folds.
 - Crouch snaps in and out with no transition blend.
+
+## v234 — muzzle flash at the barrel (capture V289)
+
+`Weapon.tryFire` emitted both the flash and the tracer at the **raycast origin**, which is the camera — so the flash
+appeared in the middle of the player's torso, exactly what MICRO-026 names as a defect. The hit ray stays on the camera
+(that is where aim should come from); only the *visual* now starts at the barrel.
+
+Measured after a real click-fired shot: muzzle to hand **1.21** studs, to torso **2.97**, to head **3.77**. The position
+is also published as `GF_LastMuzzle` so this is verifiable without screenshots.
+
+**What still looks wrong.**
+- There is **no weapon mesh in the hands**, so the flash hangs in the air with nothing holding it. This is blocked on
+  MICRO-025 (weapons aligned to hands).
+- The tracer is a thin neon bar with no taper, no smoke trail and no impact-side continuity.
+- The puff reads as dust, not a muzzle flash: white, round, and 0.05 s long.
