@@ -602,3 +602,30 @@ laser: BossBeam observed, length 76 studs, at 42 studs
 death: health 4200->0, Dead=true, BastionDefeated=true, model destroyed after 6s
 stagger: 900 weak damage within a 6s window staggers once (staggers=1, then 2), not every hit
 ```
+
+## LC-004 — High Marshal Veyr (v168)
+
+Frame `V168_high_marshal_veyr`, camera [26,776,30] looking at [0,770,0], model at (0,764,0), 20 parts.
+
+Reads: a human silhouette with a crest, pauldrons and two glowing weak-point panels, so rank and threat
+are legible at a glance and the shootable core is visible without a marker.
+
+Does not read:
+- **Floats again.** Same capture artefact as the Walker: the showcase sits above terrain with no contact
+  shadow, so the frame cannot show that he stands, walks or leans into a burst.
+- **Cape is invisible.** `Cape` is a 7.6x9.6x0.4 slab at CLOTH 96,32,44 against an ARMOR 38,34,44 torso;
+  at this exposure both collapse to black, so the one silhouette element that would make him a marshal
+  instead of a soldier is not there.
+- **Squat proportions.** 20 parts, 7-stud legs under a 6.4x7.2 torso reads like a heavy trooper, not a
+  command-rank figure. He needs 1.35x scale on the legs and a narrower waist to read as tall.
+- Rifle is a bare 7.4-stud box with a lit muzzle; from this angle it merges into the arm.
+
+Runtime proof (server, same session):
+```
+rank=1 -> spawn refused (reason=rank); rank=4 -> spawned, 20 parts, hp=3200 shield=0 phase=1
+weak=WeakPoint_Core=1.6 mult=1.6
+1700 damage at 1.6x -> phase=2, shield=420, summons=2
+death -> credits 0->450, BossKills=1 BossPity=1 BossBlueprint=false
+kills 2,3,4 -> pity 2,3,4 no blueprint; kill 5 -> pity 0, blueprint granted=true
+```
+The pity floor is the real proof: four dry kills accumulate, the fifth pays out.
