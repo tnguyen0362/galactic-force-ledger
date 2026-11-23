@@ -994,3 +994,21 @@ The intermittent warm deck flash on arrival was the **saved** Lighting values, n
 saved with the old warm preset (clock 13.6, brightness 2.60, warm ambient) and `Environment.apply("station")`
 only corrected them after boot, so the first frames rendered the stale values. Lighting is now baked to the
 station preset in the saved place, and the first captured frame after boot is already cold and dark.
+
+## v207 — glazing is solid, and the orange cast is the sun (captures V229 → V235)
+
+**MICRO-020.** The panes were built with `CanCollide = false`, so the three bays were open holes: a player could
+walk straight out of the hull into space. Panes, mullions, transoms and hull edges are now solid. Measured by
+driving the humanoid at the centre bay: it stops at **z = -72.7** against the plane at **z = -74**. The same
+move walked through before.
+
+**The orange deck wash — root cause at last.** It was neither ambient, atmosphere decay, a hidden part, nor the
+fixtures. At `ClockTime = 13.5` the sun sits low enough that its warm light enters through the bays and paints
+the deck orange; every earlier probe that "fixed" it was really changing how much of that beam reached the floor
+(killing the decay reduced the scattering, hiding the floor plates removed the surface, dropping ambient darkened
+it). Setting the station to **noon** removes the cast with no other change, and V235 confirms it.
+
+**What still looks wrong.**
+- The panes have **no thickness**, so walking into one clips the camera through the glass.
+- The railing is decorative only; a player can stand on the sill shelf.
+- The vista is only in the centre and left bays — the right bay is still empty space.
