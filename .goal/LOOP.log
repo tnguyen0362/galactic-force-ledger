@@ -99,3 +99,18 @@ The goal is the complete launch-content specification, not another reduced verti
 [2026-11-23T19:08:20.761Z] iteration 7 — 155 rows | ABSENT 59 | PARTIAL 85 | UNPROVEN 2 | PENDING-OWNER 5 | ACCEPTED 0
 [2026-11-23T19:08:56.176Z] iteration 8 — 155 rows | ABSENT 59 | PARTIAL 85 | UNPROVEN 2 | PENDING-OWNER 5 | ACCEPTED 0
 [2026-11-23T19:09:52.063Z] stopped after 8 iteration(s): user ran /goal-stop
+[2026-11-23T19:30:39.268Z] started: Replace your current development instructions with the attached V3 `GOAL.md` and accompanying enforcement files.
+
+Do not summarize or rewrite GOAL.md.
+
+Your first action is to audit the existing Roblox project against every row in `REQUIREMENT_COVERAGE.csv`, recording actual implementation counts and player-visible evidence.
+
+Then continue implementation until every launch requirement is built, demonstrated, visually reviewed, and accepted.
+
+Do not create an out-of-scope section. Do not substitute passing assertions for gameplay proof. Do not self-declare completion.
+
+Preserve working functionality and build on the current project rather than restarting unnecessarily.
+
+I am the final authority on whether a milestone meets the required visual and gameplay quality. Present actual gameplay captures for my review.
+
+The goal is the complete launch-content specification, not another reduced vertical slice. MAKE SURE WE ADHERE TO THE QUALITY STANDARDS PROVIDED IN GOAL.MD AND REQUIREMENTS.CSV ill copy and paste both paths "C:\Users\tnguy\Downloads\GOAL.md" "C:\Users\tnguy\Downloads\REQUIREMENT_COVERAGE.csv"

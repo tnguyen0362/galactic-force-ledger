@@ -820,3 +820,28 @@ tutorial:  2/5 shoot                            (counter clamped to #steps, no m
 Fix 1: `TutorialService.begin` raises `GF_CinematicStop`, and `CinematicUI` treats it as a skip request so a
 cinematic already running is cancelled instead of playing under the tutorial.
 Fix 2: the published step is `math.min(rec.index, #steps)`.
+
+## v184 — MICRO-002 planet limb (playtest, captures V184 → V193)
+
+**What changed.** `StationConcourse.build()` already had an orbit vista, but the planet sat 9,000 studs out as a
+5,200-stud Neon ball. At that size and that distance it was invisible from inside — every capture of the window
+was pure black with stars (V184). Rebuilt it at 2,400 studs with a shell ladder: body 1,900 studs dark-teal,
+clouds 1,920, limb inner 1,945 (Neon, 0.18), limb 1,975 (Neon, 0.55), haze 2,020 (0.86). Ball parts clamp at
+2,048 studs, so the first attempt had every shell at the same clamped size and they z-fought inside the body —
+that is why the ladder is 1,900 → 2,020 rather than 2,800 → 2,884.
+
+**What it looks like now (V193).** A curved bright limb arcs across the centre and right window panes with stars
+above and to the side of it. You can read "large curved planet seen from orbit".
+
+**What still looks wrong.**
+- The body is a **flat pale cyan disc**. No banding, no cloud structure, no terminator — it reads as a cut-out
+  shape in front of the starfield rather than a lit sphere.
+- The limb is too **thick and uniform**, more like fog on the glass than an atmosphere.
+- The planet is **clipped by the window mullions** across the centre pane, so the curvature is broken into
+  segments.
+- This is proven from the **cinematic camera only**. The spawn camera framing requirement (MICRO-001) is still
+  open, so no frame yet proves a player sees this on arrival.
+- Lighting pops dark for one frame during scene transitions (V192) — a full interior blackout then recovery.
+  Worth watching; it may be the cinematic dimming lights, but it looks like a bug.
+- The interior is still **washed white**: floor, benches and wall panels clip to near-white. That is the next
+  row, not this one, but it dominates every frame and makes the vista look pasted on.
