@@ -1156,3 +1156,20 @@ Station 849 parts. `tameLight`'s practical cap was raised from 0.6 to 2.0 so aut
 - Seams sit 0.16 studs *proud* of the wall, so they read as lines drawn on metal rather than panel gaps.
 - The ceiling perimeter is still black; the cove above the wall wash has no light.
 - Hazard chevrons are olive, not safety yellow.
+
+## v223 — ceiling cove and safety paint (capture V271)
+
+Ceiling now reads: light panels between beams, cyan cove strips edging the perimeter, the GFS VANGUARD and WAR TABLE
+signs legible from the deck, the war table a lit ring with its hologram. Hazard paint moved from olive (126,104,52) to
+safety yellow (198,158,44), which finally separates the deck markings from the deck. Station 857 parts.
+
+**New evidence on the orange ellipse.** In this frame it is a soft ellipse on the deck *around one crew member*, and it
+has also appeared around the player. That rules out a static part or a preset: it belongs to whatever is standing there.
+Candidates are the orange `NavMarker` neon parts (255,186,96, three of them, transparency pulsing between 0.35/0.40/0.76)
+and any telegraph marker the encounter system parents to actors. Not yet isolated; recorded as the next thing to chase
+in this row rather than guessed at.
+
+**What still looks wrong.**
+- The orange ellipse (above) — visible in most captures and the single largest remaining defect.
+- Wall seams sit proud of the wall instead of recessed.
+- Ceiling perimeter between coves is still dark; benches are plain blocks.
