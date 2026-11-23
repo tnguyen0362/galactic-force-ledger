@@ -568,3 +568,37 @@ lvl=2 found=true tot=18 vis=6 atmo=true bloom=true
   the vista loses depth; it does not lose legibility, which was the requirement's actual bar.
 - `readable=false` stands as a permanent Studio limitation: quality can only be exercised through
   `Vista_ForceLevel`, so this has never been measured on a real low-end device.
+
+## LC-003 — Bastion Walker (v165)
+
+Frame `V164_bastion_walker`, camera [46,782,52] looking at [0,770,0], model at (0,764,0).
+Runtime readings from playtest: **33 parts**, three weak points `WeakPoint_Rear=2.5`,
+`WeakPoint_JointL=2`, `WeakPoint_JointR=2`; multiplier rule probed as core=1, head=2, rear=2.5.
+
+What reads:
+- Four legs, low slung body, visor and two amber weak points glow, so the silhouette says "quadruped
+  gun platform" and the shootable parts are self-evident without a tutorial.
+
+What does not:
+- **The model floats.** Spawned at y=764 over terrain at y=10 the walker hangs in open sky with no
+  contact shadow. In play it sits on `groundAt` and looks planted, but this frame cannot show that,
+  which means the frame is honest about the model and dishonest about the pose.
+- **Proportions are crab-like, not heavy.** Legs are 2.2-stud columns against an 11x7.5x13 core; a
+  Bastion should look like it can carry the armour it is wearing. Ten-minute fix: thicken thighs to
+  3.2 and widen feet to 5.
+- **Palette reads near-black under the station sky.** DARK 46,50,58 and STEEL 96,106,120 collapse to
+  one value at this exposure, so the hull plating and the armour plates on the legs are indistinguishable.
+- Rear weak point is hidden from this angle entirely; only `WeakPoint_JointL/R` and the visor read.
+
+Runtime proof (separate from the frame):
+```
+spawned parts=33  weak=WeakPoint_Rear=2.5,WeakPoint_JointL=2,WeakPoint_JointR=2  health=4200 phase=1
+mult core=1 head=2 rear=2.5
+hit1 4200->2800 phase1 | hit2 2800->1400 phase2 | third phase=3
+moved 22.9 studs / 4s, 45.3 studs / 14s
+mortar volley on open terrain: hp 100 -> 0 (BastionMortar)
+stomp: BossBlast FX observed at 11 studs
+laser: BossBeam observed, length 76 studs, at 42 studs
+death: health 4200->0, Dead=true, BastionDefeated=true, model destroyed after 6s
+stagger: 900 weak damage within a 6s window staggers once (staggers=1, then 2), not every hit
+```
