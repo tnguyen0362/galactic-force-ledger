@@ -1012,3 +1012,24 @@ it). Setting the station to **noon** removes the cast with no other change, and 
 - The panes have **no thickness**, so walking into one clips the camera through the glass.
 - The railing is decorative only; a player can stand on the sill shelf.
 - The vista is only in the centre and left bays — the right bay is still empty space.
+
+## v208 — the orange deck was DiamondPlate specular (capture V238)
+
+Five wrong hypotheses on record before this one, so the evidence matters: the wash survived ambient changes, survived
+`Atmosphere.Decay` edits to some degree, disappeared when the floor parts were hidden, disappeared again when the plates
+were switched to `SmoothPlastic` for a probe, and returned the moment they were switched back. That is a material
+signature, not a lighting one.
+
+**Cause.** 100 parts used `Enum.Material.DiamondPlate`, whose anisotropic specular acts like a mirror. Under the space
+sun it turned the whole deck into an orange sheet — the colour came from the nebula's warm light, not from any lamp,
+atmosphere setting or hidden part. Every earlier "fix" was really reducing how much of that specular reached the
+camera.
+
+**Fix.** All DiamondPlate in `StationArt` (8 sites) and `StationConcourse` (3 sites) is now `Metal`. Verified after
+boot: `DiamondPlate=2, Metal=368`. The two remaining are the war table top and bezel trim, which sit under interior
+light only.
+
+**What still looks wrong.**
+- The room is **monochrome**: cyan strips and the hologram are the only saturated colours.
+- Walls are still flat panels with no seams, rivets or wear.
+- The right window bay has no vista subject.
