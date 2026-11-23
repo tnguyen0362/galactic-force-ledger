@@ -1108,3 +1108,13 @@ trooper no longer disappears into the deck from behind.
 - Room is monochrome blue-grey outside the cyan accents; no warm practical anywhere.
 - Bulkheads are still flat panels.
 - Deployment bay still has no in-frame capture (see v214 note).
+
+## v218 — warm practicals (capture V259)
+
+The room had one colour temperature because `tameLight` forces every fixture to cool 222/232/246. Three authored
+lights now bypass that sweep via a `GFPractical` attribute: amber at the armoury (-94, 772, -23) and dispatch
+(94, 772, -28), cyan at the bay mouth (0, 773, 70), all brightness 0.60, range 26, shadows on. Station 695 parts.
+
+**What still looks wrong.** They are invisible from the arrival camera — the two amber ones sit on the side
+bulkheads, outside the spawn frame — and 0.6 brightness at range 26 is too weak to read across a 200-stud deck. So
+this change is measurable but not yet *player-visible*, which means it does not satisfy the row on its own.
