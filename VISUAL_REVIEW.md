@@ -549,3 +549,22 @@ level=2 readable=false total=0 visible=0 atmo=true bloom=true
 
 Next step: wait for `Station` with a bounded loop before applying the ladder, then re-run and expect
 `total≈94`, `visible≈31` at level 2.
+
+## MICRO-019 — ladder verified at forced level 2 (v160)
+
+Wait-for-`Station` loop fixed the timing defect. Playtest report:
+
+```
+lvl=2 found=true tot=18 vis=6 atmo=true bloom=true
+```
+
+18 `VistaStar` parts under `Station`, 6 kept - exactly one in three, as designed. Frame `V166_low_quality_level2`
+(vantage [0,17,14] toward [0,14,-42]) shows the consequence honestly:
+
+- Held up: the Veyra-7 limb is still the brightest thing in the window and still reads as a curve, not a
+  smudge; the window mullions, deck and war table silhouette survive with no shader cost.
+- Degraded: the starfield is nearly gone - six parts across the whole aperture reads as a handful of
+  points rather than a sky, and the asteroid specks on the right are down to three visible. At level 2
+  the vista loses depth; it does not lose legibility, which was the requirement's actual bar.
+- `readable=false` stands as a permanent Studio limitation: quality can only be exercised through
+  `Vista_ForceLevel`, so this has never been measured on a real low-end device.
