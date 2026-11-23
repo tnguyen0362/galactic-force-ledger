@@ -512,3 +512,16 @@ at spawn — that is the camera the player actually loads into.
 - Fix path: bind `Augments.ById` into `CombatService` (damage/spread/falloff/reload) and
   `VitalsService` (shield), give each id exactly one measurable effect, then prove two of them with
   before/after numbers rather than a screenshot.
+
+## MICRO-019 — reduced-graphics ladder started, not verifiable yet
+
+- Added `StarterPlayerScripts.VistaQuality` (place v157): at low quality it hides two of every three
+  `VistaStar` parts, scales `Atmosphere.Density` to 55% and `Glare` to 50%, zeroes `BloomEffect.Intensity`,
+  and raises `Veyra7Atmo` transparency to 0.55 while deliberately keeping the planet limb legible,
+  since the limb is the element carrying the shot.
+- It has never executed. Observed in play: `level=-1 stars=nil visible=nil atmoScaled=nil bloomOff=nil`,
+  because `UserSettings():GetService("UserGameSettings").SavedQualityLevel` is not readable from a
+  Studio playtest client VM, so the pcall failed and the script took its early-return path.
+- Attempted fix (default level 8 + `Vista_ForceLevel` attribute override) was written into the
+  running client's `StarterPlayerScripts` and therefore discarded when the playtest stopped - source
+  edits must be made in Edit mode. That is the next step, not a completed one.
