@@ -27,3 +27,14 @@ spawned Rifleman shield 60 -> 0, health 120 -> 26, 8 hits, TotalDamage 193.47
 That exercises remote validation, raycast, falloff, weak multiplier, shield soak, attribute writes,
 counters and feedback in one pass. Rule for this repo from now on: **never compact a line table with
 `ipairs` after writing `nil`; build a new array.**
+
+## Ledger write must be atomic (v204 incident)
+
+A `csv.DictWriter` loop that threw on its 20th row left `REQUIREMENT_COVERAGE.csv` with **42 of 155 rows**.
+The next script read that truncated file, treated it as truth, and every later update wrote 42 rows back.
+The ledger silently lost 113 rows and the loop reported a healthy ABSENT count from a file that no longer
+contained the requirements.
+
+Rule: **never rewrite the ledger in place while iterating rows you also mutate.** Write to a temp file, close
+it, then `os.replace` over the original. Recovery is possible from git (`git show <sha>:REQUIREMENT_COVERAGE.csv`)
+by merging the truncated file's rows back over the full one by id — but only if the loss is noticed.

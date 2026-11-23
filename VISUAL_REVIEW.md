@@ -987,3 +987,10 @@ nothing (V222). They are now flush, at eye height, facing into the room.
   (V221, V226). Lighting values are identical in both states, so this looks like replication of the atmosphere
   preset arriving in two steps rather than a bad value. It is a real visual defect on arrival and needs a proper
   fix, not a note.
+
+## v205 — first frame after baking the preset (capture V228)
+
+The intermittent warm deck flash on arrival was the **saved** Lighting values, not a script: the place was
+saved with the old warm preset (clock 13.6, brightness 2.60, warm ambient) and `Environment.apply("station")`
+only corrected them after boot, so the first frames rendered the stale values. Lighting is now baked to the
+station preset in the saved place, and the first captured frame after boot is already cold and dark.
