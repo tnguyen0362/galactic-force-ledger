@@ -656,3 +656,27 @@ Cap proof without a second client (`modifiersFromIds`):
 1xSupport  regen=0.10    4xSupport regen=0.25 (cap, raw would be 0.40)
 4xRecon    move=0.20 (cap, raw 0.20)   mixed move=0.05 reload=0.15 shield=0.05 regen=0.10
 ```
+
+## LC-010 — augments have consumers, but no interface (v172)
+
+No frame for this row, and that is the finding: **there is no augment screen anywhere in the game.**
+`Configs.Augments` has ten entries with slots, costs and effects; `ProfileService` stores
+`selectedLoadout.weaponAugments`; and until this pass nothing read either. A player could not browse,
+buy or slot an augment, and if they somehow had one it changed nothing. The armory frame from LC-009
+(`V170_armory_walkup`) is the closest thing that exists and it shows racks, not augments, so I am not
+counting it as evidence for this row.
+
+Server-side effects now measured (`AugmentService.forPlayer` -> CombatService):
+
+```
+plain      ammo=28  reload=2.20
+extmag     ammo=34  mag=34  reload=2.50      catalog: magazine +20%, reloadSpeed -12%
+disruptor  shield 200->75 with 100 damage     = 125 absorbed (x1.25), health untouched
+precision  hp 120->72 with 40 damage on Head  = 48 (x1.20 on a x2 weak hit)
+```
+
+Six of the ten now do something measurable on the server: `ExtendedMagazine`, `QuickFeed`,
+`ShieldDisruptor`, `PrecisionChamber`, `FocusedOrbitalStrike` (armour multiplier) and
+`ExtendedSentryMagazine` (parsed, but its consumer is the sentry ability and is unproven).
+The other four — `StabilityCompensator`, `QuickDraw`, `TargetDiscipline`, `ReinforcedGrip` — are
+recoil/ADS/swap/accuracy stats that live in the client `Weapon` script and are still inert.
