@@ -909,3 +909,20 @@ to under 0.01 studs, and `workspace.GF_HoloAnim == true`. The selector path was 
 - It **collides visually with the vista planet** behind the window: from the spawn camera the holo and the real
   planet line up into one bright blob.
 - The player's own body covers the table at spawn distance, so the animation is half hidden on arrival.
+
+## v192 — window framing (capture V211)
+
+**Why this row was ABSENT for the whole project.** It was not missing art direction: the glazing code existed
+and never ran. The loop parented `WindowGlass` and everything after it to `vista`, which was a local declared
+inside the vista block above it, so the first `.Parent = vista` threw and the rest of `Concourse.build()`
+died with it. Same class of bug as the `bays` scope error fixed earlier — two locals, two dead passes.
+
+**What exists now.** Per bay: 1 pane, 4 mullions (1.4 studs, not the old 0.5 which was invisible at ten
+studs), 2 transoms, 4 heavy hull edges, 1 sill shelf, 1 railing and 9 posts. Across three bays: 12 mullions,
+12 hull edges, 6 transoms, 3 shelves, 3 railings, 27 posts. Concourse 73 → 139 parts.
+
+**What still looks wrong.**
+- The frames read **almost black** — 96,102,112 steel at a 0.80 light budget has nothing to catch.
+- The **right bay is empty**: the planet sits left of centre, so that bay shows starfield only.
+- The railing sits below the spawn camera and barely registers.
+- Mullions are chunky bars; nothing about them says reinforced or pressurised.
