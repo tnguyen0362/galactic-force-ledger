@@ -788,3 +788,24 @@ step 1 (observed twice). It now refuses to restart when progress exists.
 Frame defects: the deck is pure white, the orange light pools read as flat decals, and the two overlays
 sit on top of each other with no priority rule. The training targets that the step asks you to shoot are
 behind the camera in this shot.
+
+## LC-022 fixed: all five steps advance (v181)
+
+The dodge/ability failures were a baseline bug, not a counter bug. `reloadBase` stays nil for every step
+that is not `reload`, so the guard `if rec.reloadBase == nil then baselines(...)` re-armed
+`dodgeBase`/`abilityBase` to the *current* count on every heartbeat — the comparison could never be
+true. Replaced with a per-step marker (`rec.baselineStep ~= rec.index`) so baselines are captured once
+on step entry.
+
+Measured, full run:
+```
+step1 move -> shoot -> reload -> (fire+reload) dodge -> (dodge) ability -> (ability) done
+Tutorial_Complete = true
+```
+
+Frame `V181_first_spear_range` still shows two defects I did not fix in this pass:
+- **The cinematic keeps playing under a finished tutorial.** My guard only blocks *new* playback; a
+  cinematic already in flight when the tutorial starts is never stopped. The frame shows the tutorial
+  panel `6/5  First Spear complete` over letterboxed "You are the last crew that can still reach the relay."
+- **The counter overruns**: `6/5`. `rec.index` is incremented past the last step before publishing, so the
+  panel prints one more than the total. Clamp the displayed step to `math.min(index, #steps)`.
