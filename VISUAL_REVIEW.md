@@ -951,3 +951,23 @@ surfaces warm at grazing angles. Station decay is now (26,30,40), and the deck r
 - The walk cycle has **no foot plant**, so the patrol pair slides across the deck.
 - Two crew start facing away from the spawn camera, so the player meets their backs.
 - No distance culling: all six rigs render and animate even off screen.
+
+## v201 — deck language + boot hardening (capture V219)
+
+**Deck.** The floor was one dark plane from wall to wall, so the room had no scale. Added: 4 painted ring
+segments around the war table, 4 hangar lanes running to the window wall, 6 hazard chevrons at the pod
+loading line, 7 deck plate seams, and a dado band with a cyan trim line on both bulkheads. Concourse
+139 → 164 parts.
+
+**Two boot bugs found while verifying.**
+1. `Environment`'s station preset had lost its `atmoDecay` key when the previous edit was applied — so
+   `Lighting.Atmosphere.Decay = nil` threw on every boot and the *whole* station preset never applied. The
+   atmosphere fix from v199 was live-tested but not actually persisted until now.
+2. `StationService.start()` was called at the **end** of the mission script, so one earlier error left the
+   game with **zero Station parts** — a live boot produced no station, no crew and no enemies. The station is
+   now built first, and `Main` has a 6-second safety net that rebuilds the shell if it is still missing.
+
+**What still looks wrong.**
+- Painted markings are **dim**: 126,104,52 amber under 0.80 fixtures barely separates from the deck.
+- The hazard chevrons sit **behind the player** at spawn, so the arrival frame does not show them.
+- Bulkheads still have **no panel seams or rivets** — only the dado band, so walls remain flat planes.
