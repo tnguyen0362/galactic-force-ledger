@@ -629,3 +629,30 @@ death -> credits 0->450, BossKills=1 BossPity=1 BossBlueprint=false
 kills 2,3,4 -> pity 2,3,4 no blueprint; kill 5 -> pity 0, blueprint granted=true
 ```
 The pity floor is the real proof: four dry kills accumulate, the fifth pays out.
+
+## LC-009 — soft classes now have consumers (v170)
+
+Frame `V170_armory_walkup`: player POV walking into the armory alcove. Runtime numbers below.
+
+What the frame shows honestly:
+- Armoury racks read as grey slabs with cyan neon strips; **no weapon silhouettes** at this distance, so
+  the room says "locker wall" rather than "this is where you choose a gun".
+- The long bench blows out to pure white and the deck bands are fully saturated orange; both clip, so
+  neither reads as a surface. The blue strip along the deck reads as water or carpet.
+- Window bay behind is the strongest element in frame: planet limb, star field, clean mullions.
+
+Missing from the frame entirely: the class-selection UI. `screen_capture` renders the place, and the
+Armoury ScreenGui is not in this vantage, so LC-009's actual interface has no picture yet.
+
+Runtime proof of the passives (single player, `ClassService.apply` per class):
+```
+Assault: reload +0.15                                   walk 17.5
+Heavy:   shieldMax 100 -> 120 (+20%)                     walk 17.5
+Recon:   move +0.05                                      walk 17.5 -> 18.4
+Support: regen +0.10                                     walk 17.5
+```
+Cap proof without a second client (`modifiersFromIds`):
+```
+1xSupport  regen=0.10    4xSupport regen=0.25 (cap, raw would be 0.40)
+4xRecon    move=0.20 (cap, raw 0.20)   mixed move=0.05 reload=0.15 shield=0.05 regen=0.10
+```
