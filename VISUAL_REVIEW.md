@@ -1222,3 +1222,24 @@ rig; measured `crestParts=0` across 96 crew parts, and V276 shows human silhouet
 - `Environment.apply` now sets `Brightness = 0` for the duration of the swap, which removes the only window where a
   high sun can meet the previous warm ambient. That matches a transient that appears for a frame or two at boot and
   cannot be reproduced on demand.
+
+## v228 — Ascendancy head: three attempts, and what each got wrong
+
+1. **v1 (V275)** — crest, brow, mandibles placed with raw `CFrame.new(offset)` from the head. Result: plates floating
+   above and beside the head, chest layer sitting on an arm. Cause: offsets assumed the head's local axes; the rig's
+   rest pose does not agree with them.
+2. **v2 (V278, V279)** — added a `Ball` helmet shell over the head (the template's head is a **human child face**, so it
+   had to be hidden), an amber visor slit, and crest plates using `CFrame.lookAt`. Result: helmet and glowing visor read
+   well, but `lookAt` aligns a part's **Z axis** to the look direction, so every size was rotated 90° against intent —
+   pauldrons and chest layer rendered as large grey slabs floating in front of the body.
+3. **v3** — explicit basis: `flat = lookVector flattened`, `yaw = atan2(-flat.X, -flat.Z)`, every plate placed with
+   `CFrame.new(pos) * CFrame.Angles(0, yaw, 0)` and sizes chosen for that orientation. Template now carries 9 crest parts
+   and 6 layered-armour parts.
+
+**Known gap.** v3 has **no clean capture**. Two attempts framed sky instead of the rig (the hook was pointed at a head
+position that changed before the capture). The evidence for this row is v2 plus part counts, not v3.
+
+**What still looks wrong.**
+- The helmet is a flat dark ball with no facets, brim or jaw line.
+- The human face is hidden, not replaced — the silhouette is a sphere, not a skull.
+- No tier silhouette difference: Standard, Specialist and Elite differ only by palette.
