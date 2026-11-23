@@ -926,3 +926,28 @@ studs), 2 transoms, 4 heavy hull edges, 1 sill shelf, 1 railing and 9 posts. Acr
 - The **right bay is empty**: the planet sits left of centre, so that bay shows starfield only.
 - The railing sits below the spawn camera and barely registers.
 - Mullions are chunky bars; nothing about them says reinforced or pressurised.
+
+## v199 — station crew (captures V213, V215, V217)
+
+**Why the crew never existed.** The station had zero humanoids: the "5 non-player humanoids" from the audit were
+mission enemies in `ActiveActors`. There was no crew module at all.
+
+**Three defects had to be cleared before a single limb moved.**
+1. Humanoid animation assets are unusable here — `LoadAnimation` on the classic R15 idle id returns a track with
+   **Length 0**, so the crew is driven by Motor6D C0 offsets instead (no uploads, no assets).
+2. Anchored parts **ignore their Motor6D**, so the first pass produced statues whose C0 changed every frame and
+   whose limbs never moved. Only `HumanoidRootPart` is anchored now; the other 25 parts are loose, massless and
+   non-colliding.
+3. Replication order: the `Crew` folder arrives before children and children before parts, so a one-shot scan
+   found **1 rig with 1 Motor6D**. The tracked list now refreshes for the first seconds and tops up motors —
+   `actors=6 motors=90` instead of `actors=1 motors=1`.
+
+**Also fixed here:** the floor-wide **orange wash** that kept returning. It was neither the lights (turning all 45
+off left it black) nor ambient nor a hidden part — it was `Atmosphere.Decay` at (122,120,116), which tints
+surfaces warm at grazing angles. Station decay is now (26,30,40), and the deck reads blue-grey.
+
+**What still looks wrong.**
+- Crew heads and hands are the **enemy kit** parts; they read as hostiles at a glance despite the uniform.
+- The walk cycle has **no foot plant**, so the patrol pair slides across the deck.
+- Two crew start facing away from the spawn camera, so the player meets their backs.
+- No distance culling: all six rigs render and animate even off screen.
