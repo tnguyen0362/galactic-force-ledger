@@ -704,3 +704,30 @@ What the frame shows as defects:
   bearing, no distance.
 - Contradiction with the station: the concourse in the background is blown out to white while the map
   panel is properly exposed, so the HUD looks pasted onto an over-lit room.
+
+## LC-018 / LC-019 — dispatch flow proven on one client (v175)
+
+Frame `V175_dispatch_alcove`: player POV at the dispatch counter after walking there.
+
+Reads: the trooper is dressed and planted on the deck, a transport silhouette is visible through the
+bay, and the planet limb holds. The room is walkable from station spawn to the dispatch alcove.
+
+Does not read:
+- **No dispatch board.** The counter is a flat neon-yellow slab with yellow accents and a white pillar.
+  Nothing in view says "raise a distress beacon" — no screen, no comms mast, no seat indicators.
+- **Trooper armour is pastel lavender/white** with orange boots; it reads as a toy, not a marine, and
+  the chest plate is a different white from the helmet, so the kit looks assembled from two sets.
+- The counter's yellow is fully saturated with no shading, and the floor behind it is blown out white.
+- Nothing in this frame indicates other players, seats or a beacon state.
+
+Flow proof (single client, server-side calls):
+```
+open -> status=opened id=PD-60627 seats=3   attr=PD-60627|Hard|seats=3|age=0|host=ROBLOXISUS101
+host respond      -> "host"            (a host cannot join its own beacon)
+responder join    -> seats 3->2, joiners=1, credits 0->150, displaced to LZ (8.2 studs)
+double respond    -> "already-joined"
+drained beacon    -> "full"
+```
+Refusals are distinct and specific, which is the part that usually rots. What is *not* proven: two real
+clients in one mission. Studio plays one client here, so seat arithmetic and the LZ teleport are proven,
+while "1-4 cooperating players" is not.
