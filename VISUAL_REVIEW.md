@@ -1050,3 +1050,19 @@ Bloom is 0.15 intensity at 2.0 threshold; the deck reads dark blue-grey with cri
 - The moon is an untextured ball with no terminator and no craters.
 - Orbit rings read as flat slabs, not a truss structure.
 - The planet limb is a smooth gradient with no cloud banding.
+
+## v211 — the warm flash is an apply-order bug (captures V246 → V248)
+
+Same scene, same settings, five seconds apart: orange in V246, clean in V247. That ruled out every value-based
+explanation. `Environment.apply` was writing `ClockTime` and `Brightness` **before** `Ambient`, so for the frame or
+two between those writes the deck was lit by the previous (warm grey 206,202,196) ambient under a full-strength sun.
+Every teleport and every boot re-triggers `apply`, which is exactly when the wash appeared.
+
+Fixed by writing ambient, outdoor ambient, diffuse/specular scale and exposure **first**, then brightness and clock.
+Captured immediately after a teleport (V248): clean, no wash.
+
+**Still open in this area**
+- No clean in-frame capture of the deployment bay yet: the third-person camera refuses to hold an arbitrary yaw and
+  the cinematic re-asserts its own framing, so the bay has only data evidence (68 parts: 2 loading rails, 4 lips,
+  5 ties, 2 bulkhead leaves, 6 ribs, 2 pistons, cradle, hatch, gantry, 15 hazard stripes).
+- A capture attempt at the bay returned a fully black frame (V252), the known minimised-window failure.
