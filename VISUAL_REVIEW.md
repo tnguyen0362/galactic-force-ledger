@@ -680,3 +680,27 @@ Six of the ten now do something measurable on the server: `ExtendedMagazine`, `Q
 `ExtendedSentryMagazine` (parsed, but its consumer is the sentry ability and is unproven).
 The other four — `StabilityCompensator`, `QuickDraw`, `TargetDiscipline`, `ReinforcedGrip` — are
 recoil/ADS/swap/accuracy stats that live in the client `Weapon` script and are still inert.
+
+## LC-017 — tactical map exists and is terrain-aware (v174)
+
+Frame `V174_tactical_map`: `SECTOR MAP` panel open over the station concourse, opened with M.
+
+Working, and measured:
+```
+GF_MapHeights  256 cells, 113 distinct heights, relief 6-60
+GF_MapMarkers  obj,0,-120; sq,0,51.8   (server publishes every 1s)
+client         TacticalMap_Open=true, 258 frames placed, 258 visible, markers=2
+```
+The cell shading comes from `TerrainService.groundSurface` samples on a 16x16 grid over a 320m span,
+so the pattern is real topography rather than a decorative texture.
+
+What the frame shows as defects:
+- **Relief is invisible.** 6-60 studs is mapped into `0.16..0.58` luminance and the greens are so close
+  that the grid reads as flat tiles with faint blotches. A player cannot see a ridge or a bowl.
+- **No contour lines, no north, no coordinates.** Nothing tells you which way the objective lies
+  relative to the map edge; the red objective square is dead centre only because the map re-centres
+  on the objective each second, which also means the terrain slides under the markers as you move.
+- **Markers are 10px squares.** Objective and squad read as red and green dots with no labels, no
+  bearing, no distance.
+- Contradiction with the station: the concourse in the background is blown out to white while the map
+  panel is properly exposed, so the HUD looks pasted onto an over-lit room.

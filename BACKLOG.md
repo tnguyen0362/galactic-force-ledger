@@ -15,3 +15,6 @@ worked ahead of absent launch content.
 | B8 | `hit_flesh` cue also plays on terrain impacts (no material gate) | V2-37 | low | open |
 | B9 | War table shows static "SECTOR CONTESTED" text with no campaign source | V3-14 (fake live data), MICRO-092 | high | open |
 | B10 | Redeploy respawns at `GF_LZ` only because of a recent patch; pod visual is absent | MICRO-034, V2-33 | medium | open |
+
+- LC-017 map polish: raise relief contrast to 0.10..0.75, add contour bands every 10 studs, a north arrow,
+  grid coordinates, and per-marker labels with distance-to-objective.
