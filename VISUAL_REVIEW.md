@@ -444,3 +444,20 @@ at spawn — that is the camera the player actually loads into.
   need mounting structure to stop looking like dead pixels.
 - **Retest screenshot:** V142_01_nav_beacons.
 - **Owner disposition:** PENDING.
+
+### V143_04 / V144_01 / V145_01_armory_final — armoury alcove
+- **Scene / camera:** walked the trooper to the left alcove (`x ≈ -84`), place v143 → v145.
+- **Goal aesthetic:** an alcove a player crosses and immediately reads as "weapons live here".
+- **What was added:** three wall racks (uprights, rail, backing board, nine slotted rifles with neon scopes,
+  rack labels), a kit mannequin on a plinth, an inspection bench with a stripped rifle, a mat and a work
+  lamp. Alcove lighting (two pendants plus a fill `PointLight`) added after the first capture.
+- **What looks wrong:** the alcove is still the darkest corner of the station — the mannequin torso at
+  `Color3.fromRGB(62, 70, 88)` fabric reads as a near-black silhouette against the bulkhead, and at
+  walkway distance the racked rifles are thin grey slivers with only their scopes legible. Everything is
+  crowded into roughly 7 of the alcove's 19 studs, so the far end of the wall is bare.
+- **Fixed in-pass:** unlit alcove (pendants + fill), oversized rack label reading as a light bar,
+  mannequin jammed against the racks, bench lamp arm swung out over the walkway as a stray diagonal.
+- **Severity:** minor. The alcove is unambiguous on approach; the darkness is a value problem, not a
+  structural one.
+- **Retest screenshot:** V145_01_armory_final.
+- **Owner disposition:** PENDING.

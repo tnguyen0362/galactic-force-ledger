@@ -402,3 +402,9 @@ neon beacons: red port / green starboard on each bay jamb, white top strobes, th
 120 studs out. Deliberately **no PointLight** on any of them — the interior is lit only by ceiling
 fixtures and a beacon light would wash the deck — so brightness is colour plus strobe timing. Verified
 live: 12 parts, 0 PointLights, transparency cycling 0.21 → 0.77 on a 2.2 s period. Self-check 371/0.
+
+## Iteration 27 — armoury alcove dressing (v143 → v145)
+The ARMORY sign existed with bare deck behind it. Built racks, mannequin, bench (54 parts), then fixed what
+the captures caught: alcove was unlit (pendants + a range-30 fill), rack label was a glowing bar, mannequin
+jammed into the racks, bench lamp swung over the walkway. Three captures, three fixes, all in the ledger.
+Still dark in the corner — recorded as the open defect rather than papered over.
