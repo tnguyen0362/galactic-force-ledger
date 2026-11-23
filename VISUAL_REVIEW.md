@@ -525,3 +525,27 @@ at spawn — that is the camera the player actually loads into.
 - Attempted fix (default level 8 + `Vista_ForceLevel` attribute override) was written into the
   running client's `StarterPlayerScripts` and therefore discarded when the playtest stopped - source
   edits must be made in Edit mode. That is the next step, not a completed one.
+
+## MICRO-019 — ladder runs, but sees zero stars (v159)
+
+Rewrote `StarterPlayerScripts.VistaQuality` cleanly after the previous in-play source edit left it
+broken (source changes in Play mode are discarded; that was my error and it cost two place versions).
+
+It now executes and reports honestly:
+
+```
+level=2 readable=false total=0 visible=0 atmo=true bloom=true
+```
+
+- `readable=false` confirms `UserSettings():GetService("UserGameSettings").SavedQualityLevel` is
+  unreadable from a Studio playtest. `level=2` proves the `Vista_ForceLevel` override works, so the
+  ladder can be exercised at all now that it has an explicit input.
+- `total=0` is the real defect: the script takes `workspace:FindFirstChild("Station")` once at start.
+  A descendant scan at the same moment finds **94** parts whose name contains "star", including
+  `VistaStar@Station`, so the stars exist - the LocalScript simply runs before the station model has
+  replicated/streamed, gets `nil`, and skips the whole loop.
+- Atmosphere and bloom behave as designed (`atmo=true bloom=true` at level 2), because those read
+  `Lighting`, which is present at start. The failure is specifically the model-timing path.
+
+Next step: wait for `Station` with a bounded loop before applying the ladder, then re-run and expect
+`total≈94`, `visible≈31` at level 2.
