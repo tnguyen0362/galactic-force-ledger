@@ -24,3 +24,14 @@ MICRO-019 space visuals at reduced graphics settings.
 
 ## Owner preference on record (m04346, paraphrase)
 Do not compress at 40K; target roughly 250K before compressing.
+
+## Loop health (read this first)
+`.goal/LOOP.log` shows iteration 7, 8 and 9 landing 30 seconds apart with identical counts
+(155 rows | ABSENT 69 | PARTIAL 75 | UNPROVEN 2 | PENDING-OWNER 5) and no commit between them.
+The cause is structural, not the ledger: every continuation is being driven into ONE long-lived
+agent session, so each new "continuation N" arrives in a context that is already exhausted and
+returns within seconds without touching the place.
+
+Fix before trusting loop numbers: run each iteration in a FRESH session and carry state in
+`.goal/` + git + this handoff only. A continuation that resumes a saturated session cannot build;
+it can only agree that it is out of room.
