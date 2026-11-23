@@ -40,3 +40,14 @@ cinematic and tutorial → art and audio polish.
 Visual quality is *not* last because it is cosmetic. It is last because a material/lighting pass over
 half-built geometry has to be repeated. When geometry for an area is settled, the pass happens
 immediately for that area and does not wait for the whole game.
+
+## Never hardcode the Studio instance id
+
+The loop spent a pass blocked because every tool call carried a remembered `studio_id`
+(`586a4e54-…269c`) after Studio had closed that place and opened a new instance id. The failure text is
+`The requested studio_id is not connected — that Roblox Studio instance may have been closed or its place unloaded`,
+and `list_roblox_studios` reports `"state": "Place is not open"`.
+
+Rule: **call `list_roblox_studios` at the start of every continuation and use the id it returns.** If no instance
+reports a place, stop place-side work, record the exact output in `BLOCKED.md`, and only do repository work — never
+write a ledger status or a visual claim for work that could not be saved.

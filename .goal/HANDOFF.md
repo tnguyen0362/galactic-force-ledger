@@ -52,3 +52,9 @@ A live session can therefore use the full 1,000,000-token window of `deepseek-v4
 column found by header name instead of a hardcoded index, and acceptance reported honestly —
 `ACCEPTED` counts only `OWNER_ACCEPTED`, with legacy `PROVEN`/`DONE` and `NOT_AUDITED` surfaced as
 separate counters.
+
+## Studio connection is not durable between turns
+
+Place work requires an open `Playtest1`. On 2026-11-23 the instance id changed and the only reported instance had
+`"state": "Place is not open"`, which blocked every place tool while the ledger still showed 54 ABSENT rows. Resolve
+the id fresh each continuation; treat a missing place as a hard block, not as an excuse to edit the ledger.
