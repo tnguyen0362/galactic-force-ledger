@@ -1135,3 +1135,24 @@ as a lit floor slab and is now faded to 0.94, leaving the bars.
 - The **bulkhead doors** read as a dark frame with no visible seam, seal or lock.
 - Hazard chevrons are olive, not safety yellow, and do not line up with the rails.
 - The bay reads better than the room it sits in, which is still monochrome.
+
+## v222 — walls exist now (captures V265 → V270)
+
+Three attempts at this, in order, because the first two proved the diagnosis wrong:
+
+1. Added 31 recessed seam strips and 88 rivets to both bulkheads. Result: **invisible** (V265) — the detail was there
+   and the wall was pure black, so there was nothing to see it against.
+2. Raised `EnvironmentDiffuseScale` to 0.40 and ambient to 64,70,82. Result: still black (V266). Sky IBL does not reach
+   an interior 100 studs from any aperture.
+3. Lifted the bulkhead albedo from (46,56,72) to (84,96,112) — still black (V267). Albedo cannot help a surface that
+   receives no light.
+4. Added four non-shadowed wall-wash point lights (196,214,244 at brightness 1.8, range 62) at ±97 x, ±40 z. **This**
+   worked: V269 shows the wall reading as panelled metal with seams, rivets and the dado band, and V270 is the spawn
+   frame with the same treatment.
+
+Station 849 parts. `tameLight`'s practical cap was raised from 0.6 to 2.0 so authored lights can carry the walls.
+
+**What still looks wrong.**
+- Seams sit 0.16 studs *proud* of the wall, so they read as lines drawn on metal rather than panel gaps.
+- The ceiling perimeter is still black; the cove above the wall wash has no light.
+- Hazard chevrons are olive, not safety yellow.
