@@ -430,3 +430,17 @@ at spawn — that is the camera the player actually loads into.
   infrequent and mechanically straight.
 - **Retest screenshot:** V141_01_flyby_bay1 (ship at x −54.8, y 776.3, z −264).
 - **Owner disposition:** PENDING.
+
+### V142_01_nav_beacons — exterior hull lights
+- **Scene / camera:** spawn framing facing the bays, place v142.
+- **Goal aesthetic:** dim exterior navigation lights that make the hull feel real without lighting the room.
+- **What was added:** 12 neon beacons — red port and green starboard at each bay jamb, white top strobes,
+  three amber depth markers 120 studs out. Sine-pulsed at 8 Hz, no `PointLight` anywhere (verified 0).
+- **What looks wrong:** only the red jamb beacons and the amber markers are legible from spawn; the green
+  starboard beacons sit behind the mullions and disappear; the depth markers are unattached dots floating
+  in the star field, which reads as a rendering artefact rather than hardware; every beacon uses one sine
+  pulse, so they all breathe instead of strobing like real navigation lights.
+- **Severity:** minor. The requirement (dim exterior beacons, no overlighting) is satisfied; the markers
+  need mounting structure to stop looking like dead pixels.
+- **Retest screenshot:** V142_01_nav_beacons.
+- **Owner disposition:** PENDING.

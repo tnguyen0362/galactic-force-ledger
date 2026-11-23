@@ -395,3 +395,10 @@ Two authoring errors worth keeping on the record, both caught by measurement rat
   190 studs out, and the hull is light enough to read against black sky.
 Remaining defects are written into VISUAL_REVIEW (intermittent visibility, dead-level pass, static plume).
 Self-check 371/0. Place v140, v141.
+
+## Iteration 26 — hull navigation lights (v142)
+No exterior beacons existed at all (grep for "beacon" over the whole server tree: zero hits). Added 12
+neon beacons: red port / green starboard on each bay jamb, white top strobes, three amber depth markers
+120 studs out. Deliberately **no PointLight** on any of them — the interior is lit only by ceiling
+fixtures and a beacon light would wash the deck — so brightness is colour plus strobe timing. Verified
+live: 12 parts, 0 PointLights, transparency cycling 0.21 → 0.77 on a 2.2 s period. Self-check 371/0.
