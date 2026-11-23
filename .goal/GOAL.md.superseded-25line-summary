@@ -1,0 +1,28 @@
+# GOAL — GALACTIC FORCE: COUNTEROFFENSIVE (Roblox)
+
+Objective: build the playable Roblox experience specified in the master goal prompt (Phase 0→5), verified
+in Studio through the Roblox MCP, inside place `Playtest1` (placeId 120646942844931).
+
+## Done criteria (machine-checkable)
+1. `CHECK-BOOT` — Play session prints `[GF] boot: config check PASS (>=369 assertions)` and no `[GF]` script errors.
+   Evidence: Studio console after Play.
+2. `CHECK-LOOP` — a full operation completes end-to-end through player-facing remotes:
+   `workspace:GetAttribute("GF_ObjectiveComplete") == true`, `GF_ExtractionState == "complete"`,
+   `GF_LastPayout == "<player>:450"` on Normal.
+3. `CHECK-STATION` — after `RequestReturn`, character Y > 700 (orbital station), war table panel visible, HUD hidden.
+4. `CHECK-COMBAT` — firing, reload, shield/health regen, dodge charges, both abilities verified by
+   player-visible state change (HUD values in a screen capture).
+5. `CHECK-INPUT` — WASD/mouse, gamepad, and touch each produce movement + fire + ability activation with
+   device-correct prompts.
+6. `CHECK-SEED` — same seed produces identical terrain column count + objective/extraction placement.
+7. `CHECK-PERSIST` — profile credits/XP survive a save+rejoin (BLOCKED in this place: DataStore forbidden).
+
+## Scope (in)
+Orbital station hub, deploy → mission → objective → extraction → payout → return loop; 1 mission template
+(SABOTAGE_RELAY) fully playable; combat, vitals, dodge, 2 abilities, enemies (5 archetypes), loot/salvage,
+war table UI, debrief. Cross-platform input. Server-authoritative remotes.
+
+## Out of scope (not started)
+Opening cinematic, OPERATION FIRST SPEAR tutorial, RECOVER_TECH/DEFEND_BEACON templates, bosses
+(Bastion Walker, High Marshal Veyr), matchmaking/Priority Dispatch/reserved servers, DataStore-backed
+Galactic War, audio/voice assets, mobile touch layout polish.

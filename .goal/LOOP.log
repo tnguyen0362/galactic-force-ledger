@@ -1,0 +1,52 @@
+[2026-11-23T07:29:07.453Z] started: Replace your current development instructions with the attached V3 `GOAL.md` and accompanying enforcement files.
+
+Do not summarize or rewrite GOAL.md.
+
+Your first action is to audit the existing Roblox project against every row in `REQUIREMENT_COVERAGE.csv`, recording actual implementation counts and player-visible evidence.
+
+Then continue implementation until every launch requirement is built, demonstrated, visually reviewed, and accepted.
+
+Do not create an out-of-scope section. Do not substitute passing assertions for gameplay proof. Do not self-declare completion.
+
+Preserve working functionality and build on the current project rather than restarting unnecessarily.
+
+I am the final authority on whether a milestone meets the required visual and gameplay quality. Present actual gameplay captures for my review.
+
+The goal is the complete launch-content specification, not another reduced vertical slice.
+[2026-11-23T07:30:40.598Z] iteration 1 — 155 rows | ABSENT 55 | PARTIAL 35 | UNPROVEN 1 | PENDING-OWNER 0 | ACCEPTED 0
+[2026-11-23T07:31:46.400Z] stopped after 1 iteration(s): user ran /goal-stop
+[2026-11-23T07:31:52.131Z] started: Replace your current development instructions with the attached V3 `GOAL.md` and accompanying enforcement files.
+
+Do not summarize or rewrite GOAL.md.
+
+Your first action is to audit the existing Roblox project against every row in `REQUIREMENT_COVERAGE.csv`, recording actual implementation counts and player-visible evidence.
+
+Then continue implementation until every launch requirement is built, demonstrated, visually reviewed, and accepted.
+
+Do not create an out-of-scope section. Do not substitute passing assertions for gameplay proof. Do not self-declare completion.
+
+Preserve working functionality and build on the current project rather than restarting unnecessarily.
+
+I am the final authority on whether a milestone meets the required visual and gameplay quality. Present actual gameplay captures for my review.
+
+The goal is the complete launch-content specification, not another reduced vertical slice.
+[2026-11-23T07:32:07.847Z] stopped after 0 iteration(s): turn aborted (Escape)
+[2026-11-23T07:32:43.708Z] started: Replace your current development instructions with the attached V3 `GOAL.md` and accompanying enforcement files.
+
+Do not summarize or rewrite GOAL.md.
+
+Your first action is to audit the existing Roblox project against every row in `REQUIREMENT_COVERAGE.csv`, recording actual implementation counts and player-visible evidence.
+
+Then continue implementation until every launch requirement is built, demonstrated, visually reviewed, and accepted.
+
+Do not create an out-of-scope section. Do not substitute passing assertions for gameplay proof. Do not self-declare completion.
+
+Preserve working functionality and build on the current project rather than restarting unnecessarily.
+
+I am the final authority on whether a milestone meets the required visual and gameplay quality. Present actual gameplay captures for my review.
+
+The goal is the complete launch-content specification, not another reduced vertical slice.
+[2026-11-23T08:00:12.552Z] iteration 1 — 155 rows | ABSENT 79 | PARTIAL 73 | UNPROVEN 1 | PENDING-OWNER 0 | ACCEPTED 0
+[2026-11-23T08:17:06.958Z] iteration 2 — 155 rows | ABSENT 78 | PARTIAL 74 | UNPROVEN 1 | PENDING-OWNER 0 | ACCEPTED 0
+[2026-11-23T08:43:01.385Z] iteration 3 — 155 rows | ABSENT 76 | PARTIAL 75 | UNPROVEN 1 | PENDING-OWNER 0 | ACCEPTED 0
+[2026-11-23T08:43:31.742Z] iteration 4 — 155 rows | ABSENT 76 | PARTIAL 75 | UNPROVEN 1 | PENDING-OWNER 0 | ACCEPTED 0

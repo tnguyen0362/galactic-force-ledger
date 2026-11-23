@@ -1,0 +1,20 @@
+{
+  "build_id": "v73",
+  "session_id": "audit-20261123",
+  "place": "Playtest1",
+  "placeId": 120646942844931,
+  "universeId": 10778576038,
+  "studio_id": "586a4e54-321f-4609-aee4-e09dbc1e269c",
+  "saved_version": 73,
+  "account": "ROBLOXISUS101 (1889759131)",
+  "platform": "PC Studio viewport 1100x680, keyboard/mouse",
+  "tool": "Roblox Studio MCP screen_capture",
+  "captures": [
+    {"id": "AUDIT_01_station_spawn", "scope": "hub spawn frame", "requirements": ["MICRO-001", "MICRO-002", "MICRO-003", "LC-014"]},
+    {"id": "AUDIT_02_station_wide", "scope": "hub wide (failed: camera owned by Controller)", "requirements": ["V2-23"]},
+    {"id": "AUDIT_03_mission_landing", "scope": "mission insertion + HUD", "requirements": ["MICRO-046", "MICRO-047", "LC-024"]},
+    {"id": "AUDIT_04_outpost_relay", "scope": "outpost, relay, enemies", "requirements": ["MICRO-021", "MICRO-023", "MICRO-053"]}
+  ],
+  "evidence_storage": "screen_capture returns images inline to the agent and writes no file; capture ids are recorded instead of paths. This is an unmet evidence-storage condition under V3-05, not a fabricated path.",
+  "tests": [
+    {"name": "config load
