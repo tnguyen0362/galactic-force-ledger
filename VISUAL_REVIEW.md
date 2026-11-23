@@ -1173,3 +1173,25 @@ in this row rather than guessed at.
 - The orange ellipse (above) — visible in most captures and the single largest remaining defect.
 - Wall seams sit proud of the wall instead of recessed.
 - Ceiling perimeter between coves is still dark; benches are plain blocks.
+
+## Orange ellipse — probes already done (do not repeat these)
+
+The soft orange ellipse that appears on the deck in most captures has been chased through every cheap hypothesis. All of
+the following were **checked in a live playtest and ruled out**:
+
+| Probe | Result |
+|---|---|
+| Warm-coloured lights anywhere in Workspace | `warm lights = 0` — all 45+2 fixtures are cool 222/232/246; authored practicals are exempt but are amber at the side walls, not under actors |
+| Hidden static part at deck height | no part with orange hue, saturation > 0.35 and size > 12 studs anywhere; every deck raycast hits `HangarDeck` (58,64,72) |
+| `DiamondPlate` specular | 100 such parts converted to `Metal`; the ellipse survived |
+| `Atmosphere.Decay` | zeroed to 26,30,40; the ellipse survived |
+| Sun direction / clock | clock 0, 12 and 13.5 all tried; the ellipse survived all three |
+| Sun + ambient zeroed | ellipse **disappeared** — so it needs a light source somewhere |
+| Bloom / RibLight neon | bloom 0.15 and RibLight 0.55; the ellipse survived |
+| GUI (`BillboardGui`/`SurfaceGui`/full-screen frames) | 15 workspace GUIs, all signage; no orange panel |
+| Beams / trails / particles / highlights / adornments | `fx objects = 0`, `adornments = 0` |
+| FX attached to crew rigs or the player | `fx=[]` on all six crew and on the player |
+
+Since it vanishes when all light is removed but has no identifiable emitter, the next probe must be **bisection by system**:
+disable `TutorialService`, `DispatchService`, `EncounterDirector` and the crew build one at a time in a fresh session and
+capture after each. Do not re-run the table above.
