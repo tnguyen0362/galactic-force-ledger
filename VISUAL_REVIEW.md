@@ -890,3 +890,22 @@ to the windows, which is the intended hierarchy.
 - Only the bezel is emissive, so the table's middle is muddy and the surface has no information on it.
 - No raised floor ring around the table — the deck is one continuous plane.
 - The operation labels are a floating text panel in the window, not part of the table.
+
+## v191 — hologram animation + selector proof (capture V210)
+
+**What changed.** `StationUI` now animates the war-table hologram on the client Heartbeat: planet yaw 0.08 rad/s,
+hologram plane counter-rotating at 0.035, three orbit bands at 0.05–0.10 rad/s. Client-only, so no server
+heartbeat cost and no replication traffic. First attempt ran at 0.35 rad/s and measured 40° in two seconds —
+that reads as a spinning ball, not a hologram, so it was slowed to roughly one revolution per 78 seconds.
+
+**Measured, not asserted.** Over 3 seconds the planet yaw advanced 0.2412 rad (4.61 deg/s) with position stable
+to under 0.01 studs, and `workspace.GF_HoloAnim == true`. The selector path was exercised end to end:
+`RequestDeployOptions:InvokeServer()` returned `planet=Veyra-7`, all three mastery templates
+(`SABOTAGE_RELAY, RECOVER_TECH, DEFEND_BEACON`) and both difficulties, with all three buttons `Visible=true`.
+
+**What still looks wrong.**
+- The hologram is a **flat cyan shape**, not a rotated sphere with grid lines and pins, so spinning it does not
+  add much information.
+- It **collides visually with the vista planet** behind the window: from the spawn camera the holo and the real
+  planet line up into one bright blob.
+- The player's own body covers the table at spawn distance, so the animation is half hidden on arrival.
