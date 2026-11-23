@@ -312,3 +312,35 @@ probing any pooled module.
   After: **371 passed / 0 failed**.
 - Lesson: instance/Source edits made while Play is running are discarded when Play stops. Two of the
   edits above were silently reverted this way before I noticed; always stop Play before editing.
+
+## Iteration 22 — the player is not a grey doll any more, and the deck is not a checkerboard (v132–v135)
+- **Player rig had no textures at all.** Runtime check: `GF_Rigged=true`, every body part is a
+  `MeshPart`, and `texturedParts = 0` — no `TextureID` on any of the 15 parts, colour flat 0.64 grey.
+  So the authored soldier rendered as an untextured mannequin (V132_01). `AppearanceService.dress`
+  skipped it because `GF_Rigged` was set, which is only correct while a rig carries its own armour art.
+  `dress` now skips a rigged character **only if it has at least one textured MeshPart**, and treats a
+  texture-less rig as one that needs the kit.
+- **The kit was authored for classic R15 proportions** (head 2 studs wide) but the shipped rig head is
+  **2.27** and its torso 2.23. Added a module-local `kitScale`, set in `dress` from `head.Size.X / 2`,
+  applied to every plate size and offset (offsets are translation-only `CFrame.new`, checked: 0
+  `CFrame.Angles` in the file). Result: 12 plates fitted at 1.13× (V133_01_dressed_trooper).
+- **Deck read as holes.** `FloorPlate` used `STEEL`/`GRAPHITE` — 0.53 vs 0.23 albedo — so two thirds of
+  the deck was near-black and at eye level it looked punched through. Floor-specific shades
+  `DECK_DARK 0.38` / `DECK_LIGHT 0.56` now vary 1 plate in 3: 70 plates, 33% light share, seams visible
+  (V133_02_deck_contrast).
+- **War table was a black silhouette.** Every part of it sat at 0.08–0.22 albedo, so the room's focal
+  point read as a slab with a blue ball. Base 0.08→0.34, top 0.22→0.51, hologram navy→cyan
+  (96,214,255) at 0.8 transparency, globe teal, and one 1.6-brightness / 36-range `PointLight` inside
+  the hologram (V135_02).
+- **`WindowGlow` blew out.** A 52-stud neon sill strip at 0.3 transparency bloomed into a pale green
+  slab across the whole window bay (V135_01). Now 0.2 thick at 0.62 transparency.
+- **Source control exists now.** The project directory had no git repository — `git` was resolving to
+  `C:/Users/tnguy`, whose history is unrelated trading code. `git init` here, initial commit `4427aa7`,
+  so build ledgers and evidence manifests are auditable per V3-03.
+- **Self-check unchanged and green after all of it: 371 passed / 0 failed / 0 errors** (`GF.Test.CheckRunner.run`).
+- Place versions: v132 (appearance), v133 (deck), v134 (war table), v135 (window glow).
+
+**What still looks wrong in V135_02** (see VISUAL_REVIEW.md): the window bays are still black rectangles —
+no stars are visible through the Sky despite `StarCount = 20000`; the war table has no floor ring and its
+planet is a featureless ball; the far console area is still a dark slab with unreadable text; the trooper
+has no glove or boot geometry.

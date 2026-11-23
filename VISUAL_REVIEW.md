@@ -303,3 +303,82 @@ Every `screen_capture` after v109 returns a frame where the 3D viewport is black
 - The character is bright blue-violet with white gauntlets, far more saturated than the muted hangar palette.
 
 A second `Concourse` room was built during this round and then deleted: `StationArt` already builds 374 parts of hangar (BayDoor, DeployPad, Dropship, FloorPlate, pad rings) and a duplicated shell was occluding the real station. Only the floor, lights and spawn pad were genuinely missing.
+
+## V132–V135 — player armour, deck contrast, war table, window glow (place v135)
+
+All captures below are Play-mode Studio captures of the shipped station, taken in the same session as
+the changes (`GF.Test.CheckRunner.run` = 371 passed / 0 failed immediately after the last of them).
+The `screen_capture` camera override is ignored during Play, so every frame is the real follow camera
+at spawn — that is the camera the player actually loads into.
+
+### V132_01_preflight — spawn, before any fix
+- **Scene / camera:** play test, spawn pad, follow camera behind the player, station bay at ClockTime 0.2.
+- **Goal aesthetic:** a lit command-bay interior with a recognisable armoured soldier and a steel deck.
+- **What looks wrong:** the player is an untextured grey mannequin with peach-coloured limbs; the deck
+  alternates near-black (0.23 albedo) and white plates and the dark ones read as holes; the far wall is
+  a solid black band; the war table area is a black slab with a blue ball on it.
+- **Severity:** blocker. The player character is the most-viewed asset in the game, and it was a default
+  -looking mannequin; the deck made the ground plane ambiguous.
+- **Action to repair:** texture-test the rig and dress texture-less rigs (`AppearanceService.dress`),
+  scale the kit to the rig head, replace deck shades with floor-specific values, light the war table.
+- **Retest screenshot:** V133_01_dressed_trooper, V133_02_deck_contrast, V135_02_station_complete.
+- **Owner disposition:** PENDING.
+
+### V133_01_dressed_trooper — player armour applied
+- **Scene / camera:** same spawn camera, immediately after the appearance fix (v132).
+- **Goal aesthetic:** human soldier with helmet, visor, chest armour, belt, backpack, shoulder and
+  forearm plates, muted navy/steel with a cyan accent — matching the station palette.
+- **What looks wrong:** the silhouette now reads correctly, but there is no glove or boot geometry —
+  bare grey hands and feet stick out from the plates; the chest plate is a flat white slab with a
+  printed-looking seam; the character's legs still show untextured grey between the thigh and shin
+  plates.
+- **Severity:** major for MICRO-022 (needs gloves/boots/energy module), cosmetic elsewhere.
+- **Action to repair:** add glove and boot plates, give the chest energy module real depth (lit
+  canister with a bezel) instead of a flat neon strip.
+- **Retest screenshot:** V133_02_deck_contrast (same rig, wider frame).
+- **Owner disposition:** PENDING.
+
+### V133_02_deck_contrast — deck shades corrected
+- **Scene / camera:** spawn camera after the deck fix (v133).
+- **Goal aesthetic:** a steel hangar deck with visible plate seams and a centre line, not a checkerboard.
+- **What looks wrong:** the checkerboard is gone and seams read, but bright ceiling fixtures still blow
+  two bands of deck to paper white, and the plate grid is regular enough to read as tiling rather than
+  deck plating. The window bays behind the barrier are pure black.
+- **Severity:** minor (deck), major (windows still unreadable as space).
+- **Action to repair:** reduce fixture bloom on the deck, add a floor ring around the war table, and
+  give the windows something to see.
+- **Retest screenshot:** V135_02_station_complete.
+- **Owner disposition:** PENDING.
+
+### V135_01_war_table — war table lit (intermediate)
+- **Scene / camera:** spawn camera after the war-table light and colour pass (v134).
+- **Goal aesthetic:** the War Table as the room's focal point, with a readable holographic planet.
+- **What looks wrong:** the table now reads as a lit object with a cyan globe, but a **pale green slab**
+  spans the whole window bay at sill height — that was `WindowGlow`, a 52-stud neon strip at 0.3
+  transparency blooming out. The planet is still a featureless ball and the pins are cubes.
+- **Severity:** major (the blown-out glow reads as a rendering bug).
+- **Action to repair:** thin and dim `WindowGlow`; give the planet a surface treatment.
+- **Retest screenshot:** V135_02_station_complete.
+- **Owner disposition:** PENDING.
+
+### V135_02_station_complete — the frame that has to be judged
+- **Scene / camera:** spawn camera, place v135, 7 s after load, `371 passed / 0 failed`.
+- **Goal aesthetic:** a military orbital command station: lit steel deck, armoured trooper, physical war
+  table under the OPERATIONS sign, space visible through the bay windows.
+- **What looks wrong (exhaustive, not a compliment list):**
+  1. **Window bays remain black rectangles.** `Sky.StarCount = 20000` with the space skybox produces no
+     visible stars from inside — the only "space" the player can see is the small cyan planet peeking
+     over the barrier. The vista parts exist; they are not where the camera can see them.
+  2. **The OPERATIONS sign text is mirrored/upside down** at this distance and half-occluded by the
+     war-table rim — reads as "GEFV…" rather than "OPERATIONS".
+  3. **The war table is still mostly edge-on.** From spawn you see its lit top edge and the hologram
+     plane; the hologram plane reads as a white bar, not a projection.
+  4. **No floor ring or deck marking around the table**, so it floats on the plate grid.
+  5. **The trooper has no gloves or boots**, and the chest plate is a flat slab.
+  6. **Nothing moves.** No crew, no traffic behind the glass, no flicker on the terminals.
+- **Severity:** windows + signage are blocker for LC-014/MICRO-006; the rest major.
+- **Action to repair:** (a) find why the Sky starfield is invisible from inside and fix or replace with
+  visible vista bodies; (b) rebuild the OPERATIONS sign as a correctly-oriented SurfaceGui; (c) add a
+  floor ring; (d) glove/boot plates; (e) ambient crew animation pass.
+- **Retest screenshot:** none yet — this is the open item.
+- **Owner disposition:** PENDING.
