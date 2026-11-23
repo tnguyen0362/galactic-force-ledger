@@ -412,3 +412,21 @@ at spawn — that is the camera the player actually loads into.
 - **Severity:** minor. Readable, correctly oriented, data-driven.
 - **Retest screenshot:** V139_01_intel_screens.
 - **Owner disposition:** PENDING.
+
+### V140_01..05 / V141_01_flyby_bay1 — exterior traffic
+- **Scene / camera:** spawn framing, left observation bay, place v140 then v141.
+- **Goal aesthetic:** a command station whose glazing shows life outside, not a still photograph.
+- **What was wrong (v140):** the transport was a single 18×3.5×38 box parked at one point — it never
+  moved, so the "traffic" in the vista row was a prop. Replaced with a 12-part hull on a 150 s loop.
+- **Two measured mistakes while fixing it:** the first pass sat at 62 studs above the deck, i.e. above the
+  glazing (window opening is y 762.4–789.6), so it slid along behind the hull and was never visible; and
+  the pass was at z −265, where only ~120 studs of its 830-stud path falls inside the bays' sightline.
+  Now at y 20→11 above the deck and 190 studs out.
+- **Still wrong:** the ship is only inside the bays' field of view for ~17% of the loop, so a player who
+  looks out for twenty seconds may see nothing; the pass is dead level with no banking; the engine plume
+  is a static translucent neon box with no flicker; on the centre crossing the ship passes behind the war
+  table and the OPERATIONS sign; the hull reads as flat grey with no rim light against black sky.
+- **Severity:** minor. The requirement ("subtle visible exterior life") is met, but the motion is
+  infrequent and mechanically straight.
+- **Retest screenshot:** V141_01_flyby_bay1 (ship at x −54.8, y 776.3, z −264).
+- **Owner disposition:** PENDING.

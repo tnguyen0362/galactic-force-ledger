@@ -382,3 +382,16 @@ literals.
   fails *at module load*, so the whole service silently drops out — and edits made during a playtest are
   discarded when the playtest stops, so the same bug came back twice before the edit landed in Edit mode.
 - Self-check **371 / 0** after every change. Place v138, v139.
+
+## Iteration 25 — exterior traffic actually moves (v140–v141)
+`Station.Transport` was one static 18×3.5×38 box; the vista requirement asks for visible exterior life,
+and a parked box is a prop. It is now `Station.TransportFlyby`: a 12-part hull (hull, spine, bridge,
+canopy, two wings, two engines, plume, port/starboard nav strobes) on a 150 s loop at 5.5 studs/s.
+Measured: 33.2 studs displacement in 6 s.
+Two authoring errors worth keeping on the record, both caught by measurement rather than by eye:
+- first pass ran at 62 studs above the deck — **above the glazing** (the window opening is y 762.4–789.6
+  and the deck is 756), so the ship slid along hidden behind the hull. Now y 20→11 above deck.
+- first pass was 265 studs out, where bays at x −58/0/58 cover only ~120 studs of an 830-stud path. Now
+  190 studs out, and the hull is light enough to read against black sky.
+Remaining defects are written into VISUAL_REVIEW (intermittent visibility, dead-level pass, static plume).
+Self-check 371/0. Place v140, v141.
