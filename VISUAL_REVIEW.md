@@ -1088,3 +1088,23 @@ hold an arbitrary yaw for a manual shot — mouse drags did not rotate it in thi
 inventory only: 68 parts including 2 loading rails, 4 rail lips, 5 ties, 2 bulkhead leaves, 6 ribs, 4 rib
 horizontals, 2 hydraulic pistons and rams, cradle, hatch and 15 hazard stripes. That is data, not a picture, and
 it should not be marked evidenced until a frame shows it.
+
+## v216 — brightness 0.35 ends the orange waves; character rims (capture V258)
+
+Isolation that finally settled the recurring orange: with sun **and** ambient zeroed the wash disappeared (V257), and
+with brightness at 0.35 and ambient at 52,56,66 the room stayed readable with no wash (V258). At 1.30 the sun beam
+entering the bays was strong enough to paint the deck orange in waves that appeared and vanished as the player moved
+and the camera shifted — which is why every earlier probe produced a different answer: each one changed how much
+beam reached the floor.
+
+Preset is now `clock=12, brightness=0.35, ambient=52,56,66, envDiffuse=0.18, exposure=-0.15, atmoDecay=26,30,40`.
+
+**Character rim.** Player and all six crew carry a client-side `Highlight` (cyan outline for the player, dim steel
+for crew). Measured `playerRim=true, crewRims=6`. It is an outline, not a light: no directional shading, but the
+trooper no longer disappears into the deck from behind.
+
+**What still looks wrong.**
+- The rim is uniform and reads as a UI outline rather than light.
+- Room is monochrome blue-grey outside the cyan accents; no warm practical anywhere.
+- Bulkheads are still flat panels.
+- Deployment bay still has no in-frame capture (see v214 note).
