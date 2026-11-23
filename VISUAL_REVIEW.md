@@ -1195,3 +1195,30 @@ the following were **checked in a live playtest and ruled out**:
 Since it vanishes when all light is removed but has no identifiable emitter, the next probe must be **bisection by system**:
 disable `TutorialService`, `DispatchService`, `EncounterDirector` and the crew build one at a time in a fresh session and
 capture after each. Do not re-run the table above.
+
+## v225 — original Ascendancy head (captures V275, V276)
+
+The Ascendancy now have their own skull instead of a smooth box: cranium, three-plate crest with a lit amber edge,
+brow ridge, two mandibles and cheek flares — ten parts welded to `Head` on the authored template
+`ServerStorage.GF.Art.AscendancyTrooper`, so every spawned rig inherits them. Measured live: 4 enemy rigs carrying
+40 crest parts (10 each).
+
+**Side defect found and fixed.** Because `CrewService` picked its template from whoever had a Humanoid in
+`ActiveActors`, the station crew were built from the Ascendancy rig — so the moment the aliens got a crest, the
+station was staffed by hostiles. Crew now take `GFSoldierRig` from the art library and fall back to any non-Ascendancy
+rig; measured `crestParts=0` across 96 crew parts, and V276 shows human silhouettes at the table.
+
+**What still looks wrong.**
+- The crest reads **only as a silhouette**: dark metal on a dark head with one thin amber edge, and the capture site is
+  unlit, so there is no frame that shows the head clearly yet.
+- Layered armour is still the original chest plate plus a crest; there is no second chest layer, no pauldron, no
+  variance between Standard/Specialist/Elite silhouettes.
+
+## Orange ellipse — bisection progress
+
+- Warm-light sampling over 10 s while the room looked clean: **one** sighting, the authored armoury practical (255,176,96).
+- Crew relocated to a lit spot and captured (V274): **no ellipse**, so it does not follow crew.
+- Fresh boot at the same camera as V271 (V272, V273): **no ellipse** — the earlier frame caught a transient.
+- `Environment.apply` now sets `Brightness = 0` for the duration of the swap, which removes the only window where a
+  high sun can meet the previous warm ambient. That matches a transient that appears for a frame or two at boot and
+  cannot be reproduced on demand.
