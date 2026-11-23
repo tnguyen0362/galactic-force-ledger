@@ -874,3 +874,19 @@ Spawn moved from z=52 (inside the drop pod hatch) to z=22, and the station spawn
 - No warm/cool contrast anywhere except the cyan wall strips — the room is monochrome blue.
 - The ceiling lamps are flat white rectangles with no housing, so the ceiling reads as a card.
 - Everything is still boxy: benches are boxes, consoles are boxes, no bolts, cables, vents or wear.
+
+## v190 — war table rebuilt (captures V208, V209)
+
+**What changed.** `WarTableTop` was `PLATE` (near-white DiamondPlate) — the single brightest object in the
+spawn frame. Now: dark composite top (30,36,46), three ribs on the base, four cyan bezel strips around the
+perimeter, hologram plane dimmed to (20,64,96) at 0.82, planet reduced to 7.5 studs at 0.55 transparency with
+three thin orbit bands. 19 parts, station total 673.
+
+**What reads better.** The table silhouette is gone from the frame; the eye now goes to the lit bezel and then
+to the windows, which is the intended hierarchy.
+
+**What still looks wrong.**
+- The hologram is a **flat bright cyan shape**, not a rotating planet with grid and pins. It reads as a sticker.
+- Only the bezel is emissive, so the table's middle is muddy and the surface has no information on it.
+- No raised floor ring around the table — the deck is one continuous plane.
+- The operation labels are a floating text panel in the window, not part of the table.
