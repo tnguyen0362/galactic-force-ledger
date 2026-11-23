@@ -382,3 +382,18 @@ at spawn — that is the camera the player actually loads into.
   floor ring; (d) glove/boot plates; (e) ambient crew animation pass.
 - **Retest screenshot:** none yet — this is the open item.
 - **Owner disposition:** PENDING.
+
+### V136_01_vista / V137_01_vista_planet — bays now show space
+- **Scene / camera:** spawn camera, place v136 then v137, 7 s after load.
+- **Goal aesthetic:** an orbital command bay whose glazing looks onto stars and the planet it orbits.
+- **What looks wrong (after the fix):** stars are present but sparse and clustered in the middle band of
+  each bay; the planet limb is a smooth blue arc with no surface detail beyond one belt band; the
+  `Transport` is a static rectangle, so "traffic" is a still; the `OPERATIONS` sign is still partly hidden
+  behind the war-table rim from the spawn camera; `EMPTY` text remains visible under the sign (mission
+  state label, reads as a placeholder word).
+- **Severity:** minor-to-major. The window claim (EXT-015) is now genuinely visible, but "moving space
+  exterior" is still static and the `EMPTY` label reads as unfinished text.
+- **Action to repair:** animate the transport on a slow loop, replace `EMPTY` with real operation state
+  ("NO OPERATION SELECTED"), raise the OPERATIONS sign above the rim line.
+- **Retest screenshot:** pending.
+- **Owner disposition:** PENDING.

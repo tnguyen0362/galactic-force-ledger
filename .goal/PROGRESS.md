@@ -344,3 +344,21 @@ probing any pooled module.
 no stars are visible through the Sky despite `StarCount = 20000`; the war table has no floor ring and its
 planet is a featureless ball; the far console area is still a dark slab with unreadable text; the trooper
 has no glove or boot geometry.
+
+## Iteration 23 — the windows finally look out on space (v136–v137)
+Diagnosis first, because two earlier rounds claimed the vista was "added":
+- `Veyra7` (the planet) was built at `base * CFrame.new(150, -20, -900)`, about 950 studs from the spawn
+  camera, i.e. **outside the streaming radius** — the part existed and streamed out, so the bays showed
+  black. Moved to `windowZ - 300` (≈300 studs past the observation glass), radius 80 → 110, plus a
+  low-poly `Veyra7Belt` band so the limb is not one flat tone.
+- `Transport` was at `(-1200, 340, -1900)` — 2.3k studs away, the same problem. Now 250 studs past the
+  glass at (120, 26), so it can actually pass the bay.
+- **`Sky.StarCount = 20000` renders nothing through these bays.** Verified at runtime: sky present, space
+  skybox set, zero stars visible in the frames. Replaced with 90 procedural `VistaStar` balls
+  (`Random.new(20261123)` for stable positions, 1.1–2.6 studs, within streaming range). Stars are now
+  visible in every bay (V136_01_vista, V137_01_vista_planet).
+- `OPERATIONS` sign carried `CFrame.Angles(0, math.pi, 0)` copied from the rear-wall signage, so the
+  panel faced away from the deck and read mirrored. Rotation removed.
+- Planet material: Neon rendered it as a flat olive slab; `SmoothPlastic` at (58,82,96) with the existing
+  neon halo gives a blue limb against the star field.
+- Self-check after every step: **371 passed / 0 failed**. Place v136, v137.
