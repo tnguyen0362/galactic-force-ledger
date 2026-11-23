@@ -1284,3 +1284,25 @@ survives because it is small enough that the bounding-box error does not dominat
 
 **What this means for the row:** MICRO-023's "layered armour" half needs mesh authoring (or per-tier generated meshes),
 not primitives. Recording that rather than continuing to guess fractions.
+
+## v232 — locomotion: crouch, roll and sprint lean (captures V287, V288)
+
+A procedural animator (`GF_CharacterAnimator`, server-side so limbs replicate) already covered walk/run by speed,
+strafe blend, aim blend, airborne tuck and breathing. Three of the six states the requirement names were missing.
+
+**Added.**
+- **Crouch** — `C` or `LeftControl` toggles; client fires the new `CrouchChanged` remote, the server sets
+  `Crouching` and `WalkSpeed = 8`. Measured end to end: attribute true, WalkSpeed 8.0. Pose folds hips 0.85/0.72 rad,
+  knees -1.5/-1.3, torso 0.28 forward, height dropped 0.85 studs (V287).
+- **Roll** — `MovementService.doDodge` now publishes `Rolling` for `RollDuration`, and the animator tucks: root pitched
+  1.15 rad, hips 1.25/1.05, knees -2.1/-1.95, elbows -1.1 (V288). Before this the dash read as a slide with a walk cycle.
+- **Sprint lean** — `Sprinting` attribute from the sprint handler adds 0.13 rad of forward lean. Measured waist pitch
+  0.023 → -0.109 rad.
+
+**Walk cycle measured, not assumed:** LeftHip pitch swept **0.71 rad** across eight samples while the humanoid walked.
+
+**What still looks wrong.**
+- Strafe is a waist twist, not a stepped side gait — sideways movement still slides.
+- No foot-plant locking, so the cycle drifts against the ground at speed.
+- The roll is a static tuck: the body does not rotate *over the ground*, it just folds.
+- Crouch snaps in and out with no transition blend.
