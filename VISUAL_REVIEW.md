@@ -1033,3 +1033,20 @@ light only.
 - The room is **monochrome**: cyan strips and the hologram are the only saturated colours.
 - Walls are still flat panels with no seams, rivets or wear.
 - The right window bay has no vista subject.
+
+## v210 — right bay subject + the bloom wash (capture V245)
+
+**Right bay.** It pointed at empty sky because the planet sits left of centre. Added a second moon (760 studs) with a
+neon halo and three orbit-ring silhouette segments at 1250–1430 studs, so each of the three bays now has a subject:
+nebula left, planet limb centre, moon and rings right.
+
+**The recurring warm deck wash — final mechanism.** Isolation: hiding the deck plates removed it, hiding the wall ribs
+removed it, hiding only the `RibLight` neon bars removed it, and dimming bloom removed it with the ribs still visible.
+Fourteen 20-stud neon bars at 0.25 transparency on each wall were pushing the amber deck paint over the bloom
+threshold, so the paint smeared into a warm wash that drifted with the camera. `RibLight` is now 0.55 transparency and
+Bloom is 0.15 intensity at 2.0 threshold; the deck reads dark blue-grey with crisp markings.
+
+**What still looks wrong.**
+- The moon is an untextured ball with no terminator and no craters.
+- Orbit rings read as flat slabs, not a truss structure.
+- The planet limb is a smooth gradient with no cloud banding.
