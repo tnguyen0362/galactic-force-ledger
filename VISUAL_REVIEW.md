@@ -1261,3 +1261,26 @@ attaches to.
 - The capture is at the relay site at night, so the head reads as **silhouette plus amber visor** only.
 - The dome is a smooth sphere: no cheekbones, temples or facets.
 - Tier silhouettes are identical — Standard, Specialist, Elite differ only by palette.
+
+## v230 — box armour on a mesh body does not work (captures V284 → V286)
+
+Six attempts at layered body armour, all reverted, and the reason is structural rather than a placement bug:
+
+| Attempt | Result |
+|---|---|
+| chest layer at 0.62× torso width (V279) | giant grey slab floating in front of the body |
+| explicit yaw basis, 0.46× (V283, V285) | correct orientation, still a slab |
+| 0.52× width / 0.62× height plus collar band (V285) | wide bar across the shoulders |
+| 0.34× width plus yoke and collar (V286) | narrow plate that still reads as a shelf |
+
+The cause: `UpperTorso` is an R15 part whose **Size** is a bounding box (3.9 × 2.5 × 1.2) wrapped around a *mesh* whose
+visible torso is far narrower. Any plate sized as a fraction of that box is too wide, and any plate thin enough to look
+layered is too small to see. Box parts cannot follow a mesh silhouette at this scale.
+
+**Kept:** the head assembly (skull dome, jaw, amber visor, three crest blades, crest tip, two mandibles, 9 parts) — it
+survives because it is small enough that the bounding-box error does not dominate.
+
+**Reverted:** chest layer, chest chevron, collar band, yokes, pauldrons, pauldron ridges.
+
+**What this means for the row:** MICRO-023's "layered armour" half needs mesh authoring (or per-tier generated meshes),
+not primitives. Recording that rather than continuing to guess fractions.
