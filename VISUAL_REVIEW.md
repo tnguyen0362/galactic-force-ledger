@@ -461,3 +461,20 @@ at spawn — that is the camera the player actually loads into.
   structural one.
 - **Retest screenshot:** V145_01_armory_final.
 - **Owner disposition:** PENDING.
+
+## v151-v153 — deployment bay (MICRO-010)
+
+- Built: split bulkhead (2 leaves, 14.4x21, ribs), lit centre seam, lintel and posts, two hydraulic
+  ram/piston pairs, pulsing caution beacon, 15 hazard stripes across the threshold, two loading rails
+  with neon lips and five ties, pod cradle + hull 11x8.6x12.4 with nose/hatch/lamp/side stripes/step,
+  four cylinder thrusters, gantry beam + chain + hook + two flood heads, one BayFill PointLight.
+  Server count in play: DeploymentBay = 67 parts, 1 PointLight.
+- Two real faults surfaced and were fixed, both quoted from the Studio console:
+  `Unable to assign property Color. Color3 expected, got nil` at StationArt line 27 in buildShell
+  (the module palette had no caution red, so the beacon handed nil into `part()`), and
+  `invalid argument #1 to 'ipairs' (table expected, got nil)` at StationConcourse line 147, where the
+  glazing loop used `bays` after the vista block's scope closed - that aborted `build()` on every boot
+  since the V127 window work, so nothing after it in that module had ever run.
+- Negative: deck albedo still clips to white at grazing angles (capture V151_01) even after the plate
+  albedo change; the bay itself has no clean frame yet because the camera request fell back to the
+  spawn view, so MICRO-010 stays PARTIAL until a walk-in capture exists.
