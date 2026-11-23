@@ -845,3 +845,32 @@ above and to the side of it. You can read "large curved planet seen from orbit".
   Worth watching; it may be the cinematic dimming lights, but it looks like a bug.
 - The interior is still **washed white**: floor, benches and wall panels clip to near-white. That is the next
   row, not this one, but it dominates every frame and makes the vista look pasted on.
+
+## v188 — station lighting rebuilt (captures V195 → V207)
+
+**The diagnosis took four wrong turns, so it is worth writing down.**
+
+1. First suspicion was overexposed fixtures: 25 lights, brightness 0.6, `Shadows = false`. Turning every
+   light off did **not** fix the white deck (V200), so lights were not the whole story.
+2. Second was image-based lighting from the space skybox. Dropping `EnvironmentDiffuseScale` to 0.05 changed
+   nothing visible (V198).
+3. Third was a hidden orange overlay part. There is none: raycasts at the deck always hit `HangarDeck`
+   with albedo (58, 64, 72), and no decal, texture or `CanQuery=false` plane exists at deck height.
+4. The actual cause was the **station ambient preset**: `ambient = 206, 202, 196` with `brightness = 2.0`
+   was an old workaround for "graphite walls read as near-black at midnight". It lifted the whole room to
+   a flat warm grey, and every warm fixture on top of that pushed the deck to pure white. Lowering ambient
+   to (40, 44, 52) and brightness to 1.30 with sun at 13:30 immediately produced contrast and a real
+   nebula outside the windows.
+
+**What is in the place now.** Station preset: clock 13.5, brightness 1.30, ambient 40/44/52, outdoor
+96/104/120, envDiffuse 0.18, envSpecular 0.04, exposure -0.15. `StationService.tameLight` enforces every
+fixture to cool 222/232/246, brightness 0.80, range ≤ 48, shadows on — measured 45 of 45 conforming.
+Spawn moved from z=52 (inside the drop pod hatch) to z=22, and the station spawn no longer destroys itself.
+
+**What still looks wrong.**
+- Too dark now: wall panels, ribs and signage are unreadable at spawn distance.
+- The **war table still reads as a white slab** and sits dead centre in the spawn frame.
+- The trooper is near-navy and vanishes against the deck; there is no rim light on characters.
+- No warm/cool contrast anywhere except the cyan wall strips — the room is monochrome blue.
+- The ceiling lamps are flat white rectangles with no housing, so the ceiling reads as a card.
+- Everything is still boxy: benches are boxes, consoles are boxes, no bolts, cables, vents or wear.
