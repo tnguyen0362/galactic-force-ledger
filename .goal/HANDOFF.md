@@ -35,3 +35,20 @@ returns within seconds without touching the place.
 Fix before trusting loop numbers: run each iteration in a FRESH session and carry state in
 `.goal/` + git + this handoff only. A continuation that resumes a saturated session cannot build;
 it can only agree that it is out of room.
+
+## 2026-11-23 — METHOD.md is now binding
+
+Owner: "work on 1 thing at a time, we are making a damn near triple aaa game optimized for roblox and
+optimized for xbox one low end phones tablets". `.goal/METHOD.md` records the rule: one row at a time,
+finish or stop (never half), evidence first, write the negatives, and judge every change against
+Xbox One / low-end mobile budgets (16.6 ms, part counts, light costs, no per-frame server loops).
+
+ACP (billion-context-pi) is fully removed: package, lockfile, settings entries, all nine subagent tool
+allowlists, backups, and `acp.json*`. Verified by a clean grep across `C:/Users/tnguy/.pi`.
+A live session can therefore use the full 1,000,000-token window of `deepseek-v4.1-flash`; the old
+"context limit reached" nudges came from ACP and no longer exist.
+
+`goal-loop.ts` ledger parsing fixed: a real CSV parser (quoted fields, embedded newlines), the status
+column found by header name instead of a hardcoded index, and acceptance reported honestly —
+`ACCEPTED` counts only `OWNER_ACCEPTED`, with legacy `PROVEN`/`DONE` and `NOT_AUDITED` surfaced as
+separate counters.

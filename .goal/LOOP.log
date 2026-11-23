@@ -98,3 +98,4 @@ The goal is the complete launch-content specification, not another reduced verti
 [2026-11-23T19:06:56.098Z] iteration 6 — 155 rows | ABSENT 59 | PARTIAL 85 | UNPROVEN 2 | PENDING-OWNER 5 | ACCEPTED 0
 [2026-11-23T19:08:20.761Z] iteration 7 — 155 rows | ABSENT 59 | PARTIAL 85 | UNPROVEN 2 | PENDING-OWNER 5 | ACCEPTED 0
 [2026-11-23T19:08:56.176Z] iteration 8 — 155 rows | ABSENT 59 | PARTIAL 85 | UNPROVEN 2 | PENDING-OWNER 5 | ACCEPTED 0
+[2026-11-23T19:09:52.063Z] stopped after 8 iteration(s): user ran /goal-stop
