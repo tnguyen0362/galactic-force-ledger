@@ -809,3 +809,14 @@ Frame `V181_first_spear_range` still shows two defects I did not fix in this pas
   panel `6/5  First Spear complete` over letterboxed "You are the last crew that can still reach the relay."
 - **The counter overruns**: `6/5`. `rec.index` is incremented past the last step before publishing, so the
   panel prints one more than the total. Clamp the displayed step to `math.min(index, #steps)`.
+
+## LC-022 overlay defects closed (v182)
+
+Both defects from the previous pass are fixed and verified in one playtest:
+```
+cinematic: playing=false skipped=true beat=5   (in-flight playback stops when the tutorial begins)
+tutorial:  2/5 shoot                            (counter clamped to #steps, no more 6/5)
+```
+Fix 1: `TutorialService.begin` raises `GF_CinematicStop`, and `CinematicUI` treats it as a skip request so a
+cinematic already running is cancelled instead of playing under the tutorial.
+Fix 2: the published step is `math.min(rec.index, #steps)`.
