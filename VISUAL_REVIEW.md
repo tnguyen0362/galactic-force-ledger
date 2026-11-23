@@ -478,3 +478,23 @@ at spawn — that is the camera the player actually loads into.
 - Negative: deck albedo still clips to white at grazing angles (capture V151_01) even after the plate
   albedo change; the bay itself has no clean frame yet because the camera request fell back to the
   spawn view, so MICRO-010 stays PARTIAL until a walk-in capture exists.
+
+## v154-v156 — Frag and EMP (LC-007)
+
+- Config rows and a `G` binding existed with no throw code behind them; there was no grenade logic
+  anywhere (`script_grep grenade` returned 6 hits, all config/profile/input).
+- Added `ServerScriptService.GF.GrenadeRuntime` (server) and `StarterPlayerScripts.GrenadeClient`.
+  Frag: 2.6 s fuse, `radius 22`, damage `110` with linear falloff, hot 0.7-radius ring and a 9-brightness
+  flash, and it damages the thrower inside the radius - fragmentation is indiscriminate.
+  EMP: 1.9 s fuse, `radius 26`, damage `40` x `shieldMultiplier 3.0` applied to the shield attribute
+  first, cold full-radius ring, 6-brightness flash, and `empBlind()` drives every PointLight inside the
+  radius to 15% for 1.4 s.
+- Verified through the real remote: `Frag -> kind=Frag r=22 charges=1 reject=nil`, then
+  `EMP -> kind=EMP r=26 charges=0`. Charges decrement and no request was rejected.
+- Negative: two edits were needed before it ran at all - the first version called `Remotes.server()`
+  during module load and threw `Remote not created: ThrowGrenade` (RemoteService creates the container
+  later in boot), and the first script body was typed Luau that never printed its boot line. The
+  untyped rewrite runs.
+- Negative: no frame shows either detonation. `screen_capture` keeps its fixed studio vantage, so the
+  ring and flash are outside the shot even when thrown from the player's own view (V156_01_emp_detonation
+  is identical to the pre-grenade frame).
