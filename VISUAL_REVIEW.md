@@ -731,3 +731,32 @@ drained beacon    -> "full"
 Refusals are distinct and specific, which is the part that usually rots. What is *not* proven: two real
 clients in one mission. Studio plays one client here, so seat arithmetic and the LZ teleport are proven,
 while "1-4 cooperating players" is not.
+
+## LC-021 — opening cinematic plays, 88s authored (v176)
+
+Frame `V176_cinematic_beat2`: letterboxed playback, subtitle "Task Force Bastion held the line for
+eleven days.", `SPACE to skip` hint.
+
+Measured:
+```
+Cinematic_Ready=true   Total=88 (11 beats, 8+9+8+8+8+8+8+8+8+8+7)
+at 9s   -> Beat=2, Elapsed=8, subtitle text matches beat 2
+SPACE   -> Playing=false, Skipped=true, Duration=19, GUI closed, camera restored
+replay  -> GF_CinematicPlay=true restarts at Beat=2/Elapsed=8
+```
+88s sits inside the 85-95 requirement, and beat advance matches the authored durations, so the clock is
+real rather than claimed.
+
+What the frame shows as failures:
+- **No subject.** Eleven shots of empty concourse. There are no soldiers walking, no officer at the war
+  table, no pod loading. A cinematic showing an empty room cannot carry "eleven days" or "the Marshals
+  stopped answering".
+- **Blown floor.** The deck reads as pure white with flat orange light pools that look like decals
+  rather than light; the whole middle third of frame is featureless.
+- **Subtitle is small and grey** against a bright deck; at 1080p it is the least legible element on screen.
+- No title card, no Veyr silhouette, no planet shot — the script talks about things the frame never shows.
+- **No voice.** No speech tool here, so this is subtitle-only; the requirement asks for voice and that
+  part is not met.
+
+Camera positions are authored in world space around the station and clip through nothing in these two
+shots, but shots 9-11 aim past the hull toward the mission area and have not been inspected frame by frame.
