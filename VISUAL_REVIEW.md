@@ -1243,3 +1243,21 @@ position that changed before the capture). The evidence for this row is v2 plus 
 - The helmet is a flat dark ball with no facets, brim or jaw line.
 - The human face is hidden, not replaced — the silhouette is a sphere, not a skull.
 - No tier silhouette difference: Standard, Specialist and Elite differ only by palette.
+
+## v229 — Ascendancy head v4 (capture V283)
+
+Fourth authoring pass, and the first with sane proportions. The recipe that works: an explicit yaw basis from the head
+LookVector, a `side` vector derived from it, and every size expressed as a fraction of the head box — skull dome at
+1.22× head width and 0.72× head height sitting 0.14× up, jaw block 0.34× tall below centre, amber visor at 0.52× head
+depth on the face centre line, three crest blades rooted at 0.42× head height swept back 32°, mandibles at the jaw
+corners, chest layer 0.46× chest width and pauldrons 1.05× arm width. Template: 9 crest + 4 layer parts.
+
+**Why the earlier passes failed** (all four documented, because the pattern matters): v1 used raw offsets with no basis;
+v2 used `CFrame.lookAt`, which aligns a part's **Z axis** to the look direction and therefore rotated every size 90°;
+v3 fixed the axes but kept v2's oversized numbers, producing slabs; v4 sizes everything relative to the body part it
+attaches to.
+
+**What still looks wrong.**
+- The capture is at the relay site at night, so the head reads as **silhouette plus amber visor** only.
+- The dome is a smooth sphere: no cheekbones, temples or facets.
+- Tier silhouettes are identical — Standard, Specialist, Elite differ only by palette.
