@@ -1066,3 +1066,25 @@ Captured immediately after a teleport (V248): clean, no wash.
   the cinematic re-asserts its own framing, so the bay has only data evidence (68 parts: 2 loading rails, 4 lips,
   5 ties, 2 bulkhead leaves, 6 ribs, 2 pistons, cradle, hatch, gantry, 15 hazard stripes).
 - A capture attempt at the bay returned a fully black frame (V252), the known minimised-window failure.
+
+## v214 — the camera never came back (captures V248, V253, V255)
+
+Skipping the intro left the player with `CameraType = Fixed` (Scriptable) and `CameraSubject = nil`, so every
+capture afterwards was stuck at the cinematic's last pose (130, 139, -334) regardless of where the player stood.
+Two defects:
+
+1. `stopPlayback` restored `savedType` — whatever the camera was when playback began — and never restored
+   `CameraSubject`. If playback began before the character existed, `savedType` was `Fixed`.
+2. The skip attribute was only read by a *change* handler, so a cinematic that started *after* the skip still
+   took the camera and never gave it back.
+
+Both fixed: stop restores `Custom` + the humanoid, and `play()` refuses to start while a skip is pending.
+Measured after the fix: `playing=false`, `type=Custom`, `subject=Humanoid`, camera 10.4 studs behind the player.
+
+**MICRO-010 has no clean frame yet and this is the reason.** The intro has a "Drop bay is hot" beat that flies
+from z=30 to z=56 looking at the pod, but every attempt to catch it landed after the beat had passed (the beat
+counter reported 9 and 11 while the subtitle still read an earlier line), and the third-person camera will not
+hold an arbitrary yaw for a manual shot — mouse drags did not rotate it in this place. The bay is proven by part
+inventory only: 68 parts including 2 loading rails, 4 rail lips, 5 ties, 2 bulkhead leaves, 6 ribs, 4 rib
+horizontals, 2 hydraulic pistons and rams, cradle, hatch and 15 hazard stripes. That is data, not a picture, and
+it should not be marked evidenced until a frame shows it.
