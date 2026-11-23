@@ -971,3 +971,19 @@ loading line, 7 deck plate seams, and a dado band with a cyan trim line on both 
 - Painted markings are **dim**: 126,104,52 amber under 0.80 fixtures barely separates from the deck.
 - The hazard chevrons sit **behind the player** at spawn, so the arrival frame does not show them.
 - Bulkheads still have **no panel seams or rivets** — only the dado band, so walls remain flat planes.
+
+## v204 — section signage (capture V227)
+
+Four signs now exist as flush wall plates with `SurfaceGui` text: ARMOURY (-98, 771, -23), DISPATCH (98, 771, -28),
+DEPLOYMENT (0, 773, 74), WAR TABLE (0, 772, -34). First pass mounted them eight studs proud of the wall with the
+text facing along the wall, which made them invisible from inside the room — a capture from the concourse showed
+nothing (V222). They are now flush, at eye height, facing into the room.
+
+**What still looks wrong.**
+- The WAR TABLE sign sits **in front of the window**, competing with the planet and the hologram behind it.
+- Side signs are **barely readable at 30+ studs**: dark plate, unlit, thin.
+- Nothing in the room points a player toward the deployment bay; the sign is on the far bulkhead.
+- Intermittent **warm deck flash** for a few seconds after boot or a teleport (V220, V225) that clears on its own
+  (V221, V226). Lighting values are identical in both states, so this looks like replication of the atmosphere
+  preset arriving in two steps rather than a bad value. It is a real visual defect on arrival and needs a proper
+  fix, not a note.
