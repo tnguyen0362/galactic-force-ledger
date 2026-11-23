@@ -397,3 +397,18 @@ at spawn — that is the camera the player actually loads into.
   ("NO OPERATION SELECTED"), raise the OPERATIONS sign above the rim line.
 - **Retest screenshot:** pending.
 - **Owner disposition:** PENDING.
+
+### V138_01_intel_screens / V139_01_intel_screens — war table readouts
+- **Scene / camera:** player side of the war table, (0,17,14) looking at (0,14,-42), place v138 then v139.
+- **Goal aesthetic:** a command table whose screens show the operation you are actually about to run.
+- **What looked wrong (v138):** both screens read **mirrored** ("OPE..." reversed) because they were built
+  with the default `Front` face while sitting on the player's side; the panels were 16×9 and sat below the
+  ceiling beam; the slot labels said `EMPTY`.
+- **v139:** screens read left-to-right, 20×11, tilted 8° toward the deck; slot labels read `OPEN SLOT`; the
+  body text is derived from the armed operation and difficulty.
+- **Still wrong:** at spawn distance the body text is too small to read (needs a nearer approach); the
+  trooper's avatar shows bare skin at both thighs, so the layered clothing does not fully cover the legs;
+  the `EMPTY`-style placeholder text still exists on the mission chip row.
+- **Severity:** minor. Readable, correctly oriented, data-driven.
+- **Retest screenshot:** V139_01_intel_screens.
+- **Owner disposition:** PENDING.

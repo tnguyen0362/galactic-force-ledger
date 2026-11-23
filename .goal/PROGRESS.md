@@ -362,3 +362,23 @@ Diagnosis first, because two earlier rounds claimed the vista was "added":
 - Planet material: Neon rendered it as a flat olive slab; `SmoothPlastic` at (58,82,96) with the existing
   neon halo gives a blue limb against the star field.
 - Self-check after every step: **371 passed / 0 failed**. Place v136, v137.
+
+## Iteration 24 — the war table stops lying (v138–v139)
+The intel panel was four hardcoded lines, so **every** operation and **every** difficulty showed
+"Elevated · Ascendancy garrison ... LZ Marrow · 420 m north-east" — exactly the fake readout the brief
+forbids. Same root cause as the earlier ticket bug: `resetMission` set `tickets = 6` and `seed = 1234` as
+literals.
+- `StationService.resetMission` now publishes `GF_OperationTemplate` and `GF_OperationDifficulty`,
+  takes tickets from `Difficulties.ticketsFor(difficulty, #players)` and seeds from the clock.
+- `StationWarTable` builds the panel from `Configs.Missions` + `Configs.Difficulties`: operation name,
+  primary objective text, threat class with hostile budget, tickets available, bounty multiplier and the
+  secondary point count. Verified live: `RECOVER_TECH`/`Extreme` → *Recover Technology / Recover the
+  downed scientific transport's black box / Extreme · 18 hostiles / 1 available · 1 per extra operator /
+  credits x3.5 / 2 secondary points*; boot state `SABOTAGE_RELAY`/`Normal` reads 4 tickets for one player.
+- Both intel screens were **mirrored**: built with the default `Front` face (normal −Z) and bolted on the
+  player's side of the table. Switched to `Back`, enlarged to 20×11, raised and tilted 8° toward the deck.
+- Squad slots said `EMPTY` (reads as unfinished) → `OPEN SLOT`.
+- Lesson: a `require` of a Folder fails with "Attempted to call require with invalid argument(s)" and it
+  fails *at module load*, so the whole service silently drops out — and edits made during a playtest are
+  discarded when the playtest stops, so the same bug came back twice before the edit landed in Edit mode.
+- Self-check **371 / 0** after every change. Place v138, v139.
