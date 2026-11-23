@@ -1118,3 +1118,20 @@ lights now bypass that sweep via a `GFPractical` attribute: amber at the armoury
 **What still looks wrong.** They are invisible from the arrival camera — the two amber ones sit on the side
 bulkheads, outside the spawn frame — and 0.6 brightness at range 26 is too weak to read across a 200-stud deck. So
 this change is measurable but not yet *player-visible*, which means it does not satisfy the row on its own.
+
+## v220 — deployment bay finally in frame (capture V264)
+
+The camera problem is solved: `Controller` already exposes a capture hook, `workspace.GF_CamPos` / `GF_CamLook`, and the
+third-person loop defers to it. Every earlier "the camera will not move" attempt was fighting that loop with mouse drags
+and direct `CameraType` writes, which it overwrites every frame. Two attributes and the bay is framed.
+
+**What is now in the bay.** Two loading rail runs (34 studs, 0.9 wide) with 14 cyan tie lights, six sleepers, a four-bar
+lit ring around the cradle, gantry beam, hazard chevrons on the deck, plus the existing pod hull, hatch frame, two
+hydraulic pistons/rams, two bulkhead leaves and six ribs. Station 722 parts. The old filled 36x36 neon pad was reading
+as a lit floor slab and is now faded to 0.94, leaving the bars.
+
+**What still looks wrong.**
+- The pod is a **plain box** from the concourse side: no hatch ribs, no placard, no lamp cluster.
+- The **bulkhead doors** read as a dark frame with no visible seam, seal or lock.
+- Hazard chevrons are olive, not safety yellow, and do not line up with the rails.
+- The bay reads better than the room it sits in, which is still monochrome.
