@@ -498,3 +498,17 @@ at spawn — that is the camera the player actually loads into.
 - Negative: no frame shows either detonation. `screen_capture` keeps its fixed studio vantage, so the
   ring and flash are outside the shot even when thrown from the player's own view (V156_01_emp_detonation
   is identical to the pre-grenade frame).
+
+## LC-010 — ten augments exist on paper only
+
+- `ReplicatedStorage.GF.Shared.Configs.Augments` lists 10 ids with `slot`/`applies`/`cost`, and
+  `ServerScriptService.GF.Test.CheckRunner` asserts slot/applies/cost at boot, so the catalog is
+  complete and validated (part of the 371 boot assertions).
+- `ProfileService` initialises `weaponAugments = {}` and `abilityAugment = nil`, and `Shared.Types`
+  declares both - but `script_grep augment` finds no consumer: no code reads `weaponAugments` or
+  `abilityAugment` to change damage, spread, falloff, reload, shield or ability behaviour.
+- So the ten ids are catalog entries. Equipping any of them changes nothing a player can perceive,
+  which is why LC-010 stays ABSENT rather than PARTIAL - there is no partially working augment.
+- Fix path: bind `Augments.ById` into `CombatService` (damage/spread/falloff/reload) and
+  `VitalsService` (shield), give each id exactly one measurable effect, then prove two of them with
+  before/after numbers rather than a screenshot.
