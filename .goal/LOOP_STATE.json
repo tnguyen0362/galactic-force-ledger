@@ -1,8 +1,8 @@
 {
   "active": true,
   "goal": "Use GOAL.md as the authoritative specification and REQUIREMENT_COVERAGE.csv as the persistent implementation and verification ledger.\n\nAudit the existing project against the checklist before making substantial changes. Preserve verified working functionality. Populate observed counts, implementation paths, dependencies, statuses and actual verification evidence.\n\nDo not treat the checklist as an ordered list of 815 separate coding tasks. Group related requirements into coherent, dependency-aware implementation batches. A single well-designed implementation and gameplay test may satisfy multiple requirements.\n\nRead only the relevant checklist rows and GOAL.md sections during each implementation batch. Update affected rows rather than repeatedly processing the entire file.\n\nDo not mark requirements VERIFIED merely because corresponding scripts, models, configurations or interfaces exist. Demonstrate actual functionality, integration and applicable edge-case behavior.\n\nPrioritize correctness, maintainability, performance, efficient context utilization and verified development progress. Defer expensive final graphical refinement without deferring functional requirements.\n\nContinue until the functional prototype requirements and subsequent private beta acceptance gates are genuinely satisfied. The owner retains final acceptance authority. here are the paths to each file read them careuflly first before you continue any work \"C:\\Users\\tnguy\\Downloads\\GOAL (1).md\"\"C:\\Users\\tnguy\\Downloads\\REQUIREMENT_COVERAGE.csv\"",
-  "iteration": 14,
+  "iteration": 15,
   "startedAt": 0,
   "compactions": 0,
-  "updatedAt": "2026-11-24T20:15:54.697Z"
+  "updatedAt": "2026-11-24T20:20:36.633Z"
 }
