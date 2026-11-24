@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 440
+# WORK_STATE — last verified 2026-11-24, place version 441
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 440**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 86 populated, 742 UNKNOWN**.
-- Ledger state: PARTIAL 58 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 441**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
+- Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -329,6 +329,18 @@ Deployed, put the player at the centroid of 3 Rifleman + 3 Marksman + 2 Scout, w
 Then 6 studs from a Scout: **13 shots in 8 s**. So the Scout was never broken — its authored range is 46 studs and it spent the first window closing. Had I recorded Result 1 alone, "Scout never fires" would have been a false defect.
 
 **Not verified:** any authored statistic in `S06-023`–`S06-027` (HP, shields, damage, accuracy, armour); no cover/peek/flank/investigate state was observed.
+
+
+## Verified at build 441 — enemy stats realigned and burst fire implemented
+Every archetype ignored its authored stat block, and every attack was a **single instantaneous hit** — the spec's 8x3 / 6x4 / 12x2 patterns did not exist.
+
+Realigned: Rifleman 240/80 (was 120/60), Scout 210/60 (80/30), Marksman 210/60 (100/40), Heavy 620/180 (260/150), Officer 420/160 (180/100), with move speeds and per-shot damage to match, plus a `burst` field per archetype. `EnemyService` now fires `count` hits `interval` apart, aborting on death, lost target or out-of-range.
+
+Measured: Scout spawns at 210/60 and dealt **10 separate `amount=6.0 source=Scout`** events at 4 studs — a burst, not one 24-damage spike.
+
+**Mistake to remember:** my first config edit was string splicing that produced `burst = burst = {...}` and broke compilation with no backup. Recovered by reconstructing the lines; verify compile after every config splice.
+
+**Still open:** only the Scout was observed; Heavy telegraph, Officer aura/call, armour factors and cover/peek are all unimplemented.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
