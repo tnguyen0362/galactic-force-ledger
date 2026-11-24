@@ -2662,3 +2662,27 @@ after   status = CONTESTED            sector = "Sector contested - 1 operations 
 **What still looks wrong.** Only the *text* responds. The planet hologram, the intel screen and the orbited planet still look
 identical whatever the campaign says — so the table reports a changing war through one line of copy. And in V382 the debrief panel
 is drawn on top of the war table, so two panels are legible at once and neither cleanly.
+
+## v344 — the hologram now shows the state of the war (V383)
+
+**What changed.** The planet hologram was fixed cyan no matter what the campaign said. `WarHolo`, `WarPlanet` and its three rings
+are now coloured from `GF_WarStatus`, and the debrief suppresses the war table instead of stacking on top of it.
+
+**Measured at the part, by stepping the status:**
+
+```
+SECTOR HELD         -> 120,255,170   (V)
+CONTESTED           -> 255,176,64    (amber)
+ASCENDANCY HOLDING  -> 255,96,96     (red, V383)
+```
+
+V383 shows the red table under the `GALACTIC WAR TABLE` panel while the sector line reads `Sector contested - 1 operations won,
+0 lost.` — the line and the hologram are both campaign-driven now.
+
+**Two things this exposed.**
+1. **The paint runs on the client**, so `GF_WarHoloColor` is client-side and my first probe — reading it from the server VM — came
+   back `nil` and looked like a failure. Reading it on the client immediately showed the correct value. That is the third time this
+   session a measurement failed because the attribute was set or read on the wrong side.
+2. In V383 the sector line and the status disagree, because I overrode `GF_WarStatus` alone for the test. The service always sets
+   both together, so this is a test artefact — but it is worth noting that the two attributes are not derived from one another at
+   read time.
