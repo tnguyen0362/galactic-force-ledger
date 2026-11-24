@@ -1655,3 +1655,22 @@ Both the earlier "solved" notes (cylinder disc, then 95%-opaque spheres) were wr
 
 **Still open:** the blast spheres themselves are barely visible at 0.55 alpha against a dark deck — the strike now reads as a
 grey smoke puff and a brief flash, not a dramatic impact. That is the honest state.
+
+## v270 — impact staging added; the craft flies but still escapes the frame (V333, V334)
+
+Airstrike blasts now carry a bright short-lived core (4.5 studs, 0.05 alpha, gone in 0.35 s) and six outward debris chunks,
+on top of the dimmed point light and the smoke puff, so an impact has a hot centre instead of a grey puff. The shell alpha went
+0.55 → 0.25.
+
+The flyover craft is now measurable: `hull=-67,69,-137` 0.85 s after the cast, on a 4.2 s crossing with a 4.5 s lifetime. Both
+frames that tried to photograph it came back empty — V333 was taken from a camera placed **underground** (y=18 where terrain is
+y≈33) and V334 aimed at where the craft had already been. That is framing, not absence: the hull position is read from the live
+instance at the time of the shot.
+
+**Rejections earned their keep this session.** One cast attempt reported `LastCastRejected = "cooling down"` — the airstrike was
+still on its cooldown from a previous cast 30 s earlier, and without the telemetry added in v262 that would have been another
+silent no-op blamed on the wrong subsystem. A `resetCooldowns(player)` hook now exists for Studio testing.
+
+**New, unproven:** setting `GF_PhotoCam` from the *server* VM produced an unchanged camera in V334, while setting it from the
+*client* VM produced an exact match (`pos=46,44,-186`). Either the server-set attribute took longer than the 0.4 s wait to
+replicate, or the two paths differ. Not established yet, and it is the next thing to pin down before more capture work.
