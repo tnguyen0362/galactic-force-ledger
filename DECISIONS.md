@@ -15,3 +15,20 @@ FX); the templates differ in **object built** and **completion rule**, not in pl
 would triple the surface the deploy path has to keep in sync.
 Consequence accepted: `complete()` gates its explosion FX on template id, so a new template must say
 whether it explodes.
+
+## EnvironmentSpecularScale is 0 in every lighting preset (v303)
+
+Measured A/B on the concourse deck, same camera, same lights, same session:
+
+| EnvironmentSpecularScale | EnvironmentDiffuseScale | result |
+|---|---|---|
+| 0.04 | 0.18 | solid orange wash covering the entire floor and tinting the character (V354) |
+| 0.00 | 0.00 | clean dark deck (V355) |
+| 0.00 | 0.18 | clean dark deck, environment diffuse still present (V356, V357) |
+
+Cause: this place sits under a saturated orange/magenta nebula sky, and Roblox samples the sky for specular on `Metal`. A large
+flat Metal deck mirrors it at grazing angles. The earlier "DiamondPlate is banned on the deck" rule was this same problem seen
+through a different material — 0.04 specular was enough to produce it on plain Metal too.
+
+Consequence for future art work: any large flat surface in this place must either use a matte material or accept that specular is
+globally disabled. Do not raise `EnvironmentSpecularScale` to "add gloss" without re-checking the deck at grazing angles.

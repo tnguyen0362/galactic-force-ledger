@@ -1990,3 +1990,24 @@ scanning every `TextButton` for the text `DEPLOY` returned nothing, including wi
 set. The button existed in V350–V353. The likely explanation is that `StationUI` now stops part-way through construction, which
 would take the whole war table panel with it. **This is not verified** — the next continuation must read the client log
 immediately after join and find where the script stops, before any further claims are made about this row.
+
+## v303 — the orange deck wash is finally explained and closed (V354, V355, V356, V357)
+
+**What the A/B proved.** Same camera, same 12 cool tamed lights, same session:
+
+| EnvironmentSpecularScale | EnvironmentDiffuseScale | deck |
+|---|---|---|
+| 0.04 (preset value) | 0.18 | solid orange field across the whole floor, character legs tinted (V354) |
+| 0 | 0 | clean dark navy (V355) |
+| 0 | 0.18 | clean dark navy, environment diffuse intact (V356) |
+
+**Cause.** This place sits under a saturated orange/magenta nebula sky. Roblox samples the sky for specular on `Metal`, so a large
+flat Metal deck mirrors the sky at grazing angles. 0.04 specular was enough. Everything I had excluded before — lights, part
+colours, post effects, reflections, terrain water, GUI overlays, `BossBlast` leftovers — really was innocent, and the `BossBlast`
+finding explained only the separate station-spawn spheres.
+
+**Consequence.** `EnvironmentSpecularScale` is now 0 in both presets, with the measurement recorded in `DECISIONS.md`. The old
+"DiamondPlate banned on the deck" rule was this same effect through a different material.
+
+**Verified after the change:** booted with the preset applied (`spec=0.00 diff=0.18 brightness=0.35`) and V357 shows a clean,
+correctly lit concourse with no orange anywhere.
