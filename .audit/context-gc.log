@@ -423,3 +423,7 @@
 2026-11-24T22:06:49.613Z usage=714353 msg=3294 images=4 text=162 thinking=295 chars 5100390->3068657 (-40%)
 2026-11-24T22:06:54.178Z usage=800000 msg=1508 images=0 text=1500 thinking=0 budget=793 chars 6037500->1022923 (-83%) proj=249731
 2026-11-24T22:06:54.402Z usage=714145 msg=3296 images=4 text=162 thinking=295 chars 5102731->3070998 (-40%)
+2026-11-24T22:07:00.459Z usage=714449 msg=3298 images=4 text=162 thinking=295 chars 5104129->3072396 (-40%)
+2026-11-24T22:08:34.489Z usage=934470 msg=3304 images=4 text=162 thinking=295 budget=414 chars 5108194->4433655 (-13%) proj=249973
+2026-11-24T22:09:38.958Z usage=800000 msg=308 images=0 text=0 thinking=0 budget=300 chars 2424300->2527021 (-0%) proj=716785
+2026-11-24T22:10:09.728Z usage=800000 msg=616 images=0 text=304 thinking=0 budget=429 chars 4288110->888412 (-79%) proj=249982

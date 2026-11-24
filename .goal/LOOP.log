@@ -285,3 +285,4 @@ Continue until the functional prototype requirements and subsequent private beta
 [2026-11-24T21:52:33.900Z] iteration 15 — 815 rows | ABSENT 0 | PARTIAL 60 | UNPROVEN 0 | PENDING-OWNER 0 | ACCEPTED 0
 [2026-11-24T21:56:46.402Z] iteration 16 — 815 rows | ABSENT 0 | PARTIAL 60 | UNPROVEN 0 | PENDING-OWNER 0 | ACCEPTED 0
 [2026-11-24T22:00:17.032Z] iteration 17 — 815 rows | ABSENT 0 | PARTIAL 60 | UNPROVEN 0 | PENDING-OWNER 0 | ACCEPTED 0
+[2026-11-24T22:07:14.885Z] session shutdown while active at iteration 17
