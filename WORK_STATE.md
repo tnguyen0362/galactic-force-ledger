@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 418
+# WORK_STATE — last verified 2026-11-24, place version 420
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 418**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 62 populated, 761 UNKNOWN**.
-- Ledger state: PARTIAL 41 | VERIFIED 12 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 420**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 65 populated, 758 UNKNOWN**.
+- Ledger state: PARTIAL 44 | VERIFIED 12 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -168,6 +168,14 @@ Completing the primary now opens **no** cache (measured 0 opens). Boarding after
 **Retraction (same build, retest):** the armory was never broken. `StationArmoryUI` closes the panel every Heartbeat when the player is more than 46 studs from the rack, and my unanchored teleport dropped the character to `y=30` against a `y=768` deck — a 738-stud gap. With the root **anchored** at 14 studs, the panel opened and real mouse clicks worked: `Loadout1.Save` → `GF_LoadoutSaved=1`; equip SMG03, `Loadout2.Save`, equip AR01, `Loadout2.Load` → `GF_LoadoutLoaded=2` and profile primary became **SMG03**.
 
 **Harness rule:** anchor the character before any station teleport. There is no floor under the armory approach, and every proximity check fails silently 738 studs below the deck.
+
+
+## Build 420 — six armour suits, and a real armory anchor bug
+Armour did not exist: no config, one hardcoded kit, and a profile field nothing read. Now `Configs/Armor` holds six suits (4 standard, 2 requisition), `AppearanceService.dress(character, suitId)` is palette-driven and strips the previous kit, and `ArmoryService.buyArmor/equipArmor` buy and wear them. Measured: SIEGE → 12 kit parts, chest plate RGB 206/190/158; TROPHY → RGB 120/84/96, still 12 parts (no stacking); BLACKSTAR refused at rank 15 with `requires rank 16`.
+
+**Real bug fixed:** the station has three armory racks and `findAnchor()` returned an arbitrary one, so a player at another rack measured 66 studs away (limit 46) and the panel closed every frame. It now returns the nearest rack — `Panel.Visible` stayed true across 8 samples afterwards.
+
+**Not verified:** the armour WEAR/BUY buttons were never clicked (they sit below the scroll viewport); RECON and VANGUARD were never worn; armour prices do not match the authored GF-02/03/04 table (`S10-035`).
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
