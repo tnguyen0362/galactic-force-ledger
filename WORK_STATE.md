@@ -174,9 +174,32 @@ afterFail_primaryIncomplete [w=14 l=8  c=false]  loss only for an incomplete pri
 (`missionsWon` 13 → 14, `missionsLost` 7 → 8). The war score is cosmetic, but the counters are no longer the pre-test
 values.
 
+**BLOCKED.md ability item CLOSED — it was never a game defect (place 463).** Evidence `evidence/v463-ability-cast-verified/EVIDENCE.md`.
+
+The "unresolved" v260 blocker had two causes, neither a broken pipeline:
+
+1. `State.get(player) == nil` was the **tool-VM trap** — a tool-VM `require` gets its own module instance, so `states[player]`
+   is empty there regardless of game state. Read from a real `Script` in the game: `State.get(player)` is non-nil with
+   `shield = 100`. The false negative was reproduced deliberately to prove it.
+2. `AbilityService.cast` already self-heals via `State.ensure` at lines 638-650.
+
+Proven live: client-fired `UseAbility{abilityId="DomeShield"}` → `AbilityCastRequests=1`, `LastCastRejected=nil`, and the
+world gained **`Workspace.DomeShield`, `DomeShieldRim` and 14 `DomePost` parts**.
+
+**Ability config measured against spec — two mismatches, NOT changed (balance levers, owner call):**
+
+| ability | spec CD | config CD | spec radius | config radius |
+|---|---|---|---|---|
+| **Orbital Lance** | **165s** | 180 | 6 | 6 |
+| **Reflective Barrier** | **85s** | 95 | **10** | 12 |
+
+`GOAL_2026-11-24.md` L77 also specifies Orbital Lance as "total 420 over 3 pulses" (config: `damage = 550`, single value,
+no pulse split) and L78 sets Reflective Barrier duration "immediate/7s" (config: 6). Airstrike, Dome Shield, Sentry and
+Orbital Strike all match. Recorded on `S05-015` and `S05-016`.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 463**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 156 populated, 659 UNKNOWN**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 160 populated, 655 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
 - Place version **463** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.

@@ -37,7 +37,24 @@ source through the file system. Nothing in this file should be counted as a plac
 **To unblock:** open `Playtest1` in Roblox Studio (Team Create), then call `list_roblox_studios` to get the new id and
 replace the hard-coded id in the loop's habits. Last saved place version before the disconnect: **232**.
 
-## Ability casts from the client VM produced nothing at all (v260) — unresolved
+## Ability casts from the client VM produced nothing at all (v260) — RESOLVED 2026-11-24, not a game defect
+
+**Resolution first, then the original record below for history.** There were two separate faults and neither was a broken
+ability pipeline:
+
+1. The `State.get(player) == nil` reading was the **tool-VM trap**, not game state. A tool-VM `require` gets its own module
+   instance, so `states[player]` is always empty there. Read from a real `Script` inside the game, `State.get(player)`
+   returns a live state (measured `shield = 100`). Reproduced the false negative on purpose at place 463: a tool VM still
+   reads `nil` immediately after a successful live cast.
+2. `AbilityService.cast` had already been hardened at lines 638-650 to call `State.ensure(player)` and continue instead of
+   refusing, so even a genuinely missing state self-heals.
+
+Proven live at place 463: a client-fired `UseAbility{abilityId="DomeShield"}` was accepted (`AbilityCastRequests=1`,
+`LastCastRejected=nil`) and built `Workspace.DomeShield`, `DomeShieldRim` and 14 `DomePost` parts. Evidence:
+`evidence/v463-ability-cast-verified/EVIDENCE.md`. The rejection telemetry added in v260 remains useful and is what made
+this cheap to settle.
+
+## Original v260 record (superseded — kept for history)
 
 Three separate attempts this session fired `ReplicatedStorage.GF.Remotes.UseAbility:FireServer({ abilityId = "Airstrike", ... })`
 from the client VM. Each produced **zero** effect: `craft=0, blasts=0, recorded=nil`, no error in the log, and — after I added
