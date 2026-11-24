@@ -2504,3 +2504,30 @@ roster past four. `respond` now counts mission players and existing responders a
 1. The pod is a **blockout**: a solid box with fins and a glow disc, not a vehicle with a ramp or thrusters.
 2. Nobody has been *seen* arriving — Studio hosts one client, so the pod is only ever shot after the fact, never mid-descent.
 3. The 4-player cap is **code-verified, not exercised**: a single client cannot exceed it, and no test has attempted a fifth joiner.
+
+## v333 — the extraction vote exists, and advertises keys that do nothing (V376)
+
+**What was there before.** Nothing. `CastVote` and `RequestExtractionVote` were remotes in the registry with **no handler**, so
+extraction was purely a solo decision and the vote requirement was empty.
+
+**What exists now.** `ExtractionService.requestVote` / `castVote`: any player starts a vote, `needed = floor(liveSquad/2)+1`, a no
+cancels it, a 20 s window expires it, and passing calls the ship. `State.get` downed players are excluded from the live squad, and
+the vote is refused while the objective is still open — otherwise the squad would vote for a ship that `call()` then refuses.
+
+**Measured, in order:**
+
+```
+vote with objective open   -> GF_ExtractionVote = "objective open"  (refused)
+after completing the relay -> GF_ExtractionVote = "ROBLOXISUS101:0/1"  (started)
+cast yes                   -> "ROBLOXISUS101:1/1" then "passed"
+result                     -> ExtractionDropship present = true
+```
+
+V376 shows the banner: `EXTRACTION VOTE 0/1 · Y confirm · N decline · 19s`.
+
+**What looks wrong, and it is the important part.** The banner *advertises* Y and N, and **neither key is bound to anything** — no
+keyboard handler, no gamepad button, no touch target. A player cannot actually vote; only an external call can. That is worse than
+no banner, because it tells the player to press keys that do nothing.
+
+**Also unverified:** multi-player majority. `needed` scales correctly in code, but with one client the only case ever exercised is
+`needed = 1`.
