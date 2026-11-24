@@ -57,3 +57,28 @@ events. Zero of everything is a null result, not a success.
 
 The underlying defect this exposed is real and separate: the mission's primary objective is **self-concealing**. Hostiles cannot acquire
 a player at the console because the outpost's own structure blocks LOS, so the objective is undefended.
+
+## Never append a block whose last line repeats its anchor (v371, second occurrence)
+
+Twice now, a patch built as `src:sub(1, i-1) .. block .. src:sub(i + #anchor)` where `block` **ends with the anchor text** has produced a
+duplicated function header:
+
+```lua
+function EnemyService.start()function EnemyService.start()   -- v366
+function ObjectiveService.getRelay()function ObjectiveService.getRelay()  -- v371
+```
+
+Both took a whole module offline with `Expected 'end' ... got <eof>` and both were found only by reading the server log right after the
+edit. Correct form: `block` must **not** contain the anchor; insert with `src:sub(1, i-1) .. block .. src:sub(i)`.
+
+## Debug switches must be set from the server datamodel (v371)
+
+`workspace:SetAttribute("GF_...")` from the **client** does not replicate to the server. `GF_DebugDamage` set that way produced zero
+logged damage sources for a real 100 → 11 health drop, and `GF_ForceConsoleScreen` set that way meant a capture hook silently did
+nothing. Any switch the server reads must be set in the Server datamodel.
+
+## The console mitigates damage only while the hold runs (v371)
+
+50% mitigation and a visible `ForceField` panel (`ConsoleScreen`) exist only between hold start and hold end, so standing next to the
+console gains nothing. Measured `GF_ConsoleMitigated = 2` during one contested hold with three hostiles acquired; the player finished at
+38 health instead of 11.

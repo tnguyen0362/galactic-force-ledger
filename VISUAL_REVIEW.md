@@ -2954,3 +2954,32 @@ attribution was obtained. Do not read "no damage lines" as "no damage" when the 
 **Visible in V404.** Three hostiles in the frame around the console — one crouched behind the western parapet, two closing from the
 east — with shield already at 0. Also visible: the compound's neon perimeter markers, and terrain that reads as **snow** rather than a
 nebula world, which is a separate art finding.
+
+## v371 — the console projects a hardlight screen, and two more client-attribute failures (V405, V406)
+
+**Change.** Holding the objective now halves incoming damage (`State.atConsole` set for the duration of the hold, read by
+`VitalsService.applyDamage`) and raises a `ForceField` panel called `ConsoleScreen` behind the console, so the protection is something
+the player can see rather than a hidden multiplier.
+
+**Measured.** During a contested hold with **3 hostiles acquired**: `GF_ConsoleMitigated = 2` (the mitigation actually fired), and the
+player finished the hold at **38 health** where the previous continuation ended at **11** on the same spot. V405 shows
+`PRIMARY OBJECTIVE COMPLETE / Extraction authorized` with two hostiles closing from the east — the objective is both contested and now
+completable.
+
+**Honest gaps.** `SABOTAGE_HOLD` is 2.5 s, so the mitigated window is short by design; nothing was measured for the 60 s
+`DEFEND_BEACON` hold, where the screen matters far more. And I did **not** get a frame that shows the panel: the server-side check
+confirms it exists (`ConsoleScreen tr=0.35` at `0,32,-130`), but every capture attempt drove the camera back to the station interior
+instead of the relay.
+
+**Two failures of the same kind, both mine, both worth recording.**
+
+1. `GF_DebugDamage` and then `GF_ForceConsoleScreen` were set from the **client** datamodel. Client attribute writes do not replicate, so
+   the watchdog never saw the override and no panel was ever created — I read that as "the feature is broken" for two round trips.
+   Set every debug switch **server-side**.
+2. `ObjectiveService.getRelay()` called from a tool VM returns `nil`, because the tool gets its own module instance with its own
+   `objective`. Driving a service from the outside is not a valid test; the attribute + watchdog path is.
+
+**Also fixed while here:** the same duplicate-anchor pattern that broke `EnemyService.start()` last continuation produced
+`function ObjectiveService.getRelay()function ObjectiveService.getRelay()` and took the whole objective module offline
+(`Expected 'end' ... got <eof>`). This is now two occurrences; the pattern — appending a block whose last line repeats the anchor — is
+the bug, not the specific file.
