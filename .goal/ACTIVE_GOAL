@@ -1,1 +1,13 @@
-Build GALACTIC FORCE: COUNTEROFFENSIVE — the complete launch-content Roblox sci-fi PvE extraction shooter — in Studio place Playtest1, governed by the V3 non-negotiable completion and evidence contract in .goal/GOAL.md. No self-declared DONE; every claim needs a same-session artifact; player-visible order per V3-07.
+Use GOAL.md as the authoritative specification and REQUIREMENT_COVERAGE.csv as the persistent implementation and verification ledger.
+
+Audit the existing project against the checklist before making substantial changes. Preserve verified working functionality. Populate observed counts, implementation paths, dependencies, statuses and actual verification evidence.
+
+Do not treat the checklist as an ordered list of 815 separate coding tasks. Group related requirements into coherent, dependency-aware implementation batches. A single well-designed implementation and gameplay test may satisfy multiple requirements.
+
+Read only the relevant checklist rows and GOAL.md sections during each implementation batch. Update affected rows rather than repeatedly processing the entire file.
+
+Do not mark requirements VERIFIED merely because corresponding scripts, models, configurations or interfaces exist. Demonstrate actual functionality, integration and applicable edge-case behavior.
+
+Prioritize correctness, maintainability, performance, efficient context utilization and verified development progress. Defer expensive final graphical refinement without deferring functional requirements.
+
+Continue until the functional prototype requirements and subsequent private beta acceptance gates are genuinely satisfied. The owner retains final acceptance authority. here are the paths to each file read them careuflly first before you continue any work "C:\Users\tnguy\Downloads\GOAL (1).md""C:\Users\tnguy\Downloads\REQUIREMENT_COVERAGE.csv"
