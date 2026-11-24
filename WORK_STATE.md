@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 429
+# WORK_STATE — last verified 2026-11-24, place version 430
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 429**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 79 populated, 750 UNKNOWN**.
-- Ledger state: PARTIAL 50 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 430**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 81 populated, 748 UNKNOWN**.
+- Ledger state: PARTIAL 52 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -239,6 +239,14 @@ Throwing EMP **unowned** was free; `toss` now refuses it (`grenade not owned`). 
 `refill` restocks `GrenadeCharges` to the equipped type's `count` on every deploy: measured 3 → 0 after three throws, then **3** again after deploying (`GFDebug.LastGrenadeRefill = 3`). Armory grenade rows now show BUY for unowned types and EQUIP for owned.
 
 **Still open:** the BUY branch has never rendered (both types owned on this profile); refill fires only on deploy, not on return to station; the refill is reached through a `_G` handoff inside a `pcall`, so a failure would be silent.
+
+
+## Verified at build 430 — progression survives a server restart
+Snapshot before/after a stop-start cycle: credits 39,590 · rank 15 · XP 123,700 · 36 augments · all six armour suits · four abilities · loadout (SMG03/P01, DomeShield/Airstrike, Frag, BeltFeed socket) · Rare cache ×1 — **identical**. A change made before the restart (equip VANGUARD) also persisted.
+
+**Bug the restart exposed:** the character spawned in **STANDARD** while the profile said VANGUARD, because AppearanceService dresses at spawn before the DataStore profile arrives and never re-dressed. Fixed with a bounded 20×0.5 s retry; measured `GF_ArmorSuit = "VANGUARD"` with the correct palette on a fresh server.
+
+**Still open:** no crash/reconnect mid-mission test, no receipt idempotency, war credits and settings not read back.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
