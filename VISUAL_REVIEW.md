@@ -1321,3 +1321,29 @@ is also published as `GF_LastMuzzle` so this is verifiable without screenshots.
   MICRO-025 (weapons aligned to hands).
 - The tracer is a thin neon bar with no taper, no smoke trail and no impact-side continuity.
 - The puff reads as dust, not a muzzle flash: white, round, and 0.05 s long.
+
+## v236 — first weapon in the hands (captures V290 → V292)
+
+Until now the character held **nothing**: `Weapon.tryFire` fired a ray and spawned a flash in empty air. There is now a
+client viewmodel — Grip, Body, Barrel, Stock, Magazine, Sight, Muzzle — rebuilt on every equip and driven from
+`HumanoidRootPart` on `RenderStepped`.
+
+Measured: grip **1.42** studs from the root, muzzle **2.21** studs ahead of the grip. Two placement traps recorded:
+- Hand-relative offsets put the muzzle **9.16 studs** from the hand, because this rig's hand CFrame carries an inherited
+  rotation. The rifle is body-relative instead.
+- The first capture (V290) framed the player's back, and the second (V291) was inside the shoulder armour — the weapon
+  only reads from a front-left ¾ view at ~6 studs.
+
+**What still looks wrong.**
+- The rifle is **thin and blocky**, roughly half the visual mass it should have, and near-black against a black deck; only
+  the cyan sight block catches the eye.
+- It does not **rotate with aim**, kick with recoil, or move for reload.
+- The muzzle flash still uses `hand + facing × 1.15` rather than the viewmodel's `Muzzle` part, so flash and barrel tip
+  are ~1.5 studs apart.
+
+**Orange plane — new negative results.** Present in this session's client view as well as the server's; survives
+`EnvironmentDiffuseScale = 0` **and** `EnvironmentSpecularScale = 0` (V293); no BasePart larger than 30 studs has an
+orange hue in either the server or client DataModel; raycasts at the orange screen point hit `HangarDeck` (opaque,
+58,64,72) and continue into `FloorPlate`/`Subfloor`, meaning whatever renders there is `CanQuery = false` — yet no
+`CanQuery = false` part over 30 studs exists near the deck in either model. That rules out every static part, every
+light, IBL, bloom, atmosphere decay and GUI already tested.
