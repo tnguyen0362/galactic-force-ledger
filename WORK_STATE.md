@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 421
+# WORK_STATE — last verified 2026-11-24, place version 422
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 421**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 65 populated, 758 UNKNOWN**.
-- Ledger state: PARTIAL 42 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 422**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 69 populated, 756 UNKNOWN**.
+- Ledger state: PARTIAL 44 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -182,6 +182,14 @@ Armour did not exist: no config, one hardcoded kit, and a profile field nothing 
 Prices corrected to the authored table (GF-02 r3/500, GF-03 r5/850, GF-04 r8/1200) and all six suits worn with correct chest-plate colours: STANDARD 222/222/214, RECON 176/190/172, SIEGE 206/190/158, VANGUARD 198/206/224, TROPHY 120/84/96, BLACKSTAR 48/52/62 — 12 kit parts each, no stacking. BLACKSTAR's rank 16 gate was temporarily lowered to 14 for the run and restored.
 
 **Harness limit found:** this client click tool cannot reach buttons inside a scrolled ScrollingFrame. Scrolling to an armour row made it visible (Y 87) but the synthetic click did nothing. Top-of-list loadout buttons were click-verified at build 418.
+
+
+## Verified at build 422 — caches are earned, held, then opened
+Awards used to roll instantly. Now `profile.caches[tier]` stacks unopened caches, the armory shows `Rare Cache · 1 held` with an `OPEN` button, and opening is an explicit action. Measured: mission completion → `GF_CacheHeld = "Rare:1"` with zero opens; `openCache Rare` → 2 augments, augments 34 → 36, held 0; second open refused `no Rare cache held`.
+
+Fixed an instrumentation split: the grant wrote `GF_CacheHeld` while the open wrote `GF_CachesHeld`, so a stale grant value looked like a failed decrement.
+
+**Still open:** the OPEN button was not clicked (below the scroll viewport); no inventory capacity check; no bulk open; no cache UID/timestamps.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
