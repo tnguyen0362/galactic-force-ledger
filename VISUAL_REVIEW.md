@@ -2768,3 +2768,29 @@ overlapping and nothing clipped.
 **What is still absolute.** The upper half (mission chips, description, difficulty, deploy, quick deploy) is still positioned by hand.
 Only the squad section flows. The next addition to the panel must go in a flow section or the panel needs the same treatment
 everywhere.
+
+## v356 — the whole war-table body is one flowing column now (V392 -> V393 -> V394)
+
+**What I set out to remove.** Six layout collisions in this panel this session, every one caused by rows being absolute pixel offsets
+with no flow. The squad section got a flow layout last continuation; this one converted the rest.
+
+**Three attempts, recorded honestly.**
+1. V392: everything moved into a `ScrollingFrame` with a `UIListLayout`, but `LayoutOrder` values were assigned ad hoc where each
+   widget was created. Because widgets are created in a different order than they should display, the column came out as
+   *PRIMARY OPERATION → dispatch listing → description → DIFFICULTY → visibility chips → difficulty buttons → deploy → quick →
+   request support → chips*. Functionally complete, visually scrambled.
+2. V393: added an "authoritative ordering pass" — but placed it right after `dispatchButton` was created, so three widgets declared
+   later still had their ad-hoc orders and the scramble persisted in a different shape.
+3. V394: removed that pass and re-added it as `task.defer(orderColumn)` at the **end** of panel construction, where every widget
+   exists. That fixed it.
+
+**Result.** V394 reads in the intended order with nothing overlapping and nothing clipped: title, planet, sector line, PRIMARY
+OPERATION chips, description, DIFFICULTY chips, `DEPLOY TO VEYRA-7`, `QUICK DEPLOY`, dispatch listing, `LISTING VISIBILITY` chips,
+`REQUEST SUPPORT`, controls hint.
+
+**Why this was worth doing before adding more content.** The panel had nine rows and no free band; each new feature was landing on an
+existing one. Now display order is declared in a single table and new rows append without geometry work.
+
+**What is still positional.** The title block (title, planet name, sector line, divider) and the controls hint remain absolute
+offsets — they sit above and below the flow area and do not collide. The armory panel has the same absolute-offset structure and has
+not been converted.
