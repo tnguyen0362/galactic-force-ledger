@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 416
+# WORK_STATE — last verified 2026-11-24, place version 417
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 416**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 58 populated, 765 UNKNOWN**.
-- Ledger state: PARTIAL 39 | VERIFIED 10 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 417**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 61 populated, 762 UNKNOWN**.
+- Ledger state: PARTIAL 41 | VERIFIED 11 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -154,6 +154,12 @@ Completing the primary now opens **no** cache (measured 0 opens). Boarding after
 - **Failed extraction skips the mission cache** — the gap left at build 415 is closed: `GF_MissionCacheResult = "skipped success=false objective=false"`, zero opens, `GF_CarriedLost=true`.
 
 **Still open:** Easy (800) and Hard (650) defence HP are code paths only; the difficulty refusal path was last verified at build 398 with a temporary gate.
+
+
+## Verified at build 417 — three saved loadouts
+`profile.savedLoadouts` was a dead field: nothing wrote it. Added `ArmoryService.saveLoadout/loadLoadout` (slots 1-3, reachable as `SetLoadout` actions). Measured: save slot 1 holding SMG03 → equip AR01 → load slot 1 restores **SMG03**; slot 2 stays independent; `loadout slot is empty` and `loadout slot must be 1-3` both refuse correctly.
+
+**Still open:** the Armory UI has no slot buttons, so this is remote-only. Persistence across a rejoin was not tested.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
