@@ -1407,3 +1407,23 @@ rejected with `LastReject = "no charges"`, which reads like a code failure until
 **What still looks wrong.** No frame has caught either ring yet: 0.9 s still outruns the capture round-trip. Frag has no
 crater, smoke or debris; EMP has no arcs or distortion; and both ground marks render through geometry because they are
 `CanQuery = false` neon discs.
+
+## v244 — grenades go where you aim them now
+
+Two separate defects, both measured:
+
+1. **The throw missed its own aim marker.** `dir * SPEED + 16 up` landed grenades 50–70 studs past the requested point
+   (aim z = −140 → detonation z = −211). Re-solving ballistics did not fix it either (z = −162), because the aim point is
+   a world position while the launch is affected by the thrower's own facing and the bomb's start offset. Replaced with a
+   deterministic two-stage tween arc: apex at the midpoint plus 18 % of the distance, landing at the aim point in 0.55 s.
+   Measured after the change: aim (3, 33, −136) → detonation (4.7, 29.9, −136.3).
+2. **The scorch never showed.** It was a 0.1-stud-thick `Cylinder` placed at `pos.y − 0.45`, which buries half of it in
+   bumpy terrain. Now raycast onto the surface, 0.5 thick, 0.45 alpha, 6 s fade.
+
+**Still unproven visually.** Even after both fixes the disc is present in the tree at the right coordinates
+(4.7, 29.9, −136.3) and no captured frame shows it. Next step is to print the mark's CFrame basis vectors rather than keep
+guessing at orientation — a `Cylinder`'s axis is its local X, and the `CFrame.Angles(0, 0, 90°)` that is supposed to lay
+it flat may be leaving it edge-on.
+
+**Confirmed by numbers this pass:** frag hit **1 hostile for 64 damage** at the aim point; a second frag on a group hit
+**2 for 108**; EMP **drained 8 shield and stunned 2**.
