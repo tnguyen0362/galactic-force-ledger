@@ -2481,3 +2481,26 @@ request from the same host is refused (no overwrite, count stays 1). V372 shows 
 - the per-host dedupe means my own test cannot produce two entries at all, which is why the measured count is still 1.
 
 Those three are recorded as the row's next actions rather than claimed.
+
+## v330 — responders arrive by pod, and the squad is capped at four (V375)
+
+**What changed.** `DispatchService.respond` used to teleport a joiner to the landing zone with nothing to see. It now spawns a
+`ResponderPod` (5×7×5 shell, two fins, a neon ground band) that marks the touchdown and clears after 4 s, and the player steps out
+**beside** it — the first version put them inside the shell, which put the camera inside the box and rendered as a black wall.
+
+**Measured through the live remote:**
+
+```
+[GF] dispatch join ROBLOXISUS101 seatsLeft=2
+GF_DispatchJoiners = 1
+GF_LastPod = ROBLOXISUS101@0,33,118
+ResponderPod present = true      (framed in V375)
+```
+
+**Roster cap.** Because beacons are independent (up to 6, 3 seats each), two listed squads could in principle push the mission
+roster past four. `respond` now counts mission players and existing responders and refuses with `squad full` at `MAX_SQUAD = 4`.
+
+**What is honestly missing.**
+1. The pod is a **blockout**: a solid box with fins and a glow disc, not a vehicle with a ramp or thrusters.
+2. Nobody has been *seen* arriving — Studio hosts one client, so the pod is only ever shot after the fact, never mid-descent.
+3. The 4-player cap is **code-verified, not exercised**: a single client cannot exceed it, and no test has attempted a fifth joiner.
