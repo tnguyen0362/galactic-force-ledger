@@ -554,6 +554,28 @@ AR-01 through the real fire path: **18** at 12 studs, **10.674** at 226 (predict
 
 **Still untested:** shotgun pellets, launcher radial falloff, beyond-max-range rejection, the 2x head multiplier in practice, and the other five ballistic weapons.
 
+
+## PAUSED by owner for a PC restart — 2026-11-24T23:05Z (place 461)
+`.goal/PAUSE` written. No code edits are in flight; playtest stopped and the place saved.
+
+### Found this batch, not yet recorded in the ledger
+**Many "misses" were unqueryable parts.** Enemy models contain two `Head` parts — one `CanQuery = true`, one `false` — and the `Root` (the model's PrimaryPart) is `CanQuery = false`. Aiming at `PrimaryPart` sends the ray straight through the enemy. Aim at `Torso`, `ChestPlate` or the queryable `Head` instead.
+
+**Weak multiplier is name-based, not geometric.** `weakMultiplier` returns **2 for the part literally named `Head`**, and **1 for `Visor`, `Torso` and everything else**. A shot at the head silhouette usually lands on `Visor` (in front of the head), which is a 1× hit — measured 17.58 at 98 studs, exactly the torso value.
+
+### Measured before the pause
+| Shot | Distance | `LastDamage` | Predicted |
+|---|---|---|---|
+| Torso | 99 | **17.532** | 17.51 |
+| Visor (aimed at Head height) | 98 | **17.582** | 17.5-ish |
+| Head-part ray, from 56 studs above/behind | — | not fired yet | — |
+
+The last line is where I stopped: the raycast from above **does** reach the named `Head` part at 56 studs (`firstHit = …Rifleman.Head`), but the shot was never fired.
+
+### Next action when resumed
+1. Fire from that above-the-head position and confirm `LastDamage ≈ 36` (18 × 2 with falloff 1 inside 90 studs). That closes the 2× weak-point claim for `S04-WPN-AR01` / `S04-022`.
+2. Then test beyond-max-range rejection (fire at 400+ studs in the aerial lane) and SG-04 pellet behaviour.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
