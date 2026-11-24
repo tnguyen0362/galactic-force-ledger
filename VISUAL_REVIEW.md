@@ -2271,3 +2271,23 @@ exists precisely because it answered the same question at the landing zone in on
 **Other visible defects in this frame:** the terminal structure is still an untextured grey slab with hard edges and the terrain
 under it reads as flat sand; the `SALVAGE` panel and the ability buttons are drawn at slightly different widths, which shows as a
 ragged bottom row.
+
+## v318 — the terminal-area damage is just patrols, and it is survivable only if you fight
+
+**Measured with `GF_DebugDamage` on, standing at the objective terminal for 7 s:**
+
+```
+22 damage events, health 100 → 6
+Marksman 22 · Rifleman 8 · Scout 6 (repeating)
+```
+
+So the `DOWNED`/`SHIELD 0` seen at the terminal in V361–V363 is **ordinary enemy fire from the patrol around the objective**, not a
+hazard and not the landing-zone bug returning. Nothing to fix in the damage path.
+
+**What this does say about the encounter.** Four hostiles (a Marksman at 22 per shot plus riflemen and scouts) put out 22 hits in
+seven seconds against a stationary target — a player who stops to hold the black box for 0.6 s survives, but one who stands still
+for ten seconds dies. That is a balance question rather than a defect, and it is now recorded with numbers instead of an
+impression.
+
+**Method note that keeps paying:** the `GF_DebugDamage` switch answered this in a single run, the same way it named the bosses at the
+landing zone. Any future "why is the player losing health here" question should start with it rather than with theory.
