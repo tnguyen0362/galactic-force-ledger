@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 426
+# WORK_STATE — last verified 2026-11-24, place version 427
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 426**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 72 populated, 754 UNKNOWN**.
-- Ledger state: PARTIAL 46 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 427**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 76 populated, 751 UNKNOWN**.
+- Ledger state: PARTIAL 49 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -214,6 +214,19 @@ Now `equipAbility`/`equipGrenade` write the loadout and publish `GF_Ability1/2` 
 - **Four alternatives rendered at the same coordinates** in the Ability row — invisible stacked buttons, only the last clickable. Replaced with one cycling alternative per row; clicking `Ability1.UseAbility` moved the slot to DomeShield (`GF_Ability1=DomeShield`).
 
 **Still open:** OrbitalLance/ReflectiveBarrier cost 0 in config (free unlocks); grenade rows not clicked; rank gate for the rank-10 abilities untested.
+
+
+## Verified at build 427 — grenades do different things
+| Throw | Measured |
+|---|---|
+| EMP at a shielded Heavy | 100 shield drained, 1 hostile stunned, no health damage |
+| Frag at the same Heavy | 57 damage to 1 target, landing on shields first (HP unchanged) |
+
+The spec's "Frag kills, EMP opens" distinction is real and now measured in play.
+
+**Layout bug fixed:** grenade rows rendered at **y = 1313** because their `LayoutOrder` was `6 + order` and `order` had already climbed past 300 — present in the list, completely unreachable. Now sorts at 7–8; clicking `GrenadeFrag.Equip` after an 80 px scroll set `GF_GrenadeEquipped = "Frag"`.
+
+**Still open:** Frag max-3 charges, EMP rank-4/550-credit unlock, fuse timing, throw preview — none verified.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
