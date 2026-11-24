@@ -2,8 +2,8 @@
 
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 440**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 83 populated, 745 UNKNOWN**.
-- Ledger state: PARTIAL 55 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 86 populated, 742 UNKNOWN**.
+- Ledger state: PARTIAL 58 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -315,6 +315,20 @@ Failed-run debrief now reads: `base 0`, `Primary objective: INCOMPLETE`, `Extrac
 `MissionHUD` shows a rank-up label when `rankUps > 0`, growing 14→22 px and fading after 2.6 s. First attempt printed **`RANK UP 11 → 15 (x2)`** because the formatter subtracted the delta twice; fixed to **`RANK UP 13 → 15 (x2)`**. The salvage-bonus line from build 439 also rendered (`+0 scrap +0 cells +0 tech` on a solo run).
 
 **Not observed:** the tween/hold/fade itself, and a real earned rank-up (forced via `GF_ForceRankUps`).
+
+
+## Audited at build 440 — archetype combat behaviour
+Deployed, put the player at the centroid of 3 Rifleman + 3 Marksman + 2 Scout, watched `EnemyFired` and model movement for 12 s.
+
+| Archetype | Shots / 12 s at ~40 studs | Furthest move |
+|---|---|---|
+| Rifleman | 5 | 56 |
+| Marksman | 8 | 59 |
+| Scout | **0** | 45 |
+
+Then 6 studs from a Scout: **13 shots in 8 s**. So the Scout was never broken — its authored range is 46 studs and it spent the first window closing. Had I recorded Result 1 alone, "Scout never fires" would have been a false defect.
+
+**Not verified:** any authored statistic in `S06-023`–`S06-027` (HP, shields, damage, accuracy, armour); no cover/peek/flank/investigate state was observed.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
