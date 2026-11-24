@@ -2983,3 +2983,26 @@ instead of the relay.
 `function ObjectiveService.getRelay()function ObjectiveService.getRelay()` and took the whole objective module offline
 (`Expected 'end' ... got <eof>`). This is now two occurrences; the pattern — appending a block whose last line repeats the anchor — is
 the bug, not the specific file.
+
+## v373 — why every capture showed the station, and the 57-second hold in V408
+
+**The capture problem, solved.** Six continuations in a row produced frames of the station interior while the HUD insisted a mission was
+running. The camera read `-8, 769, 36` — station roof level — while the beacon sat at `0, 34, -120`. **The player was dying at the
+objective and respawning at the station while the mission continued server-side.** Nothing was wrong with the camera override at all; I
+was photographing a respawned corpse's location. `GF_DeployGraceUntil = os.clock() + 600` (a documented lever) gives a steady subject,
+and the very next capture landed on the beacon (V408).
+
+**What V408 shows.** `PRIMARY OBJECTIVE COMPLETE / Holding beacon: 57 s`, the `E Activate Beacon` prompt, three hostiles closing in from
+the west and east — the defend objective holding under fire, which is the first frame of its kind in this project.
+
+**Measured on that run.** `GF_ConsoleMitigated = 4` — the 50% mitigation fired four times during the activate hold — with the
+`ConsoleScreen` part present at `0, 35, -130, transparency 0.35`. So the mitigation is not confined to the 2.5 s sabotage hold; it
+applies to the long defend hold too.
+
+**Two honest limitations.** `GF_ForceConsoleScreen` was left **on** for the capture, which also forces the panel visible after the hold
+ends — so these runs cannot tell whether the screen correctly hides itself when nobody is holding. And the panel is not obviously
+legible in V408: the beacon's own pale structure occupies the same frame area, so the ForceField is hard to pick out against it.
+
+**Terrain finding that will not go away.** The compound ground is white with pale rocks and reads as snow under a clear blue sky, on a
+planet that is supposed to be a nebula-veiled Veyra-7 outpost. The sky, the ground and the two-tone grey structure are three unrelated
+palettes in the same frame.

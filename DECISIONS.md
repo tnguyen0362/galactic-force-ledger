@@ -82,3 +82,12 @@ nothing. Any switch the server reads must be set in the Server datamodel.
 50% mitigation and a visible `ForceField` panel (`ConsoleScreen`) exist only between hold start and hold end, so standing next to the
 console gains nothing. Measured `GF_ConsoleMitigated = 2` during one contested hold with three hostiles acquired; the player finished at
 38 health instead of 11.
+
+## A mission frame that shows the station means the player died, not that the camera is broken (v373)
+
+Six continuations of "the capture keeps returning the station" were chased as a camera-override bug. The camera read `-8, 769, 36` —
+station roof height — while the objective was at `0, 34, -120`. The player **died at the objective and respawned at the station** while the
+mission kept running server-side, so the capture was accurate.
+
+Rule: before blaming the camera, print `CurrentCamera.CFrame.Position` **and** the objective's position and compare them with the station
+deck height (~800). For steady frames, set `GF_DeployGraceUntil` to a far future time server-side so the subject survives the shot.
