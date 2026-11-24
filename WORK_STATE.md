@@ -392,6 +392,20 @@ Added `relayCallUsed` with both a start guard and a completion guard, reset from
 
 **Process note:** fifth time a running counter or last-value attribute gave an ambiguous reading. Counters must be reset where their mission peers are.
 
+
+## Verified at build 449 — burst cadence and Heavy recovery timed
+Inter-arrival times from `EnemyFired` over 18 s:
+
+| Archetype | Gaps (s) | Reading |
+|---|---|---|
+| Rifleman | 0.17, 1.10, 0.20, 0.18, 0.17 | 3-shot bursts at ~0.18 s (authored 8x3/0.18) |
+| Officer | 1.55-2.03 (x6), 5.27 | 2-shot volleys 2 s apart (authored 12x2/2 s) |
+| Heavy | **6.10, 6.05** | cooldown 2.6 + recovery 4.0 = 6.6, observed ~6.1 |
+
+So the Heavy's 4 s recovery is no longer just config, and the burst loop is confirmed at the authored interval rather than merely "more than one hit".
+
+**Two harness facts learned:** moving the character from the **Client** datamodel does not replicate (the server still saw the player at the station — that is why fire looked dead), and `GF_EnemiesEngaged` reads **0 during active fire**, so it is not a usable "is anyone attacking" signal.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
