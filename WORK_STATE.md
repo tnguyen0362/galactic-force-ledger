@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 438
+# WORK_STATE — last verified 2026-11-24, place version 439
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 438**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 439**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 83 populated, 745 UNKNOWN**.
 - Ledger state: PARTIAL 55 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -301,6 +301,14 @@ Measured: deploy → `Sabotage Relay on Normal. Get in, finish the job, get out.
 The debrief now renders base vs bonus for credits and XP, primary COMPLETE/INCOMPLETE, extraction SUCCESSFUL/FAILED and "Carried salvage secured/lost", measured after a real solo extraction.
 
 **Still open:** the bonus has never paid out live (one client only); salvage is not multiplied; no rank-up animation; the lost-salvage branch has not rendered.
+
+
+## Verified at build 439 — salvage bonus, and a payload bug of mine
+**My own defect:** at build 438 the split fields went into the **late-join branch** payload, because `objectiveComplete = objectiveComplete,` exists twice and my text anchor hit the wrong one. The client therefore never received base/bonus/`carriedLost` — which is why a failed run still said "Carried salvage secured". Rewrote the real payload block by line range.
+
+Salvage bonus implemented (+25% per resource, floored): measured 40/40/40 → **50/50/50** with 10 each at four players, unchanged at one. Credits 450 → 562 and XP 600 → 750 already measured at 438.
+
+Failed-run debrief now reads: `base 0`, `Primary objective: INCOMPLETE`, `Extraction: FAILED`, **`Carried salvage LOST`**. Both settlement outcomes are observed in a real run; only the rank-up animation remains from `S09-041`.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
