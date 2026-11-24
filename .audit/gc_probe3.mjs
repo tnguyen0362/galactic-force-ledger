@@ -1,0 +1,11 @@
+const mod = await import("file:///C:/Users/tnguy/.pi/agent/extensions/context-gc.ts");
+let handler; mod.default({ on: (_n, fn) => { handler = fn; } });
+const tool = (id, text) => ({ role: "toolResult", toolName: "bash", toolCallId: id, content: [{ type: "text", text }] });
+const messages = [tool("a", "A".repeat(3000)), ...Array.from({ length: 8 }, (_, i) => tool("r" + i, "r"))];
+let compacts = 0;
+const ctxHigh = { getContextUsage: () => ({ tokens: 800000 }), compact: () => { compacts += 1; } };
+const ctxLow = { getContextUsage: () => ({ tokens: 200000 }), compact: () => { compacts += 1; } };
+for (let i = 0; i < 4; i += 1) await handler({ messages }, ctxHigh);
+const afterHigh = compacts;
+for (let i = 0; i < 3; i += 1) await handler({ messages }, ctxLow);
+console.log(JSON.stringify({ compactsAfter4High: afterHigh, compactsAfterLow: compacts }));
