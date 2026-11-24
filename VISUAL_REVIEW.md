@@ -1897,3 +1897,27 @@ and a crew rig visible on the right.
 **Process note, because it cost two continuations:** my earlier part searches required *orange colour AND large volume*, which
 excluded a 19-stud sphere entirely, and my later query required *flat and wide*, which excluded a sphere too. A nearest-things
 probe would have found it the first time.
+
+## v296 — the boss blueprint pity was 5 clears, not 3, and now it is provably 3
+
+**No frame.** This row is a progression rule with no interface: the boss debrief does not mention blueprints at all, which is
+recorded below as the actual defect that remains.
+
+**What was wrong.** `BOSS_PITY` was **5**. The spec requires the blueprint to be guaranteed on the **third qualifying clear**, so
+a player could beat the major boss four times and still hold no permanent unlock — and nothing in the game said so.
+
+**Measured, with the random chance switched off** (`GF_ForceNoBlueprintChance`) so only pity can grant:
+
+| clear | kills | pity | blueprint | granted |
+|---|---|---|---|---|
+| 1 | 1 | 1 | false | false |
+| 2 | 2 | 2 | false | false |
+| 3 | 3 | 0 | **true** | **true** |
+| 4 | 4 | 1 | true | false |
+
+`GF_LastBossReward` recorded `VEYR:kills=3:pity=0:bp=true`. Clear 4 does not re-grant, so the unlock is permanent and not
+duplicated.
+
+**What still looks wrong.** The player is told nothing: no blueprint announcement, no item name, no pity countdown, no indication
+of what the unlock enables. A rule that is correct and invisible does not satisfy the player-facing half of the requirement, so
+both rows stay pending owner review rather than being called done.
