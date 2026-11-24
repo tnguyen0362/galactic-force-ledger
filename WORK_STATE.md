@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 436
+# WORK_STATE — last verified 2026-11-24, place version 437
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 436**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 437**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 81 populated, 748 UNKNOWN**.
 - Ledger state: PARTIAL 52 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -282,6 +282,12 @@ Measured: deploy → `Sabotage Relay on Normal. Get in, finish the job, get out.
 
 **Known wart:** `DialogueService.start()` is never called (dead intro line and a stale `hook.onStage` check) — delete or wire it.
 **`S03-037` still missing:** nearby-enemy blips with the observed/audible fade.
+
+
+## PAUSED by owner — 2026-11-24T21:20Z
+`.goal/PAUSE` written; goal loop will not continue until it is removed.
+
+**In flight, unverified:** minimap hostile blips (`StarterPlayerScripts.Minimap`). Design is "observed or audible only, never a wallhack" — a client-side raycast from the player's head plus `EnemyFired` as the audible channel, three-second linger with a transparency fade. The code compiles and the place is saved at **version 437**, but no frame or count has been read yet, so it is **not** claimed to work. Next step is to deploy an elimination mission, stand with line of sight and read `GF_MinimapHostiles`, then break line of sight and confirm the blips fade to zero.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
