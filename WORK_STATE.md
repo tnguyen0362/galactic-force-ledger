@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 442
+# WORK_STATE — last verified 2026-11-24, place version 443
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 442**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 443**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
 - Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -349,6 +349,18 @@ Measured: Scout spawns at 210/60 and dealt **10 separate `amount=6.0 source=Scou
 **Commander aura**: allies within 45 studs of a live Officer attack at 0.9× cooldown (10% faster) — measured `AuraRate = 0.9` on Marksman/Heavy/Scout/Rifleman — and return to **1** the moment the Officer dies, which satisfies "death clears aura" without any bookkeeping.
 
 **Still open:** Heavy charged-blast telegraph and 4 s recovery; Officer relay call; the cadence difference (1.6 s → 1.44 s) was not timed shot-to-shot.
+
+
+## BLOCKED at build 443 — enemy damage stopped firing
+Added Heavy `chargeTime = 1.4, recovery = 4.0` and wired `windUp` through `EnemyService`. Config verified (Heavy 620/180, armour 0.75, charge 1.4, recovery 4.0).
+
+**But no enemy dealt damage in either run**: `GF_EnemiesTracked = 10`, `GF_EnemiesEngaged` was **0** with the player anchored 12 studs away and **6** after repositioning unanchored — and damage events were **0** in both. `ChargingUntil` and `GF_LastCharge` never set.
+
+Two builds ago the same mission produced 32-damage Heavy blasts and 6-damage Scout bursts, so this is either a **regression from this batch's three edits to the attack path** or a positional artefact. Not separated.
+
+**Next action:** instrument the delayed attack callback — write `GF_LastAttackAttempt` at entry, after the LOS test, and after `applyDamage` — then read all three in one run. Do not touch anything else until that reads true.
+
+**Repeat mistake:** the `ChargingUntil` writes first landed in a *different* function that shares the same telegraph code (line ~326 vs ~412). Same "anchor exists twice" failure as the build-438 payload edit.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
