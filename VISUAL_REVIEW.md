@@ -1759,3 +1759,23 @@ planet, a crew rig, the war table panel, and the subtitle *"Task Force Bastion h
 **What looks wrong.** The console is a bare pedestal with a neon screen at a hard-coded world position, not an Archive room. A
 replay is byte-identical to the opening run — no record framing, no date, no "archive playback" treatment — so it reads as the
 game starting over rather than a record being consulted.
+
+## v284 — skipping the intro starts First Spear, which never started before (V342)
+
+**Scene / camera.** Station spawn, third-person, immediately after the opening cinematic is skipped.
+
+**What the frame shows.** `OPERATION FIRST SPEAR 1/5`, instruction `Move to the marked deck plate`, input hint `WASD / left stick`,
+and the marked deck plate visible under the player with the war table and signage behind.
+
+**The functional hole.** `workspace.GF_TutorialStart` had **no writer anywhere in the project** — the only code touching it was
+`TutorialService` reading it. First Spear therefore never began in ordinary play; it only ran in earlier sessions because I set
+the attribute by hand. The cinematic completion point now hands off to `TutorialService.begin`, and the profile load offers the
+tutorial to anyone who watched the intro but never finished it. That is literally the requirement: a skip must not erase the
+tutorial.
+
+**Measured.** Fresh state via the new `resetForTest` hook (`introSeen=false, tutorialActive=false`), then the skip signal:
+`introSeen=true, Tutorial_Active=true, Tutorial_Step=1, Tutorial_Id=move, Tutorial_Text="Move to the marked deck plate"`.
+
+**What looks wrong.** The tutorial card sits on top of the `WAR TABLE` signage. The step-1 plate spawns directly under the
+player's feet, so "move to the marked plate" is already satisfied on the first frame — the objective reads as done before the
+player moves. There is no transition at all between the cinematic ending and the card appearing.
