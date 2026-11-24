@@ -1873,3 +1873,27 @@ slotted1=ExtendedMagazine`.
    not going to pretend otherwise.
 2. Socket buttons cycle through owned augments on click. There is no picker, no effect description, and no way to clear a socket.
 3. Acquiring an augment still has no in-game path; only the gated Studio hook grants one.
+
+## v295 — the orange wash was orphaned boss VFX, and it is gone (V348)
+
+**Root cause.** Not lighting, not a light, not a part colour, not post-processing, not a GUI. I checked each of those in this
+order and all of them were clean: the runtime Lighting preset was exactly the documented station preset (clock 12, brightness
+0.35, cool ambient, exposure −0.15), the 43 station lights were the tamed cool fixtures at ≤0.8, every deck part was grey
+`Metal`, post effects were neutral (tint 250,248,255, bloom 0.15), and no GUI had an orange or large opaque frame.
+
+The query that found it was a **nearest-parts** probe rather than a colour filter: the three largest things within 30 studs of the
+camera, behind the deck, were `BossBlast` — 19×19×19, `Neon`, colour `255,132,64`, transparency 0.85. Three translucent orange
+spheres enclosing the station spawn is exactly what a solid orange field looks like.
+
+`BastionWalker.explode()` cleaned up inside the coroutine that also animated the blast. When the boss is torn down mid-animation
+(mission end, reset, module teardown) that coroutine dies and the parts survive **forever**.
+
+**Fix.** Each blast carries `GFVfxBorn` and an independent 0.9 s destroy deadline, and `Bastion.cullVfx()` sweeps any
+`BossBlast`/`BossBeam` older than 1.2 s every 2 s, counting what it removed in `GF_BossVfxCulled`.
+
+**Verified.** `blastsInStation=0` and no errors after boot; V348 is the same camera and panel as V347 with the deck back to grey
+and a crew rig visible on the right.
+
+**Process note, because it cost two continuations:** my earlier part searches required *orange colour AND large volume*, which
+excluded a 19-stud sphere entirely, and my later query required *flat and wide*, which excluded a sphere too. A nearest-things
+probe would have found it the first time.
