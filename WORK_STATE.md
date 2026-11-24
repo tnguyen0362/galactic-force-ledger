@@ -524,6 +524,16 @@ Measured: at 12 studs `LastDamage = 18` (16.2 after the 0.9 armour factor). At *
 
 **Still unmeasured:** falloff *behaviour* at 60/240/300 studs, any shot past the floor, and every reload.
 
+
+## Verified at build 460 — falloffEnd was dead config; reload works
+**The 30.32 is explained.** `weakMultiplier("Head")` is 2.0 and torso 1.0, so 30.32 / (18 x 2) = 0.842 falloff at 199 studs. Neither the new window (0.673) nor the old one matched — because `CombatService.fire` computed `span = weapon.range - falloffStart`, i.e. **400 - 90 = 310**, not the authored `240 - 90 = 150`. Recomputed with the real span: **0.8418**. Three decimals of agreement.
+
+So `falloffEnd` was never read: every weapon's curve was silently stretched to `range`, ~2.5x wider than authored, and aligning `falloffEnd` at build 459 changed nothing. Fixed to use `falloffEnd` with a `range` fallback.
+
+**Reload verified:** ammo `27 -> 26 -> 25 -> 28`, one AmmoUpdated at completion, elapsed 1.88 s against 2.1 s configured (class/augment factor, not decomposed).
+
+**Not verified:** the corrected curve at range — two 200-stud shots missed because origin/aim drift between the positioning call and the client fire. Build an open lane before claiming falloff.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
