@@ -18,18 +18,27 @@ starts populating those rows from evidence already on disk.
 Ledger moved 732 -> **718 UNKNOWN**, 68 -> 78 PARTIAL, 14 -> 17 VERIFIED. Script: `.audit/audit_batch_combat.py`
 (idempotent, and it asserts every targeted row exists before writing).
 
-**Two spec conflicts found, both need an owner decision — not an agent edit:**
+**CORRECTION — one recorded "spec conflict" was my error and is withdrawn.**
 
-1. **ER-16 vs SMG-03.** GOAL.md L21 names `AR-01, SG-04, MR-07, LMG-12, ER-16` as the five primaries. ER-16 was removed at
-   build 402 and SMG-03 substituted (evidence/v402-weapons). The authored arsenal list at GOAL.md L393-397 names neither
-   SMG-03 nor a fifth beyond LMG-12. Two sections of the spec disagree; the implementation currently satisfies S04-034's
-   count (5 standard + 2 requisition + 1 secondary) either way.
-2. **Weakpoint multiplier.** The spec requires head/marked weakpoint **x1.5**. The note in v461 records the function reading
-   **x2**. Neither value was fired, so which is live is unconfirmed. Recorded on `S04-014`, not changed.
+**Which document is the specification.** `.goal/GOAL.md` (304 KB, 1476 lines) is **superseded**; a
+`.goal/GOAL.md.superseded-25line-summary` file marks it so. The authoritative specification is
+`.goal/GOAL_2026-11-24.md` (98 KB, 279 lines), **byte-identical** to the owner's `Downloads/GOAL (1).md`
+(sha256 `1a1d440d4d60ad109dbf2de9967778dd24847a6533ff4b41db472572b4f66a9d`). Batch 1 below was audited against
+the superseded document by mistake. Audit against `GOAL_2026-11-24.md` only.
 
-**Defects promoted out of prose into the ledger** (each was already known, none were tracked): aimed spread missing from the
-weapon data table (`S04-036`); launchers are hitscan-with-blast so projectiles never travel or fuse (`S04-047`, `S04-048`);
-reserve subtraction on reload unmeasured (`S04-025`); empty-auto-reload and swap-cancel unmeasured (`S04-026`).
+1. **ER-16 vs SMG-03 — WITHDRAWN, not a conflict.** `GOAL_2026-11-24.md` L54 lists **SMG-03 Jackal** in the weapon
+table; ER-16 appears **nowhere** in the authoritative document. The implementation was right and my "conflict" was an
+artifact of reading `GOAL.md`. `S04-034` corrects this in the ledger.
+2. **Stale pointer that caused the error — still open.** The goal text itself says *"use GOAL.md as the authoritative
+specification"*. Every batch that follows that instruction audits against a superseded 1476-line document. This needs
+an owner edit to the goal string; it is not something an agent should silently rewrite.
+3. **Weakpoint multiplier — still open.** `GOAL_2026-11-24.md` L47 requires head/marked weakpoint **x1.5**. The note in
+v461 records the function reading **x2**. Neither value was fired, so which is live is unconfirmed. On `S04-014`.
+
+**Defects promoted out of prose into the ledger** (all were known, none were tracked): aimed spread missing from the
+weapon data table (`S04-036`); GL-22 blast radius 9 vs spec 13 and RL-09 12 vs spec 10, and both launchers are
+hitscan-with-blast so there is no projectile speed, gravity or fuse (`S04-047`, `S04-048`); reserve subtraction on
+reload unmeasured (`S04-025`); empty-auto-reload and swap-cancel unmeasured (`S04-026`).
 
 **Batch 2: Caches / Augments — 7 rows.**
 
