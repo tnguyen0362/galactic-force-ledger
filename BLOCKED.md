@@ -36,3 +36,22 @@ source through the file system. Nothing in this file should be counted as a plac
 
 **To unblock:** open `Playtest1` in Roblox Studio (Team Create), then call `list_roblox_studios` to get the new id and
 replace the hard-coded id in the loop's habits. Last saved place version before the disconnect: **232**.
+
+## Ability casts from the client VM produced nothing at all (v260) — unresolved
+
+Three separate attempts this session fired `ReplicatedStorage.GF.Remotes.UseAbility:FireServer({ abilityId = "Airstrike", ... })`
+from the client VM. Each produced **zero** effect: `craft=0, blasts=0, recorded=nil`, no error in the log, and — after I added
+rejection telemetry — **no `LastCastRejected` attribute either**, even though `workspace.GFDebug` exists and had zero attributes.
+
+The same module ran correctly in the previous session (`craft=1, blasts=5, flashes=5`), so the pipeline is real; what is not
+established is why the handler appears not to run in this play session.
+
+Reproduced facts:
+- `workspace.GFDebug` exists, attribute list is empty.
+- `require(Services.State).get(player)` returns **nil** on the server, while `ProfileService.ensure(player)` returns a profile.
+  So even a connected handler would take the "profile not ready" branch and reject.
+- Log after boot contains no `[GF]` errors, only the usual Assistant-plugin version notice.
+
+**This matters for players:** if `State.get` is nil when an ability key is pressed, the key does nothing and the HUD shows
+nothing. That is the same class of defect as the camera and the silent boot faults already fixed; the rejection telemetry
+added in v260 is the first half of the fix (the HUD does not yet render it).

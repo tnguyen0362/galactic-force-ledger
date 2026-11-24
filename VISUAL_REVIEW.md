@@ -1555,3 +1555,17 @@ branches. The first version also faded in 1.2 s, which is shorter than a tool ro
 left standing.
 
 **Still open.** No frame yet shows either the aircraft or a blast; both attempts were outrun by capture latency.
+
+## v260 — the airstrike still refuses to be photographed, and a worse problem underneath
+
+The orb faded one-way from 0.35, which is gone within about a second; it now holds a solid core for 1.6 s and then fades. That
+is a real visual fix, but it is not the reason the effect kept missing frames.
+
+Trying to prove it, three client casts produced `craft=0 blasts=0 recorded=nil` — no error, no effect. I added rejection
+telemetry (`profile not ready` / `downed` / `cooling down`, published to `GFDebug` and back to the client) and the next cast
+still wrote **nothing**, while `workspace.GFDebug` exists with an empty attribute list. On the server
+`State.get(player)` returns **nil** even though `ProfileService.ensure(player)` returns a profile.
+
+So the honest statement is: the airstrike pipeline was measured working last session (5 blasts, 5 flashes), and in this session
+the cast path did not run at all and could not be distinguished from a dead keybind — which is exactly the player-facing defect
+worth fixing next, recorded in BLOCKED.md rather than papered over.
