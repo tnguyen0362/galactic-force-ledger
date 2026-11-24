@@ -1569,3 +1569,24 @@ still wrote **nothing**, while `workspace.GFDebug` exists with an empty attribut
 So the honest statement is: the airstrike pipeline was measured working last session (5 blasts, 5 flashes), and in this session
 the cast path did not run at all and could not be distinguished from a dead keybind — which is exactly the player-facing defect
 worth fixing next, recorded in BLOCKED.md rather than papered over.
+
+## v262 — the airstrike finally lands in a frame (V321), and the cast path is explained
+
+The blast is in frame: an orange burst at the strike point with the ground lit under it, with `craft=1, blasts=5, recorded=5`
+measured in the same run.
+
+**I was wrong about the cause of the empty casts, and it matters.** I had blamed "profile not ready". The actual blocker is
+`cast`'s early exit: `offset.Magnitude > ability.range` returns **silently**. Every failed attempt in the last two continuations
+cast at mission coordinates while the character was still standing on the station deck, hundreds of studs away — so the strike
+was refused for range, and the refusal was invisible. The ability was never broken; the reporting was.
+
+Changes that follow from that:
+1. Range refusals now publish `out of range` to `GFDebug` and back to the client, alongside `profile not ready`, `downed` and
+   `cooling down`.
+2. `cast` self-heals missing state via `State.ensure` rather than refusing.
+3. `AbilityService.cast` is exported, so the server (AI squad, scripted encounters) and the verification harness can cast
+   without depending on the remote path.
+
+**Still wrong visually.** The blast reads as a flat orange smear, not a volume: a 7-stud ball expanded to 16 at 0.05 alpha, mostly
+occluded by bombs at this camera angle. There is no smoke, no debris and no crater, and the aircraft flies at 62 studs altitude,
+above this frame — it has never been photographed.
