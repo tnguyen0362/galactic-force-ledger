@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 437
+# WORK_STATE — last verified 2026-11-24, place version 438
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 437**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 81 populated, 748 UNKNOWN**.
-- Ledger state: PARTIAL 52 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 438**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 83 populated, 745 UNKNOWN**.
+- Ledger state: PARTIAL 55 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -293,6 +293,14 @@ Measured: deploy → `Sabotage Relay on Normal. Get in, finish the job, get out.
 `.goal/PAUSE` written; goal loop will not continue until it is removed.
 
 **In flight, unverified:** minimap hostile blips (`StarterPlayerScripts.Minimap`). Design is "observed or audible only, never a wallhack" — a client-side raycast from the player's head plus `EnemyFired` as the audible channel, three-second linger with a transparency fade. The code compiles and the place is saved at **version 437**, but no frame or count has been read yet, so it is **not** claimed to work. Next step is to deploy an elimination mission, stand with line of sight and read `GF_MinimapHostiles`, then break line of sight and confirm the blips fade to zero.
+
+
+## Verified at build 438 — debrief breakdown and the full-squad bonus
+`RewardsService` had **no** full-squad bonus; now `compute(difficulty, success, objective, squadSize)` returns base/bonus splits. Measured arithmetic: solo 450 credits / 600 XP with 0 bonus; four players 450+112 / 600+150 (562 / 750, floored).
+
+The debrief now renders base vs bonus for credits and XP, primary COMPLETE/INCOMPLETE, extraction SUCCESSFUL/FAILED and "Carried salvage secured/lost", measured after a real solo extraction.
+
+**Still open:** the bonus has never paid out live (one client only); salvage is not multiplied; no rank-up animation; the lost-salvage branch has not rendered.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
