@@ -2417,3 +2417,26 @@ not been tested.
 **Pattern worth naming:** this is the third failure this session caused by my own edit silently removing or breaking a line
 (deleted `show`, missing `end` in `VitalsService`, stray comment continuation in `StationUI`). Every one was invisible on the server
 side; each was only found by reading the **client** log. That check is not optional after any `Source` edit.
+
+## v326 — Priority Dispatch was advertising every solo launch (V367)
+
+**The defect.** `DispatchService.start` opened a beacon on **every** `RequestDeploy`, so a quiet solo launch silently became a
+3-seat public mission in `GF_Dispatch`. That is a fabricated listing in exactly the sense the requirement forbids — not because the
+data was invented, but because nobody asked for it.
+
+**Fix.** Only a payload with `dispatch = true` opens a beacon, and the war table now has an explicit `REQUEST SUPPORT` action
+(amber, under the deploy button) that sends one. The panel grew from 404 to 452 px so the new row sits inside its border instead of
+overflowing, with the controls hint moved down accordingly.
+
+**Measured three ways:**
+
+```
+before any request        GF_Dispatch = "none"
+after a solo deploy       GF_Dispatch = "none"          <- was PD-<id> before the fix
+after REQUEST SUPPORT     GF_Dispatch = "PD-75251|Normal|seats=3|age=0|host=ROBLOXISUS101"
+```
+
+V367 shows the panel with `DEPLOY TO VEYRA-7` focused and `REQUEST SUPPORT` beneath it.
+
+**What is still missing.** There is no browse screen: a responder learns about a request through `GF_Dispatch` and a mission event,
+not through a list they can read and pick from. The listing is honest now but not yet usable without the attribute.
