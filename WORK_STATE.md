@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 397
+# WORK_STATE — last verified 2026-11-24, place version 398
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 397**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 31 populated, 788 UNKNOWN**.
-- Ledger state: PARTIAL 25 | IMPLEMENTED_UNVERIFIED 1 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 398**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 36 populated, 785 UNKNOWN**.
+- Ledger state: PARTIAL 27 | VERIFIED 2 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -17,7 +17,7 @@
 
 Rank gate verified by temporarily requiring rank 99: deployment refused with `requires military rank 99`, no mission started; restored to 10 and re-saved.
 
-Counts: **5 of 5 families exist and are playable; 15 of 15 variants are configured and playable** (13 verified at build 397/393, 2 verified at earlier builds).
+Counts: **5 of 5 families exist and are playable; all 15 variants are verified complete on Normal** (13 at builds 393-397, the last three re-run at 398).
 
 
 ## Verified at build 387
@@ -66,6 +66,17 @@ Defects fixed: the HUD kept the previous mission's green `PRIMARY OBJECTIVE COMP
 
 Lesson: syntax-check every edited script with `loadstring` before a playtest — the StationUI parse error only surfaced as a client log line.
 
+
+## Verified at build 398 — the variant table is closed
+- `RECOVER_TECH`: black box → `CarriedCase` on the character → delivered at the LZ → complete.
+- `DEFEND_BEACON`: 60 s hold completed.
+- `DEFENSE_POWER`: restore → 90 s survived at 520/600 HP → stage 3 → stabilise → complete.
+- Hacking cancel: watchdog on range/downed/disconnect; observed release with reason `downed`, stage reset, console unlocked for retry.
+
+Ledger now has **2 VERIFIED rows** (`COUNT-VARIANT`, `S08-003`) — 15 of 15 variants played to completion. Owner acceptance is still pending and is not mine to grant.
+
+**Harness lesson:** `StationService.deploy` sets `GF_DeployGraceUntil = os.clock() + 4`, so grace armed before a deploy is overwritten. The player then dies, respawns at the station, and the defence timer pauses — which reads as a stuck objective. Re-arm grace after deploying, and re-assert it during long timers.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
@@ -80,8 +91,8 @@ Lesson: syntax-check every edited script with `loadstring` before a playtest —
 - Kills in all tests were applied via the `Dead` attribute that `CombatService` writes; weapon → damage → kill was not re-exercised. Solo only.
 
 ## Next highest-value work
-1. **Re-verify RECOVER_TECH and DEFEND_BEACON** at the current build so all 15 variants share one build.
-2. **Hacking cancel conditions** (`S08-040`): range, downed, disconnect, explicit exit — none exist yet.
+
+1. **Hacking cancel extras** (`S08-040`): explicit exit input and a terminal mutex for two players on one console.
 3. **Target markers** (`S08-033`) remain MISSING across every mission.
 2. **Hacking subsystem** (`S08-036`–`S08-043`) — referenced by every authored variant that says "hack console"; nothing exists yet.
 3. **Target markers** (`S08-033`) — affects every mission.
