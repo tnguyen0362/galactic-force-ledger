@@ -284,7 +284,12 @@ Measured: deploy → `Sabotage Relay on Normal. Get in, finish the job, get out.
 **`S03-037` still missing:** nearby-enemy blips with the observed/audible fade.
 
 
-## PAUSED by owner — 2026-11-24T21:20Z
+## Resumed — minimap hostile blips verified (build 437)
+`.goal/PAUSE` removed by the owner. Hostile blips measured: **8** shown while standing 22 studs from a tagged Marksman with line of sight, **0** after moving ~700 studs away and waiting 4.5 s. Seen/audible rule implemented client-side (raycast + `EnemyFired` linger), so the map cannot learn about an enemy the client cannot see.
+
+**Still unmeasured:** occlusion (cover) and the audible-only path; no cap on simultaneous blips.
+
+## Earlier pause note (resolved)
 `.goal/PAUSE` written; goal loop will not continue until it is removed.
 
 **In flight, unverified:** minimap hostile blips (`StarterPlayerScripts.Minimap`). Design is "observed or audible only, never a wallhack" — a client-side raycast from the player's head plus `EnemyFired` as the audible channel, three-second linger with a transparency fade. The code compiles and the place is saved at **version 437**, but no frame or count has been read yet, so it is **not** claimed to work. Next step is to deploy an elimination mission, stand with line of sight and read `GF_MinimapHostiles`, then break line of sight and confirm the blips fade to zero.
