@@ -1631,3 +1631,27 @@ many frames in this log show the wrong vantage, and it needs a fix inside `Contr
 
 **Also newly visible:** the intro cinematic freezes the camera at the station while the character is already downrange, so a
 capture taken during it shows station geometry next to mission subtitle copy (V326, V327). Skipping before capture is mandatory.
+
+## v268 — the camera can be held, and the "orange plane" was a light on a deck (V329–V332)
+
+**Camera, finally solved.** `Controller.updateCamera` wrote `cam.CFrame` for an external vantage but never took
+`CameraType`. While the type stays `Custom`, the built-in camera recomputes the CFrame later in the frame and wins, so every
+external vantage was silently discarded. The override now sets `CameraType = Scriptable` and clears `CameraSubject`, and restores
+`Custom` + the humanoid when the attributes are removed. `PhotoCam` no longer writes the camera at all — it only publishes the
+vantage, so the two can't race.
+
+Measured after the fix: `type=Enum.CameraType.Scriptable pos=46.0,44.0,-186.0` — exactly the requested vantage, and it stays
+held across captures (V329, V330, V331, V332 all share it). This invalidates the earlier conclusion that client-VM camera writes
+are "inert": they were being overwritten by the controller, which is a different (and fixable) thing.
+
+**The orange plane was never a part.** With the vantage held, I compared the same framing twice: present while the airstrike's
+light lived (V331), gone once the strike parts expired (V330), and gone again after I changed the blast `PointLight` from
+`Brightness 12 / Range 60` to `3.5 / 26` (V332). The orange slab was the **64×64 flat `WorldDressing.CompoundDeck` being
+saturated by that light** — its hard rim was the deck's edge, which is why it looked like a giant flat cylinder and why my
+earlier part-based searches (volume > 20 000, orange colour) never found it. A flat surface under a bright wide light becomes a
+solid colour field; that is the "obscures combat" failure mode in physical terms.
+
+Both the earlier "solved" notes (cylinder disc, then 95%-opaque spheres) were wrong, and both are superseded here.
+
+**Still open:** the blast spheres themselves are barely visible at 0.55 alpha against a dark deck — the strike now reads as a
+grey smoke puff and a brief flash, not a dramatic impact. That is the honest state.
