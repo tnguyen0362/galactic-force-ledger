@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 432
+# WORK_STATE — last verified 2026-11-24, place version 433
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 432**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 433**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 81 populated, 748 UNKNOWN**.
 - Ledger state: PARTIAL 52 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -255,6 +255,14 @@ Snapshot before/after a stop-start cycle: credits 39,590 · rank 15 · XP 123,70
 **Fixed at build 432** (evidence `v432-minimap-disc`): the map is now a **disc** — `UICorner` and `CanvasGroup` both failed to clip children, so the circle is drawn explicitly with a rounded disc backdrop plus radius culling (capture `ScreenCapture_MINIMAP_DISC` shows no corners). Heading now comes from the **character's** `LookVector` (camera writes were inert): character yaw 90° → `heading = -90`, `field.Rotation = 90`. Cells re-place every 0.2 s, so the map re-centres as the player moves (measured after a +20 stud move).
 
 **Still open:** heading follows the character, not the camera; squad/downed blips never exercised; no zoom or POI discovery.
+
+
+## Verified at build 433 — mission clock and grenade counter
+Neither existed: the mission deadline lived only in mission state (never published) and grenade charges were an invisible attribute. `StationService` now publishes `GF_MissionRemaining` each second and `StarterPlayerScripts.StatusStrip` draws `MISSION m:ss` plus `GRENADE xN`.
+
+Measured: 1492 s → `MISSION 24:52` normal (220,230,240); override 200 s → `MISSION 3:20` **amber (255,200,90)**; override 30 s → `MISSION 0:30` **red (255,110,100)**; charges 3 → `GRENADE x3`.
+
+**Still missing from `S03-037`:** squad status, compact loot feed, Voss portrait/subtitles, nearby-enemy blips.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
