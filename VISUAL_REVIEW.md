@@ -2465,3 +2465,19 @@ seat check and returns a reason — the client never decides whether a join is v
    displacement to the LZ were measured earlier, but that is not the same as two clients joining.
 3. **Quick Deploy does not exist** — only the manual dispatch path. That is a separate row and is now correctly marked PARTIAL rather
    than implied complete.
+
+## v329 — dispatch holds several beacons, and the list is drawn from state (V372)
+
+**Change.** `DispatchService` kept a single `beacon`, so a second host silently replaced the first. It now keeps a list (max 6,
+one per host, expired entries swept every 5 s), publishes `GF_DispatchCount`, and pushes the whole list to every client. The war
+table renders **up to three** rows from that push, plus `+N more`.
+
+**Measured.** `GF_DispatchCount = 1` with `PD-62275|Normal|seats=3|age=0|host=ROBLOXISUS101` after a dispatch request; a second
+request from the same host is refused (no overwrite, count stays 1). V372 shows the single-row case with `JOIN` beside the line.
+
+**Honest limits.** Studio hosts one client, so:
+- a **multi-row** listing has never been rendered on screen — the code path exists and is exercised only by data shape;
+- `JOIN` has never been pressed by a real second player;
+- the per-host dedupe means my own test cannot produce two entries at all, which is why the measured count is still 1.
+
+Those three are recorded as the row's next actions rather than claimed.
