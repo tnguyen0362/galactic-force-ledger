@@ -91,3 +91,12 @@ mission kept running server-side, so the capture was accurate.
 
 Rule: before blaming the camera, print `CurrentCamera.CFrame.Position` **and** the objective's position and compare them with the station
 deck height (~800). For steady frames, set `GF_DeployGraceUntil` to a far future time server-side so the subject survives the shot.
+
+## The mission zone must never fall back to the engine default sky (v374)
+
+`Environment.apply` used to `sky:Destroy()` for every non-station zone. Destroying the Sky instance restores Roblox's engine default — a
+clear blue daylight sky — so a nebula outpost was lit like a summer morning and its pale voxel ground read as snow. Every "snow under a
+blue sky" frame (V402, V404, V408) traces to this one branch.
+
+Rule: both zones install the space skybox; only the star density differs (station 20000, mission 6000, measured back as 5000). Voxel
+terrain keeps its own material colours, so `Terrain:SetMaterialColor` per zone is required for the ground to agree with the sky.

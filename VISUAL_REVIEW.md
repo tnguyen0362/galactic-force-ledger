@@ -3006,3 +3006,25 @@ legible in V408: the beacon's own pale structure occupies the same frame area, s
 **Terrain finding that will not go away.** The compound ground is white with pale rocks and reads as snow under a clear blue sky, on a
 planet that is supposed to be a nebula-veiled Veyra-7 outpost. The sky, the ground and the two-tone grey structure are three unrelated
 palettes in the same frame.
+
+## v374 — the mission was being lit by an Earth sky (V409)
+
+**Root cause.** `Environment.apply` handled the station zone by installing the space skybox, and for every other zone it called
+`sky:Destroy()`. Destroying the Sky restores the **engine default**, which is a clear blue daylight sky. So the mission site was a
+nebula outpost lit by a bright blue midmorning sky, and pale voxel terrain under it read as **snow** — which is exactly what V402, V404
+and V408 all show, and why the sky, the ground and the two-tone grey structure looked like three unrelated palettes in one frame.
+
+**Fix.** The mission zone now keeps the space skybox (`StarCount` set to 6000, measured back as **5000**) with celestial bodies hidden, and
+voxel terrain gets per-zone material colours — mission `Ground 52,46,62 / Rock 38,34,46 / Sand 58,50,66 / Snow 70,66,82`, station
+`Ground 58,56,66 / Rock 48,46,56 / Sand 64,60,70`.
+
+**Measured.** `GF_EnvironmentPreset = mission`, `GF_TerrainTint = mission`, Sky present with `StarCount = 5000`, no load errors. V409 shows
+a magenta nebula with stars, dark violet ground and near-black rock — one palette instead of three.
+
+**Negatives in the same frame.** The green planter foliage now clashes badly with a violet world — it was unremarkable against snow and is
+wrong against nebula. The large flat grey panel behind the console is *more* dominant now, because everything around it got darker and it
+did not. The player is `DOWNED` with `SHIELD 0` even though `GF_DeployGraceUntil` was armed, which means the downed state was entered
+before the grace window was set — grace absorbs damage, it does not revive.
+
+**One self-inflicted error.** My patch left a second `end` at module scope: `Expected <eof>, got 'end'` on line 166, which took the whole
+Environment module offline and left `preset = station` with no sky. Found by reading the server log immediately after the edit.
