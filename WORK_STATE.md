@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 408
+# WORK_STATE — last verified 2026-11-24, place version 410
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 408**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 54 populated, 768 UNKNOWN**.
-- Ledger state: PARTIAL 38 | VERIFIED 8 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 410**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 57 populated, 766 UNKNOWN**.
+- Ledger state: PARTIAL 39 | VERIFIED 9 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -114,6 +114,14 @@ Completing SABOTAGE_RELAY on Normal granted `Rare:2:mission` and the profile wen
 Five Legendary archetypes had to be added: the Legendary tier's 15% weighting had nothing of that rarity to roll (120 draws produced 0 Legendary).
 
 **Open:** enemy cache drops are configured but never rolled; the mission cache is granted at primary completion rather than extraction; no cache inventory/UID/bulk/fusion; Legendary-tier Rare share is 26% because only five Legendary archetypes exist.
+
+
+## Verified at build 410 — enemy cache drops and the mission cap
+Chance ladder implemented (boss 100%, Officer 7%, Elite 4%, infantry 1%). Per-mission cap of 3 excludes bosses, measured: 3 forced drops then `GF_CacheDropCapped` with the count stuck at 3; a boss kill bypassed the cap and produced two caches (boss + guaranteed mission, `GF_CacheOpens` 0 -> 2).
+
+Legendary odds improved by adding one Legendary archetype per category: 0 / 29.5 / 57.5 / 13.0 over 400 draws against the spec's 0/30/55/15.
+
+**Instrumentation lesson (third time):** a single attribute records only the newest write. Drops looked absent because the weapon-kill hook never ran for an attribute kill, and the boss cache looked absent because the mission cache overwrote it one line later. `GF_CacheOpens` is now a counter.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
