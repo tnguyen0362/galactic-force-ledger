@@ -2821,3 +2821,18 @@ cannot tell *why* ER-16 is unavailable — only that the row is not purchasable.
 
 **Recorded next action:** either add credit sinks (augments, cosmetics, consumables) or cut payouts, and surface XP-to-next-rank in
 the armory header.
+
+## v360 — progression is on screen, and a locked weapon finally says why (V396 -> V397)
+
+**What the armory now says.** Header: `60600 CR · RANK 15 · MAX` — credits, rank, and either XP-to-next or `MAX`. A weapon above the
+player's rank renders `LOCKED · RANK n` instead of a `BUY` button that the server would refuse.
+
+**Two passes, both self-inflicted.** V396: the first version printed `60600 CREDITS · RANK 15 · MAX RANK`, which overran the 214 px
+header label and collided with `CLOSE [E]` — visible as doubled text. V397: label widened to 300 px at 13 px type, `CLOSE` moved
+to x=494, wording shortened to `CR` / `MAX`. It fits now.
+
+**What is unverified.** The `LOCKED · RANK n` branch has never been *seen*, because this profile is at MaxRank and every weapon is
+therefore affordable. It is code-verified only, and recorded that way.
+
+**What is still the real problem.** The header is honest but the economy is not: ~60,000 credits against a 5,750 total catalogue
+means the numbers on screen never bind. Surfacing progression made that obvious rather than fixing it.
