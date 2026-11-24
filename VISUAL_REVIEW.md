@@ -2531,3 +2531,16 @@ no banner, because it tells the player to press keys that do nothing.
 
 **Also unverified:** multi-player majority. `needed` scales correctly in code, but with one client the only case ever exercised is
 `needed = 1`.
+
+## v335 — the vote banner stops lying about keys (V377)
+
+**Fix.** The banner advertised `Y confirm · N decline` with nothing listening. `MissionHUD` now binds
+`Y / ButtonY / DPad-Up` → `CastVote(true)` and `N / ButtonB / DPad-Down` → `CastVote(false)`, gated on `voteActive`, which is set
+from the same `VoteStateChanged` payload that shows the banner. Client loads clean; V377 shows the banner live.
+
+**Not claimed.** The binding has **never been exercised by a real keypress** — the tool VM cannot synthesise input in this Studio
+build (`VirtualInputManager` requires the RobloxScript capability). So this is code-verified, not input-verified, and it stays
+listed that way.
+
+**Still wrong.** The banner sits over the station intel screen, and in the in-mission shot behind it the text is partially
+unreadable. It also has no countdown refresh: `remaining` is only updated when the state changes, so "19s" freezes.
