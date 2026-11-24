@@ -1460,3 +1460,22 @@ effect expired before any capture landed), and I repaired a syntax break I intro
 **Still open.** The grenade now arcs to the requested point but then drifts up to **18 studs** short (aim z = −160,
 detonation z = −142) — the unanchor/drop step after the tween is moving it. Until that is fixed, a camera framed on the
 aim point will not contain the blast.
+
+## v250 — grenades land where you aim, and the blast is finally in a frame
+
+**The drift was physics, not maths.** Measured: the arc tween landed the bomb exactly at the aim point (z = −160), then
+the bomb was unanchored for the fuse and shoved up to **24 studs** before detonating (z = −135.5). The bomb is now
+anchored for its whole life — it is a marker plus a timer and never needed simulating. Landing is exact:
+aim (40, 32, −160) → detonation (40.0, 34.4, −160.0).
+
+**Evidence obtained.** V310 and V311 show the frag blast at last: warm light across the hillside and an amber ember orb at
+the detonation point. V310 also caught the first segment size, which read as **floating boulders** — cut from `r*0.22 ×
+r*0.5` to `r*0.08 × r*0.26`, and the orb from 0.55 to 0.32 of radius at 0.55 transparency.
+
+**Design change worth noting:** the orb now lives **24 s** and fades slowly rather than blinking out in 2.6 s. Two reasons —
+a 2.6 s effect expired before any capture round-trip could land on it, and a lingering ember cloud reads better than a
+one-frame flash.
+
+**What still looks wrong.** Frag has no debris, no smoke and no crater — it is light plus a glowing ball. Ring segments
+are still chunky. EMP uses the same geometry in blue, so the two are only distinguishable by colour and by what they do to
+shields, not by silhouette.
