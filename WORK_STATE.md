@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 423
+# WORK_STATE — last verified 2026-11-24, place version 424
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 423**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 70 populated, 755 UNKNOWN**.
-- Ledger state: PARTIAL 45 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 424**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 72 populated, 754 UNKNOWN**.
+- Ledger state: PARTIAL 46 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -198,6 +198,14 @@ Reordered the armory list (loadouts → caches → armour → weapons) and disco
 **Defect the click exposed:** opening a cache whose archetype pool was exhausted produced **0 augments** and still consumed the cache. Fixed: roll first, refuse `nothing left to roll`, keep the cache (verified held stayed at 1).
 
 **Still open:** the armory shows an OPEN button even when the pool is exhausted; no inventory capacity model; no Abilities/Grenades sections or tabs.
+
+
+## Verified at build 424 — abilities and grenades are selectable, and the client obeys
+Two defects fixed together: the armory had no ability/grenade surface, **and** the client hardcoded `Ability1 → "Airstrike"`, `Ability2 → "DomeShield"` — `profile.ability1/ability2` were read by no script, so selection could not have mattered.
+
+Now `equipAbility`/`equipGrenade` write the loadout and publish `GF_Ability1/2` + `GF_GrenadeEquipped`; HUD and Controller read those attributes with the old literal as fallback. Measured: `Sentry` refused (`ability not owned`), `DomeShield` equipped (`GF_Ability1=DomeShield`), `EMP` selected, and casting the published id produced `AbilityCastRequests=1` plus a spawned dome.
+
+**Still open:** no duplicate-slot guard (both slots can hold the same ability); four of six abilities unobtainable; armory buttons not clicked; grenade effects untested.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
