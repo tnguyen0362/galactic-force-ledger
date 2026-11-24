@@ -2228,3 +2228,23 @@ pickup is visibly carried and does not complete on its own. V361 shows the amber
    run and therefore not claimed.
 3. The terminal structure behind the player is a large untextured grey slab with hard edges; it reads as blockout against the
    terrain and the enemy silhouettes around it.
+
+## v316 — the tracker now says what the mechanic is (V362)
+
+**Fix.** `MissionHUD.setProgress` wrote a fixed line for the objective and only replaced it on completion, so every template showed
+the sabotage copy. It now takes `payload.hint`, which `ObjectiveService.publish` has been sending all along.
+
+**Measured on a RECOVER_TECH run:**
+
+```
+before pickup  : "Hold E at the black box to extract the flight recorder"
+after pickup   : "Carry the case to the landing zone"
+```
+
+V362 shows the second line with the amber case on the carrier's back — the objective on screen and the mechanic on the ground
+agree for the first time.
+
+**What looks wrong now.** Three prompt systems draw into the same bottom band: the world interact prompt ("E Extract"), the
+mission hint, and the controls line ("Fire [LMB] Aim [RMB] …"), which visibly overprints each other in V361 and V362. That is a
+layout collision, not a missing feature. The terminal structure remains an untextured grey slab, and `SHIELD 0` still appears at
+the objective site without a measurement of what is shooting.
