@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 444
+# WORK_STATE — last verified 2026-11-24, place version 445
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 444**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 445**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
 - Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -370,6 +370,14 @@ Two builds ago the same mission produced 32-damage Heavy blasts and 6-damage Sco
 **Next action:** instrument the delayed attack callback — write `GF_LastAttackAttempt` at entry, after the LOS test, and after `applyDamage` — then read all three in one run. Do not touch anything else until that reads true.
 
 **Repeat mistake:** the `ChargingUntil` writes first landed in a *different* function that shares the same telegraph code (line ~326 vs ~412). Same "anchor exists twice" failure as the build-438 payload edit.
+
+
+## Verified at build 445 — Commander relay call
+New `EnemyService.startCalls` loop (outside `tickActor`, so the attack path is untouched): an Officer within 70 studs of a live relay starts a 2 s call, then spawns **2 Riflemen**; dying mid-call cancels it.
+
+Measured: `GF_CallState = "Officer:pending"` → `GF_Reinforcements = 2` with Riflemen 2 → 4; killing the Officer during a call gave `GF_CallCancelled = 1` and **zero** reinforcements (`Officer:cancelled`).
+
+**Content gap this exposes:** the sabotage mission has a relay but no Officer, and the elimination mission has an Officer but no relay — so the rule cannot fire in either as authored. Adding an Officer to the sabotage roster is the fix, and it is not done.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
