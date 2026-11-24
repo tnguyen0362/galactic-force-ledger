@@ -83,10 +83,31 @@ claim in WORK_STATE is not evidence.
 Also recorded: `S16-111` was being actively violated until this session — the loop reported `ABSENT 0 | PARTIAL 68` while
 732 rows were unaudited.
 
+**Batch 6: Enemy AI / bosses — 14 rows (2 VERIFIED, 12 PARTIAL) plus a refinement to `S04-046`.** Script `.audit/audit_batch_enemy.py`.
+
+Verified: `COUNT-BOSS` (both bosses are real Workspace objects) and `S06-020` (the LOS gate is instrumented and reports
+entry / los-fail / los-pass / hit).
+
+**Two boss numbers do not meet the spec:**
+
+1. **Veyr HP.** Measured `Health 3200` in Thronefall against spec base **7200** (`GOAL_2026-11-24.md` L102). At Normal,
+   solo, the scaling formula gives 7200 exactly, so 3200 is under half. The reading is from build 385 and predates the
+   build-441 stat realignment, so the *current* value is unknown rather than proven wrong — recorded on `S06-052` and
+   `S06-065` as a defect to re-measure, not as a confirmed regression.
+2. **Blueprint pity.** Spec L102 requires **5** qualifying extracted boss kills at 15%/kill before. `HANDOFF.md` records the
+   implementation at **3** "(was 5)". Deterministic under `GF_ForceNoBlueprintChance`, but 3 is a spec deviation with no
+   decision record authorising it. Recorded on `S06-072`.
+
+**Refinement:** `S04-046` previously said Normal infantry 320 was unmeasured. It is now confirmed as authored and configured
+— v441 realigned Rifleman to 240 HP + 80 shield = 320 exactly. Only the 18-shot / 1.7 s TTK is still missing.
+
+Also recorded: distinct per-archetype burst patterns are real and measured (13/8×3, 18/6×4, 11/38×1, 8/32×1, 12/12×2), and
+the Heavy's 1.4 s telegraph-then-32-damage path is proven.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 134 populated, 681 UNKNOWN**.
-- Ledger state: PARTIAL 106 | VERIFIED 24 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 147 populated, 668 UNKNOWN**.
+- Ledger state: PARTIAL 117 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
 - Place-version numbers disagree across documents (WORK_STATE 448, HANDOFF 318, BLOCKED 232, recent commits 461). Unresolved
   because Studio was not connected; do not trust any of them until `save_place` records a new one.
 
