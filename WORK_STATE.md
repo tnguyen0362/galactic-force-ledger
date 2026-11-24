@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 406
+# WORK_STATE — last verified 2026-11-24, place version 408
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 406**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 46 populated, 776 UNKNOWN**.
-- Ledger state: PARTIAL 35 | VERIFIED 3 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 408**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 54 populated, 768 UNKNOWN**.
+- Ledger state: PARTIAL 38 | VERIFIED 8 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -102,6 +102,18 @@ Launchers use `CombatService.detonate`: radius damage to enemies and destructibl
 Two real fixes at build 406: every armory refusal now records `GF_ArmoryRejected` (measured `"no augment left in that category"` on an exhausted pool), and `WeaponEquipped.magazine` now carries the augmented capacity instead of the catalog value (measured `ammo=116, magazine=116` for LMG-12).
 
 **Also learned:** a `string.find` anchor that exists twice (`s.ammo = require(...).magazine(...)` is in both `fire()` and `applyLoadout`) patched the wrong one and left the payload field nil.
+
+
+## Verified at build 408 — cache system (previously absent)
+There was no cache code at all: no config, no roll, no grant. Now `Configs/Caches` defines four tiers and `CacheService` rolls/opens/grants them. A tier's rarity weights actually restrict the draw (before they were dead data), and opening grants the augments plus a rolled trait.
+
+Measured over 300 caches per tier — Common cache 81.7/16.0/2.3/0.0 vs spec 82/16/1.9/0.1; Rare 48.5/42.3/8.0/1.2 vs 48/43/8/1; Epic 17.4/49.7/29.0/3.9 vs 18/48/30/4; Legendary 0/26.0/58.5/15.5 vs 0/30/55/15. Counts per cache are 1/2/3/4 as authored.
+
+Completing SABOTAGE_RELAY on Normal granted `Rare:2:mission` and the profile went from 10 to 13 owned augments.
+
+Five Legendary archetypes had to be added: the Legendary tier's 15% weighting had nothing of that rarity to roll (120 draws produced 0 Legendary).
+
+**Open:** enemy cache drops are configured but never rolled; the mission cache is granted at primary completion rather than extraction; no cache inventory/UID/bulk/fusion; Legendary-tier Rare share is 26% because only five Legendary archetypes exist.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
