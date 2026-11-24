@@ -2363,3 +2363,22 @@ same session.
 
 **Next step:** log `show`, `near`, `onStation` and the resolved anchor name in the same heartbeat that calls `setFocus`, then stand at
 the panel and confirm the deploy button receives focus while visible.
+
+## v323 — the focus warnings were mine, and the fix is a chain check (correction to v322)
+
+**v322 was wrong.** I concluded the two `Setting GuiService.SelectedObject to invalid GuiObject` warnings came from Roblox's
+selection machinery, because every guarded `setFocus` call logged `nil`. The real cause: my guard only tested the button's **own**
+`Visible` flag. A button inside a *hidden panel* still reports `Visible = true`, so the guard happily assigned focus to it and Roblox
+rejected it. The offending assignments were the ones where `deploy` was passed while the panel was closed.
+
+**Fix:** `setFocus` now walks the full ancestor chain and refuses when anything above the target is hidden.
+
+**Measured:** `warnings = 0` (was 2) after the change. That is the first time this warning count has reached zero.
+
+**Still unverified, and it is the part the row actually asks for.** With the player measured 12.0 studs from `WarTableBase` — well
+inside the 36-stud open radius — `GuiService.SelectedObject` is still `nil`. So the panel either never reported visible in that
+frame or a later call cleared focus. The positive case (focus sitting on the visible deploy button) has still never been observed,
+and no gamepad capture exists.
+
+**Lesson recorded because it is the second time this session:** "nothing in the project assigns this" is only true if the guard
+around the assignment is correct. My instrumentation proved the *call* happened with nil, not that the *assignment* never fired.
