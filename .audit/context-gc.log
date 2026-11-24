@@ -445,3 +445,8 @@
 2026-11-24T22:16:13.042Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
 2026-11-24T22:16:13.277Z usage=950000 COMPACT requested — stored context at 950000 of 1000000 (95%) after 3 pruned requests
 2026-11-24T22:16:13.279Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:16:23.531Z usage=950824 msg=3356 images=4 text=163 thinking=304 budget=2100 chars 5161129->2308383 (-55%) proj=249458
+2026-11-24T22:16:58.886Z usage=952333 msg=3360 images=4 text=164 thinking=304 budget=2106 chars 5165346->2309115 (-55%) proj=249676
+2026-11-24T22:17:25.312Z usage=297000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:17:25.563Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:17:29.088Z usage=953824 msg=3364 images=4 text=164 thinking=304 budget=2115 chars 5168352->2305846 (-55%) proj=249561
