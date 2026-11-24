@@ -1,0 +1,15 @@
+const mod = await import("file:///C:/Users/tnguy/.pi/agent/extensions/context-gc.ts");
+let handler;
+mod.default({ on: (_name, fn) => { handler = fn; } });
+const img = (id) => ({ role: "toolResult", toolName: "mcp__Roblox_Studio__screen_capture", toolCallId: id, content: [{ type: "image", data: "x".repeat(4000) }] });
+const big = (id) => ({ role: "toolResult", toolName: "read", toolCallId: id, content: [{ type: "text", text: "A".repeat(20000) }] });
+const recent = Array.from({ length: 10 }, (_, i) => big("r" + i));
+const messages = [img("i1"), img("i2"), img("i3"), img("i4"), img("i5"), big("old1"), ...recent, { role: "user", content: [{ type: "text", text: "hi" }] }];
+const ctx = { getContextUsage: () => ({ tokens: 700000 }) };
+const out = await handler({ messages }, ctx);
+const changed = out && out.messages ? out.messages : messages;
+const imageCount = changed.filter(m => m.content?.some?.(p => p.type === "image")).length;
+const texts = changed.filter(m => m.content?.[0]?.type === "text" && m.content[0].text.startsWith("AAAA")).map(m => m.content[0].text.length);
+console.log(JSON.stringify({ returned: !!out, imagesLeft: imageCount, bigTextLengths: texts.slice(0, 3), sameArray: changed === messages }));
+const out2 = await handler({ messages }, { getContextUsage: () => ({ tokens: 100000 }) });
+console.log(JSON.stringify({ belowThresholdReturned: out2 === undefined }));
