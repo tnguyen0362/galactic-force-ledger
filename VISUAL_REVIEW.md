@@ -1802,3 +1802,29 @@ Verified separately through the real remotes: `BUY LMG12` returned ok with credi
 **What still looks wrong.** There is no purchase confirmation — BUY charges immediately; success is only visible as the row
 becoming EQUIP, while a failure replaces the credit balance text with the reason. `CLOSE [E]` is keyboard-only, so touch and
 gamepad players can open this panel but not close it.
+
+## v291 — settings exist, persist and actually change behaviour (V345, V346)
+
+**Scene / camera.** Station concourse, third-person, Settings panel opened through `GF_SettingsOpen`.
+
+**What the frames show.** V345 first run: `SETTINGS`, `Aim sensitivity 1.00x`, `Master volume 100%`, `Subtitles ON`,
+`Reduced motion OFF`. V346 after a full session restart: the same panel showing **2.00x** and **40%** — the values written in
+the previous session — with the subtitle `Drop bay is hot. Pod is loaded.` visible because subtitles are on.
+
+**What was actually missing.** `profile.settings` existed in `defaults()` with `aimSensitivity`, `invertY`, `subtitles`,
+`reducedMotion` and **nothing read any of it**; there was no settings screen at all. Now `SettingsService` validates key and
+type, clamps ranges (sensitivity 0.25–3, volume 0–1), saves through the profile and publishes `GF_Setting_*` attributes that the
+camera, captions and audio read.
+
+**Measured, including a real A/B on subtitles:** with subtitles off the cinematic played (`enabled=true`, `playing=true`) and
+produced **no caption text at all** for 3.5 s; switched on, it produced *"The war table is already tracking a second
+incursion."* and then *"Your armoury is thin. Make every round count."*
+
+**A bug of mine caught by reading the client log, not the server log:** my first `subtitlesEnabled()` helper was inserted at line
+58 while caption writes happen at line 39, so those writes called a local function that did not exist yet —
+`CinematicUI:39: attempt to call a nil value`, and the whole cinematic died. Server logs showed nothing, which is why it took a
+client-side log read to find. The helper now sits immediately after the `LocalPlayer` binding.
+
+**What still looks wrong.** `Reduced motion` is stored and published but **nothing consumes it** — toggling it changes a label
+and nothing else. Volume applies to sounds started after the change, not to loops already playing. The panel has no gamepad focus
+and no close control, and it can only be opened through an attribute, so a player without a keyboard cannot reach it.
