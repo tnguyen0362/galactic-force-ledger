@@ -544,6 +544,16 @@ The "missing" long shots of build 460 were not missing: a **Bastion Walker** lef
 
 **Unmeasured:** the 0.55 floor beyond 240 studs — there is no clear line past 270 in the relay compound.
 
+
+## Verified at build 461 — falloff window, curve and floor
+AR-01 through the real fire path: **18** at 12 studs, **10.674** at 226 (predicted 10.66), **9.90** at 299 = exactly `18 x 0.55`. The clamp holds, so start, slope, end and floor are all measured.
+
+**Technique that unblocked it:** the compound has no ground sightline past ~226 studs (every 260–320-stud attempt hit `Workspace.Terrain`, and lifting 10–100 studs made the ray start inside terrain). Moving **both** target and shooter to `lz.Y + 220` in open air gave a clean 299-stud line — first hit `ActiveActors.Rifleman.Torso`.
+
+**Harness fact:** `TerrainService.groundSurface(x, z)` returns a **number** (height), not a Vector3; `ground + Vector3.new(...)` throws.
+
+**Still untested:** shotgun pellets, launcher radial falloff, beyond-max-range rejection, the 2x head multiplier in practice, and the other five ballistic weapons.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
