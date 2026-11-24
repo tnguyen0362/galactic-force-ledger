@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 402
+# WORK_STATE — last verified 2026-11-24, place version 404
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 402**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 43 populated, 779 UNKNOWN**.
-- Ledger state: PARTIAL 33 | VERIFIED 3 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 404**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 46 populated, 776 UNKNOWN**.
+- Ledger state: PARTIAL 35 | VERIFIED 3 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -92,6 +92,12 @@ Measured: `TARGET 45 m` with three tagged Talons alive, live update to `TARGET 8
 **Defect fixed:** `CombatService.applyLoadout` called `ArmoryService.selection`, which did not exist; the `pcall` swallowed it, so equipping changed the menu and the profile but never the live weapon (measured `ok=true` then `weapon-mismatch:AR01!=SMG05`). After adding `selection`, the same equip produced accepted shots.
 
 Launchers use `CombatService.detonate`: radius damage to enemies and destructible structures with distance falloff. GL22 measured 33 damage into a shielded target (shield 30 → 7); RL09 fired and registered a blast. **Multi-target coverage was not demonstrated** — authored rosters spawn 18–20 studs apart, wider than the 9-stud radius.
+
+
+## Verified at build 404 — augment catalogue rebuild
+9 category pools x 3 archetypes = 27 augments, each with category, rarity (Common/Rare/Epic), cost and a trait range. `Augments.roll(category, owned)` is rarity-weighted and skips owned ids; `rollTrait` produced `blastRadius=0.344` on `WideCharge`. `ArmoryService.buyAugment` now accepts a category and rolls an unowned archetype: measured `Launcher:ShapedWarhead:660` and `Marksman:StableStock:430`. Rolled traits are stored per player in `profile.augmentTraits` and applied by `AugmentService.forProfile`.
+
+**Open defect:** after the first purchase in a category, further `augmentBuy` calls did nothing — no attribute change, no client push — even though the pool still had unowned archetypes. `augmentBuy` failures do not set a rejection attribute, which is why it is silent. Next step is to record the reason and read it.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
