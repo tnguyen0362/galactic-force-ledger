@@ -504,6 +504,16 @@ Six client `FireWeapon` shots at a 21-stud clear line on an Officer: **6 DamageF
 - `GF_DeployGraceUntil` set from the **Client** does not replicate — the player respawned at the station and shots went into the deck 748 studs from the target.
 - Line of sight must be **found**, not assumed: a 15-stud target sat behind `AscendancyOutpostWall`. Target selection now requires an enemy whose own raycast is the first hit.
 
+
+## Verified at build 457 — weapon stats aligned to spec
+Five of eight weapons disagreed with their authored rows; nobody had compared them. Aligned: AR-01 (18 dmg / 2.1 reload, was 22/2.2), P-01 (22 / 300 rpm / 72 reserve / 1.5), SG-04 (72 rpm / 42 reserve), MR-07 (51 / 150 / 12 / 72 / 2.4), LMG-12 (17 / 660 / 225 / 3.7). SMG-03, GL-22 and RL-09 already matched.
+
+**AR-01 verified by firing:** `GFDebug.LastDamage = 18`, 5 accepted hits, `TotalDamage = 81` = 5 × 18 × 0.9 armour, shield 160 → 79.
+
+**Behaviour worth deciding:** `damageEnemy` applies `armorFactor` **before** shields, so a Heavy's 0.75 reduces damage landing on its shield. The spec calls armour a *health* factor. Recorded, not changed.
+
+**Unchanged:** every weapon's falloff window still differs from spec (AR-01 120/320 vs 90/240, MR-07 250/600 vs 150/350, LMG-12 130/420 vs 85/230, P-01 60/250 vs 55/170, SG-04 25/90 vs 22/75). Reload path unverified; SG-04 is one 96-damage hit, not eight pellets.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
