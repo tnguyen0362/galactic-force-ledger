@@ -2836,3 +2836,23 @@ therefore affordable. It is code-verified only, and recorded that way.
 
 **What is still the real problem.** The header is honest but the economy is not: ~60,000 credits against a 5,750 total catalogue
 means the numbers on screen never bind. Surfacing progression made that obvious rather than fixing it.
+
+## v361 — augments are buyable, and the first version rendered the shop six times (V398 -> V399)
+
+**What changed.** Augments had a `cost` in the config and **no way to buy one**, so credits had nowhere to go once the six weapons
+were owned. `ArmoryService.buyAugment` now validates ownership, rank and credits, deducts, saves, and is exposed as an `augmentBuy`
+action; the armory lists the whole 10-augment catalogue with `BUY <cost>` or `OWNED`.
+
+**Measured.** `augmentBuy ok=true credits=60300 catalog=10` — 60,600 down to 60,300 for a 300-credit Core augment, persisted.
+
+**A layout bug I created and caught from the numbers.** My first insertion anchored on `order += 1`, which occurs **inside the weapon
+loop**, so the entire 10-row shop was created once per weapon: `list` held 60 augment rows, canvas 3,196, with the catalogue
+interleaved between weapons (V398). Moving the block after the loop gave 18 rows and a 896 px canvas (V399), and giving shop rows
+`LayoutOrder = 100 + order` keeps them below the weapon list.
+
+**Balance, honestly.** The spendable catalogue is now 5,750 (weapons) + 4,200 (augments) = **9,950 credits** against roughly **27,900
+earned** on the way to rank 15 — the surplus narrowed from about 5× to about **2.8×**, but credits still do not bind. Prices stop
+being a decision after the first handful of operations.
+
+**What the shop is missing.** No slot filter, no grouped sections, and each augment's effect is summarised as a single word
+(`Universal`, `Category`, `Ability`) rather than what it actually changes.
