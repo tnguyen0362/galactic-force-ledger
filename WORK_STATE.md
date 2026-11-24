@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 413
+# WORK_STATE — last verified 2026-11-24, place version 415
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 413**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 415**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 58 populated, 765 UNKNOWN**.
 - Ledger state: PARTIAL 40 | VERIFIED 9 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -138,6 +138,14 @@ Added server-side mirrors (`GF_ExtractionCalled/Landed/Remaining/Emergency`) bec
 Measured full failed round trip: generator destroyed → failed + emergency offer → dropship landed → boarded → settlement `{success=false, credits=0, xp=0, salvage 0}`, `GF_CarriedLost=true`, `GF_ExtractionState="failed"`, no success departure.
 
 **Still open:** only one player and one difficulty; squad bonus and per-player split untested; war-credit contribution on a loss not inspected.
+
+
+## Verified at build 415 — mission cache paid at extraction, not completion
+Completing the primary now opens **no** cache (measured 0 opens). Boarding after a successful extraction opens exactly one: `GF_MissionCacheResult=granted`, `GF_CacheOpens=1`, source `mission`, alongside credits 450 / xp 600.
+
+**A no-op edit happened here and is worth remembering:** the patch computed the new `CacheService` source and `loadstring`'d it but never assigned `C.Source`, so `tierForDifficulty` did not exist and a `pcall` swallowed "attempt to call a nil value". Every other failure this session at least threw; this one silently did nothing. Recording the pcall error into `GF_MissionCacheResult` found it in one step.
+
+**Still open:** the failure→skip branch (`GF_MissionCacheResult = skipped ...`) has never been observed.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
