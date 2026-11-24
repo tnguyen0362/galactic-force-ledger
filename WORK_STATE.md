@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 445
+# WORK_STATE — last verified 2026-11-24, place version 446
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 445**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 446**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
 - Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -377,7 +377,9 @@ New `EnemyService.startCalls` loop (outside `tickActor`, so the attack path is u
 
 Measured: `GF_CallState = "Officer:pending"` → `GF_Reinforcements = 2` with Riflemen 2 → 4; killing the Officer during a call gave `GF_CallCancelled = 1` and **zero** reinforcements (`Officer:cancelled`).
 
-**Content gap this exposes:** the sabotage mission has a relay but no Officer, and the elimination mission has an Officer but no relay — so the rule cannot fire in either as authored. Adding an Officer to the sabotage roster is the fix, and it is not done.
+**Corrected at build 446:** the sabotage roster *does* include Officer — it is a random patrol pick, and two sample missions happened to roll none. The real issue was reliability, so `beginMission` now guarantees **one Officer at the relay** for `SABOTAGE_RELAY`. Measured in plain play (no scaffolding): Officer 11 studs from the relay, `GF_CallState = Officer:pending`, then `GF_Reinforcements = 6` and Riflemen → 7.
+
+**Balance risk:** three Officers each called once, adding 6 hostiles to a mission with no cap. Needs a one-call-per-mission (or per-relay) limit before it is tuned.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
