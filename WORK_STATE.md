@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 404
+# WORK_STATE — last verified 2026-11-24, place version 406
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 404**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 406**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 46 populated, 776 UNKNOWN**.
 - Ledger state: PARTIAL 35 | VERIFIED 3 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -97,7 +97,11 @@ Launchers use `CombatService.detonate`: radius damage to enemies and destructibl
 ## Verified at build 404 — augment catalogue rebuild
 9 category pools x 3 archetypes = 27 augments, each with category, rarity (Common/Rare/Epic), cost and a trait range. `Augments.roll(category, owned)` is rarity-weighted and skips owned ids; `rollTrait` produced `blastRadius=0.344` on `WideCharge`. `ArmoryService.buyAugment` now accepts a category and rolls an unowned archetype: measured `Launcher:ShapedWarhead:660` and `Marksman:StableStock:430`. Rolled traits are stored per player in `profile.augmentTraits` and applied by `AugmentService.forProfile`.
 
-**Open defect:** after the first purchase in a category, further `augmentBuy` calls did nothing — no attribute change, no client push — even though the pool still had unowned archetypes. `augmentBuy` failures do not set a rejection attribute, which is why it is silent. Next step is to record the reason and read it.
+**Retraction (build 406):** the "repeat purchases fail" note above was an instrumentation error — `GF_AugmentBought` records only the last buy. Measured ownership shows the loop works and the roll excludes owned archetypes (10 owned across five categories, no duplicates).
+
+Two real fixes at build 406: every armory refusal now records `GF_ArmoryRejected` (measured `"no augment left in that category"` on an exhausted pool), and `WeaponEquipped.magazine` now carries the augmented capacity instead of the catalog value (measured `ammo=116, magazine=116` for LMG-12).
+
+**Also learned:** a `string.find` anchor that exists twice (`s.ammo = require(...).magazine(...)` is in both `fire()` and `applyLoadout`) patched the wrong one and left the payload field nil.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
