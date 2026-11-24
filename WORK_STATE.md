@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 422
+# WORK_STATE — last verified 2026-11-24, place version 423
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 422**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 69 populated, 756 UNKNOWN**.
-- Ledger state: PARTIAL 44 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 423**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 70 populated, 755 UNKNOWN**.
+- Ledger state: PARTIAL 45 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -190,6 +190,14 @@ Awards used to roll instantly. Now `profile.caches[tier]` stacks unopened caches
 Fixed an instrumentation split: the grant wrote `GF_CacheHeld` while the open wrote `GF_CachesHeld`, so a stale grant value looked like a failed decrement.
 
 **Still open:** the OPEN button was not clicked (below the scroll viewport); no inventory capacity check; no bulk open; no cache UID/timestamps.
+
+
+## Verified at build 423 — armory clicks land, and a cache no longer burns for nothing
+Reordered the armory list (loadouts → caches → armour → weapons) and discovered the real click constraint: the list viewport is **286 px tall starting at y=167**, so a row outside that band cannot be clicked. With rows inside it, `ArmorRECON.Wear` equipped RECON and `CacheRare.Open` consumed the cache — both click-verified.
+
+**Defect the click exposed:** opening a cache whose archetype pool was exhausted produced **0 augments** and still consumed the cache. Fixed: roll first, refuse `nothing left to roll`, keep the cache (verified held stayed at 1).
+
+**Still open:** the armory shows an OPEN button even when the pool is exhausted; no inventory capacity model; no Abilities/Grenades sections or tabs.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
