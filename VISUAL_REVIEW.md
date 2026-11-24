@@ -2746,3 +2746,25 @@ to a layout that reflows.
 
 **What is still unproven.** The join is always a single-client test — no real second player has ever been in the instance — and
 Quick Deploy takes the first compatible listing with no choice of operation or difficulty.
+
+## v352 — the war table panel finally has a flow section instead of more pixel offsets (V388 -> V389 -> V391)
+
+**Why this was worth a continuation.** Six layout collisions in this panel across this session (armoury anchor, EU-16 scroll canvas, HUD bands,
+dispatch row, privacy chips twice, QUICK DEPLOY twice) all came from the same cause: **every row is an absolute pixel offset with no
+flow**, so each new element had to be hand-fitted and every hand-fit landed on top of an existing row.
+
+**First attempt went backwards (V388, V389).** I moved the squad rows into a `ScrollingFrame` with a `UIListLayout`, but the
+three visibility chips stayed direct children of that vertical list, so `PUBLIC / FRIENDS / PRIVATE` stacked vertically and the sort
+order interleaved them with `JOIN` and the `LISTING VISIBILITY` label - the panel was **worse** than before the refactor.
+
+**Fix (V391).** A dedicated `ChipRow` frame with a horizontal `UIListLayout` holds the chips, explicit `LayoutOrder` values order the
+section (listing → join → visibility → chips → request support), the panel grew to 672 px, the scroll section to 220 px with
+`AutomaticCanvasSize`, the controls hint moved to the bottom, and `JOIN` now starts hidden until a listing exists.
+
+**Result.** V391 reads cleanly top to bottom - sector line, operation chips, description, difficulty, `DEPLOY TO VEYRA-7`, `QUICK
+DEPLOY`, `NO ACTIVE DISPATCH REQUESTS`, `LISTING VISIBILITY` with the three chips side by side, `REQUEST SUPPORT` - with nothing
+overlapping and nothing clipped.
+
+**What is still absolute.** The upper half (mission chips, description, difficulty, deploy, quick deploy) is still positioned by hand.
+Only the squad section flows. The next addition to the panel must go in a flow section or the panel needs the same treatment
+everywhere.
