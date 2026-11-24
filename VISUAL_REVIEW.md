@@ -2099,3 +2099,30 @@ unavoidable, which makes it worse than the original diagnosis, not better.
 **Next step, precisely:** log the `_source` argument inside `VitalsService.applyDamage` (it is currently discarded as `_source`), so
 the next run names the caller instead of guessing again. Every damage path in the project funnels through that one function
 (`EnemyService`, `BastionWalker`, `Veyr`, `GrenadeRuntime`), so one print identifies it.
+
+## v308 — the landing-zone damage has a name: the bosses
+
+**Named it by logging the source.** `VitalsService.applyDamage` discarded its `_source`; it is now printed, and the stream that
+was destroying the squad on touchdown reads:
+
+```
+amount=40.0 source=BastionMortar
+amount=35.0 source=BastionMortar
+amount=30.0 source=BastionMortar
+amount=26.0 source=VeyrBurst   (x6)
+```
+
+So it was never enemy pickets. `EncounterDirector.beginMission` spawned the **field boss and the major boss within 55–70 studs of
+mission centre**, which is effectively on top of the landing zone, and both open fire immediately.
+
+**Attempted fix, insufficient.** Boss spawns now go through `awayFromLz(point, 150/170)` so they are pushed beyond artillery range
+of the drop. Measured after the change: `BastionWalker 153` studs from the LZ, yet **8 damage events still landed within 9 s**.
+Pushing the spawn back does not stop the barrage.
+
+**What this needs, precisely:** an engagement gate rather than a distance. Either the bosses stay dormant until the squad enters a
+trigger radius / starts the objective, or the major boss is not auto-spawned in an ordinary operation at all — which is what the
+spec implies, since Veyr is a rank-gated major encounter, not a patrol. That is a design decision to make deliberately, not a
+number to nudge, so it is recorded as the next action rather than guessed at here.
+
+**Debug instrumentation kept:** the `_source` print in `applyDamage` is worth leaving in until the engagement gate exists, because
+it turned a three-continuation mystery into one log line.
