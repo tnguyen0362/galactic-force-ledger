@@ -427,3 +427,5 @@
 2026-11-24T22:08:34.489Z usage=934470 msg=3304 images=4 text=162 thinking=295 budget=414 chars 5108194->4433655 (-13%) proj=249973
 2026-11-24T22:09:38.958Z usage=800000 msg=308 images=0 text=0 thinking=0 budget=300 chars 2424300->2527021 (-0%) proj=716785
 2026-11-24T22:10:09.728Z usage=800000 msg=616 images=0 text=304 thinking=0 budget=429 chars 4288110->888412 (-79%) proj=249982
+2026-11-24T22:11:33.300Z usage=940000 gate: tight=true loopDone=false last=toolResult
+2026-11-24T22:11:33.549Z usage=940000 msg=601 images=0 text=296 thinking=0 budget=413 chars 4178892->885701 (-79%) proj=249587
