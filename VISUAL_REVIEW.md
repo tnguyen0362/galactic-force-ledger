@@ -2011,3 +2011,21 @@ finding explained only the separate station-spawn spheres.
 
 **Verified after the change:** booted with the preset applied (`spec=0.00 diff=0.18 brightness=0.35`) and V357 shows a clean,
 correctly lit concourse with no orange anywhere.
+
+## v304 — no dummy UI text, but the mission HUD renders nothing on entry
+
+**Audit method.** Enumerated every visible `TextLabel`/`TextButton` in `PlayerGui` twice: once at the station and once with
+`GF_InMission=true`. 18 strings at the station, 19 in mission, all real copy (operation names, difficulty, sector copy, controls
+hint, "Deployment accepted."). No `Coming Soon`, no TBD, no debug counters, no dummy currency. Debrief and war-table frames were
+measured `Visible=false` when out of range, so no stale panels.
+
+**Two real defects surfaced by the audit instead:**
+1. A `ScreenGui` named **`Freecam` is enabled at spawn** — a dev leftover sitting in the shipping UI.
+2. **The mission HUD is blank on entry.** After a successful deploy (`inMission=true`) the `GFMissionHUD` and `GF_HUD` GUIs are
+   enabled but contain **zero** non-empty labels until something fires an update. I added `CombatService.publishAmmo` and
+   `ObjectiveService.publish`, and `StationService.deploy` now pushes vitals, ammo, objective and salvage about 0.6 s after the
+   teleport — and the HUD was **still blank** in the same test. So the client side does not paint shield/ammo from those payloads;
+   that consumer has to be found before this can be called fixed.
+
+Recorded honestly: the audit cleared the placeholder question and uncovered a HUD regression that is worse than a placeholder,
+because a player entering a mission sees no shield, no ammo and no objective.
