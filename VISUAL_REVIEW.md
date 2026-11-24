@@ -1674,3 +1674,14 @@ silent no-op blamed on the wrong subsystem. A `resetCooldowns(player)` hook now 
 **New, unproven:** setting `GF_PhotoCam` from the *server* VM produced an unchanged camera in V334, while setting it from the
 *client* VM produced an exact match (`pos=46,44,-186`). Either the server-set attribute took longer than the 0.4 s wait to
 replicate, or the two paths differ. Not established yet, and it is the next thing to pin down before more capture work.
+
+## v271 — flyover slowed for capture, still unframed
+
+The craft crossed 340 studs in 4.2 s and lived 4.5 s, which is shorter than a tool round-trip: every attempt to read its position
+and then aim a camera at it finished after it had been destroyed ("craft already gone", "no craft"). The crossing is now 10 s with
+an 11 s lifetime, so the frame window is wider than the tooling.
+
+Still unphotographed this session. Two failed attempts were my own errors, both visible in the tool output:
+`GF is not a valid member of ServerScriptService` (I tried to `require` server modules from the *client* VM) and a cast that was
+silently refused on cooldown before `resetCooldowns` existed. The craft position was read live and correct
+(`hull=-67,69,-137` at 0.85 s) — the aircraft exists and flies; it has not yet been in a frame.
