@@ -2314,3 +2314,31 @@ phone, nor about safe areas on notched devices. Those still need hardware or an 
 **Second thing this exposes:** `RELOAD` now sits at `x = -320`, which is 320 px from the right edge — on a 667 px-wide phone that is
 just under half the screen, and the `SALVAGE` panel occupies the bottom-left. They do not overlap by the measurement, but the margin
 is small enough that a narrower device should be re-measured rather than assumed.
+
+## v321 — console focus was sitting on a hidden button (measured)
+
+**Measured before:** at spawn `GuiService.SelectedObject` was a `TextButton` whose entire visibility chain was **false**. A gamepad
+player therefore had focus on something invisible — nothing highlighted, nothing to move from, which is exactly what MICRO-089
+forbids.
+
+**Fix.** `StationUI` now routes every focus assignment through
+
+```lua
+local function setFocus(target)
+    if target and target.Visible and target.Parent then
+        GuiService.SelectedObject = target
+    else
+        GuiService.SelectedObject = nil
+    end
+end
+```
+
+and the war-table panel sets or clears focus with its own visibility (`setFocus(if show then deploy else nil)`). The deferred
+`GuiService.SelectedObject = deploy` that ran before the panel existed — the source of the
+`Setting GuiService.SelectedObject to invalid GuiObject` warnings — now goes through the same guard.
+
+**Measured after:** `focus = nil` at spawn, no errors.
+
+**Still open:** **two** `Setting GuiService.SelectedObject to invalid GuiObject` warnings remain, so a second caller still assigns an
+invalid object somewhere. Focus being nil at spawn is correct behaviour, not a complete fix. The next step is to log inside
+`setFocus` (and add the same guard at the other caller) and re-measure — the warning count is the test, not the absence of a crash.
