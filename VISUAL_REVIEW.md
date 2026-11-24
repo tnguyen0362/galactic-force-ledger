@@ -1735,3 +1735,27 @@ sets `GF_DeparturePlayed = "none"` and clears the camera attributes, so a wipe c
    the ship out, not overlap it.
 3. The letterbox is driven by a different system than the departure, so a future timing change will desynchronise them.
 4. The engine trail is a single neon bar; there is no dust kick, no ground wash, and the LZ ring does not react to the take-off.
+
+## v282 — a veteran is no longer shown the intro every join, and the Archive is real (V341)
+
+**Scene / camera.** Concourse, third-person, Archive console triggered from the client, opening cinematic replayed on request.
+
+**What the frame shows.** Letterboxed replay inside the station: `GFS VANGUARD` signage, the window band with nebula and a red
+planet, a crew rig, the war table panel, and the subtitle *"Task Force Bastion held the line for eleven days."*
+
+**Three defects, all of them mine or silent:**
+1. `IntroSeen` was a **client-only attribute**, so it died with the session and every join replayed the intro. The profile field
+   `introWatched` already existed in `defaults()` and was read by nothing.
+2. My first handler indexed `profile.data.introWatched`. **The profile table has no `.data` field** — `profiles[userId]` is the
+   data table itself (other services read `profile.rank`, `profile.salvage`). The handler therefore threw immediately after its
+   print, with no visible error in the filtered log, and nothing was saved.
+3. `ProfileService.start()` ran **twice** (two "intro remotes wired" lines), double-connecting every join handler and the autosave.
+   It now has an idempotence guard.
+
+**Measured.** Session 2 join: `IntroSeen=false`. Client mark → server log `[GF] MarkIntroSeen from ROBLOXISUS101`, attribute
+`GF_IntroWatched=true`. Session 3 join: `IntroSeen=true`, no cinematic. Archive prompt → `GF_IntroReplayed=1`,
+`Cinematic_Playing=true`, `Cinematic_Beat=1` **with** `IntroSeen` already true.
+
+**What looks wrong.** The console is a bare pedestal with a neon screen at a hard-coded world position, not an Archive room. A
+replay is byte-identical to the opening run — no record framing, no date, no "archive playback" treatment — so it reads as the
+game starting over rather than a record being consulted.
