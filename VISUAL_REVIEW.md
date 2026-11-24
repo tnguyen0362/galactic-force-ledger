@@ -2578,3 +2578,24 @@ The listing closed cleanly and **the operation did not end** — which is the re
 
 **Not verified.** The migration branch (a joiner inherits the host role) and the "vote is not orphaned" clause both need two clients.
 With one client the only branch that can run is "close the listing", and it is recorded that way rather than implied complete.
+
+## v338 — privacy is enforced per viewer, and a real double-connection bug fell out of the test
+
+**What changed.** `DispatchService.open` now takes a privacy value and `publish()` sends **each player their own filtered list**:
+`public` to everyone, `friends` only to players the host is friends with (`Player:IsFriendsWith`), `private` only to its own squad.
+
+**Measured with three synthetic beacons** (public `ALPHA`, private `BETA`, friends `BETA`), reading the client's own listing payload:
+
+```
+after OPENPUBLIC  -> 1 visible  [ALPHA/public]
+after OPENPRIVATE -> 1 visible  (BETA/private correctly hidden)
+after OPENFRIENDS -> 1 visible  (BETA/friends correctly hidden from a non-friend)
+```
+
+**A real bug the measurement exposed.** `RequestDispatchJoin` was firing **twice per client call** — `DispatchService.start()` was
+being invoked twice, connecting every handler twice. That would double-count votes, refund seats twice and fire duplicate
+listings. `start()` is now idempotent.
+
+**What is missing, and it is the row's main gap.** There is **no UI to choose privacy**: `REQUEST SUPPORT` always opens a public
+request, so `friends` and `private` exist only in the protocol. Group join, invite and friend-invite flows are unimplemented, and no
+two-client run exists — so "friends/invites truly work" remains unproven even though the filter is.
