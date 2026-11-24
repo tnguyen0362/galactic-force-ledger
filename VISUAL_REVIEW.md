@@ -2898,3 +2898,29 @@ the server log immediately after the edit, which is the only reason it was a two
 
 **What is still unaddressed.** The fire budget softens the objective; it does not add cover, suppression behaviour or a reason for
 hostiles to reposition. And the encounter remains "walk into a fixed patrol", not a designed fight.
+
+## v368 — CORRECTION to v366, and the real cause of "safe at the objective"
+
+**The v366 claim was wrong.** I recorded "0 damage events, health 100 over 9 s" as evidence that the two-hostile fire budget made the
+objective survivable. Instrumenting the enemy tick with `GF_EnemiesEngaged` / `GF_EnemiesTracked` shows **8 hostiles tracked, 0 with a
+target** while the player stands at the terminal. Zero damage meant **zero engagement**, not a working fire budget. The safety I
+reported was the player not being acquired at all.
+
+**What that reveals instead, and it is the more important finding.** The primary objective is currently an **undefended** spot. Eight
+hostiles are alive and ticking within the encounter, and not one of them can acquire a player standing at the console the mission sends
+them to. `nearestVisiblePlayer` requires `State.get(player)` (fine), distance under `sightRange` (fine at 9–14 studs), and
+`lineOfSight(origin, target)` — so **LOS is being blocked by the objective's own geometry**. The compound the player must defend is the
+thing hiding them from its defenders.
+
+**Two consequences.** First, the fire budget's real effect is still unmeasured; it engaged (`GF_FireSlotsHeld = 2`) but its damage
+outcome needs a fight where acquisition actually happens. Second, the objective needs hostiles that can reach and see the console — the
+current outpost layout guarantees the opposite.
+
+**Behaviour layer, which is real.** `def.behavior` existed in the enemy config and **nothing read it**. There is now a bounded
+behaviour pass: cover/guard hostiles strafe laterally after two resolved shots, and hostiles that are **denied a firing slot** sidestep
+instead of standing still (`GF_Repositions` counted **4** in one run). No pathfinding — a fixed-direction ground-plane slide with a
+raycast clamp.
+
+**Two dead ends I hit and can name.** Calling `EnemyService.spawn` from a tool VM does nothing observable: the tool gets its own module
+instance, so `actors` is empty (`actors = 0` read back) and the real tick never sees the model. And my first measurement looked for a
+child named `HumanoidRootPart`; enemy models name their root **`Root`** and set `PrimaryPart`.

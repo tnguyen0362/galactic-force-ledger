@@ -45,3 +45,15 @@ difference between "dead in seven seconds" and "untouched in nine" is not noise.
 
 Consequence: a single hostile is now much less threatening, so encounter difficulty leans on positioning and numbers rather than
 raw rate of fire. If the game feels too easy later, raise `MAX_FIRING` to 3 before touching per-shot damage.
+
+## Do not treat "no damage" as evidence until engagement is measured (v368)
+
+v366 concluded a fire-distribution change made the objective survivable, on the strength of zero damage events over nine seconds. It was
+zero **engagement**: `GF_EnemiesEngaged = 0` with `GF_EnemiesTracked = 8`, i.e. no hostile had a target at all. The player was standing
+inside geometry that blocked line of sight, so the measurement proved nothing about damage.
+
+Rule: any survivability claim must report acquisition separately from damage — `GF_EnemiesEngaged`, `GF_EnemiesTracked`, then damage
+events. Zero of everything is a null result, not a success.
+
+The underlying defect this exposed is real and separate: the mission's primary objective is **self-concealing**. Hostiles cannot acquire
+a player at the console because the outpost's own structure blocks LOS, so the objective is undefended.
