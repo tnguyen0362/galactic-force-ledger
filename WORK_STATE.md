@@ -534,6 +534,16 @@ So `falloffEnd` was never read: every weapon's curve was silently stretched to `
 
 **Not verified:** the corrected curve at range — two 200-stud shots missed because origin/aim drift between the positioning call and the client fire. Build an open lane before claiming falloff.
 
+
+## Verified at build 461 — falloff confirmed; bosses were blocking sightlines
+The "missing" long shots of build 460 were not missing: a **Bastion Walker** left over from an elimination mission was standing in the lane (`firstHit = BastionWalker`). `EnemyService.clearAll()` only cleared `actors`, and bosses live at the workspace root, so they survived every mission change. `clearAll` now destroys `Workspace.BastionWalker` and `Workspace.HighMarshalVeyr` too (verified: present → destroyed).
+
+**Falloff measured:** one shot at **226 studs** gave `LastDamage = 10.674` against a predicted **10.66** for window 90/240 min 0.55 on a base of 18. Two-decimal agreement, which confirms the `falloffEnd` fix, the authored window and the curve shape.
+
+**Client/server position agreement:** player z = −7, target z = −107, both sides read 99–100 studs — teleport replication is fine; the earlier misses were obstruction.
+
+**Unmeasured:** the 0.55 floor beyond 240 studs — there is no clear line past 270 in the relay compound.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
