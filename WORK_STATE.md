@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 385
+# WORK_STATE — last verified 2026-11-24, place version 387
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 385**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 13 populated, 802 UNKNOWN**.
-- Ledger state: PARTIAL 12 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 387**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 15 populated, 800 UNKNOWN**.
+- Ledger state: PARTIAL 14 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -17,7 +17,22 @@
 
 Rank gate verified by temporarily requiring rank 99: deployment refused with `requires military rank 99`, no mission started; restored to 10 and re-saved.
 
-Counts: **5 of 5 families exist and are playable; 9 of 15 variants are playable** (6 verified at build 385, 3 verified at earlier builds).
+Counts: **5 of 5 families exist and are playable; 10 of 15 variants are playable** (8 verified at build 387, 3 verified at earlier builds).
+
+
+## Verified at build 387
+**Destructible objective structures** (`CombatService.damageStructure`): parts carrying `GFIntegrityMax` take the same falloff-adjusted weapon damage an enemy would, set `GFDestroyed`, and are polled by the objective machine.
+
+**Sabotage | Shattered Aegis** (`SABOTAGE_AEGIS`), real weapon fire through `FireWeapon`:
+- generators 300 HP each, destroyed in 13 and 14 AR01 shots;
+- emitter shielded until both are down — six shots at it were deflected, integrity stayed 700;
+- emitter 700 HP, destroyed in 56 shots across two reloads; `GF_ObjectiveComplete=true`, `GF_StructuresDestroyed=3`.
+
+Shield leak found and fixed: `CanQuery=false` alone did not stop damage (700 → 568). Damage now gates on the `GFShielded` attribute and counts `GF_ShieldDeflected`.
+
+Frame `ScreenCapture_AEGIS_SHIELDED` shows the new objective line `Destroy the shield generators (0 / 2)`.
+
+Automation note: a camera-origin shot is rejected `origin-too-far`; fire from `root + (0, 2, 0)`. `workspace.GFDebug` reports `Accepted` / `Rejected` / `LastReject` / `LastStructure`, which separates a rejected shot from a miss.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
@@ -33,7 +48,7 @@ Counts: **5 of 5 families exist and are playable; 9 of 15 variants are playable*
 - Kills in all tests were applied via the `Dead` attribute that `CombatService` writes; weapon → damage → kill was not re-exercised. Solo only.
 
 ## Next highest-value work
-1. **Sabotage / Recovery / Defense second and third variants** — 6 of the 9 remaining variants; the families already have their stage machinery.
+1. **Recovery and Defense variants** — 4 of the 5 remaining variants; the structure system now covers "destroy" stages.
 2. **Hacking subsystem** (`S08-036`–`S08-043`) — referenced by every authored variant that says "hack console"; nothing exists yet.
 3. **Target markers** (`S08-033`) — affects every mission.
 4. Defense object HP + absence pause (`S08-029`, `S08-031`).
