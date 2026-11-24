@@ -432,6 +432,24 @@ Deploy → hold relay → extract → board → debrief on `SABOTAGE_RELAY`/Norm
 
 **Third forward-reference bug this session** (two of mine in `EnemyService`, this one pre-existing). Luau compiles it and fails at runtime — `loadstring` is not a test.
 
+
+## PAUSED by owner — 2026-11-24T22:35Z
+`.goal/PAUSE` written; the loop will not continue until it is removed.
+
+**In flight — 15-template deploy sweep (place 453, unchanged by the sweep).** Each template was deployed on Normal for ~3 s and `GF_DeployRejected` read:
+
+| Verdict | Result |
+|---|---|
+| Rejections | **none** — all 15 templates accepted |
+| `GF_ObjectiveComplete` | `false` on all 15, as expected right after deploy |
+
+**Suspicious artefact, not yet investigated:** `GF_ElimTargets` read **3** for templates that are not elimination missions (Conquest, Defense, Recovery, Sabotage-Aegis/Arsenal), and `1` for `ELIM_WALKER`. Either it is a stale attribute left by the previous mission, or elimination tagging is leaking into other templates. One run with the attribute cleared before each deploy would settle it. Do not trust that counter until then.
+
+**Next actions when resumed**
+1. Clear `GF_ElimTargets` before each deploy and re-read it per template to prove or kill the leak hypothesis.
+2. Finish the sweep by driving each variant to completion (teleport + interact/objective per template) rather than only deploying.
+3. Check the client and server logs once at the end; the sweep only covered deploy, not play.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
