@@ -1849,3 +1849,27 @@ therefore unreachable by any route.
 
 **What looks wrong.** Everything about the player's side. No augment screen, no socket display, no mastery bar, no acquisition
 path for augments themselves — the boss reward grants blueprints, not augments. A player cannot perceive any of this work yet.
+
+## v294 — augments finally have a surface (V347)
+
+**Scene / camera.** Station concourse, Armory panel scrolled to the bottom.
+
+**What the frame shows.** Below the weapon rows and above the CLASS strip:
+`AUGMENTS · LMG12 · MASTERY 5`, `SOCKET 1 · ExtendedMagazine`, `SOCKET 2 · EMPTY`. Before mastery the same strip read
+`AUGMENTS · LMG12 · MASTERY 0`, `SOCKET 1 · EMPTY`, `SOCKET 2 · LOCKED (MASTERY 5)` — the rule is drawn, not hidden.
+
+Measured in the same run: `grantTestAugment` → `sockets=2, mastery=5`; then `augment slot 1` → `ok=true,
+slotted1=ExtendedMagazine`.
+
+**Two of my own errors on the way in, both caught only by reading the client log:**
+1. `b.Text = … \n or (…)` — a newline before `or` split the statement and the whole Armory script failed to compile
+   (`Incomplete statement: expected assignment or a function call`).
+2. A continuation line of a comment lost its `--` prefix, which broke the same script at line 149. The panel showed nothing at
+   all, and the server log was clean.
+
+**What looks wrong.**
+1. **The station deck is a solid orange field** in this frame. That is the same signature as the airstrike light saturation fixed
+   earlier, but nothing was cast here and no blast exists — the cause for the station interior is **not identified**, and I am
+   not going to pretend otherwise.
+2. Socket buttons cycle through owned augments on click. There is no picker, no effect description, and no way to clear a socket.
+3. Acquiring an augment still has no in-game path; only the gated Studio hook grants one.
