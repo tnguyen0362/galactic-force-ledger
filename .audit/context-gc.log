@@ -450,3 +450,18 @@
 2026-11-24T22:17:25.312Z usage=297000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
 2026-11-24T22:17:25.563Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
 2026-11-24T22:17:29.088Z usage=953824 msg=3364 images=4 text=164 thinking=304 budget=2115 chars 5168352->2305846 (-55%) proj=249561
+2026-11-24T22:18:11.849Z usage=954644 msg=3368 images=4 text=165 thinking=305 budget=2115 chars 5174170->2307156 (-55%) proj=249527
+2026-11-24T22:18:19.804Z usage=296994 msg=3370 images=4 text=165 thinking=306 budget=2115 chars 5176808->2308362 (-55%) proj=249669
+2026-11-24T22:18:29.383Z usage=297523 msg=3372 images=4 text=165 thinking=306 budget=2117 chars 5179247->2309396 (-55%) proj=249987
+2026-11-24T22:18:39.264Z compact streak 1/3 usage=950000 incoming=1205639
+2026-11-24T22:18:39.267Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:18:39.496Z compact streak 2/3 usage=950000 incoming=1205639
+2026-11-24T22:18:39.499Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:18:39.740Z compact streak 3/3 usage=950000 incoming=1205639
+2026-11-24T22:18:39.740Z usage=950000 COMPACT requested — stored context at 950000 of 1000000 (95%) after 3 pruned requests
+2026-11-24T22:18:39.742Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:18:39.983Z compact streak 1/3 usage=300000 incoming=1205639
+2026-11-24T22:18:39.985Z usage=300000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:18:40.232Z compact streak 2/3 usage=300000 incoming=1205639
+2026-11-24T22:18:40.234Z usage=300000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:18:43.800Z usage=297523 msg=3374 images=4 text=165 thinking=306 budget=2123 chars 5180776->2307385 (-55%) proj=249894
