@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 430
+# WORK_STATE — last verified 2026-11-24, place version 431
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 430**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 431**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 81 populated, 748 UNKNOWN**.
 - Ledger state: PARTIAL 52 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -247,6 +247,14 @@ Snapshot before/after a stop-start cycle: credits 39,590 · rank 15 · XP 123,70
 **Bug the restart exposed:** the character spawned in **STANDARD** while the profile said VANGUARD, because AppearanceService dresses at spawn before the DataStore profile arrives and never re-dressed. Fixed with a bounded 20×0.5 s retry; measured `GF_ArmorSuit = "VANGUARD"` with the correct palette on a fresh server.
 
 **Still open:** no crash/reconnect mid-mission test, no receipt idempotency, war credits and settings not read back.
+
+
+## Build 431 — minimap HUD (first pass)
+`TacticalMapService` published `GF_MapMeta`/`GF_MapHeights`/`GF_MapMarkers` and **nothing read them**. New `StarterPlayerScripts.Minimap` draws 256 terrain cells and colour-coded blips (objective amber, LZ green, squad blue, down red) in a 156×156 top-right frame with an N tick. Measured `GF_MinimapCells=256`, `GF_MinimapBlips=2`, capture `ScreenCapture_MINIMAP`.
+
+**Two defects recorded, not fixed:** the `UICorner` mask does not clip children so the panel reads **square**; and heading rotation could not be observed because `CurrentCamera.CFrame` writes had no effect in this session (look vector identical before/after, even with `CameraType = Scriptable`), so `field.Rotation` stayed 0.
+
+**Also:** terrain cells only re-place when the height field republishes, so the map drifts as the player moves.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
