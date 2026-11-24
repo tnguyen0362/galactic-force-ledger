@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 446
+# WORK_STATE — last verified 2026-11-24, place version 447
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 446**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 447**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
 - Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -380,6 +380,17 @@ Measured: `GF_CallState = "Officer:pending"` → `GF_Reinforcements = 2` with Ri
 **Corrected at build 446:** the sabotage roster *does* include Officer — it is a random patrol pick, and two sample missions happened to roll none. The real issue was reliability, so `beginMission` now guarantees **one Officer at the relay** for `SABOTAGE_RELAY`. Measured in plain play (no scaffolding): Officer 11 studs from the relay, `GF_CallState = Officer:pending`, then `GF_Reinforcements = 6` and Riflemen → 7.
 
 **Balance risk:** three Officers each called once, adding 6 hostiles to a mission with no cap. Needs a one-call-per-mission (or per-relay) limit before it is tuned.
+
+
+## Build 447 — relay call cap attempted, NOT airtight
+Added `relayCallUsed` with both a start guard and a completion guard, reset from `beginMission`. Result: reinforcements fell from **6 → 4**, but two calls still resolve and I cannot say why. Two candidates not separated:
+
+1. `GF_Reinforcements` is a running counter never reset per mission — 4 may include carry-over.
+2. Two calls resolving inside the same 0.5 s tick.
+
+**Next action (one run):** reset `GF_Reinforcements` in `beginMission` and stamp `GF_CallCompletedBy` with the Officer name per completion. Do not re-tune before that reads clean.
+
+**Process note:** fifth time a running counter or last-value attribute gave an ambiguous reading. Counters must be reset where their mission peers are.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
