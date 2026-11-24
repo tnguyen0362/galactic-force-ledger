@@ -2210,3 +2210,21 @@ V360 shows `PRIMARY OBJECTIVE COMPLETE / Extraction authorized` standing on the 
 3. `SHIELD 0` appears again in this frame — this run teleported the player to the terminal and back through the patrol area, so it is
    plausible enemy fire rather than the arrival bug, but it is not being claimed either way without a measurement.
 
+
+## v315 — the carry is visible now (V361)
+
+**Added.** Picking the case up welds a 1.6×1.1×0.7 amber case to the carrier's back (`CarriedCase`, `WeldConstraint`, massless,
+non-collidable) and drops a 36-stud neon `DeliveryPatch` on the landing zone so the destination is visible on the ground. Both are
+removed on delivery.
+
+**Measured.** After the terminal interaction: `carriedCase=true`, `deliveryRing=true`, `GF_ObjectiveComplete=false` — i.e. the
+pickup is visibly carried and does not complete on its own. V361 shows the amber case on the player's back at the objective site.
+
+**What looks wrong, in the same frame.**
+1. **The tracker still reads "Sabotage the Ascendancy relay" during a RECOVER carry.** The hint text is published correctly
+   ("Carry the case to the landing zone") but the tracker line does not follow it, so the objective on screen contradicts the
+   mechanic. That is the next fix and it is a text bug, not a design one.
+2. `SHIELD 0` again while standing at the objective — plausible enemy fire from the patrols around the terminal, but unmeasured this
+   run and therefore not claimed.
+3. The terminal structure behind the player is a large untextured grey slab with hard edges; it reads as blockout against the
+   terrain and the enemy silhouettes around it.
