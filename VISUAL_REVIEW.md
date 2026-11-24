@@ -1974,3 +1974,19 @@ clean grey in both. Across this continuation the following were excluded with me
 Girders — all grey `Metal`, opaque), reflective parts (0), terrain voxels under the station (all Air), post effects (neutral), and
 workspace `Highlight`/`Beam`/`SurfaceGui`/`BillboardGui` (player highlight fill is 24,34,48 with 1.0 fill transparency; signs and
 slot boards only). A defect that only appears sometimes needs a capture-and-dump in the same instant, which is the next step.
+
+## v301 — why the refusal never rendered: a colour constant that does not exist
+
+**Root cause found, and it is exact.** `StationUI` defines `CYAN`, `AMBER`, `PANEL`, `TEXT`, `MUTED`. My reset helper wrote
+`deploy.TextColor3 = WHITE`. `WHITE` is nil, so the very first response hit
+`Unable to assign property TextColor3. Color3 expected, got nil` **inside** the handler, which killed it before any refusal text
+was written. That is why V350/V351 showed a stale line from the earlier status-label version and V353 showed nothing at all.
+
+**Fixed.** The constant is now `TEXT`, and both colour writes go through `pcall` — a cosmetic constant must never be able to
+silence an error path.
+
+**New problem, recorded rather than papered over.** After that fix the deploy button could not be found in any later play session:
+scanning every `TextButton` for the text `DEPLOY` returned nothing, including with the new `GF_StationPanel` force-open attribute
+set. The button existed in V350–V353. The likely explanation is that `StationUI` now stops part-way through construction, which
+would take the whole war table panel with it. **This is not verified** — the next continuation must read the client log
+immediately after join and find where the script stops, before any further claims are made about this row.
