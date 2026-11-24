@@ -1442,3 +1442,21 @@ over 2.6 s). A sphere cannot be buried by terrain and it reads from any camera a
 the orb. Next attempt clears the blast point first — kill or displace the enemies — then captures.
 
 **Unchanged and measured:** frag 1 hostile / 64 damage at the aim point; EMP 8 shield drained, 2 stunned.
+
+## v248 — the "orange plane" was the grenade ring all along
+
+The ring was a **filled `Cylinder` disc** at `radius * 1.15`. A `Cylinder`'s local X is its axis, so the primitive is
+either edge-on — a thin band across the viewport — or, at 25+ studs diameter with the camera inside it, a solid sheet of
+colour covering the frame. V307 shows exactly that: a full-width red-orange band that is the frag ring, not a light, not
+the atmosphere and not a hidden part. That explains a defect chased through roughly ten separate probes.
+
+**Fix:** the shockwave is now 14 discrete segments per blast, tweened outward and faded in 0.75 s, so it reads as a ring
+and cannot occlude the view. Measured after the change: 28 segments live across two waves.
+
+**Also this pass:** the blast orb lives 8 s instead of 2.6 s (the round trip between tool calls is 1–3 s, so a 2.6 s
+effect expired before any capture landed), and I repaired a syntax break I introduced while replacing `ring()` —
+`GrenadeRuntime` failed to load for one cycle with `Incomplete statement` at line 59.
+
+**Still open.** The grenade now arcs to the requested point but then drifts up to **18 studs** short (aim z = −160,
+detonation z = −142) — the unanchor/drop step after the tween is moving it. Until that is fixed, a camera framed on the
+aim point will not contain the blast.
