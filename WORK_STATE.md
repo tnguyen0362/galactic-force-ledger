@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 433
+# WORK_STATE — last verified 2026-11-24, place version 435
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 433**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 435**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 81 populated, 748 UNKNOWN**.
 - Ledger state: PARTIAL 52 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -263,6 +263,16 @@ Neither existed: the mission deadline lived only in mission state (never publish
 Measured: 1492 s → `MISSION 24:52` normal (220,230,240); override 200 s → `MISSION 3:20` **amber (255,200,90)**; override 30 s → `MISSION 0:30` **red (255,110,100)**; charges 3 → `GRENADE x3`.
 
 **Still missing from `S03-037`:** squad status, compact loot feed, Voss portrait/subtitles, nearby-enemy blips.
+
+
+## Verified at build 435 — loot feed stacks, squad count
+`SquadService.broadcast` now emits a **delta** on `LootCollected`; `StatusStrip` renders a four-line feed that stacks identical consecutive pickups. Measured: three 25-scrap grants → **`+75 scrap x3`** in one line, salvage total 75, `SQUAD 1`.
+
+**Regression I caused and fixed in the same batch:** the delta code was placed above `local RS = game:GetService("ReplicatedStorage")` inside `broadcast`, so `RS` was nil and **every salvage pickup errored for two builds**. Fixed by hoisting `RS`; re-verified with three real broadcasts.
+
+**Harness mistake, twice in a row:** setting `GF_TestHooks` from the **Client** datamodel (writes do not replicate) made the hook look broken. From the Server it works immediately.
+
+**`S03-037` still missing:** Voss portrait/subtitles, nearby-enemy blips, multi-member squad reading (only one client exists).
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
