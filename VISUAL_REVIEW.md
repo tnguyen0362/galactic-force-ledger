@@ -1936,3 +1936,24 @@ fabricated client message. Verified on a live mission: kill count 1, pity 1/3, c
 **What looks wrong.** The unlocked blueprint is never named — when the guarantee fires the debrief will say "Blueprint
 recovered — permanent unlock." without saying *what* was unlocked or what it enables. There is also no standing research
 readout anywhere in the station; progress is only visible immediately after a mission.
+
+## v298 — the deploy button tells the truth now, and its message lands in the wrong place (V350, V351)
+
+**What changed.** The deploy button used to set `DEPLOYING…`, disable itself for a fixed 4 seconds and re-enable whether or not
+anything had happened — a refusal was indistinguishable from a slow launch. `StationService.deploy` now validates the operation
+against the real template set, gates difficulty on military rank (Easy 1 / Normal 3 / Hard 6 / Extreme 10) and returns
+`(ok, reason)`, firing `DeployStateChanged` either way. The client keeps a status line, ends the spinner on the server's answer,
+and arms an 8 s watchdog that reports "No response from command" instead of spinning forever.
+
+**Measured.** Invalid operation → `ok=false, reason="unknown operation"`. Extreme with rank 15 → `ok=true`.
+`GF_DeployRejected` / `GF_DeployAccepted` recorded. V350 shows the refusal text in the panel.
+
+**What looks wrong.**
+1. The status line is at `y=308` and the deploy button at `y=330` — they **collide**, and the reason string is clipped by the
+   panel edge. Half the message is unreadable. My first placement (y=386) overlapped the controls hint, so this is a second bad
+   position rather than a fix.
+2. Dispatch listing and debrief still have no loading, error or retry states at all; only deploy got them.
+3. **The orange deck returned in V351**, and this time there is no orange part and no orange light near the camera: the nearest
+   parts are `Subfloor`, `HangarDeck`, `Ceiling`, `WarTableBase` and two grey `Girder`s, all `Metal`, all opaque. So the earlier
+   `BossBlast` finding explained *one* source; this second source is lighting-driven and still unidentified. Next step is to dump
+   light properties at the exact moment the deck goes orange rather than after.
