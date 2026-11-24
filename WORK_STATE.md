@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 447
+# WORK_STATE — last verified 2026-11-24, place version 448
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 447**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
 - Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -388,7 +388,7 @@ Added `relayCallUsed` with both a start guard and a completion guard, reset from
 1. `GF_Reinforcements` is a running counter never reset per mission — 4 may include carry-over.
 2. Two calls resolving inside the same 0.5 s tick.
 
-**Next action (one run):** reset `GF_Reinforcements` in `beginMission` and stamp `GF_CallCompletedBy` with the Officer name per completion. Do not re-tune before that reads clean.
+**Resolved at build 448:** the 4 was carry-over, not two calls. `beginMission` now resets `GF_Reinforcements`/`GF_CallCompletedBy`/`GF_LastCall`, and each completion appends `Officer@<clock>;` so completions are countable. Two consecutive missions each gave **2 reinforcements** and **one** `Officer@…` entry — the cap works and does not accumulate.
 
 **Process note:** fifth time a running counter or last-value attribute gave an ambiguous reading. Counters must be reset where their mission peers are.
 
