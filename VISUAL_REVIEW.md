@@ -1514,3 +1514,23 @@ Three defects, in the order they surfaced:
 **What still looks wrong.** No hex pattern, no impact ripples at the hit point, no health readout on the rim — damage to
 the shell is invisible until it breaks. The dome is per-player, so a squad cannot shelter under one. One cast at a point
 14 studs from the player, well inside `range = 90`, silently did nothing while casting at the player's own root worked.
+
+## v255 — orbital strike exists and lands (measured), beam not yet photographed
+
+There was no OrbitalStrike implementation — `cast` handled Airstrike, DomeShield and (this session) Sentry. It now runs
+entirely server-side so it works with no client handler: a 1.8 s telegraph (20-segment ring plus a low hum), then a
+220-stud beam column, a 24-brightness flash light, a 20 s ember scorch, a 24-segment shockwave and a pitched boom, with
+400 base damage and falloff.
+
+**Measured:** `LastOrbital=true, LastOrbitalTargets=2, LastOrbitalDamage=636`, `OrbitalBeam` and `OrbitalScorch` both live
+in the tree after impact.
+
+**Two of my own errors, caught by reading the log instead of assuming success:**
+1. A call to a `model_note` helper that does not exist — `CastAbility error: attempt to call a nil value`.
+2. `TweenService` used without importing it — `attempt to index nil with 'Create'`.
+
+Both were found because the first attempt silently did nothing and I checked the warning log rather than re-running blindly.
+
+**What still looks wrong.** The beam lives 0.55 s, shorter than a tool round-trip, so V316 shows only the aftermath. There
+is no camera shake, no debris and no crater; the boom is a pitched stock `bass.wav`. And 636 damage from a 400 base
+means the falloff is too generous at close range — that is a balance bug, not a visual one.
