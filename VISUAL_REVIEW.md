@@ -1497,3 +1497,20 @@ capture within the same window.
 
 **Open oddity:** casting the dome at a point 14 studs from the player, well inside `range = 90`, silently did nothing,
 while casting at the player's own root worked immediately. Not yet explained.
+
+## v253 — the dome is visible, and it stops bullets (V315)
+
+Three defects, in the order they surfaced:
+
+1. **Two contradictory rules.** The dome absorbed damage inside it but was `CanQuery = false`, so bullets passed through
+   the shell. Now `CanQuery = true`, `CanCollide = false`: players walk through, projectiles stop. Measured — a raycast
+   from the player toward an enemy hits **DomeShield at 28.7 studs**.
+2. **It was invisible.** A lone ForceField sphere at 0.55 transparency against a dark room rendered as nothing (V314).
+   It now has a neon rim shell (1.5 % larger, 0.86 transparency) and **14 glowing base posts** on the boundary, so the
+   edge of safety is legible from across the deck (V315).
+3. **It expired before it mattered.** Duration was 9 s on a 70 s cooldown — shorter than a single engagement and shorter
+   than any capture attempt. Raised to **20 s**.
+
+**What still looks wrong.** No hex pattern, no impact ripples at the hit point, no health readout on the rim — damage to
+the shell is invisible until it breaks. The dome is per-player, so a squad cannot shelter under one. One cast at a point
+14 studs from the player, well inside `range = 90`, silently did nothing while casting at the player's own root worked.
