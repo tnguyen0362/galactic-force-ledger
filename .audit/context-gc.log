@@ -436,3 +436,12 @@
 2026-11-24T22:13:32.635Z usage=944000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885423 (-79%) proj=249266
 2026-11-24T22:13:32.871Z usage=944000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885423 (-79%) proj=249266
 2026-11-24T22:13:33.142Z usage=945747 gate: tight=true loopDone=false last=toolResult
+2026-11-24T22:13:39.563Z usage=946032 gate: tight=true loopDone=false last=toolResult
+2026-11-24T22:14:03.216Z usage=946320 msg=3340 images=4 text=163 thinking=300 budget=2084 chars 5144634->2308463 (-55%) proj=249347
+2026-11-24T22:15:10.648Z usage=947270 msg=3344 images=4 text=163 thinking=301 budget=2084 chars 5151165->2310252 (-55%) proj=249458
+2026-11-24T22:15:32.667Z usage=948626 msg=3348 images=4 text=163 thinking=301 budget=2092 chars 5152934->2310123 (-55%) proj=249862
+2026-11-24T22:15:56.928Z usage=949829 msg=3352 images=4 text=163 thinking=302 budget=2100 chars 5155890->2307295 (-55%) proj=249540
+2026-11-24T22:16:12.813Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:16:13.042Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:16:13.277Z usage=950000 COMPACT requested — stored context at 950000 of 1000000 (95%) after 3 pruned requests
+2026-11-24T22:16:13.279Z usage=950000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
