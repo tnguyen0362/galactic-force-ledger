@@ -2721,3 +2721,28 @@ line **"Reinforcement catch-up credit already paid — no mission share."**
 **What is still wrong.** Apart from the explanation line, the zeroed rows look identical to a payout that failed — there is no icon,
 no colour change, nothing that separates "you were paid earlier" from "the mission paid nothing". And duplicate-join prevention
 still has no two-client test; a player who leaves and re-joins the same operation has never been observed.
+
+## v351 — Quick Deploy works on both branches, after three layout attempts (V385 -> V386 -> V387)
+
+**What it does.** `DispatchService.quickDeploy` joins the first listed **public** operation that has a seat free and is not hosted by
+the caller — through the same `respond()` path, so seats, the 4-player cap and the arrival pod all apply. If nothing is listed it
+deploys solo immediately.
+
+**Measured on both branches:**
+
+```
+no listing      -> GF_QuickDeploy = "solo"                    GF_InMission = true
+public listing  -> GF_QuickDeploy = "joined:PD-ALPHA7192"     GF_LastPod = "ROBLOXISUS101@0,40,118"
+```
+
+**The button, three times.** V385: placed at y=296, directly under the `EASY`/`NORMAL` row and overlapping it. V386: moved beside
+`DEPLOY`, where it ran off the panel's right edge (`QUICK DEPLO…` clipped). V387: given its own full-width row at y=392 with the
+panel grown to 584 px and every row below re-stacked — finally legible, with the dispatch listing, visibility chips and
+`REQUEST SUPPORT` all still fitting.
+
+That is the fifth collision in this panel this session, all from the same cause: **every row is an absolute pixel offset with no
+flow layout**. The panel now has nine stacked rows and no remaining free band, so the next addition must either add a page or move
+to a layout that reflows.
+
+**What is still unproven.** The join is always a single-client test — no real second player has ever been in the instance — and
+Quick Deploy takes the first compatible listing with no choice of operation or difficulty.
