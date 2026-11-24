@@ -1590,3 +1590,23 @@ Changes that follow from that:
 **Still wrong visually.** The blast reads as a flat orange smear, not a volume: a 7-stud ball expanded to 16 at 0.05 alpha, mostly
 occluded by bombs at this camera angle. There is no smoke, no debris and no crater, and the aircraft flies at 62 studs altitude,
 above this frame — it has never been photographed.
+
+## v264 — the orange wash was mine, and it was 95% opaque (V323, V324, V325)
+
+I had recorded the giant orange plane as "solved" (the grenade ring's filled cylinder). That was wrong, and this session produced
+the actual answer by elimination: with no grenade in play the orange field still appeared during an airstrike, and when the
+airstrike parts expired (**0 parts removed by hand — they had already gone**) the orange vanished with them. The orange *was*
+the airstrike blasts.
+
+The cause is my own mistake: I raised the blast to `Transparency = 0.05`, reading it as "barely visible" when 0.05 transparency
+means **95% opaque**. Three of those at 7 studs, right where the player is standing, flood the viewport — the exact thing
+MICRO-041 forbids ("must not obscure all combat"). Every earlier orange frame in this file that I blamed on a cylinder disc
+should be re-read with that in mind.
+
+Fixed: alpha 0.55, base size 6, expand to 11 (not 16), plus a rising `Slate` smoke column so the blast has a silhouette instead
+of being a flat disc of colour.
+
+**Also attempted and not yet proven:** `PhotoCam` now re-asserts the vantage every frame on `BindToRenderStep` at
+`Camera+1` priority, because a one-shot `Camera.CFrame` write is overwritten by the controller on the next frame. V324 still
+framed the player's own third-person camera with the player dead centre, so the hold is **not yet authoritative under
+`screen_capture`** — that remains open, and it is the reason so many evidence frames in this log show the wrong vantage.

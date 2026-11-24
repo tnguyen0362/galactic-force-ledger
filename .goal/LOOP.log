@@ -143,3 +143,4 @@ The goal is the complete launch-content specification, not another reduced verti
 [2026-11-24T02:17:37.307Z] stopped after 26 iteration(s): turn aborted (Escape)
 [2026-11-24T02:19:48.956Z] resumed at iteration 26
 [2026-11-24T02:23:59.073Z] iteration 27 — 155 rows | ABSENT 47 | PARTIAL 97 | UNPROVEN 2 | PENDING-OWNER 5 | ACCEPTED 0 | LEGACY-CLOSED 2 | NOT-AUDITED 2
+[2026-11-24T02:27:55.355Z] iteration 28 — 155 rows | ABSENT 47 | PARTIAL 97 | UNPROVEN 2 | PENDING-OWNER 5 | ACCEPTED 0 | LEGACY-CLOSED 2 | NOT-AUDITED 2
