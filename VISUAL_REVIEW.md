@@ -1921,3 +1921,18 @@ duplicated.
 **What still looks wrong.** The player is told nothing: no blueprint announcement, no item name, no pity countdown, no indication
 of what the unlock enables. A rule that is correct and invisible does not satisfy the player-facing half of the requirement, so
 both rows stay pending owner review rather than being called done.
+
+## v297 — the blueprint pity is now visible where the player already looks (V349)
+
+**Scene / camera.** Station, third-person, standard post-mission debrief after a forced-failure extraction.
+
+**What the frame shows.** `OPERATION FAILED`, the usual zeroed payout rows, and then two new lines:
+`ASCENDANCY RESEARCH · BASTION_WALKER · CLEAR 1` and `Blueprint guaranteed in 2 more clears (1/3).`
+
+**Path.** `grantBossReward` stashes the outcome on the profile; `RewardsService.grant` attaches it to the next
+`MissionComplete` payload and clears it, so the debrief reports it exactly once through the real mission-end path — not a
+fabricated client message. Verified on a live mission: kill count 1, pity 1/3, countdown rendered.
+
+**What looks wrong.** The unlocked blueprint is never named — when the guarantee fires the debrief will say "Blueprint
+recovered — permanent unlock." without saying *what* was unlocked or what it enables. There is also no standing research
+readout anywhere in the station; progress is only visible immediately after a mission.
