@@ -2,8 +2,8 @@
 
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 418**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 61 populated, 762 UNKNOWN**.
-- Ledger state: PARTIAL 41 | VERIFIED 11 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 62 populated, 761 UNKNOWN**.
+- Ledger state: PARTIAL 41 | VERIFIED 12 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -165,9 +165,9 @@ Completing the primary now opens **no** cache (measured 0 opens). Boarding after
 ## Build 418 — loadout slot buttons in the Armory
 `StationArmoryUI` now renders three SAVE/LOAD rows (`Loadout1.Save` … `Loadout3.Load`) wired to the verified server actions. Six buttons exist with distinct paths.
 
-**Not verified:** the click path. The armory panel would not open — `OpenArmoryPanel` fired to the client left `Panel.Visible=false` from the station spawn *and* from 12 studs in front of the rack, while the panel itself was built and laid out and its buttons existed. A synthetic click on a hidden panel therefore did nothing.
+**Retraction (same build, retest):** the armory was never broken. `StationArmoryUI` closes the panel every Heartbeat when the player is more than 46 studs from the rack, and my unanchored teleport dropped the character to `y=30` against a `y=768` deck — a 738-stud gap. With the root **anchored** at 14 studs, the panel opened and real mouse clicks worked: `Loadout1.Save` → `GF_LoadoutSaved=1`; equip SMG03, `Loadout2.Save`, equip AR01, `Loadout2.Load` → `GF_LoadoutLoaded=2` and profile primary became **SMG03**.
 
-**Next step:** open the panel the way a player does (rack ProximityPrompt) and click SAVE 1. If the prompt also fails, the armory entry point has its own defect, which matters more than the slots.
+**Harness rule:** anchor the character before any station teleport. There is no floor under the armory approach, and every proximity check fails silently 738 studs below the deck.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
