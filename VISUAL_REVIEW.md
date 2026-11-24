@@ -1779,3 +1779,26 @@ tutorial.
 **What looks wrong.** The tutorial card sits on top of the `WAR TABLE` signage. The step-1 plate spawns directly under the
 player's feet, so "move to the marked plate" is already satisfied on the first frame — the objective reads as done before the
 player moves. There is no transition at all between the cinematic ending and the card appearing.
+
+## v288 — the Armory could not be opened at all after boot (V343, V344)
+
+**Scene / camera.** Station concourse, third-person, Armory panel opened through the `GF_ArmoryOpen` hook.
+
+**What the frames show.** V343: `ARMORY · 58650 CREDITS · RANK 15`, rows for AR-01, P-01 (EQUIPPED), SG-04 (EQUIP), MR-07
+(EQUIP), LMG-12 (EQUIPPED) with per-weapon stats. V344: scrolled to `ER-16 Pulse Rifle — Energy · 30 DMG · 40 MAG · Auto —
+BUY 3000`, plus the CLASS strip with Assault selected.
+
+**Two functional defects found, both of which made the screen unusable rather than merely ugly:**
+1. `findAnchor()` returned a **cached Vector3**. The station is rebuilt during boot ("station missing after boot; rebuilding
+   from Main"), so the cached position pointed at a rack that no longer existed and the distance check never passed. The Armory
+   silently refused to open from anywhere. It now returns the part, re-resolves when the part loses its parent, and compares
+   against `anchor.Position`.
+2. The weapon list is a `ScrollingFrame` whose **canvas was never set**, so its sixth row (ER-16, the only unowned weapon and
+   the only BUY in the game) sat below the footer and could not be reached or bought. Canvas is now the rendered row count.
+
+Verified separately through the real remotes: `BUY LMG12` returned ok with credits 60050 → 58650 (exactly −1400), and
+`EQUIP LMG12` returned ok.
+
+**What still looks wrong.** There is no purchase confirmation — BUY charges immediately; success is only visible as the row
+becoming EQUIP, while a failure replaces the credit balance text with the reason. `CLOSE [E]` is keyboard-only, so touch and
+gamepad players can open this panel but not close it.
