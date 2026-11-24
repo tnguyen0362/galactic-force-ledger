@@ -3067,3 +3067,21 @@ the objective first.
 distinguish a plant from a rock by colour alone, and its failure mode is entire-scene, not local. The correct fix is a **palette argument
 to the dressing generator** so plants are authored violet at construction. Recorded in `ASSET_DEBT.csv` as `PLANT_PALETTE_V1` with the exact
 part signature and both failure captures, so the next attempt starts from the measurement instead of from a guess.
+
+## v378 — the plant palette is fixed at the source, and the capture itself is now the blocker (V415)
+
+**Fixed properly this time.** `EnvironmentDressing.dress` now takes a `floraTint` argument and defaults to **86,74,118** (violet) for outdoor
+dressing, instead of the hardcoded teal `58,88,82`. Measured after deploy: `Flora0 86,74,118 | Flora1 86,74,118 | Flora2 86,74,118` — the
+colour is applied where the part is built, not by a filter afterwards.
+
+**A wrong turn inside the right fix.** My first version keyed the tint off `workspace.GF_EnvironmentPreset == "station"`, which still produced
+`58,88,82`. Reason: **dressing runs before the mission environment is applied**, so the preset still read `station` at that moment. Zone is
+not a reliable input to construction-time colouring; the caller has to say what it wants.
+
+**The capture is now the actual blocker.** Five attempts this continuation, all with the camera forced `Scriptable`, `CameraSubject = nil`,
+and the offset printed before the shot (`camDist=34`), came back as the **station interior**. The camera reads correct in the same tool call
+that sets it and is wrong by the time `screen_capture` runs, which suggests the capture path itself resets or re-derives the camera. Until
+that is solved, mission art cannot be reviewed visually at all — only measured.
+
+**Consequence for the ledger.** Violet flora is recorded as *measured at construction*, explicitly **not** as seen. `PLANT_PALETTE_V1` is
+closed in `ASSET_DEBT.csv` for the code fix, with the missing frame called out as the outstanding item rather than quietly dropped.
