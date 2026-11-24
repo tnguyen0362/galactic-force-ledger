@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 417
+# WORK_STATE — last verified 2026-11-24, place version 418
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 417**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 418**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 61 populated, 762 UNKNOWN**.
 - Ledger state: PARTIAL 41 | VERIFIED 11 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -160,6 +160,14 @@ Completing the primary now opens **no** cache (measured 0 opens). Boarding after
 `profile.savedLoadouts` was a dead field: nothing wrote it. Added `ArmoryService.saveLoadout/loadLoadout` (slots 1-3, reachable as `SetLoadout` actions). Measured: save slot 1 holding SMG03 → equip AR01 → load slot 1 restores **SMG03**; slot 2 stays independent; `loadout slot is empty` and `loadout slot must be 1-3` both refuse correctly.
 
 **Still open:** the Armory UI has no slot buttons, so this is remote-only. Persistence across a rejoin was not tested.
+
+
+## Build 418 — loadout slot buttons in the Armory
+`StationArmoryUI` now renders three SAVE/LOAD rows (`Loadout1.Save` … `Loadout3.Load`) wired to the verified server actions. Six buttons exist with distinct paths.
+
+**Not verified:** the click path. The armory panel would not open — `OpenArmoryPanel` fired to the client left `Panel.Visible=false` from the station spawn *and* from 12 studs in front of the rack, while the panel itself was built and laid out and its buttons existed. A synthetic click on a hidden panel therefore did nothing.
+
+**Next step:** open the panel the way a player does (rack ProximityPrompt) and click SAVE 1. If the prompt also fails, the armory entry point has its own defect, which matters more than the slots.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
