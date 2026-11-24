@@ -200,3 +200,4 @@ The goal is the complete launch-content specification, not another reduced verti
 [2026-11-24T09:13:58.572Z] iteration 82 — 155 rows | ABSENT 17 | PARTIAL 107 | UNPROVEN 2 | PENDING-OWNER 25 | ACCEPTED 0 | LEGACY-CLOSED 2 | NOT-AUDITED 2
 [2026-11-24T09:15:12.795Z] stopped after 82 iteration(s): turn aborted (Escape)
 [2026-11-24T09:22:58.436Z] resumed at iteration 82
+[2026-11-24T09:29:11.798Z] iteration 83 — 155 rows | ABSENT 17 | PARTIAL 107 | UNPROVEN 2 | PENDING-OWNER 25 | ACCEPTED 0 | LEGACY-CLOSED 2 | NOT-AUDITED 2

@@ -2924,3 +2924,33 @@ raycast clamp.
 **Two dead ends I hit and can name.** Calling `EnemyService.spawn` from a tool VM does nothing observable: the tool gets its own module
 instance, so `actors` is empty (`actors = 0` read back) and the real tick never sees the model. And my first measurement looked for a
 child named `HumanoidRootPart`; enemy models name their root **`Root`** and set `PrimaryPart`.
+
+## v370 — the objective finally has defenders, and they are too good at it (V404)
+
+**Root cause of the undefended objective, fixed.** Patrols were scattered on a 34-stud ring with no check that any of them could *see*
+the console. `EncounterDirector.spawnPosts` now picks a vantage point only if a raycast from it to the console is **unobstructed**, and
+places a `Marksman` and a `Rifleman` there.
+
+**Measured, same standing spot at the console:**
+
+| | tracked | acquired a target | posts placed |
+|---|---|---|---|
+| before | 8 | **0** | – |
+| after | 8 | **5** | 2 (2 candidates tested, both valid) |
+
+**The difficulty result that follows, stated plainly.** With the two-slot fire budget already in force, a stationary player at the
+console goes from **100 health to 11 in a few seconds**. So the v366 budget did not make the objective survivable — it made it *survivable
+while nothing could shoot you*. Now that five hostiles can acquire, two concurrent shooters are still enough to kill a player who stands
+still. That is a design decision to make (cover, a hold-zone shield, lower per-shot damage), not a bug.
+
+**Two implementation notes.** First attempt placed **0** posts with **12** valid candidates: `activeCount() < MAX_ACTIVE` was already
+satisfied by the patrols spawning first, so every post was refused by the cap. Posts now spawn **before** patrols and are allowed to sit
+above the standing cap — they are the objective's garrison, and the cap is exactly what stopped them existing.
+
+**My own error this run.** I set `GF_DebugDamage` from the **client** datamodel. Client attribute writes do not replicate, so the damage
+that took health 100 → 11 produced **zero** logged sources. The switch has to be set server-side, which is how every earlier source
+attribution was obtained. Do not read "no damage lines" as "no damage" when the flag may never have reached the server.
+
+**Visible in V404.** Three hostiles in the frame around the console — one crouched behind the western parapet, two closing from the
+east — with shield already at 0. Also visible: the compound's neon perimeter markers, and terrain that reads as **snow** rather than a
+nebula world, which is a separate art finding.
