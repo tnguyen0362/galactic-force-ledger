@@ -1427,3 +1427,18 @@ it flat may be leaving it edge-on.
 
 **Confirmed by numbers this pass:** frag hit **1 hostile for 64 damage** at the aim point; a second frag on a group hit
 **2 for 108**; EMP **drained 8 shield and stunned 2**.
+
+## v246 — why seven captures showed no blast: the visual was underground
+
+Measured, not guessed: the ground disc sat **0.20 studs below** the terrain surface on the first attempt and **0.01 below**
+after lifting it and thickening it. Bumpy terrain plus a 22-stud-wide disc means part of it is always inside a hill, and a
+`CanQuery = false` neon disc inside terrain renders as nothing at all. That is the whole explanation for the empty frames.
+
+**Fix:** the blast visual is now a **neon orb** (0.55 × radius, lifted 0.28 × radius, expanding to 1.4 × radius while fading
+over 2.6 s). A sphere cannot be buried by terrain and it reads from any camera angle. Measured live: orb at
+(1.2, 34.7, −148.4), size 11.9, transparency 0.41.
+
+**Still not photographed.** The last two attempts framed a hostile standing exactly on the detonation point, which covers
+the orb. Next attempt clears the blast point first — kill or displace the enemies — then captures.
+
+**Unchanged and measured:** frag 1 hostile / 64 damage at the aim point; EMP 8 shield drained, 2 stunned.
