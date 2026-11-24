@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 412
+# WORK_STATE — last verified 2026-11-24, place version 413
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 412**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 413**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 58 populated, 765 UNKNOWN**.
 - Ledger state: PARTIAL 40 | VERIFIED 9 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -130,6 +130,14 @@ Legendary odds improved by adding one Legendary archetype per category: 0 / 29.5
 Added server-side mirrors (`GF_ExtractionCalled/Landed/Remaining/Emergency`) because the live state sits in the module, and a tool VM `require` returns a separate instance — every `isLanded()` read from a test was false regardless of reality.
 
 **Still open:** boarding a failed-mission dropship, the failed debrief and reward withholding were not exercised. Only `DEFENSE_POWER` can fail.
+
+
+## Verified at build 413 — a lost mission now settles as a loss
+`ExtractionService.board()` called `finish(true)` unconditionally, so boarding the emergency dropship after a **failed** primary was paid as a success. It now passes `ObjectiveService.isComplete()`.
+
+Measured full failed round trip: generator destroyed → failed + emergency offer → dropship landed → boarded → settlement `{success=false, credits=0, xp=0, salvage 0}`, `GF_CarriedLost=true`, `GF_ExtractionState="failed"`, no success departure.
+
+**Still open:** only one player and one difficulty; squad bonus and per-player split untested; war-credit contribution on a loss not inspected.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
