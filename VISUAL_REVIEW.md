@@ -3028,3 +3028,23 @@ before the grace window was set — grace absorbs damage, it does not revive.
 
 **One self-inflicted error.** My patch left a second `end` at module scope: `Expected <eof>, got 'end'` on line 166, which took the whole
 Environment module offline and left `preset = station` with no sky. Found by reading the server log immediately after the edit.
+
+## v375 — the teal spires were per-part meshes, not terrain (V410, no clean frame)
+
+**What V410 showed.** After both the sky fix and the terrain palette, the green spires beside the console were **unchanged**. My terrain
+tint was aimed at the wrong thing.
+
+**What they actually are.** Querying parts within 16 studs of the terminal found `body_geom 7.5×8.8×6.9 col=58,88,82 mat=SmoothPlastic` —
+AI-mesh dressing parts that carry their own `Color` per part. `Terrain:SetMaterialColor` cannot reach them, and my first colour scan missed
+them because I filtered for `g > b + 25` (grass green) while these are **teal**, where blue is close to green.
+
+**Fix.** `Environment.apply` now hue-shifts strongly-green parts into the world palette on the mission zone (`GF_Greened = 6` measured),
+flagging each part with `GF_Greened` so a zone swap cannot compound the shift. Terrain `Grass / LeafyGrass / Mud / Slate / Basalt` were
+also added to the per-zone palette in the same pass.
+
+**Honest evidence gap.** The retint is verified **numerically** (`greened=6`, no errors) but **not visually** — V411 came back as the
+station interior again, so no frame yet shows the spires in violet. Treat the retint as implemented-and-counted, not seen.
+
+**Why V411 landed at the station.** The deploy ran, the pivot ran, and the capture still returned the concourse. Same lesson as v373 with a
+different cause: a single capture cannot be trusted to represent a mission state without checking `CurrentCamera.CFrame.Position` against
+the objective first.
