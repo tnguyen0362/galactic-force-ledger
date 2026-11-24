@@ -514,6 +514,16 @@ Five of eight weapons disagreed with their authored rows; nobody had compared th
 
 **Unchanged:** every weapon's falloff window still differs from spec (AR-01 120/320 vs 90/240, MR-07 250/600 vs 150/350, LMG-12 130/420 vs 85/230, P-01 60/250 vs 55/170, SG-04 25/90 vs 22/75). Reload path unverified; SG-04 is one 96-damage hit, not eight pellets.
 
+
+## Build 459 — falloff aligned, long-range damage not decomposed
+Every weapon's falloff window and minimum now matches spec (AR-01 90/240 min 0.55, P-01 55/170/.50, SG-04 22/75/.25, MR-07 150/350/.70, LMG-12 85/230/.50, SMG-03 45/150/.40). Previously all five carried wider windows and no `falloffMin` at all, so the code silently used its 0.6 default.
+
+Measured: at 12 studs `LastDamage = 18` (16.2 after the 0.9 armour factor). At **199 studs a hit dealt 30.32** — above the base 18, so a weak-point multiplier outweighs the falloff loss. The two were **not** decomposed; which part was struck and what `weakMultiplier` returned were never read.
+
+**Harness:** teleporting the player without `Anchored = true` put them back at the station mid-measurement (744 studs). Anchor both the player and the target before any ranged test, and search eight directions to find a clear line — the compound has no straight 60-stud sightline.
+
+**Still unmeasured:** falloff *behaviour* at 60/240/300 studs, any shot past the floor, and every reload.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
