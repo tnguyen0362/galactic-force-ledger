@@ -1369,3 +1369,18 @@ at ground level, not on the station deck.
 **What still looks wrong.** No frame of the sentry itself — the camera re-stage happened after the 20 s lifetime expired
 and the second deploy was refused on cooldown. Shots produce an event, not a visible tracer. The barrel snaps between
 targets with no slew limit, and per-shot damage against armour tiers is untested.
+
+## v238 — sentry in frame, with tracers (V295, V296)
+
+The sentry was measurable but invisible: an event fired on each shot and nothing rendered. It now spawns a neon tracer
+(0.12 s) from the barrel to the target plus a muzzle pip (0.08 s), and V295 shows the unit itself on the relay ground —
+dark base, head, barrel and a lit lens — aimed at a Rifleman.
+
+Measured in the same session: `target=Rifleman`, `shots=3` in 1.4 s, `blocked=3` with a wall in the way, `tracersLive=1`.
+
+**What still looks wrong.**
+- At night the sentry is a **dark blob**: base, head and barrel do not separate from the ground, and the uncropped lamp is
+  the only thing that reads.
+- The tracer lives 0.12 s — two consecutive captures both missed it, so roughly one frame in four will ever show a shot.
+- The barrel **snaps** between targets; there is no slew limit, no recoil, no heat or ammo state.
+- Per-shot damage (12) against Elite and Boss armour multipliers is untested.
