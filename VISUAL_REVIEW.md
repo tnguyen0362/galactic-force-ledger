@@ -2248,3 +2248,26 @@ agree for the first time.
 mission hint, and the controls line ("Fire [LMB] Aim [RMB] …"), which visibly overprints each other in V361 and V362. That is a
 layout collision, not a missing feature. The terminal structure remains an untextured grey slab, and `SHIELD 0` still appears at
 the objective site without a measurement of what is shooting.
+
+## v317 — the HUD bottom band no longer prints text over text (V363)
+
+**Fix.** The interact prompt (`MissionHUD`) sat at 80 % screen height, straight through the `SALVAGE` readout and the controls
+line. Moved under the objective tracker. Measured label bands after the change, no two overlapping:
+
+```
+ 49.. 74   Hold E at the black box to extract the flight recorder
+ 99..135   E  Extract Black Box
+529..569   SALVAGE  0 · 0 · 0
+577..599   Fire [LMB]  Aim [RMB]  Dodge [Q]  Reload [R]  Abilities [Z]/[X]
+```
+
+**What V363 also exposes, and it is worse than the layout.** The player is **DOWNED** at the objective terminal with `SHIELD 0`,
+standing still. The landing zone is now survivable (0 damage events over 14 s, V359), so the damage here is something in the
+objective area itself — patrols at the terminal or an unaccounted hazard. It was visible in V361/V362 and is now unambiguous.
+
+**Next step:** run the arrival sequence with `GF_DebugDamage = true` while walking to the terminal and read the sources. That switch
+exists precisely because it answered the same question at the landing zone in one run.
+
+**Other visible defects in this frame:** the terminal structure is still an untextured grey slab with hard edges and the terrain
+under it reads as flat sand; the `SALVAGE` panel and the ability buttons are drawn at slightly different widths, which shows as a
+ragged bottom row.
