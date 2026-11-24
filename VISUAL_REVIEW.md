@@ -2291,3 +2291,26 @@ impression.
 
 **Method note that keeps paying:** the `GF_DebugDamage` switch answered this in a single run, the same way it named the bosses at the
 landing zone. Any future "why is the player losing health here" question should start with it rather than with theory.
+
+## v319 — two touch buttons were overlapping at every resolution (measured)
+
+**Method that finally made this measurable.** Instead of eyeballing a phone screenshot I could not take, I enumerated the seven
+`TextButton`s inside the `Touch` layer and ran a **pairwise rectangle intersection** over their `AbsolutePosition`/`AbsoluteSize`:
+
+```
+first run : buttons=7  overlaps=1   ADS/RELOAD  by 10x26 px
+second run: buttons=7  overlaps=0
+```
+
+**Cause.** `RELOAD` (84×56 at `x = -300`, `y = -120`) sat over `ADS` (72×72 at `x = -226`, `y = -180`). Because every touch button
+is positioned with **absolute pixel offsets from the right/bottom edges**, the collision was identical on a 667×375 phone and on a
+1280×800 desktop — it was never a "small screen" problem, and my first nudge (moving it up) made the overlap *taller* (10×26) rather
+than removing it. Moving it to `x = -320` clears `ADS` horizontally: `-320..-236` against `-226..-154`.
+
+**What this does not prove.** The overlap check runs at the current viewport size. It is resolution-independent *for button-to-button
+collisions* because the offsets are pixels, but it says nothing about buttons colliding with Roblox's built-in thumbstick on a real
+phone, nor about safe areas on notched devices. Those still need hardware or an emulator.
+
+**Second thing this exposes:** `RELOAD` now sits at `x = -320`, which is 320 px from the right edge — on a 667 px-wide phone that is
+just under half the screen, and the `SALVAGE` panel occupies the bottom-left. They do not overlap by the measurement, but the margin
+is small enough that a narrower device should be re-measured rather than assumed.
