@@ -1828,3 +1828,24 @@ client-side log read to find. The helper now sits immediately after the `LocalPl
 **What still looks wrong.** `Reduced motion` is stored and published but **nothing consumes it** — toggling it changes a label
 and nothing else. Volume applies to sounds started after the change, not to loops already playing. The panel has no gamepad focus
 and no close control, and it can only be opened through an attribute, so a player without a keyboard cannot reach it.
+
+## v293 — the second augment socket is a real rule now, but there is still nothing to look at
+
+**No frame.** Augments have no UI surface anywhere in the project: the Armory lists weapons and classes only. So this row is
+evidence-by-response, and that limitation is the finding rather than a detail to bury.
+
+**What was missing.** `AugmentService` only *applied* effects (`magazine`, `reloadTime`). There was no socket assignment at all,
+`profile.weaponMastery` and `profile.ownedAugments` had **no writers anywhere**, and the second socket the spec describes was
+therefore unreachable by any route.
+
+**What it does now.** `socketsFor` returns 1 for an owned weapon and 2 once `weaponMastery[weapon] >= 5`, and
+`ArmoryService` refuses with a reason instead of silently accepting. Kills now call
+`ProfileService.addMastery(attacker, weaponId, 1)`, so mastery actually accumulates with the weapon you are holding.
+
+**Measured A/B through the live remote:**
+1. `{action="augment", weapon="AR01", slot=2, id="ExtendedMagazine"}` → **ok=false, reason="requires mastery 5"**
+2. granted mastery 5 + the augment (Studio hook, gated behind `GF_TestHooks`)
+3. same request → **ok=true**, `GF_AugmentEquipped="AR01:2=ExtendedMagazine"`, `GF_Mastery_AR01=5`
+
+**What looks wrong.** Everything about the player's side. No augment screen, no socket display, no mastery bar, no acquisition
+path for augments themselves — the boss reward grants blueprints, not augments. A player cannot perceive any of this work yet.
