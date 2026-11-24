@@ -31,10 +31,23 @@ Ledger moved 732 -> **718 UNKNOWN**, 68 -> 78 PARTIAL, 14 -> 17 VERIFIED. Script
 weapon data table (`S04-036`); launchers are hitscan-with-blast so projectiles never travel or fuse (`S04-047`, `S04-048`);
 reserve subtraction on reload unmeasured (`S04-025`); empty-auto-reload and swap-cancel unmeasured (`S04-026`).
 
+**Batch 2: Caches / Augments — 7 rows.**
+
+| result | rows |
+|---|---|
+| UNKNOWN -> VERIFIED | `S11-004` (32 archetypes, >=3 per category), `S11-022` (1/2/3/4 draws per tier, 300-1200 draws each) |
+| UNKNOWN -> PARTIAL | `S11-003` (no armory category selector), `S11-038` (rarity changes cost/weight only, not magnitude range), `S11-039` (in-range rolls yes, quantized 0..1000 + gold max unverified) |
+| UNKNOWN -> ABSENT | `S11-031` (no cache UID/timestamp/source), `S11-032` (no inventory capacity limit at all) |
+
+Script: `.audit/audit_batch_caches.py`. It refuses to overwrite a row that is no longer UNKNOWN, so batches cannot clobber each other.
+`S11-033` and `S11-035` are blocked behind `S11-032` (a full-inventory rule needs a capacity limit to exist first).
+
+**Running totals after both batches:** UNKNOWN 732 -> **711**, PARTIAL 68 -> 81, VERIFIED 14 -> 19, ABSENT 0 -> 2, IMPLEMENTED_UNVERIFIED 2.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 97 populated, 718 UNKNOWN**.
-- Ledger state: PARTIAL 78 | VERIFIED 17 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 104 populated, 711 UNKNOWN**.
+- Ledger state: PARTIAL 81 | VERIFIED 19 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
 - Place-version numbers disagree across documents (WORK_STATE 448, HANDOFF 318, BLOCKED 232, recent commits 461). Unresolved
   because Studio was not connected; do not trust any of them until `save_place` records a new one.
 
