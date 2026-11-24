@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 393
+# WORK_STATE — last verified 2026-11-24, place version 397
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 393**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 22 populated, 795 UNKNOWN**.
-- Ledger state: PARTIAL 18 | IMPLEMENTED_UNVERIFIED 1 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 397**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 31 populated, 788 UNKNOWN**.
+- Ledger state: PARTIAL 25 | IMPLEMENTED_UNVERIFIED 1 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -17,7 +17,7 @@
 
 Rank gate verified by temporarily requiring rank 99: deployment refused with `requires military rank 99`, no mission started; restored to 10 and re-saved.
 
-Counts: **5 of 5 families exist and are playable; 13 of 15 variants are playable** (11 verified at build 393, 2 verified at earlier builds).
+Counts: **5 of 5 families exist and are playable; 15 of 15 variants are configured and playable** (13 verified at build 397/393, 2 verified at earlier builds).
 
 
 ## Verified at build 387
@@ -54,6 +54,18 @@ Three defects found and fixed while building it:
 2. **`lineOfSight` rejects large targets** (3-stud tolerance), so hostiles refused to shoot a 7×9×7 generator they were standing in front of. Replaced with a direct raycast that accepts the structure's own model.
 3. **Un-gated structure fire is unfair** — eight hostiles destroyed 600 HP in 22 s. Gated on `GF_DefenseEngaged` and scaled to `def.damage * 0.25`.
 
+
+## Verified at build 397 — the last two variants and the hacking subsystem
+**Hacking** (`HackingService` + `HackState`/`HackAttempt` + MissionHUD overlay) is server-authoritative: the client presses, the server derives the needle angle from `workspace:GetServerTimeNow()` and decides hit or miss. Normal = 95° arc, 1.3 s rotation. Measured 3 hits → complete, and a deliberate out-of-arc press at stage 1 dropped the stage to 0 with `GF_HackMisses=1` (spec floor is 0).
+
+**Sabotage | Burn the Arsenal**: pad A armed (1/2), pad B → warning; stage 2 at +2 s, stage 3 at +9 s, so the 8 s warning is real; stockpile removed, objective complete.
+
+**Recovery | Silent Archive**: approach auto-advanced to stage 2, interaction started the hack, 3 in-arc presses → stage 3 with the intel case revealed, interaction completed the objective.
+
+Defects fixed: the HUD kept the previous mission's green `PRIMARY OBJECTIVE COMPLETE` on a fresh deployment (verified by scanning `PlayerGui`: `COMPLETE` → `PRIMARY OBJECTIVE` after redeploy); the revealed intel case was faded by the Neon completion flourish (now Metal); the hacking miss floor was 1 instead of 0; and six `StationUI` table entries were missing commas, which killed the whole client script until fixed.
+
+Lesson: syntax-check every edited script with `loadstring` before a playtest — the StationUI parse error only surfaced as a client log line.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
@@ -68,7 +80,9 @@ Three defects found and fixed while building it:
 - Kills in all tests were applied via the `Dead` attribute that `CombatService` writes; weapon → damage → kill was not re-exercised. Solo only.
 
 ## Next highest-value work
-1. **Two remaining variants**: Burn the Arsenal (Sabotage) and Silent Archive (Recovery, needs the hacking subsystem).
+1. **Re-verify RECOVER_TECH and DEFEND_BEACON** at the current build so all 15 variants share one build.
+2. **Hacking cancel conditions** (`S08-040`): range, downed, disconnect, explicit exit — none exist yet.
+3. **Target markers** (`S08-033`) remain MISSING across every mission.
 2. **Hacking subsystem** (`S08-036`–`S08-043`) — referenced by every authored variant that says "hack console"; nothing exists yet.
 3. **Target markers** (`S08-033`) — affects every mission.
 4. Defense object HP + absence pause (`S08-029`, `S08-031`).
