@@ -2029,3 +2029,23 @@ measured `Visible=false` when out of range, so no stale panels.
 
 Recorded honestly: the audit cleared the placeholder question and uncovered a HUD regression that is worse than a placeholder,
 because a player entering a mission sees no shield, no ammo and no objective.
+
+## v305 — the in-mission HUD was being switched off by the deploy verdict (V358)
+
+**Root cause.** `DeployStateChanged` carries two different payload shapes: the zone publish `{zone=...}` and the deploy verdict
+`{ok=...}` I added last continuation. `StationUI`'s zone handler did `onStation = state.zone ~= "Mission"` unconditionally, so a
+verdict payload (no `zone`) set `onStation = true` and called `setMissionHudVisible(false)` — disabling the entire in-mission HUD
+at the exact moment a mission was accepted. That is why the HUD was enabled-but-empty in the previous continuation, and why it
+looked fine after a mission had failed (a zone payload arrived then).
+
+**Fixed two ways:** the zone handler ignores payloads without a `zone`, and every verdict payload now includes the current zone.
+
+**Verified.** `inMission=true, GF_HUD.enabled=true, GFMissionHUD.enabled=true` with live content: `SHIELD …`, `AR01`, `28 / 28`,
+`AIRSTRIKE [Z]`, and on screen V358 shows the shield bar, `PRIMARY OBJECTIVE / Sabotage the Ascendancy relay`, `SALVAGE 0·0·0`,
+the ability buttons and the ammo counter.
+
+**What is still wrong in that same frame.** The HUD paints **`SHIELD 0` and a `DOWNED` overlay** on entry even though the server
+reports the player at 100 health, walk speed 17.5 and no downed attribute. `VitalsService.reset` clears `s.downed` and republishes,
+and deploy now calls reset before the paint — the client still received a payload claiming downed. So the payload source is not yet
+traced; the honest status is "HUD renders, but renders a wrong initial state", which is arguably worse than blank because it tells
+the player they are down.
