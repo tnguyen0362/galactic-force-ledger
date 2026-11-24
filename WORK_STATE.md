@@ -53,10 +53,23 @@ Script: `.audit/audit_batch_caches.py`. It refuses to overwrite a row that is no
 
 **Running totals after both batches:** UNKNOWN 732 -> **711**, PARTIAL 68 -> 81, VERIFIED 14 -> 19, ABSENT 0 -> 2, IMPLEMENTED_UNVERIFIED 2.
 
+**Batch 4: Economy / mastery — 6 rows, all PARTIAL.** Script `.audit/audit_batch_economy.py`.
+
+`S10-004`, `S10-006`, `S10-021`, `S10-025`, `S10-031`, `S10-040`, mapped from v430 (persistence), v438 (base/bonus
+split) and v439 (salvage bonus). Mastery rows `S10-037`, `S10-038` and `S10-039` have **no evidence anywhere in
+`evidence/`** and were left UNKNOWN rather than guessed.
+
+**One number is off and it is consistent across two rows:** a Normal solo success pays **450 Credits and 600 XP**.
+Credits are inside the intended 450-600 band; XP is **50 below the 650-900 band's floor**. Recorded on `S10-006` and
+`S10-025`, which must be reconciled together. It is a balance question, not a bug — the arithmetic does what it is told.
+
+Also measured and now recorded: lifetime rank survives two full server restarts (rank 15 / 123,700 XP), flooring happens
+once at settlement for squad bonuses (25% of 450 -> 112), and 36 owned augments persisted with the loadout socket intact.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 104 populated, 711 UNKNOWN**.
-- Ledger state: PARTIAL 81 | VERIFIED 19 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 118 populated, 697 UNKNOWN**.
+- Ledger state: PARTIAL 95 | VERIFIED 19 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
 - Place-version numbers disagree across documents (WORK_STATE 448, HANDOFF 318, BLOCKED 232, recent commits 461). Unresolved
   because Studio was not connected; do not trust any of them until `save_place` records a new one.
 
