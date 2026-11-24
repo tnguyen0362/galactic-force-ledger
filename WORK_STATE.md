@@ -482,6 +482,18 @@ Measured: fresh deploy → `elim=3`, tagged 3 (`Officer, Rifleman, Rifleman`), 8
 
 **Still open:** only `ELIM_COMMANDER` was played to completion; `ELIM_WALKER` and `ELIM_TALON` tag correctly but were not completed. `S08-033` approximate-then-reveal markers still do not exist.
 
+
+## Verified at build 457 — all three elimination variants complete
+| Variant | Targets | Outcome |
+|---|---|---|
+| `ELIM_COMMANDER` | Officer + 2 Riflemen | `complete = true` (build 456) |
+| `ELIM_WALKER` | Bastion Walker, 4200 HP | 4200 → 0, `Dead = true`, `complete = true` |
+| `ELIM_TALON` | Heavy, Marksman, Officer | 3 killed, 0 alive, `complete = true` |
+
+**Harness error repeated:** the Walker scan looked only in `ActiveActors` and read zero while `GF_ElimTargets = 1` — the Walker lives at `Workspace.BastionWalker`. Count targets with a **workspace** walk, never an `ActiveActors` walk.
+
+**Not proven:** kills went through `CombatService.damageEnemy`, so aim/spread/time-to-kill are untested, and Walker/Talon extraction settlement was not re-run.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
