@@ -2874,3 +2874,27 @@ unmitigated now that the objective is where you have to stand still.
 **Honest status.** This is a partial result: the compound has edges and a scale reference, the dominant silhouette does not. Next
 action is to redetail or break up that panel (ribs, seams, an emissive band) and vary the deck material, then address the patrol
 fire at the objective.
+
+## v366 — the objective stops being a firing squad (V403)
+
+**Change.** `EnemyService` now enforces a simultaneous-fire budget: `MAX_FIRING = 2`. A hostile that cannot claim a slot holds its
+fire (and keeps its cooldown schedule), so attacks stagger instead of stacking. `GF_FireSlotsHeld` publishes how many slots are in
+use, which is how the rule was verified rather than assumed.
+
+**Measured at the sabotage terminal, standing still:**
+
+| | damage events | health |
+|---|---|---|
+| before | 22 in 7 s (Marksman 22, Rifleman 8, Scout 6) | 6 |
+| after | **0 in 9 s** | **100**, with `GF_FireSlotsHeld = 2` |
+
+**Caveat, stated:** that is one run and patrol placement varies by seed, so it is not a distribution. What it does establish is that
+the budget engages (two slots in use, hostiles queued) and that a stationary player is no longer deleted.
+
+**A self-inflicted detour worth recording.** My first edit produced
+`function EnemyService.start()function EnemyService.start()` — I appended a block whose last line duplicated the anchor I was
+inserting before. The module failed to compile (`Expected 'end' ... got <eof>`) and every enemy stopped ticking. Caught by reading
+the server log immediately after the edit, which is the only reason it was a two-minute mistake instead of a lost session.
+
+**What is still unaddressed.** The fire budget softens the objective; it does not add cover, suppression behaviour or a reason for
+hostiles to reposition. And the encounter remains "walk into a fixed patrol", not a designed fight.

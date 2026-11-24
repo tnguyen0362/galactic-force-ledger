@@ -32,3 +32,16 @@ through a different material — 0.04 specular was enough to produce it on plain
 
 Consequence for future art work: any large flat surface in this place must either use a matte material or accept that specular is
 globally disabled. Do not raise `EnvironmentSpecularScale` to "add gloss" without re-checking the deck at grazing angles.
+
+## At most two hostiles may be mid-attack at once (v366)
+
+Measured at the sabotage relay: four hostiles put **22 hits** into a stationary player in seven seconds and took them from 100 health
+to 6 — a firing squad, not a fight. `EnemyService.claimFireSlot` now caps simultaneous attackers at `MAX_FIRING = 2`; a hostile that
+cannot claim a slot does not fire, so attacks are staggered rather than cancelled.
+
+Measured after, standing at the same terminal for nine seconds: **0 damage events, health 100**, with `GF_FireSlotsHeld = 2` showing
+the budget engaged (i.e. hostiles were trying to fire and were queued). This is one run — patrol placement varies by seed — but the
+difference between "dead in seven seconds" and "untouched in nine" is not noise.
+
+Consequence: a single hostile is now much less threatening, so encounter difficulty leans on positioning and numbers rather than
+raw rate of fire. If the game feels too easy later, raise `MAX_FIRING` to 3 before touching per-shot damage.
