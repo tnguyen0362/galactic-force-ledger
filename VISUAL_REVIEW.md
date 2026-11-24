@@ -2382,3 +2382,38 @@ and no gamepad capture exists.
 
 **Lesson recorded because it is the second time this session:** "nothing in the project assigns this" is only true if the guard
 around the assignment is correct. My instrumentation proved the *call* happened with nil, not that the *assignment* never fired.
+
+## v325 — the war table was never openable because I deleted the line that decides (V364)
+
+**The actual defect, after four continuations of chasing the symptom.** The proximity loop contained
+
+```lua
+local forced = workspace:GetAttribute("GF_StationPanel") == true
+local show = forced or (onStation and near)
+if table_.Visible ~= show then ...
+```
+
+An earlier patch of mine — the one that added the `GF_StationPanel` force-open hook — replaced those two lines with the comment
+alone. `show` was then a global `nil`, so every 0.2 s the loop compared `false ~= nil` (true), assigned `table_.Visible = nil`
+(hence never visible) and called `setFocus(nil)`. That single deletion explains: the panel not opening in several continuations,
+focus always being `nil`, and the two invalid-focus warnings only appearing once the panel *did* show.
+
+**Measured after restoring it:**
+
+```
+[GF] panel show=true near=true onStation=true anchor=WarTableBase deployVisible=true
+panelVisible = true
+GuiService.SelectedObject = TextButton (Visible = true)
+invalid-focus warnings = 0   (was 2)
+```
+
+V364 shows the panel open at the war table with `DEPLOY TO VEYRA-7` carrying the selection ring, SABOTAGE/RECOVER/DEFEND and
+EASY/NORMAL above it.
+
+**What is still unverified.** No gamepad hardware exists here, so the ring is evidenced by the focused-button border plus the
+measured `SelectedObject`, not by a device capture. Focus *trapping* — a modal opened over the station leaving focus underneath — has
+not been tested.
+
+**Pattern worth naming:** this is the third failure this session caused by my own edit silently removing or breaking a line
+(deleted `show`, missing `end` in `VitalsService`, stray comment continuation in `StationUI`). Every one was invisible on the server
+side; each was only found by reading the **client** log. That check is not optional after any `Source` edit.
