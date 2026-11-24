@@ -2171,3 +2171,23 @@ is in `RETRO.md` territory: when a number is unexplained, instrument the data th
 
 **Still open from this row:** the `_source` print should be removed once nothing else depends on it, and the `Freecam` ScreenGui
 still needs to be disabled at spawn.
+
+## v313 — glyphs re-render, cooldowns stop being wiped, and the Freecam finding is withdrawn
+
+**Two real defects fixed in `HUD.setDevice`:**
+1. Ability titles were built **once** at construction with `Input.glyph("Ability1")`, so a player who switched to a gamepad
+   still saw `[Z]` / `[X]` forever. They are now re-rendered from the current glyph on every device change.
+2. `setDevice` wrote `abilityLabels.Airstrike.Text = "READY"` — it clobbered the **status** label, so any input-family change
+   silently erased a live cooldown readout. Removed; the titles are updated instead.
+
+Verified after the change: HUD loads with no client errors and reads `AIRSTRIKE [Z]` / `DOME [X]`.
+
+**Withdrawn finding.** I had recorded `Freecam` as a shipping dev leftover. It is not: `StarterGui` has no such GUI and **no script
+in the project references the name**. It is created by Roblox Studio's own freecam during playtests, so it cannot appear on a real
+server. Recording the correction instead of leaving a bogus defect in the ledger.
+
+**Still unproven:** the "instant" part of this requirement. Studio offers no way to synthesise `LastInputTypeChanged`, so there is
+no capture of the same HUD before and after a genuine mouse→gamepad or mouse→touch switch. That needs a real device or emulator.
+
+**Housekeeping:** the `_source` print in `VitalsService.applyDamage` that named the boss artillery is now gated behind
+`GF_DebugDamage`, so live logs stay clean while the tool stays available.
