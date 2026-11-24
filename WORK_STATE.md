@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 415
+# WORK_STATE — last verified 2026-11-24, place version 416
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 415**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 416**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 58 populated, 765 UNKNOWN**.
-- Ledger state: PARTIAL 40 | VERIFIED 9 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Ledger state: PARTIAL 39 | VERIFIED 10 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -146,6 +146,14 @@ Completing the primary now opens **no** cache (measured 0 opens). Boarding after
 **A no-op edit happened here and is worth remembering:** the patch computed the new `CacheService` source and `loadstring`'d it but never assigned `C.Source`, so `tierForDifficulty` did not exist and a `pcall` swallowed "attempt to call a nil value". Every other failure this session at least threw; this one silently did nothing. Recording the pcall error into `GF_MissionCacheResult` found it in one step.
 
 **Still open:** the failure→skip branch (`GF_MissionCacheResult = skipped ...`) has never been observed.
+
+
+## Verified at build 416 — difficulty surface and the failed-cache skip
+- `Extreme` rank gate corrected to 14; `RequestDeployOptions` now advertises all four difficulties (payload measured: Easy, Normal, Hard, Extreme). Hard and Extreme were previously unreachable from the UI.
+- **Ordering bug fixed:** `buildPower` read `State.getMission().difficulty`, but `resetMission` calls `ObjectiveService.setup` *before* `State.setMission`, so an Extreme deploy built a **600 HP** generator. It now reads `GF_OperationDifficulty`; Extreme measures **650**.
+- **Failed extraction skips the mission cache** — the gap left at build 415 is closed: `GF_MissionCacheResult = "skipped success=false objective=false"`, zero opens, `GF_CarriedLost=true`.
+
+**Still open:** Easy (800) and Hard (650) defence HP are code paths only; the difficulty refusal path was last verified at build 398 with a temporary gate.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
