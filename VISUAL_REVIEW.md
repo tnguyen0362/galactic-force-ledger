@@ -1384,3 +1384,26 @@ Measured in the same session: `target=Rifleman`, `shots=3` in 1.4 s, `blocked=3`
 - The tracer lives 0.12 s — two consecutive captures both missed it, so roughly one frame in four will ever show a shot.
 - The barrel **snaps** between targets; there is no slew limit, no recoil, no heat or ammo state.
 - Per-shot damage (12) against Elite and Boss armour multipliers is untested.
+
+## v241 — the two grenades are now different weapons, not two colours
+
+Before this pass a **Frag only damaged its own thrower**: `detonate` had no enemy loop at all. EMP affected players and
+lights only. The two grenades were the same object with different tint and fuse, which is exactly the failure MICRO-045
+names.
+
+**Frag** — hostiles inside `radius` take `damage × (1 − 0.7·d/radius)`, recorded as `LastGrenadeTargets` /
+`LastGrenadeDamage`. Measured: **2 targets, 108 damage**.
+**EMP** — drains every hostile's shield to zero, sets `EMPStunUntil` for 2.5 s, keeps the existing light blind, and
+records `LastEmpDrained` / `LastEmpStunned`. Measured: **8 shield drained, 2 stunned**.
+
+Visuals are now distinct: frag is a warm double ring plus amber ground mark, EMP a single cool ring plus blue mark, both
+capped so an expanding ring can no longer fill the viewport. V298 showed that failure directly — the first version grew
+to `r*2` and, seen from inside, washed the whole screen yellow.
+
+**Traps recorded.** The throw payload field is `aim` (a world target), not `direction`; three test throws silently used
+the default `root + look × 40` and landed 60 studs away. Grenades also cost charges — after four throws the server
+rejected with `LastReject = "no charges"`, which reads like a code failure until you check the charge counter.
+
+**What still looks wrong.** No frame has caught either ring yet: 0.9 s still outruns the capture round-trip. Frag has no
+crater, smoke or debris; EMP has no arcs or distortion; and both ground marks render through geometry because they are
+`CanQuery = false` neon discs.
