@@ -1347,3 +1347,25 @@ orange hue in either the server or client DataModel; raycasts at the orange scre
 58,64,72) and continue into `FloorPlate`/`Subfloor`, meaning whatever renders there is `CanQuery = false` — yet no
 `CanQuery = false` part over 30 studs exists near the deck in either model. That rules out every static part, every
 light, IBL, bloom, atmosphere decay and GUI already tested.
+
+## v237 — Sentry, and why the first test "failed" (no capture yet)
+
+MICRO-043 wants a sentry that "tracks only actual visible enemies, cannot fire through rocks". There was no Sentry
+implementation at all — `AbilityService.cast` handled Airstrike and DomeShield only.
+
+**Now:** a deployable with base, head, barrel and a red lens, 0.4 s tick, 20 s lifetime, 100 s cooldown, which for each
+tick collects enemies inside `ability.range`, raycasts from the barrel to each one, and only engages the nearest one whose
+ray is clear (a ray that hits the enemy's own parts counts as clear). It publishes `GFSentryTarget`, `GFSentryShots` and
+`GFSentryBlocked` so the behaviour is measurable.
+
+**Measured:** enemy in the open at z=-140, second enemy behind a 16×14 wall at z=-130 → `target=Rifleman, shots=3` in
+1.4 s, `blocked=3`. The covered enemy was never targeted.
+
+**The failure worth remembering.** The first attempt reported `shots=0 blocked=5` and looked like the LOS test was broken.
+It was correct: enemies spawned at y=762 were seated by `EnemyService` onto `groundSurface`, which found the **station
+roof** at y=800, so both "nearby" enemies were 38 studs above the sentry with a ceiling between them. Spawn test enemies
+at ground level, not on the station deck.
+
+**What still looks wrong.** No frame of the sentry itself — the camera re-stage happened after the 20 s lifetime expired
+and the second deploy was refused on cooldown. Shots produce an event, not a visible tracer. The barrel snaps between
+targets with no slew limit, and per-shot damage against armour tiers is untested.
