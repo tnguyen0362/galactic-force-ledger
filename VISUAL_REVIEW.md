@@ -2191,3 +2191,22 @@ no capture of the same HUD before and after a genuine mouse→gamepad or mouse�
 
 **Housekeeping:** the `_source` print in `VitalsService.applyDamage` that named the boss artillery is now gated behind
 `GF_DebugDamage`, so live logs stay clean while the tool stays available.
+
+## v314 — the three operations finally have three different interactions (V360)
+
+**What was wrong.** The templates differed only in *timing*: sabotage held E for 2.5 s, recover held E for 7.0 s, defend held E for
+2.5 s and then survived 60 s. Two of the three were the same interaction with a different number in it.
+
+**What RECOVER_TECH is now.** A fetch-and-carry: a 0.6 s grab at the terminal starts the carry, and the objective only completes
+when the carrier reaches the published landing zone (18 stud patch, checked on the same 0.5 s tick as the defend timer). This makes
+the three read as: **hold** (sabotage), **carry** (recover), **survive** (defend).
+
+**Measured.** Interact at the terminal → `GF_ObjectiveComplete = false`. Move the carrier to `GF_LZ` → `GF_ObjectiveComplete = true`.
+V360 shows `PRIMARY OBJECTIVE COMPLETE / Extraction authorized` standing on the landing pad after the delivery.
+
+**What looks wrong.**
+1. Nothing visible is being carried: no case model, no HUD indicator. The only feedback is one mission-event line and the hint text.
+2. The 18-stud delivery radius is invisible on the ground.
+3. `SHIELD 0` appears again in this frame — this run teleported the player to the terminal and back through the patrol area, so it is
+   plausible enemy fire rather than the arrival bug, but it is not being claimed either way without a measurement.
+
