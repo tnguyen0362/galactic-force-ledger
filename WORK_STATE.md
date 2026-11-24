@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 388
+# WORK_STATE — last verified 2026-11-24, place version 393
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 388**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 17 populated, 798 UNKNOWN**.
-- Ledger state: PARTIAL 16 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 393**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 22 populated, 795 UNKNOWN**.
+- Ledger state: PARTIAL 18 | IMPLEMENTED_UNVERIFIED 1 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -17,7 +17,7 @@
 
 Rank gate verified by temporarily requiring rank 99: deployment refused with `requires military rank 99`, no mission started; restored to 10 and re-saved.
 
-Counts: **5 of 5 families exist and are playable; 12 of 15 variants are playable** (10 verified at build 388, 2 verified at earlier builds).
+Counts: **5 of 5 families exist and are playable; 13 of 15 variants are playable** (11 verified at build 393, 2 verified at earlier builds).
 
 
 ## Verified at build 387
@@ -42,6 +42,18 @@ Automation note: a camera-origin shot is rejected `origin-too-far`; fire from `r
 
 Both reuse existing machinery only: tagged rosters and the 0.5 s timer.
 
+
+## Verified at build 393 — Defense | Power Under Fire
+First defence object that can actually be lost: 600 HP on Normal, hostiles shoot it when no player is visible, the 90 s timer pauses when nobody is inside 55 studs, and destroying it sets `GF_ObjectiveFailed` instead of completing.
+- player present 20 s: 549.5 → 476.5 integrity (~3.65 HP/s, survives the 90 s window);
+- player absent 12 s: timer 63 → 63, `GF_DefensePaused=true`; returning resumed 63 → 59 in 4 s;
+- generator destroyed: `GFIntegrity=0`, `GFDestroyed=true`, `GF_ObjectiveFailed=true`, `GF_ObjectiveComplete=false`.
+
+Three defects found and fixed while building it:
+1. **Instance attributes return an `InstanceHandle`** — publishing the structure as an Instance killed every enemy tick with `IsA is not a valid member of InstanceHandle` (seven logged repeats). Names are published and resolved instead.
+2. **`lineOfSight` rejects large targets** (3-stud tolerance), so hostiles refused to shoot a 7×9×7 generator they were standing in front of. Replaced with a direct raycast that accepts the structure's own model.
+3. **Un-gated structure fire is unfair** — eight hostiles destroyed 600 HP in 22 s. Gated on `GF_DefenseEngaged` and scaled to `def.damage * 0.25`.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
@@ -56,7 +68,7 @@ Both reuse existing machinery only: tagged rosters and the 0.5 s timer.
 - Kills in all tests were applied via the `Dead` attribute that `CombatService` writes; weapon → damage → kill was not re-exercised. Solo only.
 
 ## Next highest-value work
-1. **Three remaining variants**: Burn the Arsenal (Sabotage), Silent Archive (Recovery, needs the hacking subsystem), Power Under Fire (Defense, needs enemy structure attacks).
+1. **Two remaining variants**: Burn the Arsenal (Sabotage) and Silent Archive (Recovery, needs the hacking subsystem).
 2. **Hacking subsystem** (`S08-036`–`S08-043`) — referenced by every authored variant that says "hack console"; nothing exists yet.
 3. **Target markers** (`S08-033`) — affects every mission.
 4. Defense object HP + absence pause (`S08-029`, `S08-031`).
