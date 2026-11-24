@@ -1534,3 +1534,24 @@ Both were found because the first attempt silently did nothing and I checked the
 **What still looks wrong.** The beam lives 0.55 s, shorter than a tool round-trip, so V316 shows only the aftermath. There
 is no camera shake, no debris and no crater; the boom is a pitched stock `bass.wav`. And 636 damage from a 400 base
 means the falloff is too generous at close range — that is a balance bug, not a visual one.
+
+## v258 — airstrike gets an aircraft and bounded blasts (V317, V318)
+
+The airstrike applied damage and fired a remote that **no client script listened to**, so it had no visible effect at all —
+not an aircraft, not a blast, nothing. It now spawns a four-part flyover craft (hull, wing, tail, thruster) tweened 340 studs
+across the target in 2.4 s, plus five line blasts along the strike axis, each with a flash orb and a point light.
+
+**Measured:** `craft=1, blasts=5, flashes=5, LastAirstrikeBlasts=5`.
+
+The requirement's clause — "do not obscure all combat indefinitely" — is now testable rather than asserted: every part has a
+hard deadline (orb 3.5 s, light 2.6 s, craft 2.6 s) and `LastAirstrikeVfxClear` records the promised clear time.
+
+**Two of my own errors again, caught by the log:** a call to `boom` that did not exist in that scope (`attempt to call a nil
+value` at line 106) because the helper was defined after `airstrike`; fixed by moving `boom` and `shockRing` above both cast
+branches. The first version also faded in 1.2 s, which is shorter than a tool round-trip — raised to 3.5 s.
+
+**Correction to my own ledger note:** I recorded MICRO-044's 636 damage as "falloff too generous". It is not — 636 was the
+**total across two targets** (318 each) against a 400 base. The falloff is correct, and the note has been fixed rather than
+left standing.
+
+**Still open.** No frame yet shows either the aircraft or a blast; both attempts were outrun by capture latency.
