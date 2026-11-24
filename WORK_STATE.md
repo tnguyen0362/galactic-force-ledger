@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 427
+# WORK_STATE — last verified 2026-11-24, place version 428
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 427**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 76 populated, 751 UNKNOWN**.
-- Ledger state: PARTIAL 49 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 428**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 79 populated, 750 UNKNOWN**.
+- Ledger state: PARTIAL 50 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -227,6 +227,12 @@ The spec's "Frag kills, EMP opens" distinction is real and now measured in play.
 **Layout bug fixed:** grenade rows rendered at **y = 1313** because their `LayoutOrder` was `6 + order` and `order` had already climbed past 300 — present in the list, completely unreachable. Now sorts at 7–8; clicking `GrenadeFrag.Equip` after an 80 px scroll set `GF_GrenadeEquipped = "Frag"`.
 
 **Still open:** Frag max-3 charges, EMP rank-4/550-credit unlock, fuse timing, throw preview — none verified.
+
+
+## Verified at build 428 — grenade ownership and the charge cap
+Throwing EMP **unowned** was free; `toss` now refuses it (`grenade not owned`). `buyGrenade` charges rank/cost: EMP is rank 4 / 550 credits as specced (was rank 5, no cost). Charges default to 3 (was 2), measured 3 → 2 → 1 → 0 across three throws with the fourth refused `no charges`.
+
+**Still open:** charges never refill per mission — three grenades and you are done for the session. No armory BUY button for grenades, so a player cannot purchase EMP from the UI. Frag's cap not re-measured.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
