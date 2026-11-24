@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 424
+# WORK_STATE — last verified 2026-11-24, place version 426
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 424**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 426**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 72 populated, 754 UNKNOWN**.
 - Ledger state: PARTIAL 46 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -206,6 +206,14 @@ Two defects fixed together: the armory had no ability/grenade surface, **and** t
 Now `equipAbility`/`equipGrenade` write the loadout and publish `GF_Ability1/2` + `GF_GrenadeEquipped`; HUD and Controller read those attributes with the old literal as fallback. Measured: `Sentry` refused (`ability not owned`), `DomeShield` equipped (`GF_Ability1=DomeShield`), `EMP` selected, and casting the published id produced `AbilityCastRequests=1` plus a spawned dome.
 
 **Still open:** no duplicate-slot guard (both slots can hold the same ability); four of six abilities unobtainable; armory buttons not clicked; grenade effects untested.
+
+
+## Verified at build 426 — abilities: purchase, duplicate guard, clickable rows
+- Duplicate slots refused: `ability already in the other slot`.
+- `buyAbility` charges rank/cost: Sentry (900) and OrbitalStrike (1800) bought; the bought Sentry then equipped.
+- **Four alternatives rendered at the same coordinates** in the Ability row — invisible stacked buttons, only the last clickable. Replaced with one cycling alternative per row; clicking `Ability1.UseAbility` moved the slot to DomeShield (`GF_Ability1=DomeShield`).
+
+**Still open:** OrbitalLance/ReflectiveBarrier cost 0 in config (free unlocks); grenade rows not clicked; rank gate for the rank-10 abilities untested.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
