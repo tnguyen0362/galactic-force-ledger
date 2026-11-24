@@ -2556,3 +2556,25 @@ counts it down.
 
 **Still wrong.** The text has no panel behind it, so it reads as floating copy over the scene rather than as an alert. The key
 binding remains **code-verified only**; no real keypress has been delivered.
+
+## v337 — the disconnect handler was dead code, and the operation survives a host leaving (measured)
+
+**What was broken.** `PlayerRemoving` still referenced the single `beacon` variable that the list refactor removed. With `beacon`
+gone it evaluated `if beacon then` against a nil global, so a host disconnect **did nothing at all** — no seat refund, no listing
+closure, no migration. It had been dead since v329 and nothing noticed, because nothing measured it.
+
+**What it does now.** For every beacon: drop the departure from the joiner list and refund the seat; if the departee was the host,
+hand the role to the first remaining joiner (recorded in `GF_DispatchMigrated`), or close **that listing only** and record
+`GF_DispatchClosed`.
+
+**Measured with the gated `LEAVE` hook:**
+
+```
+before  : GF_Dispatch = "PD-57214|Normal|seats=3|host=ROBLOXISUS101"   GF_InMission = true
+after   : GF_DispatchClosed = "ROBLOXISUS101"   GF_Dispatch = "none"   GF_InMission = true
+```
+
+The listing closed cleanly and **the operation did not end** — which is the requirement's core clause.
+
+**Not verified.** The migration branch (a joiner inherits the host role) and the "vote is not orphaned" clause both need two clients.
+With one client the only branch that can run is "close the listing", and it is recorded that way rather than implied complete.
