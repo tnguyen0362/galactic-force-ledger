@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 441
+# WORK_STATE — last verified 2026-11-24, place version 442
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 441**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 442**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
 - Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -341,6 +341,14 @@ Measured: Scout spawns at 210/60 and dealt **10 separate `amount=6.0 source=Scou
 **Mistake to remember:** my first config edit was string splicing that produced `burst = burst = {...}` and broke compilation with no backup. Recovered by reconstructing the lines; verify compile after every config splice.
 
 **Still open:** only the Scout was observed; Heavy telegraph, Officer aura/call, armour factors and cover/peek are all unimplemented.
+
+
+## Verified at build 442 — armour factors and the Commander aura
+**Armour** is now per archetype and applied after shields: a 40-damage hit lands **30** on the Heavy (0.75) and **36** on the Officer (0.9), measured on shield values with `GF_LastArmorMitigated` recording the result.
+
+**Commander aura**: allies within 45 studs of a live Officer attack at 0.9× cooldown (10% faster) — measured `AuraRate = 0.9` on Marksman/Heavy/Scout/Rifleman — and return to **1** the moment the Officer dies, which satisfies "death clears aura" without any bookkeeping.
+
+**Still open:** Heavy charged-blast telegraph and 4 s recovery; Officer relay call; the cadence difference (1.6 s → 1.44 s) was not timed shot-to-shot.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
