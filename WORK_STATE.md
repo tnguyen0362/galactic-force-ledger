@@ -450,6 +450,28 @@ Deploy → hold relay → extract → board → debrief on `SABOTAGE_RELAY`/Norm
 2. Finish the sweep by driving each variant to completion (teleport + interact/objective per template) rather than only deploying.
 3. Check the client and server logs once at the end; the sweep only covered deploy, not play.
 
+
+## PAUSED by owner — 2026-11-24T22:40Z (place 455)
+`.goal/PAUSE` written. Nothing is mid-edit; the tree is committed and the place saved.
+
+### What was resolved before the pause
+**`GF_ElimTargets` was never leaking.** Clearing the attribute before each deploy proved it: across five consecutive deploys only `ELIM_COMMANDER` set `GF_ElimTargets = 3`; `SABOTAGE_RELAY`, `CONQUEST_DOMINION`, `DEFENSE_POWER` and `RECOVERY_CONVOY` all left it `nil`. The earlier "3 everywhere" was a stale attribute read across deploys.
+
+**Elimination tagging verified:** `ELIM_COMMANDER` marks an **Officer + 2 Riflemen** (`elim = 3`, `tagged = 3`, names `Officer,Rifleman,Rifleman`).
+
+### A change I made and reverted in this batch
+I added `EnemyService.clearAll()` to `EncounterDirector.beginMission` to stop hostiles accumulating across redeploys. It **destroyed the elimination targets** (`tagged = 0` on every elimination deploy) because `ObjectiveService.setup` spawns and tags them *before* `beginMission` runs. Reverted; tagging re-verified at 3.
+
+### The real defect that remains
+**Redeploying without extracting never clears the previous mission's hostiles.** `EnemyService.clearAll()` exists but is only called from `ExtractionService`. After several deploys the mission contained 9 hostiles and counts read high.
+
+The fix has to run **before** `ObjectiveService.setup(RELAY, template)` in `StationService` (not in `EncounterDirector`), and it must be verified with the attribute and world state cleared between deploys — my sweep this batch did not clear between runs, so it proved nothing.
+
+### Next actions when resumed
+1. Move the clear to just before `ObjectiveService.setup` and verify: deploy ELIM → kill nothing → redeploy ELIM → still exactly 3 tagged, and total hostiles equal one mission's roster.
+2. Finish the 15-template sweep **playing each to completion**, not just deploying.
+3. `S06-023/024/026` still lack cover/peek behaviour and the Marksman telegraph is unobserved.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.

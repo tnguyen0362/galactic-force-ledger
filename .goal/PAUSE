@@ -1,1 +1,1 @@
-paused by owner (goal loop) at 2026-11-24T22:35Z — mid 15-template regression sweep; deploy check collected, tag leakage suspected
+paused by owner at 2026-11-24T22:40Z — elimination tagging verified (3 targets); redeploy leaves stale hostiles, fix not attempted
