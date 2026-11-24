@@ -132,7 +132,7 @@ const call = (params: any) => tool.execute("call", params, undefined, undefined,
 		],
 	};
 	seen.length = 0;
-	const out = await call({ action: "start", batches: 1 });
+	const out = await call({ action: "start", batches: 1, blockedOn: "weapon roster rows are unverified and I cannot tell which config fields the spec requires" });
 	const text = out.content[0].text as string;
 	check("planner launched with the strong model", seen[0]?.nodeId === "planner" && seen[0]?.model === "deepseek-v4-pro", JSON.stringify(seen[0]));
 	check("two workers launched in parallel", seen.filter((s) => s.nodeId.includes(":worker")).length === 2);
@@ -156,16 +156,24 @@ const call = (params: any) => tool.execute("call", params, undefined, undefined,
 			{ id: "b2", title: "second", rows: ["S08-003"], workers: [{ agent: "worker", task: "Implement the mission variant and prove it spawns.", context: "fresh" }], verify: "check" },
 		],
 	};
-	const out = await call({ action: "start", batches: 2 });
+	const out = await call({ action: "start", batches: 2, blockedOn: "two batches are queued and the first cannot be trusted without a gate" });
 	const text = out.content[0].text as string;
 	check("rejected gate stops the pipeline", text.includes("pipeline stopped"), text.split("\n").find((l) => l.includes("STOP")) ?? "");
 	check("second batch never launched", !seen.some((s) => s.nodeId.startsWith("b2")), seen.map((s) => s.nodeId).join(","));
 }
 
+// --- escalation guard: no blocker named, nothing launched -------------------------------------
+{
+	seen.length = 0;
+	const out = await call({ action: "start", batches: 1 });
+	check("refuses start without a named blocker", String(out.content[0].text).includes("name the blocker"));
+	check("refused start launches nothing", seen.length === 0, `launched ${seen.length}`);
+}
+
 // --- planner failure is reported, not thrown -------------------------------------------------
 {
 	plannerError = true;
-	const out = await call({ action: "start", batches: 1 });
+	const out = await call({ action: "start", batches: 1, blockedOn: "weapon roster rows are unverified and I cannot tell which config fields the spec requires" });
 	const text = out.content[0].text as string;
 	check("unparseable plan stops with a reason", text.includes("STOPPED:") && text.includes("unparseable"), text.split("\n")[0]);
 	plannerError = false;

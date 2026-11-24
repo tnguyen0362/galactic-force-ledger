@@ -107,6 +107,35 @@ const isShortened = (msgs: any[], id: string) => {
 	delete process.env.GF_CONTEXT_GC_SOFT;
 }
 
+
+// 6. Hysteresis: enter tight at 600k, stay tight until the context drops below 70% of it. This is the
+// sawtooth guard. A single threshold would prune to just under 600k and drift straight back over it.
+{
+	process.env.GF_CONTEXT_GC_SOFT = "600000";
+	process.env.GF_CONTEXT_GC_STATE = join(dir, "hysteresis.json");
+	const run = await freshModule("hysteresis");
+	const bigText = (i: number, chars: number) => ({
+		role: "toolResult",
+		toolCallId: `h_${i}`,
+		toolName: "execute_luau",
+		content: [{ type: "text", text: `H${i}-` + "y".repeat(chars) }],
+	});
+	const tightNow = () => JSON.parse(readFileSync(process.env.GF_CONTEXT_GC_STATE!, "utf8")).tight === true;
+
+	// ~700k tokens of old bulk text: 120 results at 20 KB each (2.4M chars / 3.4).
+	await run([...Array.from({ length: 120 }, (_, i) => bigText(i, 20000)), userMsg(1), userMsg(2)]);
+	check("hysteresis: enters tight above the soft limit", tightNow());
+
+	// ~500k: above the floor, below the soft limit. Must stay tight instead of flip-flopping.
+	await run([bigText(500, 1700000), userMsg(3), userMsg(4)]);
+	check("hysteresis: stays tight between floor and soft", tightNow(), "500k must not reopen loose mode");
+
+	// Small context: below the floor, so it releases.
+	await run([userMsg(5), userMsg(6)]);
+	check("hysteresis: leaves tight below the floor", !tightNow());
+	delete process.env.GF_CONTEXT_GC_SOFT;
+}
+
 console.log(results.join("\n"));
 const failed = results.filter((r) => r.startsWith("FAIL")).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);

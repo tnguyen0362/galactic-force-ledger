@@ -176,3 +176,28 @@ failure, gate rejection, and a missing event bus.
 **Not yet verified:** neither plugin has been exercised against live agents. The orchestrator's
 delegation path is proven only against a fake bus; the first real `/gf-orchestrate start` must be
 watched, and its `.goal/ORCH_LOG.jsonl` is the evidence to check.
+
+## 2026-11-24 — Escalation-only orchestration, and anti-sawtooth pruning
+
+**Model choice is per-role, not one global brain.** `gf_orchestrator` reads:
+- `GF_ORCH_PLANNER` (agent, default `oracle`) and `GF_ORCH_MODEL` (default `deepseek-v4-pro`) — the
+  planner is the only place a stronger model is requested, once per escalation.
+- `GF_ORCH_WORKER` (default `worker`), `GF_ORCH_GATE` (default `evidence-auditor`), `GF_ORCH_MAX_WORKERS` (3).
+Workers use whatever model their own agent definition declares; the planner override does not leak into them.
+
+**The orchestrator is an escalation, not a resident loop.** It is never wired into the goal loop and
+never fires on its own. `gf_orchestrate` now **requires `blockedOn`** (≥15 chars) describing the concrete
+blocker, and refuses to launch anything without one. Rationale: the base model does the bulk of the work;
+a planner plus three workers plus a gate per turn would multiply cost for no gain on ordinary rows.
+The blocker is written into `.goal/ORCH_LOG.jsonl` with every batch, so escalations are auditable.
+
+**Pruning no longer sawtooths.** The earlier design had one threshold, which is exactly the failure the
+owner named: cross 600k → prune just under it → grow → cross again. `context-gc` now:
+- enters tight mode at **600k**, leaves only below **420k** (70%), and the latch is persisted;
+- while tight, keeps shortening old bulk output **until the projection is under 420k**, rather than
+  stopping the moment it is under the trigger;
+- persists the latch even when a pass rewrote nothing (otherwise the decision was lost and re-made on
+  the next request, which reintroduced the thrash);
+- orders candidates oldest-first from a single index pass, not `indexOf` inside a comparator.
+Tests: `.audit/test_context_gc.ts` **16/16**, including "stays tight between floor and soft" and
+"leaves tight below the floor". Orchestrator: **23/23**, including "refuses start without a named blocker".
