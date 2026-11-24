@@ -1479,3 +1479,21 @@ one-frame flash.
 **What still looks wrong.** Frag has no debris, no smoke and no crater — it is light plus a glowing ball. Ring segments
 are still chunky. EMP uses the same geometry in blue, so the two are only distinguishable by colour and by what they do to
 shields, not by silhouette.
+
+## v251 — dome now obeys one projectile rule (measured), still no frame
+
+The dome existed and absorbed damage for anyone inside it, but it was **`CanQuery = false`**, so bullets passed straight
+through the shell while damage interception worked — two different rules for the same object.
+
+**Now:** `CanQuery = true`, `CanCollide = false`. Players walk through, projectiles stop.
+
+- Measured: a raycast from the player toward an enemy hits **DomeShield at 28.7 studs** instead of reaching the enemy.
+- `Weapon.tryFire` now damages the dome on hit, plays the shield impact, and breaks it (`VFX.shieldBreak`) at 0 hp.
+- Properties confirmed live: radius 18, `DomeHealth` 600, duration 9 s, ForceField material at 0.55 transparency.
+
+**Still not photographed.** Two sessions deployed the dome successfully, but 9 s of lifetime against a 70 s cooldown means a
+capture attempt that spans more than one tool call almost always lands after expiry. The next attempt must deploy and
+capture within the same window.
+
+**Open oddity:** casting the dome at a point 14 studs from the player, well inside `range = 90`, silently did nothing,
+while casting at the player's own root worked immediately. Not yet explained.
