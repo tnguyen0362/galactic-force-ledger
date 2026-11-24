@@ -2049,3 +2049,26 @@ reports the player at 100 health, walk speed 17.5 and no downed attribute. `Vita
 and deploy now calls reset before the paint — the client still received a payload claiming downed. So the payload source is not yet
 traced; the honest status is "HUD renders, but renders a wrong initial state", which is arguably worse than blank because it tells
 the player they are down.
+
+## v306 — the HUD was not lying: the squad is shot to pieces on arrival
+
+**Instrumented `VitalsService.publish`.** Every payload it sent, in order, immediately after a deploy:
+
+```
+shield=100 downed=false
+shield=74  downed=false
+shield=48  downed=false
+shield=22  downed=false
+shield=0   downed=false  (repeats)
+```
+
+So the `SHIELD 0` and `DOWNED` I spent the last continuation chasing were **correct reporting of real damage**. The squad is
+dropped inside enemy engagement range and loses 100 shield within a few seconds, before a player can move. The HUD was the honest
+one; the spawn was the bug.
+
+**Fix started, not finished.** `StationService.deploy` now sets `GF_DeployGraceUntil = now + 4`, and `VitalsService.applyDamage`
+returns 0 inside that window, counting absorbed hits in `GF_GraceAbsorbed`. **The grace is not yet verified** — the follow-up run
+produced zero publish lines in the log sampled, which is itself unexplained and must be resolved before this can be claimed.
+
+**The real problem remains:** a drop zone inside engagement range is a design bug, not a tuning one. Grace hides it for four
+seconds; the spawn point and the enemy pickets around it need to change.
