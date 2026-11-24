@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 435
+# WORK_STATE — last verified 2026-11-24, place version 436
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 435**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 436**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 81 populated, 748 UNKNOWN**.
 - Ledger state: PARTIAL 52 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -273,6 +273,15 @@ Measured: 1492 s → `MISSION 24:52` normal (220,230,240); override 200 s → `M
 **Harness mistake, twice in a row:** setting `GF_TestHooks` from the **Client** datamodel (writes do not replicate) made the hook look broken. From the Server it works immediately.
 
 **`S03-037` still missing:** Voss portrait/subtitles, nearby-enemy blips, multi-member squad reading (only one client exists).
+
+
+## Verified at build 436 — Voss speaks
+`DialogueEvent` was a declared remote with **no sender and no receiver**. New `DialogueService.say` fires `{speaker="VOSS", text}` and is wired to deploy briefing, primary complete and primary failed. `StarterPlayerScripts.Voss` renders a bottom-left panel with a shape-built helmet portrait and queued subtitles (6 s each).
+
+Measured: deploy → `Sabotage Relay on Normal. Get in, finish the job, get out.`; completion → `Primary objective complete. Wrap it up and get to the ship.` (`GF_VossLines` 1 → 2). Capture `ScreenCapture_VOSS` shows the panel together with the circular minimap, `MISSION 24:40`, `GRENADE x3`, `SQUAD 1`.
+
+**Known wart:** `DialogueService.start()` is never called (dead intro line and a stale `hook.onStage` check) — delete or wire it.
+**`S03-037` still missing:** nearby-enemy blips with the observed/audible fade.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
