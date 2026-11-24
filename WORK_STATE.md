@@ -146,12 +146,40 @@ Both under spec. **Not changed** — raising them roughly doubles both fights an
 `S06-064`/`S06-074`, which is owner judgement (`S16-113`). The Walker config also carries none of the spec's component HP
 (two 400 HP leg actuators, 550 HP cannon housing), so that system is either absent or configured elsewhere.
 
+**FIRST IMPLEMENTATION FIX OF THE AUDIT — `S09-035` war points, place 463.** Evidence `evidence/v463-war-commit-at-primary/EVIDENCE.md`.
+
+The defect was inverted in both directions: `ExtractionService.finish(success)` passed the **extraction** outcome to
+`recordMission()`, so a completed primary followed by a failed evac was recorded as a **loss**, and a lost primary
+followed by an emergency evac was recorded as a **win**.
+
+Fixed with four edits: new `GalacticWarService.commitPrimary(template)` guarded by `GF_WarCommitted`; the marker cleared in
+`ObjectiveService.setup`; the commit called from `ObjectiveService.complete` (which already had a once-only guard); and
+`ExtractionService.finish` now records a loss **only** when the primary never completed. All three modules pass `loadstring`.
+
+Verified in a temporary `Script` parented to `ServerScriptService` so it shared the live module instances — a tool-VM
+`require` gets its own copies and would have proved nothing. Script deleted after the run.
+
+```
+before                      [w=13 l=7  c=false]
+afterComplete               [w=14 l=7  c=true ]  committed AT PRIMARY
+afterComplete2              [w=14 l=7  c=true ]  idempotent
+afterFail_primaryDone       [w=14 l=7  c=true ]  failed evac did NOT touch the campaign
+afterFail_primaryIncomplete [w=14 l=8  c=false]  loss only for an incomplete primary
+```
+
+**Place version is now 463.** That resolves the contradiction below: WORK_STATE 448, HANDOFF 318, BLOCKED 232 and commits
+461 were all stale. 463 is the authoritative saved version.
+
+**Side effect, stated plainly:** testing the real path wrote one win and one loss into `GalacticWarService`'s DataStore
+(`missionsWon` 13 → 14, `missionsLost` 7 → 8). The war score is cosmetic, but the counters are no longer the pre-test
+values.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 463**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 156 populated, 659 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place-version numbers disagree across documents (WORK_STATE 448, HANDOFF 318, BLOCKED 232, recent commits 461). Unresolved
-  because Studio was not connected; do not trust any of them until `save_place` records a new one.
+- Place version **463** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+  or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
