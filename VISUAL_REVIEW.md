@@ -1957,3 +1957,20 @@ and arms an 8 s watchdog that reports "No response from command" instead of spin
    parts are `Subfloor`, `HangarDeck`, `Ceiling`, `WarTableBase` and two grey `Girder`s, all `Metal`, all opaque. So the earlier
    `BossBlast` finding explained *one* source; this second source is lighting-driven and still unidentified. Next step is to dump
    light properties at the exact moment the deck goes orange rather than after.
+
+## v299 — the refusal state does not render reliably, and the orange wash is intermittent (V352, V353)
+
+**What I tried.** Move the refusal out of a separate status line (which collided with the button) and into the deploy button
+itself: `REFUSED · <reason> · RETRY`, amber, with the default text restored on reset.
+
+**What happened.** V353 shows the button back at `DEPLOY TO VEYRA-7` with **no refusal text anywhere** after the server refused the
+same invalid operation. The identical refusal produced a visible line in V350/V351 (rendered under the difficulty row, clipped by
+the panel edge). So the server half is measured — `ok=false, reason="unknown operation"`, `GF_DeployRejected` recorded — and the
+**client half is not proven**: something clears the text after it is set, and I have not yet found what.
+
+**Orange deck: now known to be intermittent.** V352 and V353 are the same camera, framing and session type as V351, and the deck is
+clean grey in both. Across this continuation the following were excluded with measurements: warm-coloured parts anywhere
+(92 found, all distant alien visor/crest pieces), parts within 60 studs of the camera (Subfloor/HangarDeck/Ceiling/WarTableBase/
+Girders — all grey `Metal`, opaque), reflective parts (0), terrain voxels under the station (all Air), post effects (neutral), and
+workspace `Highlight`/`Beam`/`SurfaceGui`/`BillboardGui` (player highlight fill is 24,34,48 with 1.0 fill transparency; signs and
+slot boards only). A defect that only appears sometimes needs a capture-and-dump in the same instant, which is the next step.
