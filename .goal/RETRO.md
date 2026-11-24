@@ -33,3 +33,15 @@ replicated surface instead. Recorded because it produced four false bug reports.
 ## F6. `execute_luau` calls over ~50 s time out at 60 s
 A 78-second scripted play loop died mid-run and lost its return value. Keep waits under ~45 s and
 split long sequences across calls; the game keeps ticking between calls, so nothing is lost.
+
+## 2026-11-24 — Tests must not live in the extension directory
+
+**What happened:** `pi` died at startup for the owner, printing a test suite's PASS/FAIL lines. Cause: I
+put `test_goal_loop.ts` and `test_image_gc.ts` in `~/.pi/agent/extensions/`. Pi auto-discovers **every**
+`.ts` file in that folder as an extension, so the test's top-level code ran on every launch and its
+`process.exit(failed === 0 ? 1 : 0)` terminated Pi. A suite that passes standalone is still a crash on
+boot when it is where the loader looks.
+
+**Rule:** test/bench harnesses live in the repo (`.audit/`), never in an extensions directory. After any
+extension change, run `.audit/boot_check.mjs`, which imports every file in the extension folder and fails
+if one throws or has no default export.
