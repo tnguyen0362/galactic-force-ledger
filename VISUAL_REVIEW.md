@@ -2126,3 +2126,24 @@ number to nudge, so it is recorded as the next action rather than guessed at her
 
 **Debug instrumentation kept:** the `_source` print in `applyDamage` is worth leaving in until the engagement gate exists, because
 it turned a three-continuation mystery into one log line.
+
+## v310 — bosses are encounters now, and the drop is survivable (measured)
+
+**Change.** `EncounterDirector.beginMission` no longer spawns **High Marshal Veyr** in an ordinary operation — he is a rank-gated
+major encounter and was standing next to the drop pod delivering 26-damage bursts. The field boss still spawns, pushed to 220
+studs from the landing zone, and both bosses now require an **engagement radius of 120 studs** before they fire
+(`BastionWalker` mortar gate, `Veyr` burst gate).
+
+**Measured before and after, 12 s at the landing zone without moving:**
+
+| | damage events | shield after 12 s |
+|---|---|---|
+| before | 8–10 (`BastionMortar`, `VeyrBurst`) | 0 |
+| after | **1** (`BastionMortar`) | **60** |
+
+**Still wrong.** One mortar volley still lands on the drop. The walker's splash reaches past the engagement gate, so the remaining
+fix is positional — move the drop zone further from the boss arena or shorten the mortar's splash — rather than another range
+tweak, which is what the last two attempts were.
+
+**Kept temporarily:** the `_source` print in `VitalsService.applyDamage` stays until the last volley is gone; it is the only reason
+this was diagnosable at all.
