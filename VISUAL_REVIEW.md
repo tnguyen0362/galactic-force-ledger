@@ -2709,3 +2709,15 @@ One payment, once.
 **What is still wrong.** The debrief does not surface the `lateJoin` flag, so the player sees a zeroed payout with no explanation —
 from their side it looks like the mission failed to pay. And duplicate-join prevention across two clients is untested; only the
 single-client path exists.
+
+## v347 — the late joiner is told why they were not paid (V384)
+
+**What the frame shows.** `EXTRACTED — REINFORCEMENT`, Credits `+0`, Military XP `+0`, all salvage `0`, Military Rank `15`, and the
+line **"Reinforcement catch-up credit already paid — no mission share."**
+
+**A bug visible in that same frame, caught by reading the numbers.** Rank read **1** in V384 because the late-join payload passed
+`rank = nil` and the debrief fell back to 1. Fixed to read the profile rank; a re-run shows `Military Rank 15`.
+
+**What is still wrong.** Apart from the explanation line, the zeroed rows look identical to a payout that failed — there is no icon,
+no colour change, nothing that separates "you were paid earlier" from "the mission paid nothing". And duplicate-join prevention
+still has no two-client test; a player who leaves and re-joins the same operation has never been observed.
