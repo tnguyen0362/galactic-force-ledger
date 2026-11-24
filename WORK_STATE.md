@@ -125,6 +125,27 @@ Also recorded: sensitive reward/profile/cache logic is server-side, but every ba
 `ReplicatedStorage.GF.Shared.Configs` and is client-readable — acceptable for prediction, but never audited module by
 module (`S14-004`).
 
+**Batch 8: Studio reconnected — first live measurements of the audit (build 462).**
+
+Studio came back in Edit mode, so this pass stopped auditing documents and tested them. Evidence: `evidence/v462-testhook-gate/EVIDENCE.md`.
+
+**`S14-029` is now VERIFIED — by attack, not by reading.** A client set `GF_TestHooks = true` on its own `Workspace` copy
+(succeeded locally), fired `SetLoadout{grantTestAugment}` at the server, and the server read **`nil`** and refused with
+`GF_ArmoryRejected = "test hooks disabled"`, granting nothing. Attributes set by a LocalScript do not replicate, and the
+guard reads the server's copy. Two caveats recorded: the mechanism is a server-only attribute rather than the
+Studio-or-allowlist gate the spec names, and `GF_ForceRankUps` has **no** guard at all, resting on the same property.
+
+**Boss HP measured live from config, replacing a stale build-385 reading:**
+
+| boss | config (health + shield) | spec base | gap |
+|---|---|---|---|
+| Bastion Walker | 1200 + 400 = **1600** | **3600** | -2000 |
+| High Marshal Veyr | 4000 + 1500 = **5500** | **7200** | -1700 |
+
+Both under spec. **Not changed** — raising them roughly doubles both fights and would move the solo clear targets in
+`S06-064`/`S06-074`, which is owner judgement (`S16-113`). The Walker config also carries none of the spec's component HP
+(two 400 HP leg actuators, 550 HP cannon housing), so that system is either absent or configured elsewhere.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 156 populated, 659 UNKNOWN**.
