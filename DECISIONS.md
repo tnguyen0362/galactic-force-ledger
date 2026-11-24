@@ -118,3 +118,27 @@ built. Blanket recolouring is only acceptable for a whole named material family 
 A mission capture must assert three things before it is trusted: `CurrentCamera.CFrame.Position`, the objective part's position, and their
 distance. V412 was the first good relay frame in six attempts **because** the camera was forced `Scriptable` with `CameraSubject = nil` at a
 computed offset and the distance was printed (33 studs) before capturing.
+
+## 2026-11-24 — Context strategy: no pruning plugin; the loop carries state instead
+
+**Measured before deciding** (session `01a205b4`, model `deepseek-v4.1-flash`, window 1,000,000):
+- Live context at decision time: **135,197 tokens = 13.5%** (`input 1,700 + cacheRead 133,120 + output 377`).
+- **6 native compactions** in this session, all `fromHook: false`; `tokensBefore` = 1,078,490 · 1,088,116 · 216,825 · 711,002 · 818,297 · **162,043**.
+- Compaction spend: **$0.427** across those six. Whole session: **$8.17**.
+- 71 `context_edit` omission records, Pi-native, clustered immediately before compactions.
+
+**Decision:** do not build a pruning / "DCP" layer, and do not reintroduce an ACP-style package.
+
+Reasons, in order of weight:
+1. **Cache economics run against pruning.** A request is dominated by `cacheRead` (133k cached vs 1.7k fresh). Rewriting or dropping mid-conversation history invalidates the cached prefix and makes the next request pay full input price. Pruning to "save tokens" typically increases cost.
+2. **Pruning breaks the structure the API requires.** Removing an assistant `tool_call` without its result, or vice versa, is a hard request error — the exact failure class that makes a session unusable mid-task.
+3. Pi already has the mechanisms: native compaction plus native omission (`context_edit`). A second writer into the same context is how the earlier harness became unusable.
+
+**What was actually broken:** the *loop*, not the context. After compaction or `/reload` nothing re-injected the goal, so the owner had to re-prompt. Fixed in `~/.pi/agent/extensions/goal-loop.ts`:
+- `.goal/LOOP_STATE.json` — durable `{active, goal, iteration, startedAt, compactions}`.
+- `session_start` with `reload`/`resume` re-arms the loop and sends a turn. Previously `/reload` silently ended it.
+- `session_compact` sets a re-anchor flag; the next continuation is a **resume packet** naming `WORK_STATE.md`, the ledger and the spec — so the turn rebuilds from disk instead of trusting a summary.
+- Circuit breaker: **4 compactions** in a session writes `.goal/PAUSE` and stops, instead of compacting forever.
+- Verified: `test_goal_loop.ts`, **15/15 passing** on a fake ExtensionAPI and a temp repo.
+
+**Open anomaly:** a compaction fired at `tokensBefore = 162,043` on a 1,000,000-token window, and another at 216,825. Neither matches the threshold path (983,616). Both need attribution (overflow recovery vs a model switch with a smaller effective window) before any threshold tuning is trusted.
