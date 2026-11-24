@@ -3048,3 +3048,22 @@ station interior again, so no frame yet shows the spires in violet. Treat the re
 **Why V411 landed at the station.** The deploy ran, the pivot ran, and the capture still returned the concourse. Same lesson as v373 with a
 different cause: a single capture cannot be trusted to represent a mission state without checking `CurrentCamera.CFrame.Position` against
 the objective first.
+
+## v377 — a colour predicate is not a palette (V412 → V413 → V414), and the revert
+
+**Sequence of my own mistakes, in order.**
+
+1. V412 finally framed the relay (camera forced `Scriptable` at 33 studs). The spires were **still green**, and every dressing part read
+   `GF_Greened = nil` — the shift had never touched them.
+2. Cause: my predicate required `c.G > c.B + 0.03`, but the spires measure **58,88,82**, where green leads blue by only 0.023. The rule
+   excluded precisely the objects it was written for.
+3. I relaxed it. The pass then swept **136 parts** (`greened=136`) and the whole compound went **near-black** (V413) — foliage, rock and
+   structure all collapsed toward the same dark violet.
+4. **Reverted the pass.** V414 confirms no errors, `preset = mission`, and the scene is back to its v374 palette.
+
+**What survives:** the space-sky fix and the per-zone terrain material tints (v374) — those were verified in V409/V412 and are untouched.
+
+**What does not:** the plants are still green on a violet world. A blanket recolour of a live scene is the wrong instrument: it cannot
+distinguish a plant from a rock by colour alone, and its failure mode is entire-scene, not local. The correct fix is a **palette argument
+to the dressing generator** so plants are authored violet at construction. Recorded in `ASSET_DEBT.csv` as `PLANT_PALETTE_V1` with the exact
+part signature and both failure captures, so the next attempt starts from the measurement instead of from a guess.

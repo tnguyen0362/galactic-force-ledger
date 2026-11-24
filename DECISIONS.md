@@ -100,3 +100,21 @@ blue sky" frame (V402, V404, V408) traces to this one branch.
 
 Rule: both zones install the space skybox; only the star density differs (station 20000, mission 6000, measured back as 5000). Voxel
 terrain keeps its own material colours, so `Terrain:SetMaterialColor` per zone is required for the ground to agree with the sky.
+
+## Never fix a palette by recolouring a live scene by colour predicate (v377)
+
+Two attempts to remove green plant dressing from a violet world by walking `workspace` and hue-shifting "green" parts:
+
+- Strict predicate (`g > b + 0.03`) skipped the plants entirely — the spires are 58,88,82, where green leads blue by 0.023.
+- Relaxed predicate swept **136 parts** and collapsed the compound to near-black (V413). It cannot tell a plant from a rock, and its
+  failure mode is the whole scene.
+
+Reverted. Rule: palettes are **arguments at construction time**, not post-hoc filters. If a colour must change, pass it in where the part is
+built. Blanket recolouring is only acceptable for a whole named material family with a known enumeration (as with
+`Terrain:SetMaterialColor`).
+
+## Capture discipline that is now mandatory (v377)
+
+A mission capture must assert three things before it is trusted: `CurrentCamera.CFrame.Position`, the objective part's position, and their
+distance. V412 was the first good relay frame in six attempts **because** the camera was forced `Scriptable` with `CameraSubject = nil` at a
+computed offset and the distance was printed (33 studs) before capturing.
