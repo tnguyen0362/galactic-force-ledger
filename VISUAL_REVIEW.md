@@ -2856,3 +2856,21 @@ being a decision after the first handful of operations.
 
 **What the shop is missing.** No slot filter, no grouped sections, and each augment's effect is summarised as a single word
 (`Universal`, `Category`, `Ability`) rather than what it actually changes.
+
+## v365 — the objective compound gets edges, and the grey slab survives (V402)
+
+**What was added.** `buildRelay` now dresses the compound: 7 `DeckSeam` plates, 4 `HazardChevron` markers, 4 `PerimeterStrip` neon
+edges and 2 stanchions with neon lamps — 26 children total, verified by name and count, no load errors.
+
+**What the audit actually found.** The 70-stud volume around the terminal contains AI-mesh `body_geom` parts at 13–20 studs and a
+64×64 `CompoundDeck` in Slate. So the "grey placeholder" impression is not grey Parts: it is **unbroken flat surfaces** — a huge
+deck with one material, and a large flat panel structure with antennae that dominates every objective frame and has no detail
+whatsoever.
+
+**What V402 still shows.** The perimeter strips and seams exist at deck level but the camera is looking up at the slab, which is
+unchanged. And the player is **DOWNED with SHIELD 0** on arrival at the relay — the same patrol lethality measured earlier, still
+unmitigated now that the objective is where you have to stand still.
+
+**Honest status.** This is a partial result: the compound has edges and a scale reference, the dominant silhouette does not. Next
+action is to redetail or break up that panel (ribs, seams, an emissive band) and vary the deck material, then address the patrol
+fire at the objective.
