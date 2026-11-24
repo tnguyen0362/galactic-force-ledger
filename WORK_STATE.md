@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 428
+# WORK_STATE — last verified 2026-11-24, place version 429
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 428**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 429**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 79 populated, 750 UNKNOWN**.
 - Ledger state: PARTIAL 50 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -233,6 +233,12 @@ The spec's "Frag kills, EMP opens" distinction is real and now measured in play.
 Throwing EMP **unowned** was free; `toss` now refuses it (`grenade not owned`). `buyGrenade` charges rank/cost: EMP is rank 4 / 550 credits as specced (was rank 5, no cost). Charges default to 3 (was 2), measured 3 → 2 → 1 → 0 across three throws with the fourth refused `no charges`.
 
 **Still open:** charges never refill per mission — three grenades and you are done for the session. No armory BUY button for grenades, so a player cannot purchase EMP from the UI. Frag's cap not re-measured.
+
+
+## Verified at build 429 — grenade supply is per deployment
+`refill` restocks `GrenadeCharges` to the equipped type's `count` on every deploy: measured 3 → 0 after three throws, then **3** again after deploying (`GFDebug.LastGrenadeRefill = 3`). Armory grenade rows now show BUY for unowned types and EQUIP for owned.
+
+**Still open:** the BUY branch has never rendered (both types owned on this profile); refill fires only on deploy, not on return to station; the refill is reached through a `_G` handoff inside a `pcall`, so a failure would be silent.
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
