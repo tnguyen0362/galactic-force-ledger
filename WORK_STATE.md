@@ -416,6 +416,14 @@ Marksman also gained `chargeTime = 0.8` through the shared telegraph path (unobs
 
 **Still stale:** `GF_EnemiesTracked` stayed at 13 with the player at the station — `actor.target` is never cleared, so it means "ever acquired", not "has a live target".
 
+
+## Verified at build 452 — both enemy diagnostics honest
+`GF_EnemiesTracked` was still lying (13 at the station) because dormant actors never tick and `actor.target` was never cleared. `tickActor` now clears it, and the counter requires a live in-range target (character present, within 260 studs).
+
+Measured: under fire **engaged 5 / tracked 10**; six seconds after leaving, **0 / 0**. Either counter can now be trusted.
+
+**Two runtime-only bugs of mine this batch:** a `local function` used before its declaration (`attempt to call a nil value`, all hostile fire stopped) and a loop-variable mismatch (`model` vs `_`) that threw inside the Heartbeat and pinned both counters at 0. Both compiled clean. **`loadstring` is not a test** — the runtime error log is.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
