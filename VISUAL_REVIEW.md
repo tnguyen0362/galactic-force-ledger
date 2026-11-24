@@ -2440,3 +2440,28 @@ V367 shows the panel with `DEPLOY TO VEYRA-7` focused and `REQUEST SUPPORT` bene
 
 **What is still missing.** There is no browse screen: a responder learns about a request through `GF_Dispatch` and a mission event,
 not through a list they can read and pick from. The listing is honest now but not yet usable without the attribute.
+
+## v327 — a responder can finally read a request instead of an attribute (V371)
+
+**Added.** The beacon is mirrored into a `DispatchListing` push to every client, and the war table renders one line plus a JOIN
+action:
+
+```
+PD-757 · Normal · 3 seat(s) · 0s · host ROBLOXISUS101     [JOIN]
+REQUEST SUPPORT
+WASD move · LMB fire · RMB aim · Q dodge · R reload · Z/X abilities
+```
+
+`RequestDispatchJoin` takes the id, checks it against the live beacon, and goes through `DispatchService.respond`, which owns the
+seat check and returns a reason — the client never decides whether a join is valid.
+
+**Measured label bands inside the panel**, no overlaps after growing the panel to 492 px and re-stacking the rows:
+`listing y=611`, `controls y=681`, `Deploy` focused above them.
+
+**What is still missing, and it is the row's remaining half.**
+1. Only **one** request can exist at a time — the data model holds a single `beacon`, so the "list" is a single row and cannot show
+   several squads.
+2. The JOIN action has never been exercised with a second player, because Studio hosts one client. Seat arithmetic (3→2) and
+   displacement to the LZ were measured earlier, but that is not the same as two clients joining.
+3. **Quick Deploy does not exist** — only the manual dispatch path. That is a separate row and is now correctly marked PARTIAL rather
+   than implied complete.
