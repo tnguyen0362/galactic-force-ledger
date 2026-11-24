@@ -494,6 +494,16 @@ Measured: fresh deploy → `elim=3`, tagged 3 (`Officer, Rifleman, Rifleman`), 8
 
 **Not proven:** kills went through `CombatService.damageEnemy`, so aim/spread/time-to-kill are untested, and Walker/Talon extraction settlement was not re-run.
 
+
+## Verified at build 457 — weapon fire end to end
+Six client `FireWeapon` shots at a 21-stud clear line on an Officer: **6 DamageFeedback events**, shield **160 → 120.4**, **6.6 damage per shot**. That is AR-01 base 8 × Officer armour 0.9 × falloff ~0.92 — three systems compounding as designed. A shot into a wall 5 studs away consumed ammo and dealt nothing, which is correct hitscan.
+
+**Config mismatch found:** the ledger specifies AR-01 damage **18**; observed damage is consistent with a base near **8**. Recorded on `S04-WPN-AR01`, not yet reconciled.
+
+**Harness errors, both repeated again:**
+- `GF_DeployGraceUntil` set from the **Client** does not replicate — the player respawned at the station and shots went into the deck 748 studs from the target.
+- Line of sight must be **found**, not assumed: a 15-stud target sat behind `AscendancyOutpostWall`. Target selection now requires an enemy whose own raycast is the first hit.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.

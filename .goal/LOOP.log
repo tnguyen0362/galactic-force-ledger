@@ -294,3 +294,4 @@ Continue until the functional prototype requirements and subsequent private beta
 [2026-11-24T22:31:24.834Z] iteration 1 — 815 rows | ABSENT 0 | PARTIAL 60 | UNPROVEN 0 | PENDING-OWNER 0 | ACCEPTED 0
 [2026-11-24T22:31:24.839Z] stopped after 1 iteration(s): sendUserMessage failed: Error: This extension ctx is stale after session replacement or reload. Do not use a captured pi or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().
 [2026-11-24T22:34:59.213Z] iteration 1 — 815 rows | ABSENT 0 | PARTIAL 60 | UNPROVEN 0 | PENDING-OWNER 0 | ACCEPTED 0
+[2026-11-24T22:36:54.508Z] iteration 2 — 815 rows | ABSENT 0 | PARTIAL 60 | UNPROVEN 0 | PENDING-OWNER 0 | ACCEPTED 0
