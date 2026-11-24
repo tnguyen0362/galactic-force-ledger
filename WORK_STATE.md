@@ -1,9 +1,9 @@
-# WORK_STATE — last verified 2026-11-24, place version 387
+# WORK_STATE — last verified 2026-11-24, place version 388
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 387**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 15 populated, 800 UNKNOWN**.
-- Ledger state: PARTIAL 14 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 388**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 17 populated, 798 UNKNOWN**.
+- Ledger state: PARTIAL 16 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
@@ -17,7 +17,7 @@
 
 Rank gate verified by temporarily requiring rank 99: deployment refused with `requires military rank 99`, no mission started; restored to 10 and re-saved.
 
-Counts: **5 of 5 families exist and are playable; 10 of 15 variants are playable** (8 verified at build 387, 3 verified at earlier builds).
+Counts: **5 of 5 families exist and are playable; 12 of 15 variants are playable** (10 verified at build 388, 2 verified at earlier builds).
 
 
 ## Verified at build 387
@@ -34,6 +34,14 @@ Frame `ScreenCapture_AEGIS_SHIELDED` shows the new objective line `Destroy the s
 
 Automation note: a camera-origin shot is rejected `origin-too-far`; fire from `root + (0, 2, 0)`. `workspace.GFDebug` reports `Accepted` / `Rejected` / `LastReject` / `LastStructure`, which separates a rejected shot from a miss.
 
+
+## Verified at build 388
+**Recovery | Fallen Convoy** (`RECOVERY_CONVOY`): crate A recovered (1/2, stage stays 1) → crate B → stage 2 with a tagged pursuit squad of Rifleman/Scout/Heavy → 2 of 3 dead left the objective open → 3rd kill completed it.
+
+**Defense | Last Transmission** (`DEFENSE_UPLINK`): activate dish → stage 2 timer → at 78 s the stage moved to 3 and the terminal prompt changed to `Confirm uplink` → confirming set `GF_ObjectiveComplete=true`. The defend uses its own 75 s timer, not the beacon's 60 s.
+
+Both reuse existing machinery only: tagged rosters and the 0.5 s timer.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
@@ -48,7 +56,7 @@ Automation note: a camera-origin shot is rejected `origin-too-far`; fire from `r
 - Kills in all tests were applied via the `Dead` attribute that `CombatService` writes; weapon → damage → kill was not re-exercised. Solo only.
 
 ## Next highest-value work
-1. **Recovery and Defense variants** — 4 of the 5 remaining variants; the structure system now covers "destroy" stages.
+1. **Three remaining variants**: Burn the Arsenal (Sabotage), Silent Archive (Recovery, needs the hacking subsystem), Power Under Fire (Defense, needs enemy structure attacks).
 2. **Hacking subsystem** (`S08-036`–`S08-043`) — referenced by every authored variant that says "hack console"; nothing exists yet.
 3. **Target markers** (`S08-033`) — affects every mission.
 4. Defense object HP + absence pause (`S08-029`, `S08-031`).
