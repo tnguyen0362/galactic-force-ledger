@@ -1712,3 +1712,26 @@ called, so carried salvage survived a failed run and would have been paid out by
 
 **Measured.** `GF_EmergencyExtraction=true`, `ExtractionDropship` present with a `BoardingZone`, then `state=failed`,
 `inMission=false`; server log `carried salvage at finish: total=4 success=false` on the loot run and `total=0` on the next run.
+
+## v278 — departure cinematic exists, and only on a real win (V339, V340)
+
+**Scene / camera.** Server-driven chase camera in the dropship's own frame, behind and above, looking slightly down at the ship
+as it climbs out of the LZ. Letterboxed by the existing cinematic overlay.
+
+**What the frame shows.** The ship rising over the LZ ring (cyan marker lights visible beneath it), an engine trail below,
+`OPERATION COMPLETE` with `+450 credits / +600 XP`, `PRIMARY OBJECTIVE COMPLETE — Extraction authorized`, and the subtitle
+*"Drop bay is hot. Pod is loaded."*
+
+**Why it exists.** There was no departure at all: `finish()` destroyed the dropship the moment a player boarded, so the most
+important beat of an extraction — getting out — never appeared. `playDeparture()` now lifts, banks and flies the ship out over
+6 s, and the camera attributes track it. It is called **only** from `board()`, i.e. only on a real success; the failure path
+sets `GF_DeparturePlayed = "none"` and clears the camera attributes, so a wipe cannot show a win sequence. Measured both ways:
+`departure=success` + `state=complete` on the good run, `departure=none` + `state=failed` on the wipe.
+
+**What looks wrong.**
+1. The ship is a **black silhouette** for the whole shot — no lit surface catches the engine glow. Severity: high; it is the
+   subject of the shot and reads as a slab.
+2. The debrief panel covers the right half of the departure, and both play at once. Severity: medium — the debrief should follow
+   the ship out, not overlap it.
+3. The letterbox is driven by a different system than the departure, so a future timing change will desynchronise them.
+4. The engine trail is a single neon bar; there is no dust kick, no ground wash, and the LZ ring does not react to the take-off.
