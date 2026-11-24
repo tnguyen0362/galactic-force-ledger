@@ -2639,3 +2639,26 @@ V381 shows the First Spear 1/5 card with the touch hint.
 
 **Not claimed.** No real gamepad or phone was used — the override exercises the same branch a genuine `LastInputTypeChanged`
 would, but a hardware capture does not exist. The hint is also 12 px and low-contrast, which is a legibility problem on a phone.
+
+## v343 — the war table finally reports a war that actually moves (V382)
+
+**What was wrong.** The sector line under `GALACTIC WAR TABLE` was **hardcoded**: `SECTOR CONTESTED — counteroffensive in
+progress`, forever, whatever happened. Nothing in the game recorded progress toward the campaign.
+
+**What exists now.** `GalacticWarService` owns the shared state — missions won and lost plus per-template counters (relays
+sabotaged, recoveries, beacons held) — persists it to `DataStore GF_War_v1/campaign`, and publishes `GF_WarStatus`,
+`GF_WarSector`, `GF_WarScore`, `GF_WarWins`, `GF_WarLosses`. `ExtractionService.finish` records every finished operation with its
+template, so both wins and losses move the war. The station line is bound to `GF_WarSector` and repaints when it changes.
+
+**Measured over one real operation:**
+
+```
+before  status = ASCENDANCY HOLDING   sector = "The frontier is theirs. Take an operation back."
+after   status = CONTESTED            sector = "Sector contested - 1 operations won, 0 lost."   wins=1 losses=0
+```
+
+(Operation was played end to end: deploy → hold the relay → call the ship → board → debrief.)
+
+**What still looks wrong.** Only the *text* responds. The planet hologram, the intel screen and the orbited planet still look
+identical whatever the campaign says — so the table reports a changing war through one line of copy. And in V382 the debrief panel
+is drawn on top of the war table, so two panels are legible at once and neither cleanly.
