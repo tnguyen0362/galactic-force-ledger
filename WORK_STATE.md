@@ -424,6 +424,14 @@ Measured: under fire **engaged 5 / tracked 10**; six seconds after leaving, **0 
 
 **Two runtime-only bugs of mine this batch:** a `local function` used before its declaration (`attempt to call a nil value`, all hostile fire stopped) and a loop-variable mismatch (`model` vs `_`) that threw inside the Heartbeat and pinned both counters at 0. Both compiled clean. **`loadstring` is not a test** — the runtime error log is.
 
+
+## Verified at build 453 — full-loop regression pass
+Deploy → hold relay → extract → board → debrief on `SABOTAGE_RELAY`/Normal: objective complete, ship landed, debrief `base 450 + bonus 0`, `xp 600`, `COMPLETE`, `SUCCESSFUL`, `Carried salvage secured`. Server errors: **1**, the Roblox plugin (`Game is not a valid member of ReplicatedStorage`), no game code.
+
+**Client break found and fixed:** `StationUI:472: attempt to call a nil value` — `showDebrief` called `setFocus` declared 8 lines *below* it as a `local function`, so the focus hand-back threw on every debrief. Made it a global; re-ran the loop and the error is gone.
+
+**Third forward-reference bug this session** (two of mine in `EnemyService`, this one pre-existing). Luau compiles it and fails at runtime — `loadstring` is not a test.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
