@@ -1,40 +1,36 @@
-# WORK_STATE — paused by owner 2026-11-24T10:38Z
+# WORK_STATE — last verified 2026-11-24, place version 383
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931). Last saved version **379**.
-- HEAD `e21b43f` (audit baseline installed). **Uncommitted work this batch: the elimination family, described below.**
-- Canonical spec: `.goal/GOAL_2026-11-24.md` (279 lines, read in full this session). Ledger: `REQUIREMENT_COVERAGE.csv`, **815 rows, all `UNKNOWN`**.
-- Archive: `.goal/legacy/GOAL_v3_contract.md` (old 1,476-line V3 contract) and `.goal/legacy/REQUIREMENT_COVERAGE_155.csv` (old 155-row ledger).
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 383**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 9 populated, 806 UNKNOWN**.
+- Ledger state: PARTIAL 8 | MISSING 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
-## Measured baseline (place 379, Luau inventory of the Edit datamodel)
-| Thing | Observed | Spec |
-|---|---|---|
-| Services under `ServerScriptService/GF/Services` | 38 | — |
-| Remotes `ReplicatedStorage/GF/Remotes` | 34 | — |
-| Weapons `Configs/Weapons.List` | **6** (AR01, P01, SG04, MR07, LMG12, ER16) | 8 (7 primaries + pistol) |
-| Enemies `Configs/Enemies.List` | 7 (Rifleman, Scout, Marksman, Heavy, Officer, BastionWalker, HighMarshalVeyr) | 5 roles + 2 bosses ✓ (naming differs: Scout=Vanguard, Officer=Commander) |
-| Abilities | 6 ✓ (Airstrike, DomeShield, Sentry, OrbitalStrike, OrbitalLance, ReflectiveBarrier) | 6 ✓ |
-| Classes | 4 ✓ | 4 ✓ |
-| Difficulties | 4 ✓ | 4 ✓ |
-| Missions | **3** (SABOTAGE_RELAY, RECOVER_TECH, DEFEND_BEACON) | **15** |
-| Augments | **10 flat entries, `category`/`rarity` both nil** | per-category pools ≥3 across 10 categories, rarity+trait rolls |
-| Economy | MaxRank 30, RankXp table 15 rows, Grenades 2, PayoutByDifficulty 4 | rank formula `300*(r-1)+55*r*(r-1)` |
-| Cinematic | 11 beats, 88 s | 85–95 s ✓ |
+## Verified this batch (evidence/v383-elimination/EVIDENCE.md)
+The Elimination family is **playable and completing**:
+| Variant | Roster | Targets | Completion |
+|---|---|---|---|
+| Head of the Spear (`ELIM_COMMANDER`) | Officer + 2 Rifleman | 3 | only at 3/3; 2/3 leaves it open |
+| Siege Breaker (`ELIM_WALKER`) | Bastion Walker, 4200 HP | 1 | on the walker's death; one walker in the world, not two |
+| Broken Talon (`ELIM_TALON`) | Marksman + Heavy + Officer | 3 | only at 3/3 |
 
-Known deviations noticed but not yet acted on:
-- `ER16` is a player energy rifle; the spec puts human energy weapons in "future only".
-- `StationService.DIFFICULTY_RANK` has `Extreme = 10`; spec says Extreme rank **14** (Hard 6 ✓).
-- `RequestDeployOptions` still advertises `difficulties = { "Easy", "Normal" }`.
+Frame `ScreenCapture_ELIM_COMMANDER` shows `PRIMARY OBJECTIVE COMPLETE / Extraction authorized` over the elimination pad.
 
-## In flight: Elimination family (3 of the 15 variants) — NOT VERIFIED
-Written to Source but never proven to run:
-- `ReplicatedStorage/GF/Shared/Configs/Missions`: added `ELIM_COMMANDER`, `ELIM_WALKER`, `ELIM_TALON` with `family`/`variant` fields.
-- `ServerScriptService/GF/Services/ObjectiveService`: added `elimMarker`, `elimAdd`, `buildElimination`, `elimAlive`, `elimTick` + a setup branch that dispatches the three ids. Targets are spawned through `EnemyService.spawn` (commander = Officer + 3 Rifleman, talon = Marksman/Heavy/Officer, walker = `BastionWalker.spawn`). Completion is a 0.5 s poll of tagged `GF_ObjectiveTarget` models.
-- `StationService`: whitelist + mastery list extended. `GalacticWarService`: `eliminations` counter added with a load-time normalisation. `StationUI`: three operation buttons added.
+Root cause of the earlier `targets=0` null result: `ObjectiveService` never had an elimination builder — the deploy fell through to `buildRelay`. It was not a spawn or whitelist failure.
 
-**Failure observed at pause time:** deployed `ELIM_TALON` on Normal, waited 7 s, and found `targets=0 complete=false preset=mission`. No tagged enemy existed, so either the deploy was refused (not checked), `buildElimination` never ran, or the spawns were culled before the count. **This is a null result, not a pass.** The next step is to print the deploy verdict (`GF_DeployRejected`) and `ObjectiveService.getTemplate()` before blaming the spawn path.
+Two defects found while verifying, both fixed:
+1. The tracker started before `setup` assigned `objective`, so it broke out of its first iteration and never completed. Now started from `setup` with a generation counter (`elimRunId`) that also stops a stale tracker completing a later mission.
+2. Bosses leaked across deployments: `EncounterDirector.reset` only removed models with a `Humanoid`, and boss models have none. Measured **five** `BastionWalker` models alive after five deployments. Reset now sweeps `Boss` models but spares `GF_ObjectiveTarget`; `setup` destroys the previous mission's tagged targets; `beginMission` skips the optional field boss when the template is `ELIM_WALKER`.
 
-Unrelated log noise seen at boot: `Game is not a valid member of ReplicatedStorage` appears right after the Assistant plugin version warning; no game source references `.Game`, so it is probably plugin-side.
+## Known gaps in what was just built
+- No target marker system anywhere in the build (`S08-033` MISSING). Sites are found by walking.
+- Missing authored stages: commander's optional relay, Walker's "secure battlefield", Talon's "linked encounter".
+- Kills in the verification were applied by setting the `Dead` attribute — the same write `CombatService` performs on a lethal hit — so weapon → damage → kill was not re-exercised.
+- Solo only; no second client.
+
+## Next highest-value work
+1. **Conquest family** — the only family with zero content (`Forward Dominion`, `Iron Foundry`, `Thronefall`); Thronefall uses the existing High Marshal Veyr boss. Closes families to 5/5 and variants to 9/15.
+2. **Target markers** (`S08-033`) — affects every mission, not just Elimination.
+3. Sabotage/Recovery/Defense second and third variants (`S08-003`).
 
 ## Environment
-`.goal/PAUSE` exists (owner paused 2026-11-24T10:38Z). The goal loop waits while it exists; `/goal-unpause` removes it and resumes.
+`.goal/PAUSE` removed; ledger and evidence committed. Studio left in Edit mode.

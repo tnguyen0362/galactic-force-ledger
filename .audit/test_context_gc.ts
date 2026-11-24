@@ -136,6 +136,46 @@ const isShortened = (msgs: any[], id: string) => {
 	delete process.env.GF_CONTEXT_GC_SOFT;
 }
 
+// 7. Duplicate collapse: the same tool called twice with the same arguments keeps only the newest copy.
+{
+	process.env.GF_CONTEXT_GC_STATE = join(dir, "dup.json");
+	const run = await freshModule("dup");
+	const call = (id: string, args: string) => ({ role: "assistant", content: [{ type: "toolCall", id, name: "read", arguments: args }] });
+	const result = (id: string, chars = 9000) => ({ role: "toolResult", toolCallId: id, toolName: "read", content: [{ type: "text", text: `BODY-${id}-` + "z".repeat(chars) }] });
+	const msgs = [
+		call("c1", '{"path":"src/a.ts"}'), result("c1"),
+		call("c2", '{"path":"src/b.ts"}'), result("c2"),
+		call("c3", '{"path":"src/a.ts"}'), result("c3"),
+		...Array.from({ length: 5 }, (_, i) => userMsg(200 + i)),
+	];
+	const out = await run(msgs);
+	const stale = out.find((m: any) => m.toolCallId === "c1").content[0].text;
+	const fresh = out.find((m: any) => m.toolCallId === "c3").content[0].text;
+	const other = out.find((m: any) => m.toolCallId === "c2").content[0].text;
+	check("duplicates: older identical call is superseded", stale.includes("duplicate call superseded"), stale.slice(0, 60));
+	check("duplicates: newest identical call is kept in full", fresh.startsWith("BODY-c3-") && fresh.length > 8000);
+	check("duplicates: different arguments untouched", other.startsWith("BODY-c2-"));
+}
+
+// 8. Sawtooth: repeated tight/loose flips ask Pi for a real compaction instead of more elision.
+{
+	process.env.GF_CONTEXT_GC_SOFT = "1000";
+	process.env.GF_CONTEXT_GC_STATE = join(dir, "sawtooth.json");
+	const compactions: any[] = [];
+	const handlers: any[] = [];
+	const pi = { on(_e: string, fn: any) { handlers.push(fn); return () => {}; }, sendMessage() {} };
+	const mod = await import(`file:///C:/Users/tnguy/.pi/agent/extensions/context-gc.ts?t=${Date.now()}-saw`);
+	mod.default(pi as any);
+	const ctx = { getContextUsage: () => ({ tokens: 700000, contextWindow: 1000000 }), compact: (o: any) => compactions.push(o) };
+	const run = async (msgs: any[]) => (await handlers[0]({ type: "context", messages: msgs }, ctx))?.messages ?? msgs;
+
+	await run([userMsg(1)]);
+	await run([userMsg(2)]);
+	await run([userMsg(3)]);
+	check("sawtooth: no compaction on a stable mode", compactions.length === 0, `compactions=${compactions.length}`);
+	delete process.env.GF_CONTEXT_GC_SOFT;
+}
+
 console.log(results.join("\n"));
 const failed = results.filter((r) => r.startsWith("FAIL")).length;
 console.log(`\n${results.length - failed}/${results.length} passed`);
