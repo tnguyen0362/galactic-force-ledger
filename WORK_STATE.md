@@ -406,6 +406,16 @@ So the Heavy's 4 s recovery is no longer just config, and the burst loop is conf
 
 **Two harness facts learned:** moving the character from the **Client** datamodel does not replicate (the server still saw the player at the station — that is why fire looked dead), and `GF_EnemiesEngaged` reads **0 during active fire**, so it is not a usable "is anyone attacking" signal.
 
+
+## Verified at build 450 — "engaged" means shooting now
+`GF_EnemiesEngaged` counted a `target` pointer that ticks clear, so it read **0 while 12 hits landed** (that was the build-449 false alarm). Every shot now stamps `actor.lastFiredAt` and the counter means "fired within 3 s": measured **2** under fire and **0** five seconds after leaving.
+
+Marksman also gained `chargeTime = 0.8` through the shared telegraph path (unobserved so far).
+
+**Bug introduced and fixed same batch:** routing the shot through a `local function` declared *below* its first use gave `EnemyService:450: attempt to call a nil value` twelve times and stopped all hostile fire — while `loadstring` compiled clean. Inlined; re-verified zero errors.
+
+**Still stale:** `GF_EnemiesTracked` stayed at 13 with the player at the station — `actor.target` is never cleared, so it means "ever acquired", not "has a live target".
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
