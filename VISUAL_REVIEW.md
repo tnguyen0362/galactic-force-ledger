@@ -2599,3 +2599,20 @@ listings. `start()` is now idempotent.
 **What is missing, and it is the row's main gap.** There is **no UI to choose privacy**: `REQUEST SUPPORT` always opens a public
 request, so `friends` and `private` exist only in the protocol. Group join, invite and friend-invite flows are unimplemented, and no
 two-client run exists — so "friends/invites truly work" remains unproven even though the filter is.
+
+## v340 — privacy is selectable, after the chips rendered underneath the deploy button (V379 -> V380)
+
+**First attempt (V379).** The `LISTING VISIBILITY` row landed at y = 372, directly beneath the deploy button that occupies 330–384 —
+the chips were drawn *behind* it and unreadable. That is the third time this panel's fixed-offset layout has collided, because every
+row is an absolute pixel offset with no flow.
+
+**Second attempt (V380).** Panel height 492 → 536, chips at 430, `REQUEST SUPPORT` at 458, controls at 504. Measured bands are now
+clear and V380 shows `PUBLIC / FRIENDS / **PRIVATE**` with `PRIVATE` highlighted and the status line reading
+`Listing visibility: private`.
+
+**Wiring.** The chips set `selectedPrivacy`, which travels with `REQUEST SUPPORT` as `privacy`; `GF_DispatchPrivacy` drives the same
+selector from the server so it can be exercised without a click. `GF_Dispatch` now reports its privacy (`…|privacy=private`) so the
+beacon's mode is verifiable from outside.
+
+**Still missing.** The chips choose the mode for a manual request only — there is no invite flow (send/accept to a named friend) and
+no two-client run, so the "friends/invites truly work" half of the row remains unproven.
