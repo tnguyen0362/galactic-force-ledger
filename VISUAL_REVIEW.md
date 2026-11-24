@@ -1685,3 +1685,30 @@ Still unphotographed this session. Two failed attempts were my own errors, both 
 `GF is not a valid member of ServerScriptService` (I tried to `require` server modules from the *client* VM) and a cast that was
 silently refused on cooldown before `resetCooldowns` existed. The craft position was read live and correct
 (`hull=-67,69,-137` at 0.85 s) — the aircraft exists and flies; it has not yet been in a frame.
+
+## v276 — mission outcome rules are real now (V338)
+
+**Scene / camera.** Mission LZ at deploy, third-person, operation `SABOTAGE_RELAY`, Normal. Force-triggered soft deadline with
+`GF_EmergencyGraceOverride` so the whole emergency cycle runs in seconds instead of two minutes.
+
+**What the frame shows.** `TRANSPORT LANDED — BOARD NOW`, an `E  Board Transport` prompt on the docked dropship, the objective
+tracker, `SALVAGE 0-0-0`, and an `OPERATION FAILED` debrief reading *Credits earned +0 / Military XP +0 / Scrap secured 0 /
+Energy Cells 0 / Military Technology 0* with the line "Primary objective incomplete — no completion payout."
+
+**What was actually broken.** `softDeadline` was written into the mission context by `StationService.resetMission` and **read by
+nobody** — a squad could sit in a mission forever with the timer long past. `SquadService.reset()` was also defined and never
+called, so carried salvage survived a failed run and would have been paid out by the next successful one.
+
+**What looks wrong.**
+1. The debrief never says *where* the salvage went. It shows zeros and a payout note about the objective, not "carried salvage
+   was lost with the squad". Severity: high for comprehension, low for mechanism.
+2. The `TRANSPORT LANDED — BOARD NOW` banner is still visible alongside the failure panel. It does clear when the published
+   `called=false` arrives, so this is one-frame ordering, not a stuck state — but it reads as an invitation to board a mission
+   that has already ended.
+3. There is again a large flat orange disc under the player at the LZ. This is **not** the airstrike light that explained the
+   earlier occurrence: nothing was cast, and the dropship's engine light is cyan. It is unexplained and now recorded as such
+   rather than folded into the previous explanation.
+4. No mission timer appears anywhere in the HUD, so the deadline that just fired was invisible to the player until it fired.
+
+**Measured.** `GF_EmergencyExtraction=true`, `ExtractionDropship` present with a `BoardingZone`, then `state=failed`,
+`inMission=false`; server log `carried salvage at finish: total=4 success=false` on the loot run and `total=0` on the next run.
