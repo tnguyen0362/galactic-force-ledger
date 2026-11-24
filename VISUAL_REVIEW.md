@@ -1610,3 +1610,24 @@ of being a flat disc of colour.
 `Camera+1` priority, because a one-shot `Camera.CFrame` write is overwritten by the controller on the next frame. V324 still
 framed the player's own third-person camera with the player dead centre, so the hold is **not yet authoritative under
 `screen_capture`** — that remains open, and it is the reason so many evidence frames in this log show the wrong vantage.
+
+## v266 — salvage is a canister you can find, and the camera problem has a measurable cause
+
+`LootService` pickups were 1.2-stud neon balls: invisible at night, indistinguishable from the environment, and collected by
+walking near them with no feedback. They are now a metal canister with a lit neon cap, a point light, and a slow bob on the
+heartbeat that already walks them; collecting one plays a chime, flashes a light, and records
+`SalvageFound / LastSalvageKind / LastSalvageAmount`.
+
+**Measured:** `cap=true, light=true, bobDelta=0.186` over 0.5 s, `active=1` at spawn; stepping inside 7 studs gave
+`Found=1, kind=energyCells, amount=2, active 3->2`. Two canisters staged at 8.0 and 8.7 studs were correctly **not** collected,
+which is the radius behaving as specified rather than as I hoped.
+
+**The camera is now explained, not just blamed.** I ran my own `BindToRenderStep` at `Enum.RenderPriority.Last + 10` inside the
+client VM, wrote `camera.CFrame` every frame, and read the position back: **`pos = -0.0, 769.8, 31.6`** — unchanged, the station
+spawn. The same call from the game's own LocalScript sets `CameraType=Scriptable` successfully and `GFPhotoCamActive=true`, yet
+the rendered frame is still the player's third-person view. So camera state written from the tool's client VM is inert against
+the renderer, and attribute-driven holds reach the real camera but are overwritten before the frame is captured. That is why so
+many frames in this log show the wrong vantage, and it needs a fix inside `Controller` rather than another capture attempt.
+
+**Also newly visible:** the intro cinematic freezes the camera at the station while the character is already downrange, so a
+capture taken during it shows station geometry next to mission subtitle copy (V326, V327). Skipping before capture is mandatory.
