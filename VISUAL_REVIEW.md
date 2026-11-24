@@ -2072,3 +2072,30 @@ produced zero publish lines in the log sampled, which is itself unexplained and 
 
 **The real problem remains:** a drop zone inside engagement range is a design bug, not a tuning one. Grace hides it for four
 seconds; the spawn point and the enemy pickets around it need to change.
+
+## v307 — the landing zone is now clear, and the damage still happens
+
+**Two things were established this continuation, one of them by disproving my own theory.**
+
+1. **VitalsService was broken and is fixed.** My grace patch left a stray `end` at module scope, so the module failed to compile
+   (`VitalsService:126: Expected <eof>, got 'end'`) and every service depending on vitals degraded. Removed; the module loads
+   clean again.
+2. **The grace works, but only for its window.** Measured `GF_GraceAbsorbed = 5–6` hits absorbed during the 4 s window, then the
+   shield falls as before.
+
+**The important measurement.** Pickets now spawn outside a 70-stud landing zone
+(`EncounterDirector.spawnAround` pushes any spawn inside `SAFE_LANDING_RADIUS` outward). Verified after deploy:
+
+```
+enemiesWithin70 = 0
+closest enemy   = 207 studs
+shield sequence = 100 → 60 → 30 → 4 → 0
+```
+
+So **the squad loses its entire shield with no hostile anywhere within engagement range**. My previous conclusion — "dropped
+inside enemy fire" — is wrong for at least the first several seconds of a landing. The damage has another source and it is
+unavoidable, which makes it worse than the original diagnosis, not better.
+
+**Next step, precisely:** log the `_source` argument inside `VitalsService.applyDamage` (it is currently discarded as `_source`), so
+the next run names the caller instead of guessing again. Every damage path in the project funnels through that one function
+(`EnemyService`, `BastionWalker`, `Veyr`, `GrenadeRuntime`), so one print identifies it.
