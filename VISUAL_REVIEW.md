@@ -2544,3 +2544,15 @@ listed that way.
 
 **Still wrong.** The banner sits over the station intel screen, and in the in-mission shot behind it the text is partially
 unreadable. It also has no countdown refresh: `remaining` is only updated when the state changes, so "19s" freezes.
+
+## v336 — vote banner moved and its clock actually runs (V378)
+
+**Fix.** The vote banner sat at 18 % screen height, on top of the station intel screen, and its `remaining` value froze at whatever
+the last push said. It now sits at y = 82 px directly under the objective tracker, on a 520 px line, and a one-second local tick
+counts it down.
+
+**Measured:** `first = "… · 18s" @y=82`, three seconds later `"… · 15s" @y=82` — same position, clock moving. V378 shows it under
+`PRIMARY OBJECTIVE COMPLETE` with the intel screen clear behind it.
+
+**Still wrong.** The text has no panel behind it, so it reads as floating copy over the scene rather than as an alert. The key
+binding remains **code-verified only**; no real keypress has been delivered.
