@@ -1,7 +1,7 @@
-# WORK_STATE — last verified 2026-11-24, place version 439
+# WORK_STATE — last verified 2026-11-24, place version 440
 
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 439**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 440**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 83 populated, 745 UNKNOWN**.
 - Ledger state: PARTIAL 55 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
 
@@ -309,6 +309,12 @@ The debrief now renders base vs bonus for credits and XP, primary COMPLETE/INCOM
 Salvage bonus implemented (+25% per resource, floored): measured 40/40/40 → **50/50/50** with 10 each at four players, unchanged at one. Credits 450 → 562 and XP 600 → 750 already measured at 438.
 
 Failed-run debrief now reads: `base 0`, `Primary objective: INCOMPLETE`, `Extraction: FAILED`, **`Carried salvage LOST`**. Both settlement outcomes are observed in a real run; only the rank-up animation remains from `S09-041`.
+
+
+## Verified at build 440 — debrief rank-up flourish
+`MissionHUD` shows a rank-up label when `rankUps > 0`, growing 14→22 px and fading after 2.6 s. First attempt printed **`RANK UP 11 → 15 (x2)`** because the formatter subtracted the delta twice; fixed to **`RANK UP 13 → 15 (x2)`**. The salvage-bonus line from build 439 also rendered (`+0 scrap +0 cells +0 tech` on a solo run).
+
+**Not observed:** the tween/hold/fade itself, and a real earned rank-up (forced via `GF_ForceRankUps`).
 
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
