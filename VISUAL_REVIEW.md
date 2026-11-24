@@ -2147,3 +2147,27 @@ tweak, which is what the last two attempts were.
 
 **Kept temporarily:** the `_source` print in `VitalsService.applyDamage` stays until the last volley is gone; it is the only reason
 this was diagnosable at all.
+
+## v312 — the drop is survivable, measured and photographed (V359)
+
+**Last fix.** Distance gating alone could not stop the mortar, because the splash lands where the *player* stands, not where the
+walker stands. `BastionWalker` now refuses to target a player inside an 80-stud landing zone, on top of the earlier changes (Veyr
+no longer auto-spawns in an ordinary operation; both bosses need 120 studs).
+
+**Measured, 14 s standing still at the landing zone:**
+
+| | damage events | shield |
+|---|---|---|
+| start of this chain | 8–10 (`BastionMortar` 40/35/30, `VeyrBurst` 26×6) | 0, DOWNED |
+| after boss gating | 1 | 60 |
+| **now** | **0** | **100** |
+
+V359 shows it: full `SHIELD 100` bar, `PRIMARY OBJECTIVE / Sabotage the Ascendancy relay`, `SALVAGE 0·0·0`, both abilities
+`READY`, `28 / 28` ammo, `DODGE 2/2`, no DOWNED overlay, and the squad standing on the pad with the objective visible ahead.
+
+**What this cost, recorded honestly.** Five continuations, four wrong theories (enemy pickets, spawn protection, stale payload,
+HUD bug), and the answer was one log line from an argument the code was already passing and throwing away — `_source`. The lesson
+is in `RETRO.md` territory: when a number is unexplained, instrument the data the code already has before changing the design.
+
+**Still open from this row:** the `_source` print should be removed once nothing else depends on it, and the `Freecam` ScreenGui
+still needs to be disabled at spawn.
