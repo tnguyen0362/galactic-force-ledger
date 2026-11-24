@@ -2342,3 +2342,24 @@ and the war-table panel sets or clears focus with its own visibility (`setFocus(
 **Still open:** **two** `Setting GuiService.SelectedObject to invalid GuiObject` warnings remain, so a second caller still assigns an
 invalid object somewhere. Focus being nil at spawn is correct behaviour, not a complete fix. The next step is to log inside
 `setFocus` (and add the same guard at the other caller) and re-measure — the warning count is the test, not the absence of a crash.
+
+## v322 — the invalid-focus warnings are not ours, and the positive case is still unverified
+
+**Instrumented `setFocus` behind `GF_DebugFocus`.** Every call logged its target, visibility and parentage.
+
+- **9 of 9 calls received `nil`**, including while standing at the war table. So the guard never assigns anything, and it cannot be the
+  source of the two `Setting GuiService.SelectedObject to invalid GuiObject` warnings.
+- A sweep of **every script in the place** (StarterGui, ReplicatedStorage, StarterPlayer, ServerScriptService) found exactly **one**
+  script that assigns `GuiService.SelectedObject`: `StationUI`. Nothing else in the project sets it.
+
+Conclusion: the two warnings come from Roblox's own selection machinery, not from game code. Recording that instead of "fixing" a
+non-bug — the same correction I had to make for the `Freecam` GUI.
+
+**New, worse finding.** `setFocus` receiving `nil` *while standing at the war table* means the panel never reported itself visible in
+these two sessions, so **the positive case is unverified**: there is still no measurement of focus landing on the visible `deploy`
+button. Earlier continuations did capture that panel open (V350–V353), so the difference is worth chasing — either `findAnchor`
+resolves a different `WarTableBase` than the one I stood next to, or `onStation` was left false by an earlier deploy verdict in the
+same session.
+
+**Next step:** log `show`, `near`, `onStation` and the resolved anchor name in the same heartbeat that calls `setFocus`, then stand at
+the panel and confirm the deploy button receives focus while visible.
