@@ -494,3 +494,21 @@
 2026-11-24T22:26:45.542Z usage=296887 msg=3430 images=4 text=168 thinking=309 budget=2160 chars 5220702->2311605 (-56%) proj=248853
 2026-11-24T22:26:54.149Z usage=296124 msg=3432 images=4 text=168 thinking=309 budget=2160 chars 5221376->2312598 (-56%) proj=248909
 2026-11-24T22:27:02.826Z usage=296282 msg=3434 images=4 text=168 thinking=309 budget=2160 chars 5221453->2313852 (-56%) proj=249026
+2026-11-24T22:27:17.206Z usage=297454 msg=3436 images=4 text=168 thinking=309 budget=2164 chars 5222277->2316199 (-56%) proj=249921
+2026-11-24T22:28:39.268Z usage=297351 msg=3438 images=4 text=168 thinking=309 budget=2821 chars 5223147->765578 (-85%) proj=124673
+2026-11-24T22:28:54.096Z usage=133948 msg=3440 images=4 text=168 thinking=309 budget=2830 chars 5223367->767128 (-85%) proj=124900
+2026-11-24T22:29:04.592Z usage=132222 msg=3442 images=4 text=168 thinking=309 budget=2834 chars 5223845->766562 (-85%) proj=124968
+2026-11-24T22:29:52.161Z usage=132440 msg=3444 images=4 text=168 thinking=310 budget=2836 chars 5228334->768780 (-85%) proj=124857
+2026-11-24T22:30:08.520Z usage=133091 msg=3446 images=4 text=168 thinking=310 budget=2844 chars 5229684->769420 (-85%) proj=124779
+2026-11-24T22:30:21.103Z usage=132513 msg=3448 images=4 text=169 thinking=310 budget=2826 chars 5241381->781255 (-85%) proj=124949
+2026-11-24T22:30:37.068Z usage=132982 msg=3450 images=4 text=170 thinking=310 budget=2832 chars 5243232->789231 (-85%) proj=124872
+2026-11-24T22:30:43.991Z compact streak 1/3 usage=297000 incoming=1205639
+2026-11-24T22:30:43.994Z usage=297000 msg=608 images=0 text=300 thinking=0 budget=409 chars 4227190->885408 (-79%) proj=249267
+2026-11-24T22:30:47.570Z usage=132496 msg=3452 images=4 text=170 thinking=310 budget=2834 chars 5247157->791391 (-85%) proj=124870
+2026-11-24T22:31:24.782Z compact streak 1/3 usage=133036 incoming=890196
+2026-11-24T22:31:24.789Z usage=133036 msg=3454 images=4 text=171 thinking=310 budget=2176 chars 5254049->2343799 (-55%) proj=249682
+2026-11-24T22:32:07.872Z reuse=miss:no-snapshot usage=950000 msgs=600
+2026-11-24T22:32:08.130Z compact streak 1/3 usage=950000 incoming=1205626
+2026-11-24T22:32:08.133Z usage=950000 msg=600 images=0 text=296 thinking=0 budget=413 chars 4170826->885638 (-79%) proj=249586
+2026-11-24T22:32:08.149Z reuse=hit usage=950000 msgs=602 proj=253605
+2026-11-24T22:32:08.157Z reuse=hit usage=950000 msgs=602 proj=253605
