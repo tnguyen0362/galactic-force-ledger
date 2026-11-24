@@ -1,9 +1,42 @@
 # WORK_STATE — last verified 2026-11-24, place version 448
 
+## Audit pass 2026-11-24 (repo-only — Studio was not connected)
+
+**Why this pass happened.** The goal loop had reported `ABSENT 0 | PARTIAL 68` for 33 iterations while the ledger actually held
+**732 UNKNOWN rows with zero implementation paths, zero evidence refs and zero verified builds**. `ledgerLine()` counted five
+statuses and omitted `UNKNOWN`, so the progress line could not show the unaudited majority. That is fixed in the loop; this pass
+starts populating those rows from evidence already on disk.
+
+**Batch: Combat / weapons conformance — 14 rows.**
+
+| result | rows |
+|---|---|
+| UNKNOWN -> VERIFIED | `COUNT-DIFF`, `COUNT-SECONDARY`, `S04-034` |
+| UNKNOWN -> PARTIAL | `S04-008`, `S04-014`, `S04-025`, `S04-026`, `S04-030`, `S04-035`, `S04-036`, `S04-046`, `S04-047`, `S04-048` |
+| UNKNOWN -> IMPLEMENTED_UNVERIFIED | `COUNT-CLASS` |
+
+Ledger moved 732 -> **718 UNKNOWN**, 68 -> 78 PARTIAL, 14 -> 17 VERIFIED. Script: `.audit/audit_batch_combat.py`
+(idempotent, and it asserts every targeted row exists before writing).
+
+**Two spec conflicts found, both need an owner decision — not an agent edit:**
+
+1. **ER-16 vs SMG-03.** GOAL.md L21 names `AR-01, SG-04, MR-07, LMG-12, ER-16` as the five primaries. ER-16 was removed at
+   build 402 and SMG-03 substituted (evidence/v402-weapons). The authored arsenal list at GOAL.md L393-397 names neither
+   SMG-03 nor a fifth beyond LMG-12. Two sections of the spec disagree; the implementation currently satisfies S04-034's
+   count (5 standard + 2 requisition + 1 secondary) either way.
+2. **Weakpoint multiplier.** The spec requires head/marked weakpoint **x1.5**. The note in v461 records the function reading
+   **x2**. Neither value was fired, so which is live is unconfirmed. Recorded on `S04-014`, not changed.
+
+**Defects promoted out of prose into the ledger** (each was already known, none were tracked): aimed spread missing from the
+weapon data table (`S04-036`); launchers are hitscan-with-blast so projectiles never travel or fuse (`S04-047`, `S04-048`);
+reserve subtraction on reload unmeasured (`S04-025`); empty-auto-reload and swap-cancel unmeasured (`S04-026`).
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 91 populated, 740 UNKNOWN**.
-- Ledger state: PARTIAL 60 | VERIFIED 14 | IMPLEMENTED_UNVERIFIED 1 | VERIFIED 0 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 97 populated, 718 UNKNOWN**.
+- Ledger state: PARTIAL 78 | VERIFIED 17 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
+- Place-version numbers disagree across documents (WORK_STATE 448, HANDOFF 318, BLOCKED 232, recent commits 461). Unresolved
+  because Studio was not connected; do not trust any of them until `save_place` records a new one.
 
 ## Verified this session
 **Elimination family** (evidence/v383-elimination/EVIDENCE.md) — `Head of the Spear` 3 tagged (Officer + 2 Rifleman), `Siege Breaker` 1 tagged Bastion Walker, `Broken Talon` 3 tagged (Marksman + Heavy + Officer). Each completed only when its whole roster was down; 2/3 left the objective open.
