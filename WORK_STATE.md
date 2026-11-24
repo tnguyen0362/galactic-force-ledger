@@ -104,10 +104,31 @@ entry / los-fail / los-pass / hit).
 Also recorded: distinct per-archetype burst patterns are real and measured (13/8×3, 18/6×4, 11/38×1, 8/32×1, 12/12×2), and
 the Heavy's 1.4 s telegraph-then-32-damage path is proven.
 
+**Batch 7: Data / security — 9 rows, all PARTIAL.** Script `.audit/audit_batch_data.py`.
+
+Mapped from BLOCKED.md #1 (DataStore proven live, `schema=1` round-trips), v430 (two full restarts), v441/v444
+(server-applied damage), v438/v439 (server-computed rewards), v422 (guarded cache open), v457 (client sends direction
+only), v412 (server-published countdown).
+
+None are VERIFIED, and that is deliberate: for durability and rate-limiting the untested half is the failure path, which
+is the half that matters. What *is* proven: the profile round-trips `credits/xp/rank/schema` and survives two full server
+restarts including a post-restart write; a held cache, 36 augments and the loadout all survive; cache open is guarded; the
+client holds no damage authority.
+
+**Security note worth a look — `S14-029`.** `GOAL_2026-11-24.md` L224 requires debug affordances to be gated by Studio or an
+explicit private allowlist, with no live arbitrary reward commands. Six switches are documented in `HANDOFF.md` and two of
+them grant state directly: `GF_TestHooks` enables `grantTestAugment` and `bossRewardTest`, and `GF_ForceRankUps` forces
+rank-ups. They are read from **workspace attributes**. No gate to Studio or an allowlist was found, and none was verified,
+so whether a client can set one is **unknown, not proven safe**. That needs reading the guard before beta.
+
+Also recorded: sensitive reward/profile/cache logic is server-side, but every balance table lives in
+`ReplicatedStorage.GF.Shared.Configs` and is client-readable — acceptable for prediction, but never audited module by
+module (`S14-004`).
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 147 populated, 668 UNKNOWN**.
-- Ledger state: PARTIAL 117 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 156 populated, 659 UNKNOWN**.
+- Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
 - Place-version numbers disagree across documents (WORK_STATE 448, HANDOFF 318, BLOCKED 232, recent commits 461). Unresolved
   because Studio was not connected; do not trust any of them until `save_place` records a new one.
 
