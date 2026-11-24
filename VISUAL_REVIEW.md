@@ -2794,3 +2794,30 @@ existing one. Now display order is declared in a single table and new rows appen
 **What is still positional.** The title block (title, planet name, sector line, divider) and the controls hint remain absolute
 offsets — they sit above and below the flow area and do not collide. The armory panel has the same absolute-offset structure and has
 not been converted.
+
+## v357 — progression is affordable, and that is the problem (V395)
+
+**Computed from the configs, not guessed.** Rank gates against the XP curve and the whole catalogue:
+
+| item | cost | rank gate | XP needed | Normal missions |
+|---|---|---|---|---|
+| AR-01 / P-01 | free | 1 | 0 | 0 |
+| SG-04 Breacher | 500 | 2 | 600 | 1 |
+| MR-07 Ranger | 850 | 4 | 2,700 | 5 |
+| LMG-12 Suppressor | 1,400 | 7 | 8,100 | 14 |
+| ER-16 Pulse Rifle | 3,000 | 15 | 37,200 | 62 |
+| **catalogue total** | **5,750** | | | |
+
+Payouts: Easy 250cr/330xp, Normal 450/600, Hard 700/950, Extreme 950/1,350. Reaching rank 15 takes **62 Normal missions, 40 Hard or
+28 Extreme** — roughly 13–15 hours at 12–15 minutes each, which sits inside the 15–25 h expectation — and pays about **27,900 credits
+against a 5,750 credit catalogue**.
+
+**So the row passes on reachability and fails on meaning.** Credits run at roughly **five times the entire catalogue price**, so after
+a handful of missions money stops being a constraint and price stops being a decision. V395 shows it directly: `60,600 CREDITS ·
+RANK 15` in an armory whose full stock costs 5,750.
+
+**What is missing besides balance.** The armory explains neither the rank gates nor how much XP the next rank needs, so a player
+cannot tell *why* ER-16 is unavailable — only that the row is not purchasable.
+
+**Recorded next action:** either add credit sinks (augments, cosmetics, consumables) or cut payouts, and surface XP-to-next-rank in
+the armory header.
