@@ -2616,3 +2616,26 @@ beacon's mode is verifiable from outside.
 
 **Still missing.** The chips choose the mode for a manual request only — there is no invite flow (send/accept to a named friend) and
 no two-client run, so the "friends/invites truly work" half of the row remains unproven.
+
+## v342 — the tutorial stops telling gamepad players to press R (V381)
+
+**What was wrong.** Each step's hint was one hardcoded string covering every device at once — `"WASD / left stick"`, `"R / X"`,
+`"Left Shift / B"`, `"Q / RB"`. A touch player was told to press R; a gamepad player was told to use WASD. That is the exact
+failure the requirement names.
+
+**What it does now.** `HINTS` is a table per input family (`kbm`, `pad`, `touch`), `currentDevice()` reads
+`UserInputService:GetLastInputType()` with a `GF_InputDevice` override for Studio, and the card repaints on
+`LastInputTypeChanged` **and** when the override changes — so the glyph follows the device mid-step, not just at step boundaries.
+
+**Measured on the live card by stepping the override:**
+
+```
+kbm   -> "W A S D"
+pad   -> "Left thumbstick"
+touch -> "Drag the left thumb pad"
+```
+
+V381 shows the First Spear 1/5 card with the touch hint.
+
+**Not claimed.** No real gamepad or phone was used — the override exercises the same branch a genuine `LastInputTypeChanged`
+would, but a hardware capture does not exist. The hint is also 12 px and low-contrast, which is a legibility problem on a phone.
