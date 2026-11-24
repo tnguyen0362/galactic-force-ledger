@@ -472,6 +472,16 @@ The fix has to run **before** `ObjectiveService.setup(RELAY, template)` in `Stat
 2. Finish the 15-template sweep **playing each to completion**, not just deploying.
 3. `S06-023/024/026` still lack cover/peek behaviour and the Marksman telegraph is unobserved.
 
+
+## Verified at build 456 — elimination family works; redeploy no longer stacks missions
+**Root cause of the old "targets=0":** `StationService` called `EnemyService.clearAll()` without ever requiring EnemyService, so deploy threw `attempt to index nil with 'clearAll'` **before** `ObjectiveService.setup` and every elimination mission came up patrols-only. Adding `local EnemyService = require(script.Parent.EnemyService)` fixed it.
+
+`clearAll()` now runs immediately before `ObjectiveService.setup`, so a redeploy replaces the roster instead of stacking two missions in `ActiveActors`.
+
+Measured: fresh deploy → `elim=3`, tagged 3 (`Officer, Rifleman, Rifleman`), 8 hostiles; redeploy without killing anything → still `elim=3`, tagged 3, **8 hostiles**. Killing all three → `stillAlive=0`, `GF_ObjectiveComplete=true`.
+
+**Still open:** only `ELIM_COMMANDER` was played to completion; `ELIM_WALKER` and `ELIM_TALON` tag correctly but were not completed. `S08-033` approximate-then-reveal markers still do not exist.
+
 ## Defects fixed this session
 1. `ObjectiveService` had no elimination builder at all — elimination deploys fell through to `buildRelay`. This was the `targets=0` null result recorded at pause time.
 2. Elimination tracker started before `objective` was assigned, so it exited on its first iteration; now started from `setup` with a generation counter.
