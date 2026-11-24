@@ -2686,3 +2686,26 @@ V383 shows the red table under the `GALACTIC WAR TABLE` panel while the sector l
 2. In V383 the sector line and the status disagree, because I overrode `GF_WarStatus` alone for the test. The service always sets
    both together, so this is a test artefact — but it is worth noting that the two attributes are not derived from one another at
    read time.
+
+## v346 — a late joiner is paid once, not twice (measured, no frame)
+
+**What the rule needed to be.** A responder who accepts a dispatch mid-operation receives a catch-up credit (150). Before this
+change they then also received the full mission payout at extraction, so the same operation paid them twice — the duplication the
+requirement forbids.
+
+**What exists now.** `DispatchService.respond` marks the responder `joinedLate` when it grants the catch-up, and
+`RewardsService.grant` returns a zeroed payload for that flag, firing `MissionComplete` with `lateJoin = true`. The roster cap
+(`MAX_SQUAD = 4`) is applied before any seat is taken, so joining cannot push the squad past four.
+
+**Measured through a live operation:**
+
+```
+join      -> "dispatch join ROBLOXISUS101 seatsLeft=2"   GF_DispatchLastJoin = "...credits=150"
+finish    -> "payout skipped for late joiner ROBLOXISUS101"   GF_DispatchLatePayout = ROBLOXISUS101
+```
+
+One payment, once.
+
+**What is still wrong.** The debrief does not surface the `lateJoin` flag, so the player sees a zeroed payout with no explanation —
+from their side it looks like the mission failed to pay. And duplicate-join prevention across two clients is untested; only the
+single-client path exists.
