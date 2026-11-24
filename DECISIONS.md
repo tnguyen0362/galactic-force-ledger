@@ -142,3 +142,37 @@ Reasons, in order of weight:
 - Verified: `test_goal_loop.ts`, **15/15 passing** on a fake ExtensionAPI and a temp repo.
 
 **Open anomaly:** a compaction fired at `tokensBefore = 162,043` on a 1,000,000-token window, and another at 216,825. Neither matches the threshold path (983,616). Both need attribution (overflow recovery vs a model switch with a smaller effective window) before any threshold tuning is trusted.
+
+## 2026-11-24 — Two plugins, both narrow: context-gc (pruning) and gf-orchestrator (batches)
+
+**Pruning is justified by measurement, but only for what actually grew.** In one session: tool traffic
+108 MB, of which `screen_capture` was **105.1 MB / 389 calls** (avg 270 KB base64). Everything else
+combined was under 3 MB. So `context-gc.ts` elides old **screenshots** and shortens old **bulk tool
+output** (default: older than the last 5 results and over 8 KB → head 1200 + tail 400 chars + marker).
+It never removes a message, so tool-call pairing stays valid; decisions are permanent per tool-call id,
+so the prefix is stable instead of churning the prompt cache. Past **600k estimated tokens** the limits
+tighten (images to the newest 1, text from 2.5 KB), which is the owner's requested soft limit rather
+than waiting for the 1M wall.
+Tests: `.audit/test_context_gc.ts` **13/13**.
+
+**Orchestration uses the documented seam, not private internals.** `pi-subagents` exposes
+`prompt-template:subagent:request|response` on `pi.events`. `gf-orchestrator.ts` registers
+`gf_orchestrate` with `start|status|abort`: a planner (`oracle`, model `deepseek-v4-pro`, thinking
+high) reads the ledger + `WORK_STATE.md` and returns strict JSON; the plan is schema-validated before
+any launch; up to 3 workers run in parallel; an `evidence-auditor` gate decides whether to advance.
+A rejected gate stops the pipeline and reports. Responses are matched on
+`(requestId, ownerRunId, nodeId)` so a late or duplicated reply cannot advance the wrong stage.
+Tests: `.audit/test_orchestrator.ts` **21/21** against a fake delegation bus, including planner
+failure, gate rejection, and a missing event bus.
+
+**Boot safety, learned the hard way twice:**
+- Tests live in `.audit/`, never in `~/.pi/agent/extensions/` (Pi auto-discovers every `.ts` there; a
+  test with `process.exit` took Pi down at startup).
+- `gf-orchestrator.ts` imports nothing at runtime except node builtins — the tool schema is plain JSON
+  Schema rather than a typebox builder, so no alias resolution can fail.
+- `.audit/boot_check.mjs` imports every extension file and fails if one throws or lacks a default
+  export. Run it after any extension edit.
+
+**Not yet verified:** neither plugin has been exercised against live agents. The orchestrator's
+delegation path is proven only against a fake bus; the first real `/gf-orchestrate start` must be
+watched, and its `.goal/ORCH_LOG.jsonl` is the evidence to check.
