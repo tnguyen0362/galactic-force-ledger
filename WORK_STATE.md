@@ -66,10 +66,27 @@ Credits are inside the intended 450-600 band; XP is **50 below the 650-900 band'
 Also measured and now recorded: lifetime rank survives two full server restarts (rank 15 / 123,700 XP), flooring happens
 once at settlement for squad bonuses (25% of 450 -> 112), and 36 owned augments persisted with the loadout socket intact.
 
+**Batch 5: Engineering / QA — 16 rows (8 beta test-matrix, 8 acceptance-gate).** Script `.audit/audit_batch_qa.py`.
+
+These rows are process requirements, so what they describe IS reporting discipline; evidence is repo state rather than a
+place measurement. Five acceptance rows verified (`S16-100`, `S16-107`, `S16-110`, `S16-112`, `S16-115`) — the build has
+never self-certified, never published, never claimed beta, and `owner_acceptance` is empty on all 815 rows.
+
+The device/squad `TEST_MATRIX` rows are recorded PARTIAL with an **external** blocker, not ABSENT: they are not
+unimplemented, they are untestable here, and `S16-103` requires such blockers stay visible rather than turn green.
+
+**Correction to an earlier claim.** `WORK_STATE` previously asserted "all 15 variants verified complete on Normal". Only
+**8 of 15** have a per-variant `EVIDENCE.md` (3 elimination v383, 3 conquest v385, 2 recovery/defense v388). The remaining 7
+rest on an aggregate sentence here and no evidence file, so `BETA-OPS-SOLO` is PARTIAL at observed_count 8. An aggregate
+claim in WORK_STATE is not evidence.
+
+Also recorded: `S16-111` was being actively violated until this session — the loop reported `ABSENT 0 | PARTIAL 68` while
+732 rows were unaudited.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 448**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 118 populated, 697 UNKNOWN**.
-- Ledger state: PARTIAL 95 | VERIFIED 19 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 134 populated, 681 UNKNOWN**.
+- Ledger state: PARTIAL 106 | VERIFIED 24 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
 - Place-version numbers disagree across documents (WORK_STATE 448, HANDOFF 318, BLOCKED 232, recent commits 461). Unresolved
   because Studio was not connected; do not trust any of them until `save_place` records a new one.
 
