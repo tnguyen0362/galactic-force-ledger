@@ -404,3 +404,15 @@ NEXT IMPLEMENTATION PRIORITIES: (1) touch controls + virtual cursor cluster (S03
 EVERYTHING IS COMMITTED AND PUSHED. Place v645 stable at 816 boot assertions.
 
 ## UPDATE 38 — VERIFIED 496; touch controls implemented (S03-007/S03-013); boot pending final confirm
+
+## UPDATE 39 — FINAL STATE: VERIFIED 496 / UNKNOWN ~256 / PARTIAL 62 / ABSENT 2; place v645 stable; ALL COMMITTED+PUSHED
+SESSION TOTALS: started ~350 verified, ended 496 (+146 rows). Implemented: grenade hold-preview, radio knowledge,
+touch controls, cache RNG fix, interact range, augment catalog, reroll mission-gate, boss ability cap, directional
+damage feedback, shield-break audio, buff roster exclusion, cache reveal, galactic war defense phase, thrown flare,
+corpse collapse, camera shake, damage numbers, right-shoulder camera, assist XP, grief protection, armor names,
+cinematic rewrite, settings entries, optional objectives, ammo pickups, territory system, counteroffensive, wave
+suppression, vault/mantle, spread fixes, projectile speeds, LMG unlock, extraction vote fixes, rank formula.
+REMAINING (~319 unverified): S02 multi-place architecture 59 (structural redesign), S07 procedural 36,
+S06 AI ~28 (cover/pathfinding/relays), S15 perf 29 (hardware-blocked), S16 eng ~25, S01 narrative tail,
+S03 input tail (virtual cursor/gamepad menus), plus scattered PARTIAL tails across all sections.
+BOOT: 816 assertions passing. Next session: cover nodes, virtual cursor, or continue verification harvest.
