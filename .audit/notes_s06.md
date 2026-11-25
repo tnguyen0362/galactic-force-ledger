@@ -163,3 +163,10 @@ New facts:
    RewardLedgerService is RECORD-ONLY, RewardsService pays independently. Attempt only with probe safety net.
 3. Implement quick spec gaps as found; watch for stale blocker notes — verify code before trusting them.
 4. Big clusters remain: lobby/matchmaking 60+, procedural world, narrative/tutorial, Galactic War.
+
+## UPDATE 5 — VERIFIED ~262 / UNKNOWN ~377 / PARTIAL ~165; place v624+ (mirror has new work unsaved)
+IN FLIGHT: mission-source weight tables implemented (MISSION_SOURCE_WEIGHTS Easy 80/18/2/0, Normal 65/29/5.5/.5,
+Hard 40/43/15/2, Extreme 20/43/30/7) wired into open path for source="mission" caches; difficulty now recorded
+on ALL mission-context grants. Verification probe GF_SW (probe_srcw.lua) was running at compaction — shell c4ea94.
+If passed: mark S11-012/013/014/015 VERIFIED, rebuild+save place, commit.
+Input bindings fixed to spec (Ctrl dodge, Q/F abilities) — deployed in mirror, verify not regressed.
