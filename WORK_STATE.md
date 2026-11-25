@@ -3219,3 +3219,7 @@ Airstrike and Orbital Strike apply the difficulty friendly-fire factor to allies
 Extraction is now per-player: server cabin volume marks aboard state, the prompt flips to Extract Squad with +25% only when every eligible survivor is aboard, a 2s departure warning cancels on exit, individual extraction pays one player and leaves the ship for the rest, and everyone still in the mission at close returns to the station. Aboard players cannot fire, use abilities or take damage. (Place 581 was not created by this session.)
 
 Follow-up probe: aboard players take 0 damage; a downed player inside the cabin is not aboard.
+
+## 2026-11-25 / place 583 - drop weight scaling
+
+Enemy-drop caches record their drop difficulty, open with scaled non-Common weights (Hard 1.35 etc.), boss caches never roll Common, and the first mission cache guarantees at least one Rare+ item. Live probe PASS; 6 test items cleaned up.
