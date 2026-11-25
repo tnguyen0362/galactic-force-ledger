@@ -166,7 +166,7 @@ return 'deploy-requested'
 
         # Exhaust the shared budget before the second death: the first death already proved ticket spend;
         # this makes the second permanent death exercise the no-ticket squad-failure branch in one test run.
-        check('force_tickets_zero', h.exec_server(mcp, "local m=require(game.ServerScriptService.GF.Services.State).getMission() if m then m.tickets=0 end workspace:SetAttribute('GF_ReinforcementTickets',0) return 'tickets-zero'"))
+        check('force_tickets_zero', h.exec_server(mcp, "workspace:SetAttribute('GF_DebugReinforcementTickets',0) return 'tickets-zero-requested'"))
         check('second_fall_induce', induce_lethal_fall(mcp))
         r = wait_for(mcp, lambda: sample_pair_ok(mcp, lambda s: 'downedAttr=true' in s), timeout=7, interval=0.35, label='second-down')
         check('second_down_detected', r)

@@ -1,109 +1,105 @@
 {
   "checks": [
     {
-      "t": 1795647296.943,
+      "t": 1795648765.0,
       "name": "deploy_fire",
       "value": "deploy-requested"
     },
     {
-      "t": 1795647297.276,
+      "t": 1795648765.335,
       "name": "deploy_loading_immediate",
       "value": "downedVisible=false downedText=DOWNED loading=true squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
     },
     {
-      "t": 1795647297.71,
+      "t": 1795648765.768,
       "name": "mission_active",
       "value": {
         "ok": true,
-        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 tickets=6 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 tickets=5 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
         "client": "downedVisible=false downedText=DOWNED loading=true squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
       }
     },
     {
-      "t": 1795647302.375,
+      "t": 1795648770.435,
       "name": "baseline_before_first_fall",
       "value": {
         "ok": true,
-        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 tickets=6 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 tickets=5 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
         "client": "downedVisible=false downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
       }
     },
     {
-      "t": 1795647302.459,
+      "t": 1795648770.518,
       "name": "first_fall_induce",
       "value": "fall-induced:13.987958908081055, 244.90464782714844, 117.60435485839844"
     },
     {
-      "t": 1795647303.659,
+      "t": 1795648771.717,
       "name": "first_down_detected",
       "value": {
         "ok": true,
-        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=ROBLOXISUS101:200@304 downedAttr=true health=1 pos=14.0,30.0,117.6 tickets=6 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=ROBLOXISUS101:200@306 downedAttr=true health=1 pos=14.0,29.8,117.6 tickets=5 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
         "client": "downedVisible=true downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
       }
     },
     {
-      "t": 1795647313.758,
+      "t": 1795648781.818,
       "name": "first_redeploy_pending",
       "value": {
         "ok": true,
-        "server": "inMission=true endReason=nil pending=ROBLOXISUS101 countdown=8 fall=ROBLOXISUS101:200@304 downedAttr=true health=1 pos=14.0,30.2,117.6 tickets=4 lz=0, 32.475006103515625, 118 trace=11748.9 permanent death; ticketed redeploy pending player=ROBLOXISUS101 tickets=4 ddebug=nil",
+        "server": "inMission=true endReason=nil pending=ROBLOXISUS101 countdown=8 fall=ROBLOXISUS101:200@306 downedAttr=true health=1 pos=14.0,30.2,117.6 tickets=4 lz=0, 32.475006103515625, 118 trace=13217.0 permanent death; ticketed redeploy pending player=ROBLOXISUS101 tickets=4 ddebug=nil",
         "client": "downedVisible=true downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
       }
     },
     {
-      "t": 1795647321.825,
+      "t": 1795648789.9,
       "name": "automatic_redeploy_detected",
       "value": {
         "ok": true,
-        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@304 downedAttr=nil health=100 pos=0.0,38.4,125.0 tickets=4 lz=0, 32.475006103515625, 118 trace=11756.9 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
+        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@306 downedAttr=nil health=100 pos=2.0,38.3,121.0 tickets=4 lz=0, 32.475006103515625, 118 trace=13225.1 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
         "client": "downedVisible=false downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
       }
     },
     {
-      "t": 1795647321.909,
+      "t": 1795648789.985,
       "name": "ticket_count_after_first_redeploy",
-      "value": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@304 downedAttr=nil health=100 pos=0.0,35.6,125.0 tickets=4 lz=0, 32.475006103515625, 118 trace=11756.9 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil"
+      "value": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@306 downedAttr=nil health=100 pos=2.0,36.5,121.0 tickets=4 lz=0, 32.475006103515625, 118 trace=13225.1 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil"
     },
     {
-      "t": 1795647324.025,
+      "t": 1795648791.967,
       "name": "force_tickets_zero",
-      "value": "tickets-zero"
+      "value": "tickets-zero-requested"
     },
     {
-      "t": 1795647324.109,
+      "t": 1795648792.051,
       "name": "second_fall_induce",
-      "value": "fall-induced:13.993818283081055, 244.90464782714844, 124.80172729492188"
+      "value": "fall-induced:15.99384880065918, 244.90464782714844, 120.80166625976562"
     },
     {
-      "t": 1795647325.308,
+      "t": 1795648793.25,
       "name": "second_down_detected",
       "value": {
         "ok": true,
-        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@307 downedAttr=true health=1 pos=14.0,29.9,124.8 tickets=0 lz=0, 32.475006103515625, 118 trace=11756.9 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
+        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@301 downedAttr=true health=1 pos=16.0,30.2,120.8 tickets=0 lz=0, 32.475006103515625, 118 trace=13225.1 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
         "client": "downedVisible=true downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
       }
     },
     {
-      "t": 1795647343.342,
+      "t": 1795648804.082,
       "name": "squad_eliminated_debrief",
       "value": {
-        "ok": false,
-        "timeout": "squad-eliminated-debrief",
-        "last": {
-          "ok": false,
-          "server": "inMission=true endReason=nil pending=ROBLOXISUS101 countdown=0.4172917999985657 fall=ROBLOXISUS101:200@307 downedAttr=nil health=100 pos=-8.0,765.2,25.8 tickets=3 lz=0, 32.475006103515625, 118 trace=11770.5 permanent death; ticketed redeploy pending player=ROBLOXISUS101 tickets=3 ddebug=nil",
-          "client": "downedVisible=false downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
-        }
+        "ok": true,
+        "server": "inMission=false endReason=squad_eliminated pending=nil countdown=0 fall=ROBLOXISUS101:200@301 downedAttr=true health=0 pos=-0.0,759.6,21.8 tickets=0 lz=0, 32.475006103515625, 118 trace=13239.4 failMission stationRequire=true ddebug=nil",
+        "client": "downedVisible=false downedText=DOWNED loading=true squadText=true debriefBody=true mouse=Enum.MouseBehavior.Default"
       }
     },
     {
-      "t": 1795647344.124,
+      "t": 1795648804.382,
       "name": "final_state",
       "value": {
         "ok": true,
-        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@307 downedAttr=nil health=100 pos=0.0,30.7,126.0 tickets=3 lz=0, 32.475006103515625, 118 trace=11778.6 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
-        "client": "downedVisible=false downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+        "server": "inMission=false endReason=squad_eliminated pending=nil countdown=0 fall=ROBLOXISUS101:200@301 downedAttr=nil health=0 pos=-0.0,696.7,21.8 tickets=0 lz=0, 32.475006103515625, 118 trace=13239.4 failMission stationRequire=true ddebug=nil",
+        "client": "downedVisible=false downedText=DOWNED loading=false squadText=true debriefBody=true mouse=Enum.MouseBehavior.Default"
       }
     }
   ],

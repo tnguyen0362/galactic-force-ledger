@@ -29,3 +29,20 @@ Verified live:
 - Downed crawl/pose remains unimplemented.
 
 Therefore v706 is an implementation checkpoint, not a completed ticket-economy verification.
+
+## V707/V708 correction and passing verification
+
+v707 removed the boot-time fake Normal mission context and fixed deployment to publish the freshly reset mission's ticket budget rather than the stale pre-reset object. v708 added a server-only Studio verification bridge because plugin execution uses a separate Luau VM and cannot mutate authoritative module state directly.
+
+Passing v708 evidence in `raw/ticketflow_ticket_verification.json` / `raw/ticketflow_verify_v708.log`:
+
+- Easy solo deploy now publishes exactly `tickets=5` (`3 + 2P`, P=1).
+- First permanent death decremented exactly one ticket to `4` and automatically redeployed the player.
+- After forcing the remaining budget to zero through the server-only verification bridge, the second permanent death produced:
+  - `endReason=squad_eliminated`
+  - `inMission=false`
+  - visible `SQUAD ELIMINATED` debrief body
+  - mouse returned to `Default`
+  - return-to-station loading visibility during transition
+
+The ticket-spend defect from v706 is corrected. Remaining open work is limited to presentation and edge cases: full visible reinforcement drop pod, downed crawl/pose, spawn-trap protection, multiplayer revive/redeploy timing, live squad-size ticket scaling, and disconnect/rejoin abuse resistance.

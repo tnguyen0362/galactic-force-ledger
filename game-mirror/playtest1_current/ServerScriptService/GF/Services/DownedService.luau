@@ -311,6 +311,15 @@ function DownedService.start()
 		while true do
 			task.wait(0.25)
 			local now = os.clock()
+			-- Studio verification hook: plugin execution runs in a separate Luau VM, so it cannot mutate
+			-- the authoritative State module directly. Server-only workspace attributes are the supported bridge.
+			local forcedTickets = tonumber(workspace:GetAttribute("GF_DebugReinforcementTickets"))
+			local activeMission = State.getMission()
+			if forcedTickets and activeMission then
+				activeMission.tickets = math.max(0, math.floor(forcedTickets))
+				workspace:SetAttribute("GF_DebugReinforcementTickets", nil)
+				publishTickets()
+			end
 			if workspace:GetAttribute("GF_DebugDeathflow") == true then
 				workspace:SetAttribute("GF_DownedLoopAlive", now)
 			end

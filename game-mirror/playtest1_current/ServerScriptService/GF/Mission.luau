@@ -46,15 +46,10 @@ workspace:SetAttribute("GF_MissionSeed", 1234)
 local GENERATOR_VERSION = "1.4"
 workspace:SetAttribute("GF_GeneratorVersion", GENERATOR_VERSION)
 
-State.setMission({
-	seed = 1234,
-	difficulty = "Normal",
-	tickets = 6,
-	startedAt = os.clock(),
-	softDeadline = os.clock() + 1500,
-	objectiveComplete = false,
-	extractionCalled = false,
-})
+-- No operation exists while the player is still in the orbital station. A boot-time Normal mission
+-- context here made lobby deaths/extraction logic behave as if an operation were already active and
+-- poisoned the first ticket count published after deploy.
+workspace:SetAttribute("GF_ReinforcementTickets", 0)
 
 require(Services.ProfileService).start()
 LootService.start()
