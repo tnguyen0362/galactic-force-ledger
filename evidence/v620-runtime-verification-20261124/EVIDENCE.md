@@ -85,6 +85,15 @@ No config-file or script-presence claims. Harness assistance is labeled where us
 - UI/UX polish pass needed — owner flagged without specifics; audit screens against spec S12/S26
   (HUD legibility minimums, restrained military slate/cyan/amber system, no clutter)
 - These are quality observations, not conformance failures — schedule after correctness bugs
+- PERFORMANCE/OPTIMIZATION is a founding requirement (owner emphasis since project start).
+  Current state: architectural discipline exists (throttled staggered AI ticks, spatial grid
+  broad-phase perception, pooled VFX, streaming modes, corpse caps, fire-slot fairness) but
+  real measurement is entirely absent — the S15 benchmark rows are BLOCKED on hardware.
+  Known cost hotspots spotted this session: the officer relay-call loop runs a full
+  workspace:GetDescendants() scan (spec forbids per-tick global scans); AI v684 batch adds
+  per-tick attribute writes on every hostile (cheap individually, unaudited at scale);
+  probe harnesses used GetDescendants heavily (test-only, not production). No frame-rate
+  numbers exist for ANY configuration — first optimization pass must measure before tuning.
 
 ## HONESTLY UNVERIFIED / OPEN
 - Tutorial steps 2-5 end-to-end (shoot/reload/dodge/ability validation)
