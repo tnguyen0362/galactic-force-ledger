@@ -1357,6 +1357,22 @@ weights also remain the config's, which disagree with the authored table.
 **Method note:** verification scanned for `"Leg "` and `"DROP "` — substrings only the real display produces. After three false negatives from
 scanning placeholder text like `"ODDS"`, matching on content unique to live output is now the default.
 
+**WEAPON STATS CONFORM EXCEPT RELOAD, WHICH IS UNIFORMLY LONGER (place 507, no code change).** Evidence
+`evidence/v507-weapon-reload-drift/EVIDENCE.md`.
+
+**Two misreadings caught before reporting them:** the authored table's last column is **reload seconds**, not unlock rank (AR-01 shows `2` but
+is rank 1, and reloads in 2.1 s) — reading it as rank would have produced five false rank-drift findings. And GL-22 is **not** drifted: spec
+`110 | 50 | 4/16` matches config exactly; the `40 | 1 | 1/8 | 2` row belongs to a different launcher.
+
+**Conforms exactly:** AR-01 18/600/28-168, SMG-03 13/850/36-216, LMG-12 17/660/75-225, SG-04 96=8×12/72/6-42, MR-07 51/150/12-72,
+GL-22 110/50/4-16, P-01 22/300/12-72.
+
+**Drifts:** every reload is longer, never shorter — AR-01 2.1 vs 2, MR-07 2.4 vs 2, SMG-03 1.7 vs 1, LMG-12 3.7 vs 3, SG-04 2.8 vs 2. A
+uniform upward bias is a tuning choice, not a transcription slip. Sustained DPS is therefore below authored for every weapon, worst for SMG-03
+and SG-04 — the close-quarters throughput classes, where SMG-03's authored 1 s reload is the fastest in the game.
+
+Not changed: reload is core feel and interacts with the verified `reloadSpeed` augment stat. Owner queue.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 507**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
