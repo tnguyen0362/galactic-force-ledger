@@ -97,7 +97,8 @@ local function updateCamera()
 	local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
 	local aiming = workspace:GetAttribute("GF_PlayerAiming") == true
 	local targetShoulder = (aiming and 1.35 or 2.1) * shoulderSide
-	local targetZoom = math.clamp(zoom - (aiming and 1.9 or 0), ZOOM_MIN, ZOOM_MAX)
+	local lobbyZoomBonus = root.Position.Y > 500 and 1.25 or 0
+	local targetZoom = math.clamp(zoom + lobbyZoomBonus - (aiming and 1.9 or 0), ZOOM_MIN, ZOOM_MAX + 1.25)
 	smoothShoulder += (targetShoulder - smoothShoulder) * math.min(1, dt * 12)
 	smoothZoom += (targetZoom - smoothZoom) * math.min(1, dt * 12)
 	local focus = root.Position + Vector3.new(0, 1.55, 0)
@@ -339,8 +340,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton2 then
 		looking = true
-		-- RMB is aim-down-sights as well as look; the server owns the speed change.
-		remotes.AimChanged:FireServer(true)
 	elseif input.UserInputType == Enum.UserInputType.MouseButton1 and touchMode then
 		looking = true
 	end
@@ -357,9 +356,7 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		if looking then
-			-- Settings: sensitivity multiplies mouse look and invertY flips the vertical axis. The profile
-			-- stored aimSensitivity and invertY and nothing read them until now.
+		if not touchMode or looking then
 			local sensitivity = tonumber(player:GetAttribute("GF_Setting_AimSensitivity")) or 1
 			local invert = player:GetAttribute("GF_Setting_InvertY") == true and -1 or 1
 			yaw -= input.Delta.X * LOOK_SENS * sensitivity
@@ -394,6 +391,18 @@ RunService.RenderStepped:Connect(function(dt)
 		humanoid:Move(flatRight() * v.X + flatForward() * v.Y, false)
 	else
 		humanoid:Move(Vector3.zero, false)
+	end
+end)
+
+
+task.spawn(function()
+	while true do
+		task.wait(0.2)
+		if workspace:GetAttribute("GF_UIOpen") == true then
+			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		else
+			UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		end
 	end
 end)
 

@@ -295,6 +295,14 @@ function Weapon.init()
 			buildViewmodel(weapon)
 		end
 	end)
+	Input.onPress("Aim", function()
+		state.aiming = true
+		remotes.AimChanged:FireServer(true)
+	end)
+	Input.onRelease("Aim", function()
+		state.aiming = false
+		remotes.AimChanged:FireServer(false)
+	end)
 	Input.onPress("Fire", function()
 		state.firing = true
 	end)

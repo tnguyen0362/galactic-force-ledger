@@ -409,6 +409,7 @@ local function groundPoint(p: Vector3): Vector3
 end
 
 local function teleportTo(player: Player, position: Vector3)
+	workspace:SetAttribute("GF_Teleporting", true)
 	local character = player.Character
 	if not character or not character:FindFirstChild("HumanoidRootPart") then
 		player:LoadCharacter()
@@ -418,6 +419,9 @@ local function teleportTo(player: Player, position: Vector3)
 	if root then
 		character:PivotTo(CFrame.new(position))
 	end
+	task.delay(1.2, function()
+		workspace:SetAttribute("GF_Teleporting", false)
+	end)
 end
 
 local function publish(player: Player)
@@ -723,7 +727,7 @@ function StationService.start()
 			return
 		end
 		if d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight") then
-			d.Shadows = true
+			d.Shadows = false
 			d.Color = FIXTURE
 			d.Brightness = 1.15
 			if d.Range > 56 then

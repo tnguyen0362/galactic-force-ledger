@@ -142,6 +142,7 @@ task.spawn(function()
 			timerLabel.Visible = false
 		end
 		local charges = player:GetAttribute("GrenadeCharges")
+		grenadeLabel.Visible = participant
 		grenadeLabel.Text = string.format("GRENADE x%d", tonumber(charges) or 0)
 		grenadeLabel.TextColor3 = (tonumber(charges) or 0) > 0 and Color3.fromRGB(180, 220, 255) or Color3.fromRGB(150, 150, 150)
 		gui:SetAttribute("GF_TimerText", timerLabel.Text)

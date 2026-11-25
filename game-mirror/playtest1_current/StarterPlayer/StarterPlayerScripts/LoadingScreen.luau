@@ -48,11 +48,7 @@ end)
 -- initial presentation: brief display while first content loads
 frame.Visible = true
 task.spawn(function()
-	-- preload critical assets so the world doesn't pop in piecemeal
-	pcall(function()
-		ContentProvider:PreloadAsync({ workspace })
-	end)
-	task.wait(1.5)
+	task.wait(0.8)
 	if workspace:GetAttribute("GF_Teleporting") ~= true then
 		frame.Visible = false
 	end
