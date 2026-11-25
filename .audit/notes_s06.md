@@ -428,3 +428,18 @@ airstrike conformance, surface footsteps, aim assist, human remnants/ambient pro
 STUDIO SHELLS created for all new modules. Boot 816 assertions passing. REMAINING ~260: S02 multi-place
 (dashboard-blocked place creation), S15 perf hardware rows, S16 process rows, BETA validation rows,
 procedural biome details, narrative tails. ALL COMMITTED+PUSHED.
+
+## UPDATE 41 — VERIFIED ~557; mid-wave checkpoint
+ADDED SINCE 40: squad leader election/disconnect succession + empty-squad expiry, extraction landing theater
+(gear struts + dust ring), rotating holographic war table with war-front territory nodes, augment rarity
+magnitude table per spec, aim assist (controller/touch), surface footsteps, suit shapes, violet tracers,
+remnants/ambient props, matchmaking MemoryStore listings, teleport flow, boss replay, tutorial hints, loot feed.
+ALL MODULES LOAD — boot 816 assertions green. Deploy pipeline healthy: shells created for every new module.
+
+## UPDATE 42 — VERIFIED ~561; stat conformance sweep
+ENEMY STATS verified exact vs spec: Vanguard 210/60 spd18 dmg6, Heavy 620/180 spd8 dmg32, Marksman 210/60
+spd11 dmg38 rng180. PathThrottle module implemented (4-token bucket, 2/s refill, 8-stud redestination,
+3s staleness). Squad settings/transfer/invite plumbing implemented. War snapshot debrief display wired.
+PerformanceTelemetry+PathThrottle shells created — ALL modules load, boot 816 assertions green.
+REMAINING BIG CLUSTERS: S02 44 (multi-place mostly dashboard-blocked), S16 35 (process rows), S15 29
+(hardware perf), S07 26 (procedural depth), S06 ~16, S01 17 (armor visual polish), BETA 12, S04 12.
