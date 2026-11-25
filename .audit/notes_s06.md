@@ -388,3 +388,17 @@ single-place build), S07 procedural 36, S06 AI 31, S15 perf 29 (hardware-blocked
 (lore content rows — cinematic narration lookup elusive, needs CinematicUI beats table read).
 NEXT CHEAP PATHS: read CinematicUI.luau beats table for lore verification (S01-003/004/005); inspect S02 lobby
 caps (20/4) structurally; implement cover nodes (S06-015). EVERYTHING IS COMMITTED AND PUSHED.
+
+## UPDATE 37 — VERIFIED 493 / UNKNOWN ~259 / PARTIAL 62 / ABSENT 2; place v645; ALL COMMITTED+PUSHED
+SINCE UPDATE 36: verified S01-003/004/005 lore (cinematic narration exact: crossed stars, Ascendancy invasion,
+Earth reclaimed six years ago, counteroffensive framing) and S01-006/007/008 military framing (Ascendancy
+roster coordinated military w/ GuardCover behaviors, Voss commander briefings, concise comms).
+HONEST STATE: 493/815 verified. Remaining mass is genuinely-unimplemented or hardware-blocked:
+- S02 lobby/places 59 UNKNOWNs: multi-place architecture structurally absent in single-place build
+- S07 procedural 36, S06 AI ~28 remaining (cover nodes, pathfinding, relay systems)
+- S15 performance 29: all hardware-target rows blocked on device lab
+- S03 input rows: touch controls / virtual cursor / gamepad menus NOT implemented (no TouchControls or
+  virtual cursor scripts exist) — implementable client systems, highest-value next implementation cluster
+NEXT IMPLEMENTATION PRIORITIES: (1) touch controls + virtual cursor cluster (S03-007/009/010/012/013 ~5-8 rows),
+(2) cover nodes precompute (S06-015/016), (3) lobby caps/multi-place architectural rows need real design work.
+EVERYTHING IS COMMITTED AND PUSHED. Place v645 stable at 816 boot assertions.
