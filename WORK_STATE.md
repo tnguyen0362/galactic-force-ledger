@@ -3223,3 +3223,7 @@ Follow-up probe: aboard players take 0 damage; a downed player inside the cabin 
 ## 2026-11-25 / place 583 - drop weight scaling
 
 Enemy-drop caches record their drop difficulty, open with scaled non-Common weights (Hard 1.35 etc.), boss caches never roll Common, and the first mission cache guarantees at least one Rare+ item. Live probe PASS; 6 test items cleaned up.
+
+## 2026-11-25 / place 584 - war credits and first-mission credits
+
+Successful primary extraction now pays fixed War Credits by difficulty (Normal 10 verified, duplicate-settlement blocked), never multiplied by the squad bonus. The first completed mission also pays the one-time +200 Credits. Live probe PASS; test state restored.
