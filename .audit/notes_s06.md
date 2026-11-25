@@ -180,3 +180,18 @@ Candidate rows to examine: S03-036 (armory lockouts — tail may be complete), S
 S06-024 (flanking/intel missing — keep partial). Ledger-note-staleness pattern keeps paying: verify code first.
 Big remaining fronts: economy ledger refactor (S10-014..019 chain), lobby/matchmaking cluster, Galactic War,
 procedural world, narrative. Keep the same rhythm: inspect -> implement -> probe -> mark -> commit.
+
+## UPDATE 7 — VERIFIED ~287 / UNKNOWN ~365; implementations in flight
+IN FLIGHT at this checkpoint:
+1. OptionalService.luau NEW MODULE created in mirror (optional objective sites: relay/generator/supply,
+   discovery 80 studs, effects wired). NEEDS a ModuleScript shell created in Studio via MCP execute_luau
+   (datamodel_type Edit) BEFORE deploy — harness cannot create instances. Path:
+   ServerScriptService.GF.Services.OptionalService. After shell exists, tar+deploy+probe.
+2. EncounterDirector refill now reads GF_ReinforcementCut multiplier.
+3. Main.luau registers OptionalService.start().
+Verification probe to write: deploy, check GF_OptionalSitesPlaced>0, teleport player within 80 studs of
+a site, check discovery, trigger prompt completion, check GF_ReinforcementCut=0.75. Then mark
+S08-044/S08-045, save place, commit.
+ALSO unsaved in mirror: vault/mantle in Controller.luau, ammo/grenade pickups in LootService,
+eligibility fix in StationService+RewardLedgerService (probe-verified), projectile speed fixes.
+A save deploy ran earlier but verify version before assuming.
