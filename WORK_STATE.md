@@ -1684,6 +1684,32 @@ reported — without reading `fail`. **Sixth instance of reasoning from an unrea
 
 **The "silent refusal" defect I recorded does not exist.**
 
+**RANK GATES ENFORCED ON ALL FOUR PURCHASE PATHS (place 515, no source change).** Evidence `evidence/v515-rank-gates-enforced/EVIDENCE.md`.
+
+The profile is rank **15** while the highest requirement is rank 7 (weapons) / 12 (armour), so no refusal was reachable. Lowering `profile.rank` to 1
+and restoring it afterwards made all four testable.
+
+**Ordering detail that mattered:** ownership is checked *before* rank, so an owned item refuses as `"already owned"` regardless of rank — `Sentry` and
+`TROPHY` had to be un-owned before their gates could be reached.
+
+```
+weapon  MR07   (r4)  at rank 1 -> "requires rank 4"
+ability Sentry (r4)  at rank 1 -> "requires rank 4"
+armour  TROPHY (r12) at rank 1 -> "requires rank 12"
+grenade EMP    (r4)  at rank 1 -> "requires rank 4"   owned=false
+grenade Frag   (r1)  at rank 1 -> no rejection (control: permitted)
+```
+
+A refused purchase grants nothing, and the control case shows the gate discriminates rather than blocking everything.
+
+`S12-012` → PARTIAL (first clause verified; the requisition half has nothing to open). `S05-013`/`S05-014` unlock data confirmed live
+(`Sentry rank4/900`, `OrbitalStrike rank8/1800`).
+
+**Not covered:** rank was manipulated rather than earned, so the gate logic is proven, not the progression feeding it; and how locked items are
+*presented* in the armory was not checked.
+
+Ledger: UNKNOWN 580 → 579, PARTIAL 172 → 173.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
