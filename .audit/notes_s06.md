@@ -57,3 +57,10 @@ Final rerun was testing alert measurement race fix (probe now samples immediatel
 NOT YET SAVED TO PLACE - deploy is NOSAVE. After PASS: save_place, evidence, ledger rows S06-036/038/039/040/041/042/044, commit.
 
 CRITICAL NEXT: after S06-B completes, pivot to mission/extraction verification sweep (cheaper rows) then continue remaining clusters per severity.
+
+## IN-FLIGHT at compaction (combat math fix)
+
+Combat probe measured: headshot ratio exactly 2.00 PASS, shield absorbs RAW 18 not boosted PASS, TTK derivation 2.70s in band PASS.
+BUG FOUND+FIXED: hitMultiplier was reset to 1 whenever augs existed, killing headshot bonus on shield overflow (measured 6 vs spec 12).
+Fix in CombatService.damageEnemy: removed fold, added weakFactor applied to health portion only. NOT YET SAVED.
+Probe rerun in progress (shell 24e143) expecting afterHead2 health=488. After PASS: save_place, evidence, update rows S04-014/S04-018/S04-046, commit.
