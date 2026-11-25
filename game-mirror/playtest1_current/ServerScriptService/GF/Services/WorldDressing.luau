@@ -79,16 +79,17 @@ function WorldDressing.build(relayPos: Vector3, spawnPos: Vector3)
 	-- Landing pad: low, dark deck with cyan approach strips.
 	local pad = Instance.new("Part")
 	pad.Name = "LandingPad"
-	pad.Size = Vector3.new(34, 1.2, 34)
-	pad.CFrame = CFrame.new(Vector3.new(spawnPos.X, spawnY + 0.4, spawnPos.Z))
-	pad.Color = Color3.fromRGB(56, 60, 68)
-	pad.Material = Enum.Material.DiamondPlate
+	pad.Size = Vector3.new(14, 0.45, 14)
+	pad.CFrame = CFrame.new(Vector3.new(spawnPos.X, spawnY + 0.25, spawnPos.Z))
+	pad.Color = Color3.fromRGB(62, 70, 66)
+	pad.Material = Enum.Material.Slate
+pad.Transparency = 0.18
 	pad.Anchored = true
 	pad.Parent = folder
 
 	for i = -1, 1, 2 do
-		mark(folder, "ApproachStrip", Vector3.new(28, 0.16, 0.9),
-			CFrame.new(spawnPos.X + i * 5, spawnY + 1.06, spawnPos.Z),
+		mark(folder, "ApproachStrip", Vector3.new(9, 0.10, 0.42),
+			CFrame.new(spawnPos.X + i * 3.4, spawnY + 0.68, spawnPos.Z),
 			Color3.fromRGB(88, 196, 232), Enum.Material.Neon)
 	end
 

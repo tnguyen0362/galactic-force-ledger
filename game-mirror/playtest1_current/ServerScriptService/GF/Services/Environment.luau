@@ -54,7 +54,7 @@ local PRESETS: { [string]: Preset } = {
 		-- Spec S27: late afternoon cool-warm light is the default session. 16.8 drops the sun
 		-- toward the horizon for longer scenic shadows without going dusk-dark.
 		clock = 16.8,
-		brightness = 2.2,
+		brightness = 1.9,
 		-- character and props read as black silhouettes against the compound deck at 96/92/84
 		ambient = Color3.fromRGB(122, 116, 104),
 		outdoor = Color3.fromRGB(142, 136, 122),
@@ -65,8 +65,8 @@ local PRESETS: { [string]: Preset } = {
 		-- Fog carries the cream horizon band; the atmosphere Color/Decay pair tints the dome.
 		fogEnd = 1600,
 		fogColor = Color3.fromRGB(216, 208, 188),
-		atmoDensity = 0.16,
-		atmoHaze = 0.34,
+		atmoDensity = 0.22,
+		atmoHaze = 0.72,
 		atmoColor = Color3.fromRGB(158, 196, 184),
 		atmoDecay = Color3.fromRGB(222, 210, 186),
 	},
@@ -125,6 +125,25 @@ function Environment.apply(zone: string)
 		atmo.Color = p.atmoColor
 		atmo.Decay = p.atmoDecay
 		atmo.Glare = 0
+	end
+	local colorCorrection = Lighting:FindFirstChildOfClass("ColorCorrectionEffect")
+	if not colorCorrection then
+		colorCorrection = Instance.new("ColorCorrectionEffect")
+		colorCorrection.Name = "GFEnvironmentGrade"
+		colorCorrection.Parent = Lighting
+	end
+	if zone == "mission" then
+		-- The engine daylight dome is unavoidably saturated blue. Grade it toward the spec's pale
+		-- blue-green/cream world instead of fighting per-object colours one at a time.
+		colorCorrection.TintColor = Color3.fromRGB(218, 232, 218)
+		colorCorrection.Saturation = -0.16
+		colorCorrection.Contrast = 0.02
+		colorCorrection.Brightness = 0
+	else
+		colorCorrection.TintColor = Color3.fromRGB(255, 255, 255)
+		colorCorrection.Saturation = -0.04
+		colorCorrection.Contrast = 0.01
+		colorCorrection.Brightness = 0
 	end
 	local sky = ensureSky()
 	if zone == "station" then

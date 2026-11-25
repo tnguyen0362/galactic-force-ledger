@@ -113,6 +113,14 @@ local function neon(parent: Instance, name: string, size: Vector3, cf: CFrame, c
 	return p
 end
 
+local function clearUntaggedBosses()
+	for _, child in ipairs(workspace:GetChildren()) do
+		if child:IsA("Model") and child:GetAttribute("Boss") == true and child:GetAttribute("GF_ObjectiveTarget") ~= true then
+			child:Destroy()
+		end
+	end
+end
+
 function StationService.build()
 	local old = workspace:FindFirstChild("Station")
 	if old then
@@ -371,6 +379,7 @@ function StationService.resetMission(missionDifficulty: string, template: string
 	-- extraction, so actors piled up and every target count read high. This runs before setup so the
 	-- new mission's own spawns (including elimination targets) are the only ones alive.
 	EnemyService.clearAll()
+	clearUntaggedBosses()
 	ObjectiveService.setup(RELAY, template)
 	EncounterDirector.reset()
 	pcall(function()

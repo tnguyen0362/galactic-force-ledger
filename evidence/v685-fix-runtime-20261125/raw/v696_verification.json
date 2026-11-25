@@ -1,0 +1,4 @@
+{
+  "deploy": "true",
+  "verify": "bossVisible=false bastion=true hp=3600 mapBlips=3"
+}

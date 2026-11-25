@@ -86,18 +86,19 @@ function SupplyService.spawn(position: Vector3): BasePart
 	crate.Position = position
 	crate.Anchored = true
 	crate.Material = Enum.Material.Metal
-	crate.Color = Color3.fromRGB(70, 82, 96)
+	crate.Color = Color3.fromRGB(96, 112, 126)
 	crate:SetAttribute("GFSupplyCrate", true)
 	-- Readability: a plain grey two-stud prop disappeared into the terrain. The amber cap and small
 	-- billboard make the crate discoverable from the drop zone without turning it into a waypoint beacon.
 	local cap = Instance.new("Part")
 	cap.Name = "SupplyCap"
-	cap.Size = Vector3.new(2.15, 0.22, 2.15)
+	cap.Size = Vector3.new(1.65, 0.18, 1.65)
 	cap.CFrame = crate.CFrame * CFrame.new(0, 0.9, 0)
 	cap.Anchored = true
 	cap.CanCollide = false
 	cap.Material = Enum.Material.Neon
-	cap.Color = Color3.fromRGB(255, 176, 64)
+	cap.Color = Color3.fromRGB(176, 116, 52)
+	cap.Transparency = 0.12
 	cap.Parent = crate
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "SupplyLabel"

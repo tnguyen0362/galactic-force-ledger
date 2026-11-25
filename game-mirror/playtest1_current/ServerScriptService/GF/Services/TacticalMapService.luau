@@ -17,20 +17,27 @@ local function round(n)
 end
 
 local function center()
-	local relay = ObjectiveService.getRelay()
-	if relay and relay.PrimaryPart then
-		return relay.PrimaryPart.Position
+	-- The minimap is a local navigation instrument, not a strategic objective map. Centre its terrain
+	-- window on the active squad; objective/LZ markers are separately edge-clamped by the client.
+	local sum = Vector3.zero
+	local count = 0
+	for _, player in ipairs(Players:GetPlayers()) do
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			sum += root.Position
+			count += 1
+		end
+	end
+	if count > 0 then
+		return sum / count
 	end
 	local lz = workspace:GetAttribute("GF_LZ")
 	if typeof(lz) == "Vector3" then
 		return lz
 	end
-	local player = Players:GetPlayers()[1]
-	if player and player.Character then
-		local root = player.Character:FindFirstChild("HumanoidRootPart")
-		if root then
-			return root.Position
-		end
+	local relay = ObjectiveService.getRelay()
+	if relay and relay.PrimaryPart then
+		return relay.PrimaryPart.Position
 	end
 	return Vector3.new(0, 0, 0)
 end

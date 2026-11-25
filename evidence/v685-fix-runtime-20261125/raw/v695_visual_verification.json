@@ -1,0 +1,5 @@
+{
+  "deploy": "true:nil",
+  "state": "bossVisible=true bastion=true bosshp=3600 mapBlips=3",
+  "scan": "rootBastions=1"
+}

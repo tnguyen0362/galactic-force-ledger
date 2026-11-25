@@ -316,9 +316,18 @@ local function rebuildBlips(sig)
 				colour = Color3.fromRGB(255, 120, 120)
 			end
 			blip.BackgroundColor3 = colour
-			blip.Position = UDim2.fromOffset(RADIUS + (wx - root.Position.X) * scale, RADIUS + (wz - root.Position.Z) * scale)
 			local bdx, bdz = (wx - root.Position.X) * scale, (wz - root.Position.Z) * scale
-			blip.Visible = (bdx * bdx + bdz * bdz) <= (RADIUS - 4) * (RADIUS - 4)
+			-- Clamp distant markers to the rim. Hiding the objective because it is 200m away made the
+			-- minimap a black disc exactly when the player needed direction; rim markers preserve bearing.
+			local distance = math.sqrt(bdx * bdx + bdz * bdz)
+			local limit = RADIUS - 8
+			if distance > limit then
+				local shrink = limit / math.max(distance, 0.001)
+				bdx *= shrink
+				bdz *= shrink
+			end
+			blip.Position = UDim2.fromOffset(RADIUS + bdx, RADIUS + bdz)
+			blip.Visible = true
 		end
 	end
 	for index = count + 1, #blips do

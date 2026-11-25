@@ -29,6 +29,17 @@ Players.PlayerRemoving:Connect(function(player) SquadService.leave(player) end)
 
 workspace:SetAttribute("GF_ObjectiveComplete", false)
 workspace:SetAttribute("GF_ExtractionState", "idle")
+workspace:SetAttribute("BastionActive", false)
+workspace:SetAttribute("VeyrActive", false)
+workspace:SetAttribute("BossHealth", 0)
+workspace:SetAttribute("BossPhase", 1)
+-- The cloud place once carried a saved root-level Bastion artifact into non-boss missions. Boot
+-- must never trust untagged workspace residue; elimination objectives retag legitimate targets.
+for _, child in ipairs(workspace:GetChildren()) do
+	if child:IsA("Model") and child:GetAttribute("Boss") == true and child:GetAttribute("GF_ObjectiveTarget") ~= true then
+		child:Destroy()
+	end
+end
 workspace:SetAttribute("GF_MissionSeed", 1234)
 -- S07-014 generation provenance: deterministic server seed with explicit generator version —
 -- same seed + version reproduces the same world, which is what makes verification possible.

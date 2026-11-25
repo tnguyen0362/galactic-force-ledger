@@ -432,7 +432,22 @@ function HUD.init()
 				if bossBar then
 					local hp = workspace:GetAttribute("BossHealth") or 0
 					local phase = workspace:GetAttribute("BossPhase") or 1
-					local active = workspace:GetAttribute("BastionActive") == true or (hp and hp > 0)
+					local active = workspace:GetAttribute("BastionActive") == true or workspace:GetAttribute("VeyrActive") == true
+					if active then
+						-- Field bosses exist in the ecology hundreds of metres away. The boss bar is combat
+						-- information, not a permanent mission banner: appear only when the squad is close
+						-- enough to engage or after the boss has taken damage.
+						local maxHp = workspace:GetAttribute("BossMaxHealth") or 3600
+						local damaged = hp < maxHp
+						local near = false
+						local bossModel = workspace:FindFirstChild("BastionWalker") or workspace:FindFirstChild("HighMarshalVeyr")
+						local bossPart = bossModel and ((bossModel :: Model).PrimaryPart or bossModel:FindFirstChildWhichIsA("BasePart", true))
+						local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+						if bossPart and root then
+							near = (bossPart.Position - root.Position).Magnitude <= 140
+						end
+						active = damaged or near
+					end
 					bossBar.Visible = inMission and active and hp > 0
 					if bossBar.Visible then
 						local fill = bossBar:FindFirstChild("Fill")

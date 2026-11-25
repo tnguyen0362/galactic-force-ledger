@@ -1,0 +1,5 @@
+{
+  "deploy": "true:nil",
+  "state": "boss=true mapCells=256 mapBlips=3 mapMeta=-0.0,117.8,320.0,10.0,63.1 env=mission",
+  "supply": "3.0,27.6,115.0;-7.0,27.6,123.0;7.0,27.6,124.0"
+}
