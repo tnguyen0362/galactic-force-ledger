@@ -2105,11 +2105,41 @@ refill on an aborted commit looked like "nothing happened, still full".
 Next step when resuming: instrument the callback's `live ~= s` branch specifically, or log `State` identity across a reload window, to confirm which of the two causes
 applies.
 
+**RESERVE RELOAD VERIFIED END TO END — `S04-025` VERIFIED (place 536).** Evidence `evidence/v536-reserve-reload-verified/EVIDENCE.md`.
+
+**Correcting last batch's claim.** I recorded that the commit "never reached" and suspected the `live ~= s` state-table guard. Wrong: with the callback instrumented,
+
+```
+delay = reloadTime 2.10
+entry = liveNil=false  sameTable=true  reloading=true  ammo=19  reserve=168
+result: ammo=28  reserve=159  reloadCount=1
+```
+
+The callback runs and commits. My probes were simply reading **too early** for a 2.1 s reload.
+
+```
+ammo 19 -> 28   (+9 = min(28-19, 168))     reserve 168 -> 159   (-9 consumed)
+```
+
+Four pure `reloadPlan` checks are also unit-tested in `CheckRunner`. **Not verified live:** the reserve-limited fill and the empty-reserve refusal — both are
+covered by unit checks, but two live attempts were inconclusive (in the last one the handler apparently never ran: all three diagnostic attributes were nil).
+
+**Mistake worth naming:** my two-case probe failed with `FireServer can only be called from the client` — I put a client remote call in a *server* script. Restructured,
+but the two-clock timing coordination is what made the result inconclusive.
+
+**Code state:** reserve is implemented and measured on the main path (`State.reserve`, seeded on equip, `reloadPlan`, consumed on commit, empty-reserve gate, published
+in `AmmoUpdated`). All temporary diagnostics removed; `CombatService` recompiles with zero `GF_Reload*` references.
+
+**Still open on the wider row (`S04-027`):** HUD does not display reserve, and supply crates/drops do not replenish it — so limited ammo is true of the mechanism but
+not yet visible or restorable in play.
+
+Ledger: VERIFIED 45 → 46, PARTIAL 178 → 177.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 533**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 536**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **533** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **536** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
