@@ -3201,3 +3201,7 @@ Ability casts are rejected during emergency extraction, and unlanded Airstrike/O
 ## 2026-11-25 / place 577 - mission loadout lock
 
 Equip/class/augment/loadout changes are rejected server-side while the player is in the Mission zone, and accepted again after returning to the station. Live probe PASS. (Place version 576 was not created by this session.)
+
+## 2026-11-25 / place 578 - friendly fire
+
+Added difficulty-scaled friendly fire (Hard 50%, Extreme 100%) for hitscan and explosive damage; the explosive scales were verified live.
