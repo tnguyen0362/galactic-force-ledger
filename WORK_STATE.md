@@ -2190,11 +2190,35 @@ treated it that way); and writing an explicit resume order at the end of a batch
 **Still not done on `S04-027`:** supply crates/drops do not replenish reserve (no system exists, only comments), no cap on accumulation, and the reserve-limited /
 empty-reserve live paths remain unverified (arithmetic is unit-tested).
 
+**STATE CONSTRUCTION IS NOW GUARDED — AND THE GUARD WAS PROVEN TO FAIL (place 542).**
+Evidence `evidence/v542-state-construction-guarded/EVIDENCE.md`.
+
+`State.ensure` built its table inline, so nothing could test construction without a `Player` — which is why the place-539 crash stayed invisible to a green suite. The
+literal is now `State.buildDefaults()`, called by `ensure`, and three checks in `DamageChecks` assert: it constructs without error, `ammo`/`reserve` are numeric, and
+`reserve` is catalogue-seeded (`> 0`, measured 168).
+
+**Proven in both directions.** Healthy: `buildDefaults ok=true reserve=168 | passed=660 failed=17 nonDrift=0`. Then the bug was **deliberately reintroduced**
+(`local _ = NotAThing.GF`):
+
+```
+buildDefaults ok=false err=State:45: attempt to index nil with 'GF'
+passed=657 failed=18 nonDrift=1
+```
+
+The guard fails, names the exact error, and moves `nonDrift` 0 → 1. Injection removed; suite back to `passed=660 failed=17 nonDrift=0` with zero `NotAThing`
+references.
+
+**Why this matters:** every earlier batch proved things *work*; none proved a check would *catch* the failure it exists for. A guard only ever seen green is an
+assumption.
+
+**Limits:** covers construction only (not a wrong-but-present value), asserts types plus `reserve > 0` rather than every field, and runs on `CheckRunner.run()` — not at
+server start, so a broken build still boots until the suite runs.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 541**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 542**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **541** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **542** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
