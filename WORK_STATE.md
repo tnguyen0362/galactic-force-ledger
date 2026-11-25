@@ -1897,6 +1897,29 @@ scaling (spec says "HP"). Stays PARTIAL.
 broken system from outside**. Before recording "X does not work", check whether something upstream deliberately suppresses it — `GF_InMission`, deploy
 grace and console mitigation are all silencers on this path.
 
+**HEADSHOTS ARE ×2, NOT THE AUTHORED ×1.5 (place 522, no code change).** Evidence `evidence/v522-head-multiplier-drift/EVIDENCE.md`.
+
+Measured by calling `CombatService.weakMultiplier` against a live `Rifleman`:
+
+```
+Head[1]=2.00  Head[2]=2.00  Torso=1.00   heads=2  torsos=1  markedWeakPoints=none
+```
+
+- **Head ×2.00 vs authored ×1.5** — every headshot 33% stronger than specified (240 HP Rifleman dies in 6 headshots, not 7).
+- Body ×1.00 conforms.
+- **"Marked weakpoint" is unimplemented** — the code reads `part:GetAttribute("WeakPoint")`, but no part on any rig carries it, so only the name-based
+  Head branch ever fires.
+- The rig has **two parts named `Head`**, both ×2 — `FindFirstChild("Head")` picks arbitrarily.
+
+**Near-miss:** this is the same ×2 behind the puzzling `196.8` shotgun total. I explained that figure as "several headshots at mult 2" — arithmetically
+right, but I filed it as expected without noticing 2 is not the authored value.
+
+**Unresolved anomaly:** a live shot into a spawned enemy returns **0 damage with no rejection reason** (empty `GF_LastReject`), from origins inside the
+8-stud limit with ammo set. `fire` accepts and nothing lands; causes not distinguished (rig part not mapped by `resolveEnemy`, ray miss never checked via
+`LastMiss`, or scoping). The fire path's ability to damage a spawned test enemy is therefore itself unverified.
+
+Not changed: the head constant is a damage-tuning value; flipping 2 → 1.5 invalidates every TTK measurement, so it goes in the owner's balance pass.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 522**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
