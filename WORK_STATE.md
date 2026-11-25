@@ -1297,6 +1297,21 @@ multi-trait items with variants. Playable; roughly a third of the authored depth
 
 Ledger: UNKNOWN 598 → 595, PARTIAL 168 → 169, ABSENT 13 → 15.
 
+**NO CACHE-ODDS DISPLAY EXISTS (place 504, no code change).** Evidence `evidence/v504-no-odds-display/EVIDENCE.md`.
+
+Keyword scan of every `StarterPlayer` script for odds/chance/probability returned **81 hits — all of them `string.format` calls**. Excluding
+format lines leaves **zero** genuine references. So `S11-027` (show per-draw and whole-cache odds), `S11-028` (per-cache `1-(1-p)^n` maths)
+and `S11-029` (do not imply guarantees) are all ABSENT — `S11-029` only vacuously, since with nothing shown nothing can be overstated.
+
+**Why it matters:** the underlying numbers are honest (`Caches.weights` verified summing to 100 and consumed by `rollRarity`), but the game
+tells the player nothing. In a cache-driven economy a player cannot distinguish Common from Legendary except by opening dozens. Server-side
+observability exists (`GF_CacheOpened`/`Held`/`Bulk`/`Blocked`) but those are developer attributes, not disclosure.
+
+**This is one of the few remaining rows that is pure presentation on existing data** — normalise weights to percentages, add the n-draw
+rate, no new state or persistence. Cheapest meaningful player-facing win left on this ledger.
+
+Ledger: UNKNOWN 595 → 592, ABSENT 15 → 18.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
