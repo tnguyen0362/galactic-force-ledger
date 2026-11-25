@@ -1187,14 +1187,19 @@ end
 
 function EnemyService.startCalls()
 	task.spawn(function()
+		local cachedRelay: Instance? = nil
 		while true do
 			task.wait(0.5)
-			local relay
-			for _, d in ipairs(workspace:GetDescendants()) do
-				if d:GetAttribute("GFInteract") == "Relay" then
-					relay = d
-					break
+			local relay = cachedRelay
+			if not relay or relay.Parent == nil then
+				relay = nil
+				for _, d in ipairs(workspace:GetDescendants()) do
+					if d:GetAttribute("GFInteract") == "Relay" then
+						relay = d
+						break
+					end
 				end
+				cachedRelay = relay
 			end
 			for model in pairs(actors) do
 				if model.Name == "Officer" then

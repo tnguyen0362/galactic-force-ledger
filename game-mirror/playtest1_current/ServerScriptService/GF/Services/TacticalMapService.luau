@@ -9,8 +9,15 @@ local State = require(script.Parent.State)
 
 local TacticalMapService = {}
 local GRID = 16
-local SPAN = 320
+local CELL_SIZE = 20
+local SPAN = (GRID - 1) * CELL_SIZE
 local lastPublish = 0
+local heightCache: { [string]: number } = {}
+local heightCacheCount = 0
+workspace:GetAttributeChangedSignal("GF_MissionId"):Connect(function()
+	table.clear(heightCache)
+	heightCacheCount = 0
+end)
 
 local function round(n)
 	return math.floor(n * 10 + 0.5) / 10
@@ -43,23 +50,38 @@ local function center()
 end
 
 function TacticalMapService.sample()
-	local origin = center()
-	local half = SPAN / 2
+	local centerPos = center()
+	-- World-aligned cells let us cache terrain heights across frames and missions. The previous
+	-- implementation re-centered a continuous 16x16 grid on the player every second, causing 256 fresh
+	-- long raycasts/sec even when the soldier was standing still.
+	local centerIx = math.floor(centerPos.X / CELL_SIZE + 0.5)
+	local centerIz = math.floor(centerPos.Z / CELL_SIZE + 0.5)
+	local startIx = centerIx - math.floor(GRID / 2)
+	local startIz = centerIz - math.floor(GRID / 2)
 	local heights = {}
 	local minH, maxH = math.huge, -math.huge
 	for gz = 0, GRID - 1 do
 		for gx = 0, GRID - 1 do
-			local wx = origin.X - half + (gx / (GRID - 1)) * SPAN
-			local wz = origin.Z - half + (gz / (GRID - 1)) * SPAN
-			local h = TerrainService.groundSurface(wx, wz) or 0
+			local ix = startIx + gx
+			local iz = startIz + gz
+			local key = tostring(ix) .. ":" .. tostring(iz)
+			local h = heightCache[key]
+			if h == nil then
+				h = TerrainService.groundSurface(ix * CELL_SIZE, iz * CELL_SIZE) or 0
+				heightCache[key] = h
+				heightCacheCount += 1
+			end
 			table.insert(heights, round(h))
 			if h < minH then minH = h end
 			if h > maxH then maxH = h end
 		end
 	end
-	workspace:SetAttribute("GF_MapMeta", string.format("%.1f,%.1f,%.1f,%.1f,%.1f", origin.X, origin.Z, SPAN, minH, maxH))
+	local originX = (startIx + (GRID - 1) / 2) * CELL_SIZE
+	local originZ = (startIz + (GRID - 1) / 2) * CELL_SIZE
+	workspace:SetAttribute("GF_MapMeta", string.format("%.1f,%.1f,%.1f,%.1f,%.1f", originX, originZ, SPAN, minH, maxH))
 	workspace:SetAttribute("GF_MapHeights", table.concat(heights, ","))
-	return origin, minH, maxH
+	workspace:SetAttribute("GF_MapCacheSize", heightCacheCount)
+	return Vector3.new(originX, centerPos.Y, originZ), minH, maxH
 end
 
 function TacticalMapService.markers()
@@ -72,6 +94,11 @@ function TacticalMapService.markers()
 	local lz = workspace:GetAttribute("GF_LZ")
 	if typeof(lz) == "Vector3" then
 		table.insert(parts, string.format("lz,%.1f,%.1f", lz.X, lz.Z))
+	end
+	for _, child in ipairs(workspace:GetChildren()) do
+		if child:IsA("BasePart") and child:GetAttribute("GFSupplyCrate") == true and child:GetAttribute("Consumed") ~= true then
+			table.insert(parts, string.format("sup,%.1f,%.1f", child.Position.X, child.Position.Z))
+		end
 	end
 	for _, player in ipairs(Players:GetPlayers()) do
 		local ch = player.Character

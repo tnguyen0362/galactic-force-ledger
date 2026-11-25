@@ -113,8 +113,12 @@ local function watchCharacter(player: Player, character: Model)
 	-- velocity at the Landed event is already dampened, so sample continuously while airborne.
 	local peakFallSpeed = 0
 	local falling = false
-	game:GetService("RunService").Heartbeat:Connect(function()
-		if not root.Parent then
+	local heartbeatConn
+	heartbeatConn = game:GetService("RunService").Heartbeat:Connect(function()
+		if not root.Parent or not character.Parent then
+			if heartbeatConn then
+				heartbeatConn:Disconnect()
+			end
 			return
 		end
 		if falling then

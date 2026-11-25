@@ -272,12 +272,12 @@ local function rebuildCells(heights, meta)
 		end
 		local gx = (index - 1) % grid
 		local gz = math.floor((index - 1) / grid)
-		local wx = ox - span / 2 + (gx + 0.5) / grid * span
-		local wz = oz - span / 2 + (gz + 0.5) / grid * span
+		local wx = ox - span / 2 + gx / math.max(1, grid - 1) * span
+		local wz = oz - span / 2 + gz / math.max(1, grid - 1) * span
 		local t = math.clamp((h - minH) / spanH, 0, 1)
 		cell.Size = UDim2.fromOffset(size, size)
 		cell.Position = UDim2.fromOffset(RADIUS + (wx - px) * scale, RADIUS + (wz - pz) * scale)
-		cell.BackgroundColor3 = Color3.fromRGB(math.floor(24 + 44 * t), math.floor(32 + 50 * t), math.floor(30 + 40 * t))
+		cell.BackgroundColor3 = Color3.fromRGB(math.floor(18 + 92 * t), math.floor(34 + 92 * t), math.floor(32 + 70 * t))
 		local dx, dz = (wx - px) * scale, (wz - pz) * scale
 		cell.Visible = (dx * dx + dz * dz) <= (RADIUS - size) * (RADIUS - size)
 	end
@@ -314,6 +314,8 @@ local function rebuildBlips(sig)
 				colour = Color3.fromRGB(120, 255, 180)
 			elseif tag == "down" then
 				colour = Color3.fromRGB(255, 120, 120)
+			elseif tag == "sup" then
+				colour = Color3.fromRGB(255, 210, 110)
 			end
 			blip.BackgroundColor3 = colour
 			local bdx, bdz = (wx - root.Position.X) * scale, (wz - root.Position.Z) * scale
@@ -338,7 +340,7 @@ end
 
 task.spawn(function()
 	while true do
-		task.wait(0.2)
+		task.wait(0.35)
 		local metaRaw = workspace:GetAttribute("GF_MapMeta")
 		local heightsRaw = workspace:GetAttribute("GF_MapHeights")
 		local markersRaw = workspace:GetAttribute("GF_MapMarkers")
