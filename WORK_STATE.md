@@ -1083,11 +1083,28 @@ no instances (source falls back to "unknown").
 
 **Ledger: ABSENT 1 → 0.** That means every missing thing is now understood and recorded — not that nothing is missing.
 
+**BULK CACHE OPENING IMPLEMENTED — `S11-035` both clauses verified (place 502).** Evidence `evidence/v502-bulk-open/EVIDENCE.md`.
+
+A project-wide search for bulk/openAll/openMulti returned 22 hits, **all station bulkheads** — there was no bulk path at all, so the
+authored limit had nothing to constrain. Implemented `CacheService.openMany`, with three bounds applied up front (cap 10, caches held,
+free space) precisely so a partially-fitting batch stops instead of consuming caches it cannot use:
+
+```
+held before = 20
+openMany(50) -> wanted=10 opened=10 held 20->10 space=200     per-action cap
+space-limited-> wanted=10 opened=2  held 10->8  space=2       space bound, 8 left held
+```
+
+**Not done:** no UI calls it (unreachable in play), no rate limit between bulk actions, no per-item success list on partial failure,
+and untested against a nearly-exhausted tier.
+
+**Disclosed:** the probe replaced and restored ownedAugments, augmentCapacity, caches and cacheInstances.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 500**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 502**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **500** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **502** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
