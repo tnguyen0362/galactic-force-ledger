@@ -3133,3 +3133,21 @@ Verification evidence: compile probe returned `compileErrors=0`; fresh Studio pl
 Ledger updates: exact numeric clauses in S03-027/S03-028, launcher blast radii rows, S05-012..S05-016, boss HP rows, S06-072, S08-006 and S09-004 were annotated. These rows are **not** marked fully VERIFIED: runtime behavior (duration, damage distribution, extraction flow, pity settlement, combat effects) still needs measured playtests.
 
 Next high-value dependency remains the augment instance model (`augmentInventory[uid]`) because it gates reroll, dismantle, fusion, duplicate identity and pending-offer durability. Do not restart or rescatffold.
+
+## 2026-11-25 / place 561 - augment instance-model foundation
+
+Saved to Roblox across versions 559-561. This batch replaced one-copy-per-archetype augment ownership with `profile.augmentInventory[uid]` instance records while preserving legacy migration through `ownedAugments`/`augmentTraits`.
+
+Implemented:
+- per-instance UID/archetype/category/rarity/trait/favorite/source/timestamp records;
+- rarity-indexed trait bands, quantized quality 0..1000, 1/2/3/4 trait count by rarity, forced Rare+ tradeoff, data-driven positive/negative compatibility pools;
+- duplicate copies of the same archetype;
+- UID-based equip resolution and legacy loadout canonicalization;
+- reroll offer generation with one-time scrap deduction, `pendingReroll`, Accept/Keep resolution, favorite/equipped/saved/pending protection;
+- dismantle payouts and fusion of 3 same rarity/category copies into a direct next-rarity result;
+- Armory rows showing exact traits, q/1000 quality bar, pending old/new compare, Favorite/Reroll/Fuse/Scrap actions;
+- cache capacity counting now uses instance count, and Armory cache state no longer overwrites the display row array.
+
+Evidence is in `evidence/v561-augment-instance-model/EVIDENCE.md`: live server probe passed duplicate UID, quantized quality, equip, tradeoff, reroll cost/keep, fusion, favorite protection and dismantle checks; UI probe confirmed item rows and pending old/new/accept/keep rendering; every fresh boot passed `config check PASS (688 assertions)` with datastore persistence.
+
+Still incomplete in this cluster: crash-atomic cache-open journaling, full category picker UX, exact canonical catalog/template identity, missing stat consumers (range/support damage/sentry HP/dome radius), signature/pure-buff variants, lock edge tests, bulk dismantle preview/filter/confirmation, Monte Carlo/offline simulation and full concurrency/race validation. Continue there before cosmetic augment work.
