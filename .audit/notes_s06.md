@@ -497,3 +497,10 @@ buy/equip separation, transition hygiene, commit freeze, Veyr conformance (7200h
 variants (15 across 5 families), armor suits (all 6), server authority (12 services), error honesty.
 Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~137: S15 hardware perf rows, S02 multi-place core
 (dashboard-blocked), S16 validation matrix (needs live multiplayer), BETA device testing, scattered tails.
+
+## UPDATE 51 — VERIFIED ~710; installation + perf + input rows
+COMPLETED: installation visual language (alloy walls/violet conduits/walkways), distance culling, armor
+flashlight, atomic seat reservation, experimental unlock economy, farm prevention, drop pod joins, balance
+telemetry, boss arena conformance. Boot 816 green. ALL COMMITTED+PUSHED.
+REMAINING ~105: S15 23 (mostly hardware perf measurement), S16 21 (validation matrix needs live multiplayer),
+BETA 12 (device testing), S03 9 (input polish), S02 7 (multi-place core dashboard-blocked), S01/S04/S07 tails.
