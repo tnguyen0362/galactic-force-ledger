@@ -51,3 +51,30 @@ appears once as a label. That is a build-vs-spec decision for the owner, not som
 
 High for absence: one module mentions the word, and the config list is exhaustive. The `GF-*` claim is a straight comparison against the weapon ids
 and is unambiguous.
+
+## Correction (same session): `GF-*` are ARMOUR kits, not weapons
+
+I wrote above that "no `GF-*` weapon exists at all" and inferred the spec was naming weapons that had never been built. **That was wrong**, and the
+prefix misled me. `GF-01`–`GF-06` are **armour kits**:
+
+```
+STANDARD  "GF Standard Kit"      r1   free
+RECON     "GF-02 Recon Weave"    r3   500
+SIEGE     "GF-03 Siege Plate"    r5   850
+VANGUARD  "GF-04 Vanguard Seal"  r8   1200
+TROPHY    "Ascendancy Trophy"    r12  2200
+BLACKSTAR "Blackstar Command"    r16  3200
+```
+
+So `GF-02`, `GF-03` and `GF-04` **do exist**, and their ranks and costs match the spec exactly (`GF-02 rank3/500`, `GF-03 rank5/850`,
+`GF-04 rank8/1200`). What is genuinely missing is **`GF-05` (Ash Sentinel) and `GF-06` (Frost Warden)** — the armour list ends at four numbered kits.
+
+The requisition conclusion is unchanged: there is still no requisition catalog, tier structure, spend threshold or premium unlock. But the "spec
+names weapons that don't exist" claim was a misreading, and the corrected statement is narrower and more useful:
+
+- `S12-011` — `SG-04` exists but costs 500 rather than being free; `GF-02` exists as armour at 500. The row is still PARTIAL, but for the *free*
+  condition, not for a missing item.
+- `S12-013` — `GL-22 = 1200` matches; `GF-05 (500)` does not exist; `GF-06` (tier2) does not exist.
+
+This is the fifth time this session that a **prefix-shaped assumption** produced a false finding. The rule that would have prevented it: when a
+requirement names an id, resolve that id in the config **before** concluding it is absent.

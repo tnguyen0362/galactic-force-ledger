@@ -1605,6 +1605,24 @@ build-vs-spec decision for the owner, not something to infer from one armour str
 
 Ledger: UNKNOWN 591 → 581, ABSENT 15 → 23, PARTIAL 170 → 172.
 
+**CORRECTION: `GF-*` ARE ARMOUR KITS, NOT WEAPONS (place 515).** Appended to `evidence/v515-no-requisition-system/EVIDENCE.md`.
+
+I reported that the spec's requisition contents named weapons that don't exist. **Wrong** — the `GF-` prefix misled me. `GF-01`–`GF-06` are armour:
+
+```
+STANDARD "GF Standard Kit" r1 free | RECON "GF-02 Recon Weave" r3 500 | SIEGE "GF-03 Siege Plate" r5 850
+VANGUARD "GF-04 Vanguard Seal" r8 1200 | TROPHY r12 2200 | BLACKSTAR r16 3200
+```
+
+`GF-02`, `GF-03` and `GF-04` **exist and match the spec's ranks and costs exactly**. Genuinely missing: **`GF-05` (Ash Sentinel) and `GF-06` (Frost
+Warden)** — the armour list ends at four numbered kits.
+
+Requisition conclusion unchanged (no catalog, tiers, thresholds or premium unlock), but `S12-011` is PARTIAL for the *free* condition rather than for a
+missing item, and `S12-013` is missing only `GF-05`/`GF-06`.
+
+**Fifth time this session a prefix-shaped assumption produced a false finding.** The rule: when a requirement names an id, resolve it in the config
+**before** concluding it is absent.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
