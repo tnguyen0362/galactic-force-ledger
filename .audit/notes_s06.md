@@ -241,3 +241,6 @@ completions -> implement small gaps -> probe -> commit.
 ## UPDATE 15 — VERIFIED ~383 / UNKNOWN ~318 / PARTIAL ~111
 DONE: RNG defect fixed (dedicated seeded Random), INTERACT_RANGE 16->9 spec fix, defense HP verified,
 hacking rows batch-verified. Boot passes 706 assertions with all fixes. Mirror+tarball current; place save pending.
+
+## UPDATE 16 — VERIFIED ~390 / UNKNOWN ~318 / PARTIAL ~104
+Batch-verified friendly-fire/HUD/settings/sentry/launcher rows. Place save pending (v635+ has all fixes).
