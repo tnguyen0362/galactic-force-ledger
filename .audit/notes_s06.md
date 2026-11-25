@@ -490,3 +490,10 @@ tether implemented. COMMIT FREEZE: ledger locks, untargetable, threat tables cle
 publication wired. DEPLOYMENT resilience: 25s bounded start, squad dissolution. Boot 816 green.
 ALL COMMITTED+PUSHED. REMAINING ~175: S16 validation matrix/hardware rows, S15 hardware perf,
 S02 multi-place core (dashboard-blocked), BETA device testing, scattered tails.
+
+## UPDATE 50 — VERIFIED ~678; validation + conformance sweep
+COMPLETED: dual ability slots, durable awards, blueprint pity+guarantee, generation ordering, shot validation,
+buy/equip separation, transition hygiene, commit freeze, Veyr conformance (7200hp/pylons/volley), mission
+variants (15 across 5 families), armor suits (all 6), server authority (12 services), error honesty.
+Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~137: S15 hardware perf rows, S02 multi-place core
+(dashboard-blocked), S16 validation matrix (needs live multiplayer), BETA device testing, scattered tails.
