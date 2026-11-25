@@ -30,7 +30,7 @@ local EVENTS = {
 	hit_flesh      = { id = "rbxasset://sounds/impact_water.mp3",        pitch = { 1.45, 1.85 }, volume = 0.42, range = 90 },
 	hit_shield     = { id = "rbxasset://sounds/electronicpingshort.wav", pitch = { 1.05, 1.30 }, volume = 0.30, range = 80 },
 	enemy_death    = { id = "rbxasset://sounds/uuhhh.mp3",               pitch = { 0.75, 0.95 }, volume = 0.45, range = 110 },
-	player_hurt    = { id = "rbxasset://sounds/uuhhh.mp3",               pitch = { 1.20, 1.30 }, volume = 0.50, range = 40 },
+	player_hurt    = { id = "rbxasset://sounds/impact_water.mp3",        pitch = { 0.90, 1.10 }, volume = 0.32, range = 40 },
 	reload         = { id = "rbxasset://sounds/switch3.wav",             pitch = { 0.95, 1.05 }, volume = 0.32, range = 45 },
 	reload_start   = { id = "rbxasset://sounds/clickfast.wav",           pitch = { 1.00, 1.10 }, volume = 0.30, range = 45 },
 	footstep       = { id = "rbxasset://sounds/snap.wav",                pitch = { 1.35, 1.75 }, volume = 0.13, range = 45 },

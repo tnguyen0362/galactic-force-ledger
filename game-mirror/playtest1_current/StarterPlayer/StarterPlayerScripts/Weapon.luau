@@ -124,7 +124,10 @@ local function tryFire()
 	end
 	local camera = workspace.CurrentCamera
 	local look = camera and camera.CFrame.LookVector or head.CFrame.LookVector
-	local origin = muzzleOrigin(head)
+	-- Hitscan follows the rendered reticle. A parallel ray from the head missed the crosshair horizontally
+	-- because the camera is deliberately offset over the right shoulder; use the camera ray for truth and
+	-- keep the muzzle purely as the visual emitter. Camera collision already keeps this origin out of walls.
+	local origin = camera and camera.CFrame.Position or muzzleOrigin(head)
 
 	state.shotId += 1
 	state.lastSent = now

@@ -11,7 +11,7 @@ local State = require(ServerScriptService.GF.Services.State)
 local VitalsService = require(ServerScriptService.GF.Services.VitalsService)
 local ProfileService = require(ServerScriptService.GF.Services.ProfileService)
 local CombatService = {}
-local MAX_ORIGIN_OFFSET = 8
+local MAX_ORIGIN_OFFSET = 10.5
 -- Weapon mastery XP per kill, by archetype (GOAL_2026-11-24.md L150-L157). Only the killing weapon is
 -- credited, and never per hit. A flat 1 per kill could not reach level 2's 100 XP.
 local MASTERY_XP = {

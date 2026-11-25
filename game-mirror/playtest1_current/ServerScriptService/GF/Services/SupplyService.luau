@@ -88,6 +88,32 @@ function SupplyService.spawn(position: Vector3): BasePart
 	crate.Material = Enum.Material.Metal
 	crate.Color = Color3.fromRGB(70, 82, 96)
 	crate:SetAttribute("GFSupplyCrate", true)
+	-- Readability: a plain grey two-stud prop disappeared into the terrain. The amber cap and small
+	-- billboard make the crate discoverable from the drop zone without turning it into a waypoint beacon.
+	local cap = Instance.new("Part")
+	cap.Name = "SupplyCap"
+	cap.Size = Vector3.new(2.15, 0.22, 2.15)
+	cap.CFrame = crate.CFrame * CFrame.new(0, 0.9, 0)
+	cap.Anchored = true
+	cap.CanCollide = false
+	cap.Material = Enum.Material.Neon
+	cap.Color = Color3.fromRGB(255, 176, 64)
+	cap.Parent = crate
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "SupplyLabel"
+	billboard.Size = UDim2.fromOffset(90, 24)
+	billboard.StudsOffsetWorldSpace = Vector3.new(0, 2.3, 0)
+	billboard.MaxDistance = 80
+	billboard.Parent = crate
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.GothamBold
+	text.TextSize = 13
+	text.TextColor3 = Color3.fromRGB(255, 205, 120)
+	text.TextStrokeTransparency = 0.35
+	text.Text = "RESUPPLY"
+	text.Parent = billboard
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Resupply"
@@ -113,22 +139,31 @@ local crates: { [BasePart]: boolean } = {}
 function SupplyService.placeMissionCrates()
 	SupplyService.clearCrates()
 	local Players = game:GetService("Players")
+	-- The mission LZ is authoritative. GF_InMission flips before the teleport finishes, so keying off the
+	-- player's live root could seed crates 750 studs overhead in the station. First crate belongs at spawn;
+	-- the other two remain close enough to be a real resupply decision rather than a scavenger hunt.
 	local centre = nil
-	for _, player in ipairs(Players:GetPlayers()) do
-		local character = player.Character
-		local root = character and character:FindFirstChild("HumanoidRootPart")
-		if root then
-			centre = root.Position
-			break
+	local lz = workspace:GetAttribute("GF_LZ")
+	if typeof(lz) == "Vector3" then
+		centre = lz
+	end
+	if not centre then
+		for _, player in ipairs(Players:GetPlayers()) do
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root then
+				centre = root.Position
+				break
+			end
 		end
 	end
 	if not centre then
 		return 0
 	end
 	local offsets = {
-		Vector3.new(6, 0, 4),
+		Vector3.new(3, 0, -3),
 		Vector3.new(-7, 0, 5),
-		Vector3.new(2, 0, -8),
+		Vector3.new(7, 0, 6),
 	}
 	local placed = 0
 	for index = 1, math.min(CRATES_PER_MISSION, #offsets) do

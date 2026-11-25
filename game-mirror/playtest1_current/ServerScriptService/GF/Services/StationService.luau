@@ -488,6 +488,8 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 			mission.difficulty = missionDifficulty
 		end
 	end
+	local spawnPoint = groundPoint(MISSION_SPAWN)
+	workspace:SetAttribute("GF_LZ", spawnPoint)
 	workspace:SetAttribute("GF_InMission", true)
 	zone[player] = "Mission"
 	-- unique mission id for ledger/campaign dedup, plus difficulty for downstream consumers
@@ -504,8 +506,6 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 	-- The extraction ship must land at the mission site. Deriving the LZ from whoever
 	-- pressed the button spawned it at the station when the caller had already returned,
 	-- stranding the run 800 studs from the ship.
-	local spawnPoint = groundPoint(MISSION_SPAWN)
-	workspace:SetAttribute("GF_LZ", spawnPoint)
 	teleportTo(player, spawnPoint)
 	publish(player)
 	-- Paint the mission HUD on entry instead of waiting for the first combat event. Without this the HUD

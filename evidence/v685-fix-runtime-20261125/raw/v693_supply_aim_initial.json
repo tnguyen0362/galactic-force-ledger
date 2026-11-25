@@ -1,0 +1,8 @@
+{
+  "deploy": "true:nil",
+  "supply": "count=3 lz=0, 33.00000762939453, 118 3.0,28.0,115.0:d=5.2:label=true;-7.0,28.0,123.0:d=9.3:label=true;7.0,28.0,124.0:d=9.9:label=true",
+  "baselineAim": "camLook=-0.000,-0.985 rootLook=-0.000,-1.000 aim=false",
+  "whileRightMouseDown": "aimAttr=true charAim=true align=1.0000 right=1.35 back=4.53 fov=57.0 rootY=31.21 camY=33.74",
+  "fireBefore": "received=nil accepted=nil rejected=nil hits=nil lastReject=nil",
+  "fireAfterRealClick": "received=1 accepted=1 rejected=nil hits=nil lastReject=nil lastSpread=0.527:bloom=0.35:recoilCut=-0.12"
+}

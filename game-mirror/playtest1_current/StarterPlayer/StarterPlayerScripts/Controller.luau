@@ -95,7 +95,7 @@ local function updateCamera()
 	end
 	local dt = updateCameraDt or 1/60
 	local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
-	local aiming = workspace:GetAttribute("GF_PlayerAiming") == true
+	local aiming = Input.isHeld("Aim") or workspace:GetAttribute("GF_PlayerAiming") == true
 	local targetShoulder = (aiming and 1.35 or 2.1) * shoulderSide
 	local lobbyZoomBonus = root.Position.Y > 500 and 1.25 or 0
 	local targetZoom = math.clamp(zoom + lobbyZoomBonus - (aiming and 1.9 or 0), ZOOM_MIN, ZOOM_MAX + 1.25)
@@ -359,8 +359,9 @@ UserInputService.InputChanged:Connect(function(input)
 		if not touchMode or looking then
 			local sensitivity = tonumber(player:GetAttribute("GF_Setting_AimSensitivity")) or 1
 			local invert = player:GetAttribute("GF_Setting_InvertY") == true and -1 or 1
-			yaw -= input.Delta.X * LOOK_SENS * sensitivity
-			pitch = math.clamp(pitch - input.Delta.Y * LOOK_SENS * sensitivity * invert, PITCH_MIN, PITCH_MAX)
+			local adsScale = Input.isHeld("Aim") and 0.72 or 1
+			yaw -= input.Delta.X * LOOK_SENS * sensitivity * adsScale
+			pitch = math.clamp(pitch - input.Delta.Y * LOOK_SENS * sensitivity * invert * adsScale, PITCH_MIN, PITCH_MAX)
 		end
 	elseif input.UserInputType == Enum.UserInputType.MouseWheel then
 		zoom = math.clamp(zoom - input.Position.Z, ZOOM_MIN, ZOOM_MAX)
@@ -386,6 +387,14 @@ RunService.RenderStepped:Connect(function(dt)
 	local v = keyboardMove() + padMove + touchMove
 	if v.Magnitude > 1 then
 		v = v.Unit
+	end
+	-- Over-the-shoulder combat posture: while aiming or firing, the body converges on the camera
+	-- yaw instead of continuing to face stale movement direction. Without this the rifle, tracer origin
+	-- and soldier silhouette pointed somewhere other than the reticle, which read as broken aim even
+	-- when the hit ray was technically valid.
+	if Input.isHeld("Aim") or Input.isHeld("Fire") then
+		local position = root.Position
+		root.CFrame = CFrame.lookAt(position, position + flatForward())
 	end
 	if v.Magnitude > 0.02 then
 		humanoid:Move(flatRight() * v.X + flatForward() * v.Y, false)
