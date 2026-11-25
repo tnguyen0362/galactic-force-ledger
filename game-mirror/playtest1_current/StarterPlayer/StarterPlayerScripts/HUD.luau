@@ -253,7 +253,7 @@ function HUD.init()
 		Position = UDim2.new(0.5, -11, 0.5, -11),
 		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,
-		BorderSizePixel = 2,
+		BorderSizePixel = 0,
 	})
 	local hmc = Instance.new("UICorner"); hmc.CornerRadius = UDim.new(0.5, 0); hmc.Parent = hitMarker
 	hitMarker.BorderColor3 = Color3.fromRGB(255, 240, 200)
@@ -468,7 +468,7 @@ function HUD.init()
 				local ring = crosshair and crosshair:FindFirstChild("ReticleRing")
 				if ring then
 					local bloom = player:GetAttribute("SpreadBloom") or 0
-					local scale = 26 + math.clamp(bloom * 3.2, 0, 30)
+					local scale = 26 + math.clamp(bloom * 18, 0, 30)
 					ring.Size = UDim2.fromOffset(scale, scale)
 					ring.Position = UDim2.fromOffset(32 - scale / 2, 32 - scale / 2)
 				end

@@ -133,7 +133,7 @@ local function tryFire()
 	state.lastSent = now
 	state.ammo = math.max(0, state.ammo - 1)
 
-	pcall(function() require(script.Parent.CameraCtl).shake(0.12) end)
+	pcall(function() require(script.Parent.CameraCtl).shake(0.035 * (tonumber(weapon.recoil) or 1)) end)
 	remotes.FireWeapon:FireServer({
 		weaponId = state.weaponId,
 		shotId = state.shotId,
@@ -260,7 +260,10 @@ local function buildViewmodel(weapon: any)
 	char:SetAttribute("GF_ViewmodelLength", length)
 end
 
-local function updateViewmodel()
+local viewmodelAimLerp = 0
+local VIEWMODEL_HIP = Vector3.new(0.62, -0.95, -0.85)
+local VIEWMODEL_ADS = Vector3.new(0.36, -0.58, -1.02)
+local function updateViewmodel(dt: number?)
 	local char = player.Character
 	local hand = char and (char:FindFirstChild("RightHand") or char:FindFirstChild("RightLowerArm"))
 	if not viewmodel or not hand or not viewmodel.PrimaryPart then
@@ -273,8 +276,13 @@ local function updateViewmodel()
 	if not root then
 		return
 	end
-	viewmodel.PrimaryPart.CFrame = root.CFrame * CFrame.new(0.62, -0.95, -0.85)
+	-- ADS pose: the weapon visibly rises inward toward the shoulder line instead of staying pinned at
+	-- the hip while the camera tightens. This is presentation-only; the authoritative ray remains the reticle ray.
+	viewmodelAimLerp += ((state.aiming and 1 or 0) - viewmodelAimLerp) * math.min(1, (dt or 1/60) * 10)
+	local offset = VIEWMODEL_HIP:Lerp(VIEWMODEL_ADS, viewmodelAimLerp)
+	viewmodel.PrimaryPart.CFrame = root.CFrame * CFrame.new(offset)
 	char:SetAttribute("GF_WeaponGrip", viewmodel.PrimaryPart.Position)
+	char:SetAttribute("GF_ViewmodelAimLerp", viewmodelAimLerp)
 end
 
 function Weapon.equip(weaponId: string)
@@ -298,18 +306,29 @@ end
 function Weapon.init()
 	VFX.init()
 	RunService.RenderStepped:Connect(updateViewmodel)
-	task.defer(function()
-		local weapon = Weapons.get(state.weaponId)
-		if weapon then
-			buildViewmodel(weapon)
-		end
-	end)
+	local function rebuildForCharacter(character: Model)
+		task.defer(function()
+			if player.Character ~= character then
+				return
+			end
+			local weapon = Weapons.get(state.weaponId)
+			if weapon then
+				buildViewmodel(weapon)
+			end
+		end)
+	end
+	player.CharacterAdded:Connect(rebuildForCharacter)
+	if player.Character then
+		rebuildForCharacter(player.Character)
+	end
 	Input.onPress("Aim", function()
 		state.aiming = true
+		workspace:SetAttribute("GF_PlayerAiming", true)
 		remotes.AimChanged:FireServer(true)
 	end)
 	Input.onRelease("Aim", function()
 		state.aiming = false
+		workspace:SetAttribute("GF_PlayerAiming", false)
 		remotes.AimChanged:FireServer(false)
 	end)
 	Input.onPress("Fire", function()

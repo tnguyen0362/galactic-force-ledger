@@ -605,7 +605,7 @@ function CombatService.fire(player: Player, payload: any)
 		end)
 		-- followUpSpeed is negative when it helps (TargetDiscipline/PrecisionChamber -0.15), so the
 		-- decay divisor is 1 - value: -0.15 recovers 15% faster, +0.1 recovers slower.
-		local bloom = math.max(0, (s.spreadBloom or 0) - sincePrev * 7.0 * math.max(0.2, 1 - followUp))
+		local bloom = math.max(0, (s.spreadBloom or 0) - sincePrev * 2.6 * math.max(0.2, 1 - followUp))
 		s.spreadAt = t
 		local aiming = character:GetAttribute("Aiming") == true
 		local base = tonumber(aiming and (weapon.adsSpread or weapon.spreadBase) or weapon.spreadBase) or 0
@@ -616,7 +616,6 @@ function CombatService.fire(player: Player, payload: any)
 		end)
 		-- Recoil values are negative in the data and mean "less dispersion", so the multiplier is 1 + cut.
 		spreadAngle = (base + bloom) * math.max(0.4, 1 + recoilCut)
-		player:SetAttribute("SpreadBloom", bloom)
 		-- movingAccuracy: firing while moving widens the cone. Positive values reduce the penalty
 		-- (Bipod +0.2), negative values worsen it (LongBarrel -0.05). The 1.5 degree base penalty is
 		-- my invention - the spec names the stat but authors no magnitude.
@@ -642,6 +641,9 @@ function CombatService.fire(player: Player, payload: any)
 		-- spec cap: accumulated bloom never exceeds 2.5x the weapon's starting spread (S04-011)
 		local bloomCap = math.max(0.5, base * 2.5)
 		s.spreadBloom = math.min(bloomCap, bloom + perShot)
+		-- HUD feedback must show the cone the player is currently carrying into the NEXT shot, not the
+		-- stale pre-shot value from one trigger pull earlier.
+		player:SetAttribute("SpreadBloom", s.spreadBloom)
 		if spreadAngle > 0 then
 			local right = unit:Cross(Vector3.yAxis)
 			if right.Magnitude < 1e-3 then
