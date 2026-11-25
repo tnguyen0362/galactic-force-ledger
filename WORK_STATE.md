@@ -690,11 +690,32 @@ length is governed by `StationService` and moving it is too large for this batch
 `Net.FireRateLimitPerSecond`/`MaxRemoteBytesPerSecond` → no rate limiting (`S14-023`); `Progression.Mastery*` → duplicate of
 ProfileService's thresholds; `World.*` → procedural params unused; `Mission.Duration*` → `StationService.MISSION_SECONDS` rules.
 
+**ADS IMPLEMENTED — three missing links, not one wrong number (place 484).** Evidence `evidence/v484-ads-implemented/EVIDENCE.md`.
+
+`S03-016` needs ADS at 0.8× walk and `S03-003` needs RMB ADS. The gap was structural: `Movement.AdsSpeed` was read by **nothing**,
+**nothing set the `Aiming` attribute** (so `GF_CharacterAnimator`'s aim pose could never fire), and **no aim remote existed**. RMB
+was only a camera-look toggle.
+
+Wired end to end: `AimChanged` added to the single remote registry; `MovementService` gained `applyStance()` (the one place
+WalkSpeed is decided: aim → crouch → sprint → walk) and an `AimChanged` handler; `Controller` fires it on RMB down/up; the
+`AdsSpeed` assertion is restored now that the value has a consumer.
+
+```
+aim on  -> GF_AimState "true:13"   Aiming attribute = true
+aim off -> GF_AimState "false:17.5"
+check: passed=639 failed=17
+```
+
+`Aiming=true` also revives the animator's dead aim branch — two defects closed by one wiring.
+
+Open: AdsSpeed 13 is 0.74× walk, not 0.8× (14); aim-over-crouch precedence is unspecified and my choice; RMB still toggles camera
+look as well; LT/L2 and touch aim are not wired; no FOV/camera shift or crosshair tightening.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 482**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 484**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **482** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **484** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
