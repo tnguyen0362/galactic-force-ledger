@@ -1336,11 +1336,32 @@ config ones, which the earlier audit showed disagree with the authored table —
 
 Ledger: UNKNOWN 592 → 590, VERIFIED 36 → 38, ABSENT 18 → 17.
 
+**ODDS DISCLOSURE COMPLETED — every held tier + enemy drop chances (place 507).** Evidence `evidence/v507-odds-all-tiers-and-drops/EVIDENCE.md`.
+
+Closing both gaps named at place 506: `oddsFor` now also returns `dropChance` (same `tier.enemyChance` table `onEnemyKilled` rolls
+against), `state.cacheOdds` returns a **list** of every held tier sorted most-held first, and the UI renders all of them plus a drop line.
+
+```
+Rare x2 held 13  ·  Common 48.0% · Rare 43.0% · Epic 8.0% · Legendary 1.0%  ·  Leg 2.0%
+  ||  Common x1 held 1  ·  Common 82.0% · Rare 16.0% · Epic 1.9% · Legendary 0.1%  ·  Leg 0.1%
+DROP Rare  ·  infantry 1% · heavy 5% · commander 9%
+```
+
+Every figure checked against config by hand: weights 48/43/8/1 and 82/16/1.9/0.1 match; `1-(0.99)²=1.99%` and `1-(0.999)¹=0.1%` match; Rare
+`enemyChance 0.01/0.05/0.09` matches.
+
+**Honest limitation:** the whole-cache figure is `1-(1-p)^n` **with replacement**, not the exact conditional probability given what the player
+already owns — so it is not literally "true whole-cache odds" in the strict sense. Standard reading, but an approximation. The disclosed
+weights also remain the config's, which disagree with the authored table.
+
+**Method note:** verification scanned for `"Leg "` and `"DROP "` — substrings only the real display produces. After three false negatives from
+scanning placeholder text like `"ODDS"`, matching on content unique to live output is now the default.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 506**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 507**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **506** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **507** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
