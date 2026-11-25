@@ -76,9 +76,30 @@ The client renderer was validated by setting the already-published server attrib
 
 This proves the client visual layer now consumes the attributes. It is not yet end-to-end AI conformance proof because natural Scout channeling and Officer sweep triggering still need a clean controlled capture.
 
-### Natural combat/FSM verification — INCONCLUSIVE
 
-The live-combat harness remained flawed:
+### Natural combat, FSM, and Marksman telegraph — GREEN, controlled harness
+
+Additional artifacts:
+
+- `raw/v685_natural_combat_samples.json`
+- `raw/v685_natural_combat_video.mp4`
+- `raw/v685_natural_combat_end_0.jpg`
+
+A corrected flat-lane harness measured ground height and line of sight, relocated four live mission enemies onto that lane, restored player health/shield, and used one audible gunfire event to begin natural investigation/engagement. Results over 13.5 seconds:
+
+- `GF_FireSlotsHeld` repeatedly reached `2`, the configured cap.
+- `GF_EnemyHits` progressed `0 -> 13`; `GF_EnemyMisses` progressed `0 -> 14`.
+- `GF_LastAttackAttempt` cycled through `hit`, `miss`, and `los-fail`.
+- `GF_LastCharge` repeatedly read `Marksman:1.1`.
+- Live states included `Attack`, `Advance`, `Investigate`, and `Suppress` with perception confidence `1` on engaged enemies.
+- The client observed both generic 40-stud beams and the heavy Marksman beam: size approximately `(0.09,0.09,90)`, transparency `0.15`, pulsing to `0.05` late in the windup.
+- `v685_natural_combat_end_0.jpg` shows enemies closing on the player and the player's shield at zero, corroborating real combat pressure.
+
+This verifies the reaction-delay/windup repair in natural live combat within this controlled harness. It does not by itself prove every FSM transition or every archetype.
+
+### Earlier natural-combat attempt — INCONCLUSIVE/SUPERSEDED
+
+The earlier live-combat harness remained flawed (superseded by the corrected flat-lane result above):
 
 - Directly spawned enemies landed on high terrain and did not engage.
 - Teleporting near the pre-existing objective group did not produce reliable perception; they remained visually unalerted in the samples.
