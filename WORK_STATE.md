@@ -1,4 +1,20 @@
-# WORK_STATE — last verified 2026-11-24, place version 448
+# WORK_STATE — last verified 2026-11-25, place version 645
+
+## MILESTONE LABEL: **PARTIAL BUILD** (declared per S16-099)
+
+This build is **PARTIAL** — the core loop is verified end-to-end but essential content is incomplete. Do not
+represent it as finished. Exact counts at this declaration (S16-111):
+
+- VERIFIED 462 / 815 rows (521/1095 required checks)
+- UNKNOWN 278 | PARTIAL 72 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 1
+- Boot config check: 816 assertions PASS at place v645
+- Real play evidence: dozens of live Studio probes across v383–v645 in evidence/
+
+External blockers (S16-103, remain visible — not green): no device farm (gamepad/PS/touch/xbox rows blocked),
+no multi-client co-op testing (solo Studio only), no publish permission, no uploaded audio assets. Lobby
+20-player architecture and procedural biome kits are genuinely unimplemented — tracked UNKNOWN, not hidden.
+
+---
 
 ## Audit pass 2026-11-24 (repo-only — Studio was not connected)
 
