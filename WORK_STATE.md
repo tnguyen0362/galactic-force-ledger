@@ -2325,11 +2325,33 @@ placement, not evidence**; not claimed either way.
 Not fixed: the seven numbers are owner-authored tuning (radius/damage/fuse/duration) and changing them is re-balancing. The dead `EMPStunUntil` is a genuine
 implementation gap: either consume it in enemy movement/fire logic (2 s, scoped) or record EMP-disable as cut.
 
+**EMP DISABLE IMPLEMENTED AND PROVEN (place 548).** Evidence `evidence/v548-emp-disable-implemented/EVIDENCE.md`.
+
+`GrenadeRuntime` set `EMPStunUntil` and **nothing read it** — the spec's disable did nothing. `EnemyService.isStunned(model, now?)` is now the single definition
+(active before expiry, clears the attribute on expiry so it cannot look permanent), and `tickActor` calls it right after the death check, returning early so a
+stunned hostile neither moves nor fires.
+
+**Verified on a real spawned Rifleman:**
+
+```
+stunned=true   movedWhileStunned=0.00
+afterExpiry:   stunned=false  movedAfter=2.84   (still alive)
+```
+
+Frozen for the full stun, moving again on expiry — a before/after differential on one actor. Four unit checks added; suite **`passed=671 failed=17 nonDrift=0`**.
+
+**Still open on `S04-053`:** EM stun duration 2.5 s vs 2 s spec (one number, since `isStunned` obeys the field); Frag radius 22 vs 15; Frag damage 110 vs 135; Frag
+fuse 2.6 vs 2.5; Frag 4 s flight cap absent; EMP radius 26 vs 13; EMP shield drain-to-zero vs 90 and 120 for players; EMP 15 health damage absent. **Scope
+mismatch:** spec disables *turret/robot subsystems or energy guns*, implementation is a blanket freeze for any hostile — scoping needs per-enemy metadata that does
+not exist.
+
+**Next candidate:** the tuning decision batch, or scope the stun by adding target-kind metadata.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 546**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 548**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **546** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **548** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
