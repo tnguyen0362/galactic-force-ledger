@@ -339,3 +339,15 @@ implement ragdoll collapse (S04-057, small), shield-break directional sounds (S0
 abilities (S05-003 medium), cache open animation (S11-036). Save place checkpoint overdue — accumulated
 implementations since v640: grief protection, assist XP, boss cap, right-shoulder camera, reroll gate,
 augment catalog identities. Run: cd /Users/timnguyen/gf && python3 gf_deploy.py gf_mirror.tgz - GF_NONE
+
+## UPDATE 30 — COMPACTION-RESUME BRIEF (VERIFIED ~459 / UNKNOWN ~281 / PARTIAL ~72 / place v645 saved)
+SINCE UPDATE 29: implemented+verified corpse collapse (S04-057). v645 saved with all implementations.
+IN PROGRESS when compacted: implementing directional damage + shield-break sounds (S04-058). Infrastructure:
+server DamageFeedback remote exists (fires client on enemy-hit), VitalsService.applyDamage(player, amount,
+source) is the player-damage entry point — add directional hit indicator client-side + distinct shield-break
+sound when s.shield crosses to 0. Weapon.luau:339 consumes DamageFeedback.
+REMAINING SMALL GAPS: S04-063 buff roster system, S11-036 cache open animation, S05-003 thrown flares (medium).
+Lobby/procedural-world clusters mostly genuinely unimplemented — keep UNKNOWN honestly, do NOT fabricate.
+Boot gate stable 814 assertions. Harness: cd /Users/timnguyen/gf && python3 gf_deploy.py gf_mirror.tgz
+probe_health.lua GF_HC (REBUILD tarball after mirror edits: COPYFILE_DISABLE=1 tar czf gf_mirror.tgz
+--exclude='._*' --exclude='.DS_Store' playtest1_current). Ledger = repo CSV, crash-safe tmp-write+replace pattern.
