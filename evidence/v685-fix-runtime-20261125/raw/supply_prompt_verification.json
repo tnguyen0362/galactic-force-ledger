@@ -1,0 +1,124 @@
+{
+  "checks": {
+    "deploy_fire": "deploy-requested",
+    "mission_crates_spawned": {
+      "ok": true,
+      "state": {
+        "inMission": true,
+        "lz": "0, 32.475006103515625, 118",
+        "gren": 3,
+        "root": "-0.006181299686431885, 36.689727783203125, 117.80177307128906",
+        "count": 3,
+        "crates": {
+          "1": {
+            "pos": "3, 27.474998474121094, 115",
+            "dist": 10.089513778686523
+          },
+          "3": {
+            "pos": "7, 27.474998474121094, 124",
+            "dist": 13.130721092224121
+          },
+          "2": {
+            "pos": "-7, 27.474998474121094, 123",
+            "dist": 12.68251895904541
+          }
+        },
+        "accepted": 0
+      }
+    },
+    "spawn_supply_layout": {
+      "inMission": true,
+      "lz": "0, 32.475006103515625, 118",
+      "gren": 3,
+      "root": "-0.005859464406967163, 30.689922332763672, 117.80258178710938",
+      "count": 3,
+      "crates": {
+        "1": {
+          "pos": "3, 27.474998474121094, 115",
+          "dist": 5.2177958488464355
+        },
+        "3": {
+          "pos": "7, 27.474998474121094, 124",
+          "dist": 9.890691757202148
+        },
+        "2": {
+          "pos": "-7, 27.474998474121094, 123",
+          "dist": 9.287997245788574
+        }
+      },
+      "accepted": 0
+    },
+    "nearest_crate_distance": 5.2177958488464355,
+    "after_two_real_grenade_inputs": {
+      "before": 3,
+      "after": 1,
+      "accepted": 0
+    },
+    "after_real_fire_input": {
+      "accepted_before": 0,
+      "accepted_after": 15,
+      "shots_accepted": 15
+    },
+    "hud_before_supply": {
+      "mouse": "Enum.MouseBehavior.LockCenter",
+      "texts": {
+        "1": "13 / 28  \u00b7  168",
+        "2": "GRENADE x1"
+      }
+    },
+    "teleport_to_nearest_crate": {
+      "dist": 5.2177958488464355,
+      "crate": "3, 27.474998474121094, 115"
+    },
+    "resupply_key_input": "Success",
+    "after_resupply_prompt": {
+      "count_before": 3,
+      "state": {
+        "inMission": true,
+        "root": "3.962951421737671, 27.603939056396484, 114.54276275634766",
+        "crates": {
+          "1": {
+            "pos": "-7, 27.474998474121094, 123",
+            "dist": 13.846580505371094
+          },
+          "2": {
+            "pos": "7, 27.474998474121094, 124",
+            "dist": 9.933761596679688
+          }
+        },
+        "accepted": 15,
+        "count": 2,
+        "refill": "ROBLOXISUS101 ammo=28 reserve=268",
+        "gren": 3,
+        "grenlog": "Frag 1->3 (max 3)",
+        "lz": "0, 32.475006103515625, 118"
+      }
+    },
+    "hud_after_supply": {
+      "mouse": "Enum.MouseBehavior.LockCenter",
+      "texts": {
+        "1": "28 / 28  \u00b7  268",
+        "2": "GRENADE x3"
+      }
+    },
+    "after_second_use_attempt": {
+      "refill_before": "ROBLOXISUS101 ammo=28 reserve=268",
+      "refill_after": "ROBLOXISUS101 ammo=28 reserve=268",
+      "count": 2,
+      "one_use_pass": true
+    },
+    "passed": true
+  },
+  "captures": {
+    "supply_spawn_layout": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\supply_spawn_layout_0.jpg"
+    ],
+    "supply_before_use": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\supply_before_use_0.jpg"
+    ],
+    "supply_after_use": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\supply_after_use_0.jpg"
+    ]
+  },
+  "errors": []
+}

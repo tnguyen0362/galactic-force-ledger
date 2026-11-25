@@ -18,6 +18,27 @@ local connected: { [Instance]: boolean } = {}
 
 Audio.startLoop("ambient_wind")
 
+-- Roblox injects legacy character sounds locally, including the old uuhhh death cue. Those copies do
+-- not exist in the server datamodel, so they must be sanitized client-side as soon as they appear.
+-- Destroying only the legacy death cue preserves useful movement sounds while removing the stock-oof
+-- presentation that conflicts with the authored sci-fi feedback layer.
+local stockDeathSoundsRemoved = 0
+local function sanitizeStockSound(inst: Instance)
+	if not inst:IsA("Sound") then
+		return
+	end
+	if inst.Name == "Died" or inst.SoundId == "rbxasset://sounds/uuhhh.mp3" then
+		inst.Volume = 0
+		inst:Destroy()
+		stockDeathSoundsRemoved += 1
+		script:SetAttribute("gf_stock_death_sounds_removed", stockDeathSoundsRemoved)
+	end
+end
+for _, inst in workspace:GetDescendants() do
+	sanitizeStockSound(inst)
+end
+workspace.DescendantAdded:Connect(sanitizeStockSound)
+
 local function hookButtons(root: Instance)
 	task.spawn(function()
 		for _, d in root:GetDescendants() do
