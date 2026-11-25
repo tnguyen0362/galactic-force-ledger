@@ -1758,11 +1758,39 @@ runs is unexercised. The hook also ships in the place — harmless, but test-sup
 
 `S10-009` → PARTIAL (3 of 4 components verified), `S01-027` → PARTIAL (first cache now granted).
 
+**STARTER PICK IMPLEMENTED AND VERIFIED END TO END — `S10-009` VERIFIED (place 518).**
+Evidence `evidence/v518-starter-pick-implemented/EVIDENCE.md`.
+
+Closes the fourth reward component (*"first-time choose AR/SMG/LMG free"*), which was why `S01-027`'s starter-equipment half was unmet.
+
+**Server:** `TutorialService.claimStarter` validates in order — profile → `tutorialCompleted` → `starterClaimed` → id ∈ {AR01, SMG03, LMG12} — then
+grants ownership, sets the flag, marks dirty and publishes `GF_StarterClaimState`. **Profile:** `starterClaimed = false` added to defaults.
+**Transport:** new `ClaimStarter` RemoteEvent wired in `TutorialService.start()`. **UI:** `TutorialUI` renders a `STARTER PICK` frame with AR/SMG/LMG
+buttons once complete and unclaimed.
+
+```
+before completion:  ok=false "tutorial not complete"    claim SMG03: ok=true owned=true claimed=true
+second claim:       ok=false "starter already claimed"  illegal MR07: ok=false "not a starter option"
+UI: StarterPick present | label=STARTER PICK | buttons=AR,SMG,LMG | visible=true
+end-to-end: LMG12 owned=true claimed=true state=claimed:LMG12
+```
+
+**Two bugs fixed inside the batch:** the frame was parented to `script.Parent` (resolving to StarterPlayerScripts, not a UI container) so it never
+appeared; and a frame under `gui` would have been hidden by the 4-second `gui.Enabled = false` timer after completion. **One measurement error:** the
+first end-to-end reader's `task.wait(11)` expired before the client fired, reporting `owned=false` when the grant had simply not happened yet.
+
+**Limits:** the physical `Activated` click was not exercised (the client fired the same remote), `starterClaimed` migration from an older save was not
+tested, `TutorialService.finishForTest` still ships, and the pick shows whenever `Tutorial_Complete` is true with no claim — not a designed rule.
+
+`S10-009` → VERIFIED (4/4). `S01-027` → PARTIAL (2 of 3; only Easy/Normal gating remains, a design call).
+
+Ledger: VERIFIED 42 → 43, PARTIAL 176 → 175.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 516**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 518**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **516** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **518** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
