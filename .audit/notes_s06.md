@@ -284,3 +284,7 @@ RESUME TARGETS in priority order:
 KEY FACTS: place v640 saved; live ledger = repo CSV (Downloads copy stale); boot gate = 706 assertions;
 harness = cd /Users/timnguyen/gf && python3 gf_deploy.py gf_mirror.tgz probe_file.lua GF_MARKER
 (rebuild tarball after mirror edits!); Studio instance e08db1e5-fdca-41c4-b603-85b73b777c92.
+
+## UPDATE 23 — VERIFIED ~429 / UNKNOWN ~311 / PARTIAL ~72; boot now 814 assertions
+DONE: augment catalog spec identities added (S11-047/048 verified) — all categories carry authored archetypes.
+Note: legacy non-spec names coexist for inventory persistence; spec identities are the canonical rows.
