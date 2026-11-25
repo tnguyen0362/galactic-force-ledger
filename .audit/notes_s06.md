@@ -462,3 +462,10 @@ solo immediate, no full-squad wait. Combat conformance rows verified: hitscan, r
 reload timing. Engineering discipline verified: zero debug shortcuts, controller/touch paths exercised,
 content breadth confirmed. Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~235: S02 multi-place + station
 tails, S16 process rows, S15 hardware perf, S07 procedural tails, scattered combat/AI/economy tails.
+
+## UPDATE 46 — VERIFIED ~594; matchmaking + boundary + commendations
+QUICK DEPLOY implemented: filter-keyed queue, cancel anytime, measured-only estimates, teleport failure
+reconciliation. BOUNDARY SERVICE implemented: warn-then-reposition, never death planes. COMMENDATIONS:
+milestone-only, zero spend paths. PRIORITY DISPATCH HUD button implemented. Augment weight tables done.
+Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~220: S02 multi-place core (dashboard-blocked) + tails,
+S16 process rows, S15 hardware perf, S07 procedural tails, scattered combat/economy/input tails.
