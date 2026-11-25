@@ -2375,6 +2375,29 @@ read; they settled at `Received=6 Rejected=6` moments later. **Do not read those
 
 Ledger: VERIFIED 48 → 50, PARTIAL 176, UNKNOWN 568 → 566.
 
+**`S04-032`: SERVER DAMAGE CONFIRMED EXACTLY, CLIENT FEEDBACK UNPROVEN (place 548, no source change).**
+Evidence `evidence/v548-server-confirms-damage-feedback-unproven/EVIDENCE.md`.
+
+**Proven** — 12 shots at a frozen `Rifleman` (240 HP, 80 shield):
+
+```
+Accepted=12  Hits=12  LastDamage=18  LastShieldHit=Rifleman  TotalDamage 249 -> 465 (+216)
+enemy: shield 80 -> 0     health 240 -> 104
+```
+
+216 − 80 shield = 136 off 240 → **104 exactly**. Damage is server-computed and server-applied; the client sends no damage value.
+
+**Not proven** — the client receiving hitmarker/kill. `CombatService` fires `DamageFeedback` (damage/weakPoint/killed) at three sites and the client consumes it, but
+three observation attempts were empty and **in two of them `GFDebug.Hits` was never created with `LastMiss` set — the shots missed**, so the null result says nothing
+about the payload.
+
+**Likely probe artefact, for the next attempt:** `EnemyService.spawn` ground-snaps the model; my probes then moved **only `PrimaryPart`**, so if hit parts are not
+welded the hitboxes stayed behind while aim followed the moved part. **Aim at the real hit-part position or `GetBoundingBox` instead.**
+
+`S04-032` → PARTIAL (damage verified, hitmarker/kill not).
+
+Ledger: UNKNOWN 566 → 565, PARTIAL 176 → 177.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 548**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
