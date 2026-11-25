@@ -222,3 +222,6 @@ outcomes — spec wants platform-supported randomness (use Random object or cryp
 Batch-verified: 18 cache rows + 10 data/security rows. S11-030 (math.random cache RNG) still a REAL defect.
 Remaining big fronts unchanged: lobby/matchmaking ~55, procedural world ~37, enemy AI architecture ~25,
 extraction visual tails, engineering/QA process rows.
+
+## UPDATE 12 — VERIFIED ~370 / UNKNOWN ~315 / PARTIAL ~125
+Batch-verified 9 enemy AI rows (director economy, caps, spawn validation, roles, boss HP config).
