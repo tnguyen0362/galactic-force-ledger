@@ -2235,11 +2235,28 @@ finite but **not restorable**, which makes the build stricter than authored. 'No
 
 **Next candidate:** build supply crates/drops per the spec (full mag/reserve up to +60% reserve and +2 grenades, no repeated use).
 
+**SUPPLY CRATES EXIST BUT NOTHING SPAWNS THEM (place 543).** Evidence `evidence/v543-supply-crates-not-spawned/EVIDENCE.md`.
+
+`SupplyService` added: pure `refillPlan` (magazine refill, reserve + one catalogue charge, **+60% cap**, never reduces), `consume(player, crate)` (applies plan,
+clears reloading, marks crate Consumed, destroys it, publishes `GF_SupplyRefill`, pushes `AmmoUpdated`), and `spawn(position)` (one-use crate with a "Resupply"
+ProximityPrompt).
+
+**Live:** `ammo 4 -> 28`, `reserve 20 -> 188` (20 + 168, under the 268 cap), second consume refused `"already used"`, crate destroyed. **Unit:** four checks added;
+suite `passed=664 failed=17 nonDrift=0`.
+
+**The gap keeping `S04-027` PARTIAL:** a search for `SupplyService` outside its own module returns **only `DamageChecks`** — no mission, loot table or encounter
+spawns a crate. The mechanism is implemented and tested but **unreachable in play**, so a player who runs dry still cannot recover.
+
+**Also missing:** grenade refill. There is **no grenade-charge state anywhere** (State has none; the "three throws then empty" comment refers to a module that does
+not exist), so `+2 grenades` would require inventing that state and its cap first — deliberately not done.
+
+**Next step:** wire `SupplyService.spawn` into mission setup or the loot path, then verify a player can run dry and recover inside a live mission.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 542**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 543**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **542** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **543** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
