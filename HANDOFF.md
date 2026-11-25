@@ -57,3 +57,7 @@ print `[GF] boot: config check PASS (689 assertions)`. Test profile userId 18897
   recovery, boss rows, and the long UNKNOWN tail — audit by area.
 - CSV discipline: update rows by exact requirement_id only, never write another row's fields (a script
   once clobbered S10-016; restored in PR #7).
+
+## Owner directive 2026-11-25
+
+Continue autonomously through the entire requirement ledger: all UNKNOWN and PARTIAL rows, not only requisitions. Do not stop for reprompting after each milestone. Use GOAL.md/SPEC_RAW as authority, preserve working systems, verify in live playtests where applicable, and escalate only for genuine permission/payment/destructive/product-conflict blockers. Graphics/final art remain later in the severity order; the place-589 armory lighting fix was incidental, not the start of the full art pass.
