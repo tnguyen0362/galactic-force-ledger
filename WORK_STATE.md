@@ -1920,6 +1920,23 @@ right, but I filed it as expected without noticing 2 is not the authored value.
 
 Not changed: the head constant is a damage-tuning value; flipping 2 → 1.5 invalidates every TTK measurement, so it goes in the owner's balance pass.
 
+**FIRE PATH IS FINE — THREE OF MY PROBES WERE MISBUILT (place 522).** Evidence `evidence/v522-fire-path-probe-corrections/EVIDENCE.md`.
+
+Chased the previous batch's "0 damage with no rejection" anomaly to ground. The code was correct each time; all three defects were in the probes.
+
+1. **Wrong attribute container.** `note()` writes to `workspace.GFDebug` (`debug():SetAttribute(...)`), not `workspace`. Every "no rejection reason" I read was
+   nil because I looked in the wrong folder — a rejection looked like silence.
+2. **My own stale shot sequence.** `fire` rejects `shotId <= s.lastShotId`. An earlier probe fired with `math.random(1e6)`, so a later test passing `4242` was
+   silently rejected. Using `s.lastShotId + 1` made every shot land.
+3. **Misread parameter semantics.** I called `damageEnemy(model, 18, plr, "Head", 2)` and measured 18, concluding the multiplier was ignored. `mult` there is only
+   a flag for augment bonuses; the **caller** applies it (`fire` does `base * falloff * mult`). My test bypassed the only place it is applied.
+
+Established with fixed probes: torso shot through `fire` = **18.0 exact** (AR01 base); `weakMultiplier("Head")` = **2.00**, `("Torso")` = **1.00**; a ray aimed
+at the `Head` part does hit `Head`, while a ray aimed at `Torso` hits **`ChestPlate`**; no rig part carries a `WeakPoint` attribute.
+
+**Still unmeasured:** an end-to-end headshot, because the moving enemy's ray hits `ChestPlate` as often as `Head`. Needs a stationary target. The ×2 is a proven
+multiplier on a proven caller path, not a measured in-play headshot.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 522**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
