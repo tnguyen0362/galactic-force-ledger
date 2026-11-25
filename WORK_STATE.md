@@ -1587,6 +1587,24 @@ the data does not express.
 intends it weapon-only; mismatches made while connected are not repaired; and this branch's `PlayerAdded` path was not re-run across a restart (the
 weapon-slot equivalent was, at place 514).
 
+**NO REQUISITION SYSTEM — AND THE SPEC'S CATALOG WEAPONS DON'T EXIST (place 515, no code change).** Evidence
+`evidence/v515-no-requisition-system/EVIDENCE.md`.
+
+A search for `requisition` across server, replicated and client code returns **one** module — `Configs.Armor` — where it is merely an armour tier
+label (`TROPHY` rank 12, `BLACKSTAR` rank 16). No requisition config module exists, and there is no catalog, tier structure, spend threshold,
+premium unlock or progress display.
+
+**Worse:** the spec's catalog contents name `GF-02`, `GF-05` and `GF-06`. The entire weapon set is `AR01, GL22, LMG12, MR07, P01, RL09, SG04, SMG03` —
+**no `GF-*` weapon exists at all**. So `S12-011` and `S12-013` cannot be implemented as written; one number does line up (`GL-22` costs exactly
+1200, the premium tier1 price).
+
+Ten rows moved: `COUNT-REQ`, `COUNT-REQ-TIERS` and `S12-003`–`S12-008` → ABSENT; `S12-011` and `S12-013` → PARTIAL with the missing-weapon detail.
+
+**This is a scope question, not a bug.** The requisition catalog is a store feature with tiered spend, premium access and a contents preview — a
+build-vs-spec decision for the owner, not something to infer from one armour string.
+
+Ledger: UNKNOWN 591 → 581, ABSENT 15 → 23, PARTIAL 170 → 172.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
