@@ -256,3 +256,6 @@ Next fronts: mission/objective remaining implementations, lobby/matchmaking clus
 
 ## UPDATE 19 — PLACE v640 SAVED with all implementations (war/vote/RNG/interact/armor/cinematic/shake/pickups/optional)
 VERIFIED 406 / UNKNOWN 319 / PARTIAL 87 / ABSENT 2. Half-way milestone crossed.
+
+## UPDATE 20 — VERIFIED ~419 / UNKNOWN ~319 / PARTIAL ~74
+Batch-verified 13 extraction/AI rows (phases, downed-exclusion, emergency, hearing/confidence, roles).
