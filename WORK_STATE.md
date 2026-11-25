@@ -920,6 +920,27 @@ in both arms, so no control; the decay matches 1.15× baseline but that is arith
 **The hard lesson:** a wrong harness looks exactly like a passing test. Every reading taken without dumping the loadout alongside it
 is suspect — including the place-495 "failure", where the code was probably right and the measurement was wrong.
 
+**`followUpSpeed` ISOLATED AND VERIFIED — 13 of 14 keys now wired AND measured (place 495, no source change).** Evidence
+`evidence/v495-followupspeed-verified/EVIDENCE.md`.
+
+The previous run could not isolate it (TargetDiscipline was in both arms) and failed to clear the loadout because `unequipAugment`
+takes two parameters. This run cleared correctly and confirmed `EMPTY` before the baseline burst:
+
+```
+baseline              [EMPTY]               fu=0      bloom=0.92  (4 shots)
+withTargetDiscipline  [1=TargetDiscipline]  fu=-0.15  bloom=0.84  (4 shots)
+```
+
+Predicted: decay 1.00/s → `0.35 0.55 0.75 0.95` (observed 0.92); decay 1.15/s → `0.35 0.5275 0.705 0.8825` (observed 0.84). Both arms
+match and differ by exactly the stat's effect.
+
+**Census: 13 of 14 keys wired and measured.** Never applied (2 keys, needing a new system rather than a hook): `swapSpeed`
+(switching is instantaneous) and `sentryAmmo` (sentry has no ammo pool). Either add the systems or remove the keys from the
+allow-list so the catalog stops advertising them.
+
+**Method that resolved both discrepancies: dump the mutated state next to the measurement.** Any probe touching persistent state
+must print that state on every arm, or it silently compares the wrong things.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 495**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
