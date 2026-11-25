@@ -1169,6 +1169,29 @@ numbers recorded. **Not retuned** — this changes loot pacing for every difficu
 
 Ledger: UNKNOWN 625 → 620, PARTIAL 156 → 161, VERIFIED 34 → 35.
 
+**ENEMY DROPS AUDITED — chance exists, per-class distributions and difficulty scaling do not (place 504, no code change).**
+Evidence `evidence/v504-enemy-drop-distributions/EVIDENCE.md`.
+
+`Caches` gives each tier a per-class **drop chance** (Common: infantry 0.01, heavy 0.04, commander 0.07) and then one rarity weight
+table. So an enemy decides *whether* to drop by class, and the tier supplies rarity. The authored **per-class distributions** (infantry
+85/14/1/0, elite 55/35/9/1, Walker 0/70/28/2, Veyr 0/40/50/10) do not exist — an infantryman and a commander produce identical rarity
+odds once a cache drops.
+
+**Two rules absent outright:**
+
+- `S11-020` — *"multiply non-Common weights by Easy .65, Hard 1.35, Extreme 1.7 and renormalize"*. Tier weights are static; no code path
+  scales or renormalises by difficulty. Enemy drops are therefore identical on Easy and Extreme.
+- `S11-021` — first-mission Rare guarantee. A search for `firstMission`/`guarantee` finds only the blueprint-pity comment and the
+  mission-cache guarantee, neither of which grants it.
+
+Notable consequence: the Legendary tier has `Common = 0` and commander `enemyChance = 0`, so "boss never Common" holds by accident and the
+highest-value enemy can currently drop **nothing**.
+
+`S11-016`–`S11-019` → PARTIAL (system exists, distribution doesn't); `S11-020`, `S11-021` → ABSENT. Not retuned — same owner balance
+queue (mission distributions, boss HP, cooldowns, mission length, ADS ratio).
+
+Ledger: UNKNOWN 620 → 614, PARTIAL 160 → 164, ABSENT 0 → 2.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
