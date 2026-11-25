@@ -2036,11 +2036,35 @@ OrbitalStrike/Lance, Sentry, ReflectiveBarrier, boss HP, downed timeout, revive 
 **Remaining gap on `S04-021`:** the row also names **component damage** (bosses/multipart targets), which these checks do not model; and the augment-scaled
 branches are untested because no player attacker is passed. Stays PARTIAL.
 
+**COMPONENT-DAMAGE CHECKS CLOSE `S04-021` (place 530).** Evidence `evidence/v530-component-damage-checks/EVIDENCE.md`.
+
+Added three assertions driving the real `CombatService.detonate` against scratch models in `ActiveActors`: a **5-part target** at the blast centre loses **100
+health once, not 500**; a target outside the radius loses **0**; and `detonate` reports **1 hit**. `detonate` resolves each model by `PrimaryPart` and damages it
+once, so multipart targets cannot stack — now asserted rather than assumed.
+
+**A wrong expectation caught by the run:** my first fixture offset *every* part including `Body1`, so the `PrimaryPart` sat 0.5 studs from the centre and the
+check failed with `-97.5, expected -100`. That was **correct code** — `detonate` scales by `clamp(1 - distance/radius, 0.3, 1)` and 0.5/20 gives exactly 0.975.
+Fixture fixed, with a comment explaining why the offset breaks it.
+
+```
+passed=653  failed=17  nonDrift=0
+```
+
+Eleven damage checks now run in `CheckRunner.run()`: unshielded body, shield absorbs, headshot vs shield, headshot vs health, armour vs shield, armour vs health,
+overflow, no-double-charge, area-once, out-of-radius, hit count. All 17 remaining failures are the catalogued spec drifts awaiting owner decisions.
+
+`S04-021` → VERIFIED.
+
+**Largest remaining hole in the suite:** augment-scaled branches (`weakPoint`, `armorDamage`, `healthDamage`, `shieldDamage`) are untested because no player
+attacker is passed to `damageEnemy`. Boss part coefficients (`S06-053`) are also unmodelled.
+
+Ledger: VERIFIED 44 → 45, PARTIAL 178 → 177.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 529**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 530**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **529** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **530** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
