@@ -2275,11 +2275,37 @@ the crates, so a distant teammate could spawn far from them). Single-player veri
 
 Ledger: VERIFIED 46 → 47, UNKNOWN 569 → 568.
 
+**GRENADES WERE ALREADY SERVER-AUTHORITATIVE; THE CRATE NOW REFILLS THEM — `S08-047` VERIFIED (place 546).**
+Evidence `evidence/v546-grenade-supply/EVIDENCE.md`.
+
+**A false alarm I raised and corrected:** my first search for the grenade throw handler found nothing, and I nearly recorded "grenades are client-side only". Wrong
+scope — I searched `GF.Services`, `StarterPlayer` and `ReplicatedStorage`, but `GrenadeRuntime` is a **`Script` at `GF.GrenadeRuntime`**. It is fully
+server-authoritative: `GrenadeCharges` per-player attribute, ownership check, 0.8 s cooldown, charge consumption, deterministic lob, fuse and real damage
+(`CombatService.damageEnemy` for Frag; shield/self-damage for EMP).
+
+So only `+2 grenades` was missing. Added `SupplyService.grenadePlan(current, max)` (pure) and applied it in `consume()`, reading the equipped grenade from
+`selectedLoadout.grenade` and capping at its authored `count` (3), writing to the **same** `GrenadeCharges` attribute `GrenadeRuntime` consumes from.
+
+```
+charges 0 -> 2 -> 3 -> 3        three crates; max 3
+suite: passed=667 failed=17 nonDrift=0   (+3 unit checks)
+```
+
+`S08-047` → VERIFIED, all six clauses: one-use crate, full mag + reserve to +60%, +2 grenades capped, no repeated use, ammo/grenades personal, and "enemy drops no
+weapons" (no weapon-drop code exists anywhere; enemies roll caches).
+
+**Limits:** only `Frag` exercised through the crate (EMP path untested); the crate writes `GrenadeCharges` directly rather than via `GrenadeRuntime`'s
+`_G.GrenadeRefill` (which refills to max) — two paths now touch one attribute. `S04-053` (grenade stats) still PARTIAL.
+
+**Lesson:** search the whole `GF` tree, not `GF.Services` — that subtree assumption has now produced two false "missing" findings.
+
+Ledger: VERIFIED 47 → 48, PARTIAL 177 → 176.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 545**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 546**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **545** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **546** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
