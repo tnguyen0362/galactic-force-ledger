@@ -397,11 +397,30 @@ pre-mission value — the player earns 25 XP and the debrief says nothing change
 **Still open:** the Armory half of the spec's "debrief/Armory" requirement — `ArmoryService.state` exposes sockets but not
 mastery XP or level, and no armory row renders progress.
 
+**MASTERY DISPLAY COMPLETE — `S10-039` VERIFIED (place 472).** Evidence `evidence/v472-armory-mastery-display/EVIDENCE.md`.
+
+The Armory half. `ArmoryService.state` already built a raw-XP `masteries` table that nothing rendered, so the change is a
+`masteryLevel` map (via `ProfileService.masteryLevel`) plus one line in `StationArmoryUI`. Measured on all eight rows:
+
+```
+Rifle · 18 DMG · 28 MAG · Auto · MASTERY 5 (650 XP)
+LMG · 17 DMG · 75 MAG · Auto · MASTERY 1 (5 XP)
+SMG · 13 DMG · 36 MAG · Auto · MASTERY 5 (650 XP)
+... six more, all correct
+```
+
+The whole mastery chain is now observable end to end: earn → bucket → settle on a completed primary → persist → publish on join
+→ level → socket → debrief → armory. It took six batches, and two of the defects in it were introduced by fixes earlier in the
+same session.
+
+**Side effect:** SMG03 is now at 650 XP / level 5 on the test account (the probe pushed it), which also unlocks its second
+augment socket. The Rifle was already there from the ladder test.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 471**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 472**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **471** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **472** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
