@@ -2214,6 +2214,27 @@ assumption.
 **Limits:** covers construction only (not a wrong-but-present value), asserts types plus `reserve > 0` rather than every field, and runs on `CheckRunner.run()` — not at
 server start, so a broken build still boots until the suite runs.
 
+**BOTH RESERVE CASES VERIFIED LIVE (place 542, no source change).** Evidence `evidence/v542-reserve-cases-verified/EVIDENCE.md`.
+
+```
+reserve-limited (ammo 0, reserve 5):   ammo 0 -> 5    reserve 5 -> 0    reloadCount 1
+empty reserve   (ammo 5, reserve 0):   ammo 5        reserve 0        reloadCount 0   <- refused before starting
+```
+
+The `reloadCount 0` on the refusal is the meaningful part: the gate sits **before** any state change, so no animation plays and no time is wasted.
+
+**Why the earlier attempts failed:** my read windows, not the code. The commit lands later than I assumed; a 22-second reader gives unambiguous results. An intermediate
+attempt in this batch also produced a false negative because I instrumented the **first** `local live = State.get(player)` in the file rather than the one inside the
+reload callback — same probe-error family as the rest of the session.
+
+**Cumulative reserve evidence:** normal refill (19→28, reserve 168→159); reserve-limited (0→5, 5→0); empty-reserve refusal; HUD `27 / 28  ·  168`; four pure
+`reloadPlan` unit checks in `CheckRunner`.
+
+`S04-027` → PARTIAL, but now for **one missing system**: 'supply'. There is no supply-crate or drop system anywhere — only comments describing one — so reserve is
+finite but **not restorable**, which makes the build stricter than authored. 'No paid ammo advantages' holds (zero monetisation).
+
+**Next candidate:** build supply crates/drops per the spec (full mag/reserve up to +60% reserve and +2 grenades, no repeated use).
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 542**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
