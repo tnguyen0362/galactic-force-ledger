@@ -252,11 +252,41 @@ every edit this session is compile-checked before running.
 **Still open:** `S09-034` settlement is untouched — mastery still writes to the profile per kill, so a player who fails the
 primary keeps it. That needs an in-mission bucket, not a constant change.
 
+**SPEC CONFORMANCE IS NOW AUTOMATED (place 465).** Evidence `evidence/v465-spec-conformance-check/EVIDENCE.md`.
+
+Seven defects in this audit were one shape: a config number silently disagreeing with the specification. All were found by
+a human reading a ledger, which is not a control. `CheckRunner` now transcribes the authored tables and asserts config
+against them every boot — 8 weapons (damage/RPM/mag/reserve/reload/falloff/radius), 6 ability cooldowns and radii, 2 boss HP
+values — publishing `GF_SpecDrift`.
+
+Result in a fresh Play VM: **passed=625 failed=13**.
+
+```
+Augments: duplicate id FastHands
+RL09.radius 12 (spec 10)      GL22.radius 9 (spec 13)
+OrbitalStrike.radius 12 (spec 13)   OrbitalStrike.damage 400 (spec 390)
+Sentry.radius 60 (spec 65)          Sentry.damage 12 (spec 10)
+ReflectiveBarrier.cooldown 95 (spec 85)  .radius 12 (spec 10)
+OrbitalLance.cooldown 180 (spec 165)     .damage 550 (spec 420)
+HighMarshalVeyr.health 4000 (spec 7200)  BastionWalker.health 1200 (spec 3600)
+```
+
+**Two drifts were new** — `OrbitalStrike` radius/damage and `Sentry` radius/damage had never been recorded by the audit.
+
+**One pre-existing failure surfaced:** `Augments: duplicate id FastHands`. Two archetypes share that id, which is exactly what
+`S11-054` requires to be impossible. The check always computed this; nothing acted on the result.
+
+**Rank and cost are deliberately not asserted.** The authored weapon table (L52-L59) and the prose arsenal list (L393-L397)
+contradict each other on rank and cost for AR-01, SG-04, MR-07 and LMG-12 (the table gives LMG-12 rank 1 / 750cr, the prose
+rank 7 / ~1,400cr). Config follows the prose. Asserting those would have produced four false positives.
+
+Drift is reported but not fatal: `Main` warns and continues. Making it fatal is a one-line change once this list is clear.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 464**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 164 populated, 651 UNKNOWN**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 465**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **464** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **465** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
