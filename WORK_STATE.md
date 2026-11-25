@@ -2301,6 +2301,30 @@ weapons" (no weapon-drop code exists anywhere; enemies roll caches).
 
 Ledger: VERIFIED 47 → 48, PARTIAL 177 → 176.
 
+**`S04-053` GRENADE STATS: SEVEN MEASURED DRIFTS + ONE DEAD FIELD (place 546, no source change).**
+Evidence `evidence/v546-grenade-stat-drifts/EVIDENCE.md`.
+
+| field | spec | build |
+|---|---|---|
+| Frag radius | 15 | **22** |
+| Frag centre damage | 135 | **110** |
+| Frag fuse | 2.5 s | **2.6** |
+| Frag 4 s max flight | 4 s cap | **absent** (tween to aim point, not a projectile) |
+| EMP radius | 13 | **26** (2×) |
+| EMP shield damage | 90 | **full drain to 0** (enemies); 120 (players) |
+| EMP health damage | 15 | **none to enemies** |
+| EMP disable | 2 s | `EMPStunUntil = +2.5` — **written, read nowhere** |
+| max charges / rank / cost | 3 / 4 / 550 | ✓ |
+
+**`EMPStunUntil` references: 1** — the write itself. EMP's disable, the whole point of the grenade, has **no effect on enemies**; only the shield drain does anything.
+Same defect class as the rest of this project: described, even written, never consumed.
+
+A live EMP throw confirmed the branch runs but reported `LastEmpDrained=0` because my scratch target sat outside the blast (character had rotated) — **probe
+placement, not evidence**; not claimed either way.
+
+Not fixed: the seven numbers are owner-authored tuning (radius/damage/fuse/duration) and changing them is re-balancing. The dead `EMPStunUntil` is a genuine
+implementation gap: either consume it in enemy movement/fire logic (2 s, scoped) or record EMP-disable as cut.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 546**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
