@@ -351,3 +351,7 @@ Lobby/procedural-world clusters mostly genuinely unimplemented — keep UNKNOWN 
 Boot gate stable 814 assertions. Harness: cd /Users/timnguyen/gf && python3 gf_deploy.py gf_mirror.tgz
 probe_health.lua GF_HC (REBUILD tarball after mirror edits: COPYFILE_DISABLE=1 tar czf gf_mirror.tgz
 --exclude='._*' --exclude='.DS_Store' playtest1_current). Ledger = repo CSV, crash-safe tmp-write+replace pattern.
+
+## UPDATE 31 — VERIFIED ~462; cache reveal + directional damage + buff roster implemented
+S04-058, S04-063, S11-036 all closed this session. Boot now 816 assertions. Only remaining identified
+feature gap: thrown signal-flare abilities (S05-003, medium). Lobby/procedural clusters honest UNKNOWNs.
