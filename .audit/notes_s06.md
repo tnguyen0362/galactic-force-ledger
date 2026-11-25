@@ -116,3 +116,50 @@ New facts:
 1. probe_mega GF_MG measuring dome lifetime (spec 10s) — in flight
 2. S10 reward-ledger-driven payout refactor (big unlock, risky) — decide by budget
 3. Continue harvest: mission/extraction/economy partials
+
+## UPDATE 4 — VERIFIED ~240 / UNKNOWN ~370 / PARTIAL ~200; place v622 saved, ledger pushed
+- Rank XP formula FIXED to spec (was 2x off): rank6=3150, rank14=13910 exact. In mirror, needs deploy+save.
+- Dome duration verified 10.2s live. Class passives all verified. 4 weapons falloff verified.
+- RankXp formula now computed in loop in Economy.luau (r=2..30).
+- IMPORTANT: ledger notes are often STALE — augment slot compatibility was already enforced despite note
+  saying otherwise. Always read current code before trusting a blocker note.
+
+## Working rhythm that keeps producing: inspect batch -> implement fixes -> probe verify -> ledger update -> commit.
+## gf mirror tarball must be REBUILT after every mirror edit before deploying!
+
+## ===== COMPACTION HANDOFF — READ THIS FIRST =====
+## Mission: burn down ALL 815 rows of REQUIREMENT_COVERAGE.csv per .goal/GOAL_2026-11-24.md (authoritative spec).
+## User directive: continuous autonomous work, no stopping, auto-merge allowed, adhere to GOAL.md.
+## Counts: UNKNOWN ~377 / PARTIAL ~195 / VERIFIED ~242. Place saved v624. All pushed to origin.
+
+## CRITICAL OPERATIONAL FACTS
+1. Harness: cd /Users/timnguyen/gf && NOSAVE=1 POLLS=10 python3 gf_deploy.py gf_mirror.tgz probe.lua MARKER
+   - WITHOUT NOSAVE=1 it saves the place (use for checkpoints). Probe prints [GF_XX] markers.
+   - gf_mirror.tgz MUST be rebuilt after every mirror edit: COPYFILE_DISABLE=1 tar czf gf_mirror.tgz --exclude='._*' --exclude='.DS_Store' playtest1_current
+   - passing `-` as tgz deploys NOTHING (probes then measure the OLD place state!)
+2. Editable mirror: /Users/timnguyen/gf/playtest1_current/ — edit files then re-tar then deploy.
+3. Ledger: /Users/timnguyen/galactic-force-ledger/REQUIREMENT_COVERAGE.csv — write via tmp+os.replace ONLY
+   (a crashed direct write truncated it once). Commit+push after every batch. Branch devin/1764027600-requisitions.
+4. CSV row update pattern: set status VERIFIED, verified_count=observed_count=required_count,
+   last_verified_build, evidence_ref, blocker_or_defect=evidence note, next_action=''.
+5. MCP execute_luau with datamodel_type Edit creates shells the harness can't (Instance.new scripts).
+6. Client probe shell GF_TMP_CLIENTPROBE in StarterPlayerScripts — set Source via MCP for end-to-end remote
+   tests; KEEP INERT otherwise ('-- inert') — leftover dodge source once contaminated fire probes.
+7. Deploy probes: StationService.deploy(player, "Normal", "SABOTAGE_RELAY") direct server call; wait 4.5s grace.
+   Players stay at mission now (reseat fixed v614). Co-locate synthetic enemies: Model in workspace.ActiveActors
+   with GFEnemy=true, EnemyId, Health, Shield attrs. EnemyService.spawn(id, pos)/hearGunfire(pos, range).
+   CombatService.fire(player, {weaponId==s.weaponId, shotId++, origin, direction}) — reset s.lastShotAt=0 between shots.
+   Damage applies only when workspace GF_InMission ~= false. Attribute names can't contain colons.
+   Anchor players in sky (+500y) for clean long-range LOS; spawn targets off the shared ray line.
+8. Boot fingerprint: config check PASS (705 assertions) — if FAIL, a spec-conformance regression exists.
+
+## RECENT VERIFICATIONS (all live-proven)
+- rank formula spec-exact v624 (rank6=3150, rank14=13910; was 2x off) — probe GF_RK PASS
+- dome 10.2s lifetime; 4 weapons falloff exact; class passives exact; reaction delay bands; regen fixed v618
+
+## NEXT STEPS (priority order)
+1. Continue PARTIAL harvest: S03-003 PC input map verification, S03-027/028 revive edges, S03-036/037 HUD
+2. S10 ledger-driven payout refactor is BIG but unlocks ~10 rows (S10-014..019, S09-025/027/029) —
+   RewardLedgerService is RECORD-ONLY, RewardsService pays independently. Attempt only with probe safety net.
+3. Implement quick spec gaps as found; watch for stale blocker notes — verify code before trusting them.
+4. Big clusters remain: lobby/matchmaking 60+, procedural world, narrative/tutorial, Galactic War.
