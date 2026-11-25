@@ -1417,6 +1417,28 @@ reported `observed=0` because my marker lived inside the `enemyModel` branch —
 **Not verified:** no enemy was in front of the muzzle, so 8 rays *emitted* is proven but 96 *received* is not; per-pellet weak-point and
 penetration interaction untested. **Shotgun TTK evidence from earlier in this project is now stale** — it was measured when one ray dealt 96.
 
+**PELLETS VERIFIED ON A REAL TARGET — 196.8 is headshots, not a bug (place 508, verification only).**
+Evidence `evidence/v508-pellets-on-target/EVIDENCE.md`.
+
+```
+12 studs: shield 60->0  health 210->73  totalDelta=196.8
+70 studs: shield 60->60 health 210->210 totalDelta=0.0
+```
+
+`weakMultiplier` returns **2 for Head**, so a headshot pellet does `12×2=24` and eight all-head pellets is 192 — 196.8 is that plus routing.
+`damageEnemy` was read end-to-end: shield absorbs, remainder hits health, one call per pellet, **no double application**. So the total is correct
+for a point-blank pattern that scattered several pellets onto the head.
+
+**Consequence for the owner:** the authored `12/pellet` and config `96` describe *body* damage. With the existing 2× weak-point rule, a full-head
+pellet pattern now reaches ~192, so this weapon's effective ceiling roughly doubled when pellets went in.
+
+**Unresolved:** at 70 studs the same shot did **0.0**. Scatter plausibly misses, but pellet 1 uses the aimed direction and should connect — either
+the probe's direct `root.CFrame` teleport did not take effect or the aim used a stale position. Range behaviour is therefore **not verified either
+way**, and the exact body-hit 96 remains unconfirmed because every landed test included headshots.
+
+**Useful discovery:** `ActiveActors` enemies have **no Humanoid** — health/shield/armor are model attributes (`Health`, `Shield`, `ArmorFactor`,
+`Dead`). Two probes failed before that was noticed.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 508**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
