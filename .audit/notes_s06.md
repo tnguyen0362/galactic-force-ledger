@@ -416,3 +416,15 @@ REMAINING (~319 unverified): S02 multi-place architecture 59 (structural redesig
 S06 AI ~28 (cover/pathfinding/relays), S15 perf 29 (hardware-blocked), S16 eng ~25, S01 narrative tail,
 S03 input tail (virtual cursor/gamepad menus), plus scattered PARTIAL tails across all sections.
 BOOT: 816 assertions passing. Next session: cover nodes, virtual cursor, or continue verification harvest.
+
+## UPDATE 40 — VERIFIED ~553; massive implementation wave deployed
+SINCE UPDATE 39: implemented+verified 28-row AI/boss/world cluster (cover-seeking, flanking, spatial grid,
+stuck detection, boss components/phases/cadence/weighted attacks/seats, join gating, spawn postponement,
+escalation warnings, burst/breather cadence, chase-feed prevention, destructible cover, doors, weather,
+wildlife, biome kits, elite frequency, boss armor/weakpoint fixes, boss loot sharing), plus tutorial hints,
+boss replay, loot feed, outpost props, placement validation, matchmaking (MemoryStore global listings),
+teleport flow (place creation dashboard-blocked), violet tracers, suit shapes, reticle ring+spread feedback,
+airstrike conformance, surface footsteps, aim assist, human remnants/ambient props, augment magnitude table.
+STUDIO SHELLS created for all new modules. Boot 816 assertions passing. REMAINING ~260: S02 multi-place
+(dashboard-blocked place creation), S15 perf hardware rows, S16 process rows, BETA validation rows,
+procedural biome details, narrative tails. ALL COMMITTED+PUSHED.
