@@ -2492,6 +2492,29 @@ per 9s) rather than authored wave composition.
 
 **Note:** these two edits were made in the previous turn but only saved now — the turn had ended with them live in Studio but unsaved. Durable as of place 554.
 
+**CORRECTION: THE OVER-CAP MISSION START IS AN EXPLICIT ALLOWANCE, NOT A MISSING CHECK (place 554, no source change).**
+Evidence `evidence/v554-cap-allowance-correction/EVIDENCE.md`.
+
+Last batch I recorded that a mission "starts above its own cap (active=9 vs cap=8) because beginMission spawns without a joint check". The measurement was real; the
+**cause I asserted was wrong.** Every `MAX_ACTIVE` reference:
+
+```
+ 51| if activeCount() >= MAX_ACTIVE then                    -- spawnAround: hard cap
+154| if farEnough and activeCount() < MAX_ACTIVE + 2 then   -- spawnPosts: EXPLICIT allowance
+223| if activeCount() >= MAX_ACTIVE then                    -- extraction: hard cap
+```
+
+`spawnPosts` deliberately permits **cap + 2** for objective posts, and the commander/boss are spawned with no cap check at all. So this is intended-looking behaviour —
+an owner decision, not a defect item. **Corrected in the ledger.**
+
+**What I could not confirm:** two attempts to measure the allowance directly placed **0 posts** at my probe centres (the ground/LOS test failed there), so the `+2` is
+**code-read, not measured**. The hard cap was re-measured (`filled=8`, further request placed `0`). Stating that distinction explicitly, since inferring behaviour from a
+constant is exactly what has burned this project before.
+
+**`S06-035` remaining gaps are now design-only:** static "dynamic" budget (`PATROL_COUNT=4`, fixed budget, nothing adapts to squad/difficulty/time) and
+interval-driven extraction waves (2 per 9 s) instead of authored wave composition. **Caveat recorded:** objective-post placement has never been exercised successfully
+this session — a real hole in that row's evidence.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 554**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
