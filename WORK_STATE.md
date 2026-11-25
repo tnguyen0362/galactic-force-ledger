@@ -1036,11 +1036,36 @@ earlier.
 
 Ledger: PARTIAL 156 → 155, VERIFIED 32 → 33.
 
+**CACHE OPENING NOW RESPECTS CAPACITY — and my place-495 ABSENT verdict was wrong (place 499).** Evidence
+`evidence/v499-cache-capacity-gate/EVIDENCE.md`.
+
+`CacheService.open` granted unconditionally and **ignored `grantAugment`'s return**, so a full inventory could open a cache, watch it
+roll, and receive nothing silently. Added the fit-only gate:
+
+```
+full capacity (1/1):  returned=0  owned 1->1  blocked "full 1/1 needs 1"
+room for one (2/1):   returned=1  owned 1->2  blocked nil
+```
+
+Deployment and cache rewards are **confirmed ungated by reference**: `augmentCapacity` appears in only three modules
+(ProfileService default, AugmentService cap, CacheService gate) — no deployment/squad/dispatch path reads it, and
+`grantToInventory`/`grantMission` have no capacity check.
+
+**Correction:** I marked `S11-037` ABSENT at place 495, concluding nothing rolled traits. That was too strong, and the evidence was in a
+file I had open: `CacheService.open` calls `Augments.rollTrait` and stores the sampled `{key,value}` in `profile.augmentTraits`. So the
+authored min/max range **is** sampled; my claim that it "is never sampled" was wrong. What is genuinely missing is the **rarity rule** —
+every augment rolls exactly one trait regardless of Common/Rare/Epic/Legendary. `S11-037` is now **PARTIAL**. The UID gap stands
+(S11-031): traits are keyed by augment id, so two copies of one archetype can never differ.
+
+**Still open:** `S11-035` bulk opening (no bulk path exists), and `S11-033`'s fusion clause (fusion does not exist).
+
+Ledger: ABSENT 2 → 1, PARTIAL 155 → 156.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 498**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 499**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **498** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **499** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
