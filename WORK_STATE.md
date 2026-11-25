@@ -3175,3 +3175,9 @@ Remaining augment gaps: sentry destruction/targeting, live weapon-range/support-
 Added filtered bulk dismantle. The server computes eligible unprotected augment UIDs for a rarity/category filter, returns exact count/scrap/protected-skip preview, and confirmation dismantles that server-computed set rather than trusting client UID input. Armory UI now exposes rarity/category filter cycle buttons, preview text and a separate confirm button. Live probe verified exact Common scrap payout and favorite protection; boot remained `config check PASS (688 assertions)`.
 
 Caution: the probe used the broad Common/Universal filter in the real test profile and dismantled unprotected items matching that filter; these were primarily prior test inventory, but future probes should use unique synthetic categories or exact UID cleanup. Remaining work: UI click evidence and full equipped/saved/pending protection matrix.
+
+## 2026-11-25 / place 571 - fusion preview/confirmation
+
+Fusion validation is now shared by `fusionPreview` and `fuse`. The Armory FUSE button requests a read-only preview showing source/target rarity, category and outcome chances, then requires CONFIRM. Live probe verified preview leaves inventory unchanged, Legendary and favorited inputs reject, and valid Rare AR inputs fuse into Epic AR (`LongBarrel`). Boot remained `config check PASS (688 assertions)`.
+
+Next: mixed-input rejection test and UI click evidence, then reward settlement durability.
