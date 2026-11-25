@@ -282,11 +282,25 @@ rank 7 / ~1,400cr). Config follows the prose. Asserting those would have produce
 
 Drift is reported but not fatal: `Main` warns and continues. Making it fatal is a one-line change once this list is clear.
 
+**Duplicate augment id fixed, boot check clears to 12 drifts (place 466).** Evidence `evidence/v466-duplicate-augment-id/EVIDENCE.md`.
+
+`CheckRunner` reported `Augments: duplicate id FastHands` — two archetypes declared the same id, both created in the
+32-archetype rebuild at build 408. Not cosmetic: `Augments.ById` is keyed by id, so one entry overwrote the other and a
+Pistol-category roll could resolve to the SMG archetype's effects and cost.
+
+Renamed the Pistol entry to `PistolFastHands` (display label unchanged). Verified first that only two places in the entire
+project mention `FastHands`, both the config definitions, so no reference or saved key could break.
+
+`ok=false passed=625 failed=13` → **`ok=false passed=625 failed=12`**. `passed` does not rise because the duplicate check has
+no clean-path assertion; the failing one is simply gone.
+
+The remaining 12 failures are all **balance drift** and are the owner's to rule on.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 465**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 466**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **465** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **466** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
