@@ -1242,6 +1242,28 @@ probably belongs first in the owner balance pass.
 
 `S11-042` → PARTIAL. Not retuned: rescaling all 36 augments is economy-wide.
 
+**TRAIT-BAND RESCALE IS BLOCKED ON FOUR UNMAPPED KEYS (place 504, no code change).** Evidence
+`evidence/v504-trait-band-mapping/EVIDENCE.md`.
+
+The obvious fix for the 3–8× inflation is to transcribe S11-042's bands. It **cannot be done cleanly**: the spec gives 12 bands, the config
+uses 14 keys.
+
+**Mapped (10):** `recoil`, `reloadSpeed`, `magazine`, `adsSpeed`, `healthDamage`, `weakPoint`, `shieldDamage`/`armorDamage`, `blastRadius`,
+`cooldown`, and `swapSpeed` (via S11-051 *"universal swap reduction ranges same as reload"*).
+
+**Unmapped (4):** `sentryAmmo` (the spec specifies sentry **HP**, not ammo — deliberately not treated as equivalent), `movingAccuracy`,
+`adsRecovery`, `followUpSpeed`.
+
+Rescaling only the 10 would leave those four at 3–8× the others, so a Common augment would be weak on recoil and overwhelming on follow-up
+speed. **Mixed scales are worse than one wrong scale**, because rarity would then mean different things per stat.
+
+Also found: *"range extension"* has an authored band but **no config key consumes it** — specified and unimplemented.
+
+**Ask for the owner:** supply bands for those four keys, or authorise "match the nearest equivalent" for each, then rescale the catalog in
+one pass — before any further clamp tuning.
+
+`S11-051` → PARTIAL (`swapSpeed` runs 20–46% against the authored reload bands 2–4/3–6/5–9/7–12).
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
