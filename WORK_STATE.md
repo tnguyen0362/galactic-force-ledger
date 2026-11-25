@@ -2453,11 +2453,30 @@ Ledger: VERIFIED 50 → 51, PARTIAL 177 → 176.
 
 **Next candidates:** the "already dead" hitmarker guard (small, contained), or the roof-spawn guard on `EnemyService.spawn` (affects every indoor encounter).
 
+**TWO DEFECTS FIXED AND VERIFIED WITH A CONTROL (place 551).** Evidence `evidence/v551-roof-spawn-and-corpse-hitmarker-fixed/EVIDENCE.md`.
+
+**1. Enemies spawned on the ceiling.** The ground ray starts 40 studs up, so indoors its first hit was the roof's top surface. Now a hit above `position.Y + 2` is
+rejected and `groundY` falls back to the requested height. **Verified:** same spawn under the same roof gives `vertical=3.1` (was 30.9–32.3), `flat=11.4`.
+
+**2. Hitmarkers on corpses.** Shots at a dead enemy still sent `DamageFeedback` (damage=18, killed=false) with health stuck at 0. A `Dead` guard now returns before
+damage and feedback. **Verified with a control in one run:**
+
+```
+corpse (Dead=true, HP 0):  health 0 unchanged, 0 hits
+live   (HP 500):           health 428,          4 hits   (500 - 4x18 = 428 exactly)
+```
+
+**Regression:** `CheckRunner` unchanged at **`passed=671 failed=17 nonDrift=0`**.
+
+**Notes:** the clamp uses a 2-stud tolerance, so slightly uneven ground below the requested point is still honoured; enemies deliberately placed on a platform *below*
+the caller still spawn there. The corpse guard returns before damage, so the shot still consumes ammo (correct — a shot into a corpse is a miss). The roof behaviour
+is fixed *inside spawn*; any other code path that places enemies on ceilings directly is not covered.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 548**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 551**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **548** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **551** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
