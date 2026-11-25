@@ -1623,6 +1623,18 @@ missing item, and `S12-013` is missing only `GF-05`/`GF-06`.
 **Fifth time this session a prefix-shaped assumption produced a false finding.** The rule: when a requirement names an id, resolve it in the config
 **before** concluding it is absent.
 
+**PAUSED AT OWNER REQUEST (continuation 81).** Evidence `evidence/v515-buy-no-double-charge/EVIDENCE.md`. Place **515** is the last saved version;
+this batch made no source changes and did not save.
+
+`S12-010` → PARTIAL. Repeated purchases of owned items **do not double-charge** (three calls with SG04 ×2 and AR01 left credits unchanged at 10000),
+but a **first purchase was not exercised** because the account already owned both items, so every call took the already-owned path. Also observed:
+`ArmoryService.buy` returns `nil` for both success and refusal with no reason string — unlike `equipAugment`'s `(ok, why)`.
+
+**Resume here:** buy an unowned item (Sentry ability, 900) and confirm the exact catalogue price is deducted and ownership added, then re-buy to
+confirm refusal.
+
+Test profile left with `credits = 10000`.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
