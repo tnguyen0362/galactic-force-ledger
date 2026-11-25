@@ -197,9 +197,30 @@ world gained **`Workspace.DomeShield`, `DomeShieldRim` and 14 `DomePost` parts**
 no pulse split) and L78 sets Reflective Barrier duration "immediate/7s" (config: 6). Airstrike, Dome Shield, Sentry and
 Orbital Strike all match. Recorded on `S05-015` and `S05-016`.
 
+**Diagnostic pass: payout branches, missing event ledger, blueprint + mastery defects (place 463).** Evidence `evidence/v463-reward-branches-and-mastery/EVIDENCE.md`.
+
+**`compute` payout table measured** (Normal, squad 1): extracted+primary 450/600 · **failed evac+primary complete 450/600** ·
+extracted+primary FAILED 0/0 · failed evac+primary FAILED 0/0. This corrects an earlier note — a failed *extraction* after a
+completed primary still pays full base with salvage withheld. The zero case is an **objective failure**.
+
+**`S09-025` ABSENT — the rewards event ledger does not exist.** Scanned every `LuaSourceContainer` under
+`ServerScriptService.GF` for `eventType` / `resourceDelta` / `appendEvent`: none. `RewardsService` is 150 lines, three
+functions, no event list, no kill-XP table. **This is the missing subsystem under `S09-033`, `S09-040`, `S10-015`–`S10-019`
+and `S10-037`** — which is why `S09-033` cannot be fixed as a one-liner.
+
+**`S06-072` — the pity comment is false.** `ProfileService:82-85` reads *"The spec requires the blueprint to be guaranteed on
+the third qualifying clear. It was set to 5, so a..."* then `BOSS_PITY = 3`. `GOAL_2026-11-24.md` L102 says **5**, and
+`BOSS_BLUEPRINT_CHANCE = 0.34` against the authored **15%**. So 5 → 3 was a **misreading, not a decision** — the justification
+in the file cannot be trusted as a record. Both recorded, neither changed (drop rate is a gameplay lever).
+
+**`S10-037` / `S09-034` / `S10-039` — mastery exists, its ladder and its gate do not.** `weaponMastery = {}` and
+`ProfileService.addMastery` exist, called from `CombatService:231` with **+1 per hit** and `ArmoryService:503` (+5 test hook).
+But the five levels with thresholds `[0,100,240,420,650]` appear **nowhere** in the project, and accrual happens per hit
+mid-mission — so a player who fails the primary keeps all mastery, the exact opposite of the settlement rule.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 463**.
-- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 160 populated, 655 UNKNOWN**.
+- Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 164 populated, 651 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
 - Place version **463** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
