@@ -1529,11 +1529,28 @@ universal.
 mismatched augment keep its effect until unequipped because nothing validates slots on load; and the armory still prints the raw `"Category"` string
 instead of naming the category.
 
+**SAVED LOADOUTS REPAIRED ON JOIN (place 514).** Evidence `evidence/v514-loadout-sanitised-on-join/EVIDENCE.md`.
+
+Place 512 enforced compatibility at equip time, but a loadout saved before that kept its effect until unequipped. `AugmentService.sanitiseLoadout`
+now clears mismatched slots, called from `ArmoryService.PlayerAdded` before serving the loadout.
+
+Three placement decisions: it lives in `AugmentService` because `ProfileService` would create a circular require (AugmentService already requires it);
+slots are one table per loadout so the equipped **primary** is what a slot is judged against; and it only removes, never reassigns.
+
+```
+before: 1=Choke,2=StabilityCompensator  (primary=SMG03)
+cleared=1   after: 2=StabilityCompensator   secondRunCleared=0
+```
+
+**Not verified:** the `PlayerAdded` path itself — the probe called the sanitiser directly, so a real rejoin is untested. Removal is also silent to the
+player (only `GF_AugmentSanitised*` attributes record it), `loadout.abilityAugment` is not validated, and a missing primary weapon in config would
+clear every Category augment.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 512**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 514**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **512** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **514** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
