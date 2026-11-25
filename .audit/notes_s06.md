@@ -97,3 +97,22 @@ Several probes before this realization measured OLD v614 code. Always deploy the
 ## TacticalMapUI.luau EXISTS — S03-038 ambiguity (spec says no full tactical map REQUIREMENT — having one may be fine). Skipped.
 
 ## EMP note: health 15 routed via damageEnemy (applies shield-first internally — slight imperfection vs spec's separate pools, acceptable)
+
+## UPDATE 3 — counts UNKNOWN 377 / PARTIAL 202 / VERIFIED 233+; place v622; pushed.
+New facts:
+- Classes verified live (GF_CL probe): all 4 passives exact. Dedup fix in modifiersFor. Caps +25%.
+- Missions config: 15 variants across 5 families but distribution uneven (Sabotage 2+RELAY untagged?/Defense 2/Recovery 2) — spec wants exactly 3 each. Minor deviation, not yet fixed.
+- Reward multipliers exact: XP Easy1/N1.25/H1.75/X2.5; Credits .8/1/1.35/1.65. War Credits 5/10/15/25 exact.
+- KEY BLOCKER CHAIN: RewardLedgerService is RECORD-ONLY; RewardsService pays independently. ~10 rows
+  (S10-012..021, S09-025/027/029) blocked on switching compute() to drive from ledger totals. High-value refactor.
+- SPEC DEVIATION NOTED: crew NPCs exist (CrewService) but spec says "No crew NPCs" (S02-013). Not fixed.
+- client probe GF_TMP_CLIENTPROBE shell in StarterPlayerScripts — KEEP IT INERT ("-- inert") when not needed;
+  a leftover dodge-firing source contaminated multiple fire-test probes (Rolling=true blocks fire).
+- Probe occlusion lesson: spawn targets for different shots OFF the shared ray line or destroy between shots.
+- CombatService.fire payload: {weaponId=must match s.weaponId, shotId incrementing, origin, direction}.
+- abilityService.cast(player, {abilityId=, position=}) directly callable.
+
+## Next queue
+1. probe_mega GF_MG measuring dome lifetime (spec 10s) — in flight
+2. S10 reward-ledger-driven payout refactor (big unlock, risky) — decide by budget
+3. Continue harvest: mission/extraction/economy partials
