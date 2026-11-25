@@ -476,3 +476,10 @@ STRICT headers across all modules. MISSION TIMER 15min guidance. LIGHTS clamped 
 Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~210: S16 32, S15 29 (hardware), S02 27 (multi-place core
 dashboard-blocked), S07 23, S06 15, S01 14, BETA 12 (device testing), scattered tails across all sections.
 RESUME STATE: boot 816 green, all shells exist, deploy pipeline healthy, tarball current, gf_deploy.py works.
+
+## UPDATE 48 — VERIFIED ~625; procedural depth complete
+PROCEDURAL systems verified: deterministic seed+version stamping, graph nodes with spacing constraints,
+two-approach route guarantee, cover scatter 18-35 studs, supply placement, terrain tactics, blockout modules.
+Strict headers across all modules. Performance telemetry live. Bastion conformance fixed (3600hp/7spd/cannon).
+Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~190: S16 29 (validation matrix/hardware), S15 26 (hardware),
+S02 27 (multi-place core dashboard-blocked), BETA 12 (device testing), scattered tails S01/S03/S04/S06/S08-13.
