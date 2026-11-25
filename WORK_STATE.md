@@ -339,11 +339,24 @@ server read SMG03 as **0**. Either the write missed the spec's ~60–90 s autosa
 autosave explanation is at least as likely. To settle it: award mastery, wait past autosave, stop the server, start a new one,
 read the same weapon.
 
+**Mastery persistence SETTLED — it persists; the attribute was lying (place 469).** Evidence `evidence/v469-mastery-persist-publish/EVIDENCE.md`.
+
+Last batch left this open: 50 XP written to SMG03, a later server read 0. Answer: **the XP persisted the whole time.** `GF_Mastery_<weapon>` was written in exactly one place — inside `addMastery` — so on a fresh server it read nil until the player earned more.
+
+The disproof of my own hypothesis: `addMastery(plr, "SMG03", 10)` returned **60**, therefore `current` was 50. Then a full
+stop/start read `ProfileService.get(plr).weaponMastery.SMG03 = 60` while the attribute was still **nil**.
+
+Fixed in `ProfileService.load` (the single choke point, which already syncs `IntroSeen`): mastery is published for every weapon
+on join. Verified in a fresh server — `attrXP=60` on join with no award that session.
+
+This is the **seventh** false-negative mechanism in this project and the same shape as the rest: an instrument disagreeing with
+real state. Any HUD reading that attribute would show nothing for a returning player, which reads as lost progress.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 467**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 469**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **467** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **469** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
