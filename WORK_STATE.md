@@ -544,11 +544,30 @@ into a boot failure. Two batches ago the same work found OrbitalStrike and Sentr
 Not yet covered: `Combat.EnemyBudgetCap`, `MaxActiveEnemiesPerPlayer`, `InteractRange`, `RollRecharge`, and the regen **rates**
 (only delays are asserted). `BOSS_PITY`/`BOSS_BLUEPRINT_CHANCE` remain unassertable locals.
 
+**PITY VALUES MADE ASSERTABLE (place 477).** Evidence `evidence/v477-pity-values-assertable/EVIDENCE.md`.
+
+`ProfileService` held pity as two file-local constants (`BOSS_PITY = 3`, `BOSS_BLUEPRINT_CHANCE = 0.34`) that no check could
+reach, under a comment claiming *"the spec requires the blueprint to be guaranteed on the third qualifying clear"* — which
+L102 does not say. Moved to `Constants.Pity` (**values unchanged**) and asserted:
+
+```
+ok=false passed=635 failed=16
+  spec drift: Pity.Target = 3, spec 5-5
+  spec drift: Pity.Chance = 0.34, spec 0.15-0.15
+Constants.Pity Target=3 Chance=0.34      <- behaviour preserved, moved not retuned
+```
+
+The deviation is now visible at every boot, and a future session cannot quietly inherit the false comment — the check argues
+with it. Fixing it is now a one-line change in one obvious place.
+
+**The false comment is left in place deliberately** so the record of why the value moved survives, but it is contradicted by a
+failing assertion rather than standing unchallenged.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 476**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 477**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **476** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **477** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
