@@ -725,6 +725,27 @@ adsSpeed 1`.
 so the formula is `AdsSpeed * (1 - bonus)`. Measured with the augment equipped: `true:15.12` = 14 × 1.08. If the author meant the
 opposite, it is one line to flip.
 
+**12 OF 36 AUGMENTS ARE PLACEBO (place 485, no code change).** Evidence `evidence/v485-placebo-augments/EVIDENCE.md`.
+
+The allow-list declares 14 stat keys; only **7** are ever read: `weakPoint`/`healthDamage`/`armorDamage`/`shieldDamage`
+(CombatService), `magazine`/`reloadSpeed` (via AugmentService helpers), `adsSpeed` (MovementService, added at 485).
+
+**Never applied:** `recoil`(8 augments), `blastRadius`(4), `swapSpeed`(4), `cooldown`(3), `adsRecovery`(2), `followUpSpeed`(2),
+`movingAccuracy`(2), `sentryAmmo`(2). Each appears exactly once in `AugmentService` — inside the allow-list literal.
+
+Result: **12 of 36 augments do nothing at all** — Bipod, BorePolish, CoolantLoop, ExtendedSentryMagazine, FastHands, HeatSink,
+LightBolt, OverclockedCore, QuickDraw, ReflexSear, StableStock, WideCharge. A third of the catalog is purchasable placebo.
+`FastHands` was doubly broken: the duplicate id fixed at place 466 *and* an inert effect.
+
+Also: **no cross-slot clamp** (`S11-055`) — per-application floors only, so two same-stat augments stack unbounded with no
+negative floor.
+
+**Two false negatives corrected first:** `e.stats` is actually `e.effect` (third field-name error this session), and excluding
+`AugmentService` from the consumer scan wrongly made `magazine`/`reloadSpeed` look dead — a key's consumer may be its owning module.
+
+**Why invisible:** every check validates augments *exist*. None asks whether a trait *does anything*. 639 passing assertions, none
+of them about effect.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 485**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
