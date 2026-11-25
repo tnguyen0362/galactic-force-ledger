@@ -375,11 +375,33 @@ equip slot2 @650xp -> ok=true
 *before* publishing its result, so the attribute read `nil` and looked like the fix had failed. The console named the cause in
 one line. Second instrument failure this session that briefly impersonated a code fault.
 
+**MASTERY NOW VISIBLE IN THE DEBRIEF (place 471).** Evidence `evidence/v471-mastery-debrief-display/EVIDENCE.md`.
+
+Rendered client debrief after a mission that settled 25 XP:
+
+```
+Credits  base 450  +  squad bonus 0
+Military XP  base 600  +  squad bonus 0
+Mastery  SMG03  level 1  (85 XP)
+```
+
+**An ordering bug nearly made this lie.** Mastery settles in `ExtractionService.finish`, and the debrief payload is built in
+`RewardsService.grant`, which `finish` called *before* the settle ran. A naive payload field would have reported the
+pre-mission value — the player earns 25 XP and the debrief says nothing changed. Fixed by moving the settle above the
+`grantAll` call. `(85 XP)` rather than `(60 XP)` in the capture is the proof.
+
+**Process note:** my first edit corrupted `ExtractionService` with a stray `-` because I built the replacement with
+`string.gsub` and the *pattern* contained `-`, which Lua treats as a lazy quantifier. `loadstring` caught it in the same call.
+`gsub` is not a plain-text replace; this project has already lost one edit to text matching (`v439`).
+
+**Still open:** the Armory half of the spec's "debrief/Armory" requirement — `ArmoryService.state` exposes sockets but not
+mastery XP or level, and no armory row renders progress.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 470**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 471**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **470** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **471** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
