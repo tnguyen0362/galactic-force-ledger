@@ -941,6 +941,30 @@ allow-list so the catalog stops advertising them.
 **Method that resolved both discrepancies: dump the mutated state next to the measurement.** Any probe touching persistent state
 must print that state on every arm, or it silently compares the wrong things.
 
+**`S11-037` CORRECTED TO ABSENT — there is no per-instance augment generation (place 495).** Evidence
+`evidence/v495-augment-instances-absent/EVIDENCE.md`.
+
+The row was labelled IMPLEMENTED_UNVERIFIED, implying a generator existed to test. It does not:
+
+```lua
+if profile.ownedAugments[augmentId] == true then return false end
+profile.ownedAugments[augmentId] = true
+```
+
+Ownership is a **boolean set**. Each archetype carries exactly **one** trait definition of shape `{key,min,max}` — e.g.
+`{key=recoil, max=-0.12, min=-0.17}` — and `forProfile` sums the fixed `def.effect`, so the authored min/max range is **never
+sampled**. Rarity does not change trait count; every rarity has the same shape. So there is nothing for a "1/2/3/4 traits by rarity"
+rule to apply to, and two copies of one augment are identical rather than two rolls.
+
+**A measurement trap recorded:** counting `#e.trait` per rarity returns **3 for all four rarities**, which reads like "the 1/2/3/4
+rule is missing" but actually counts the **3 keys of one definition**. That number must not be used as evidence.
+
+**`S11-031` and `S11-037` are one missing subsystem, not two gaps** — a UID has nothing to attach to without instances, and
+instances have nothing to identify without a UID. An augment instance model also touches persistence, cache opening, dismantle/fusion
+protection and the UI, so it belongs with the same durability decision pending for the rewards ledger.
+
+Ledger: ABSENT 2 → 3, IMPLEMENTED_UNVERIFIED 2 → 1.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 495**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
