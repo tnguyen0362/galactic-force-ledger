@@ -3246,3 +3246,7 @@ The probe covered unlock charging exactly 1000 War Credits, duplicate unlock pro
 Important unspecified-data decision: GOAL §12 does not give a price for the tier3 one-time Rare cache entry. It is implemented as a free once-only claim and explicitly flagged in `evidence/v587-requisitions/EVIDENCE.md`; owner acceptance is still required.
 
 CSV rows updated by exact id only: COUNT-REQ, COUNT-REQ-TIERS, S12-003..015, S12-018, S12-REQ-FRONTLINE/SIEGE, plus S01-017 and S01-ARMOR-GF05/GF06 as partial armor-identity rows. S12-015 remains PARTIAL because the premium weapon comparison is numeric/config-level, not a live target-dummy TTK/splash test. S12-018 remains PARTIAL because mock/test receipts, placeholder Robux product config, receipt idempotency and platform entitlement validation are absent.
+
+## 2026-11-25 / place 587 - premium weapon comparison
+
+Controlled live server probe for S12-015 passed without changing game source: `[GF_PW] PASS ar=18 mr=7 lmg=19 gl=4/r0 rl=2/r1 glCluster=3/251.8 rlCluster=3/425.5 load=2200/1640/3528/5100`. Against identical synthetic Riflemen, GL-22 needed 4 shots and RL-09 2 shots plus a reload; both hit all three clustered targets in one shot. Their full ammunition-load damage capacity (2200/1640) is far below AR-01/LMG-12 (3528/5100), confirming lower-endurance situational sidegrades rather than a strict premium power ceiling. Evidence: `evidence/v587-premium-weapon-comparison/EVIDENCE.md`. S12-015 is now VERIFIED; the remaining requisition-adjacent gap is the receipt/entitlement harness in S12-018.

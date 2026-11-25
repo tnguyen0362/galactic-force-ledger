@@ -49,8 +49,9 @@ print `[GF] boot: config check PASS (689 assertions)`. Test profile userId 18897
   it is implemented as a free once-only claim, not an invented price.
 - Premium armor canonical prices are GF-05 500 / GF-06 750. Internal ids TROPHY/BLACKSTAR remain for save
   compatibility; display names now match GF-05 Ash Sentinel / GF-06 Frost Warden.
-- Remaining requisition-adjacent gaps: mock/test receipts and entitlement interfaces (S12-018), live
-  premium-weapon target-dummy comparison (S12-015), armor plate-shape variant audit.
+- Remaining requisition-adjacent gaps: mock/test receipts and entitlement interfaces (S12-018) and the
+  armor plate-shape variant audit. S12-015 premium weapon comparison is verified in
+  `evidence/v587-premium-weapon-comparison/EVIDENCE.md`.
 - Broader known gaps: 2-client tests (friendly hitscan, split extraction), UI click-path evidence,
   canonical augment catalog identity S11-048 variants, Monte Carlo cache validation, crash-mid-payout
   recovery, boss rows, and the long UNKNOWN tail — audit by area.

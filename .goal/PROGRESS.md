@@ -421,3 +421,10 @@ Still dark in the corner — recorded as the open defect rather than papered ove
   `evidence/v587-requisitions/EVIDENCE.md`.
 - Open acceptance flag: the unspecified premium tier3 one-time Rare cache price is implemented as a free
   once-only claim. S12-015/S12-018 remain partial (live weapon comparison and receipt/entitlement harness).
+
+## 2026-11-25 — premium weapon comparison (place 587)
+
+- Controlled live probe passed: AR/MR/LMG shots-to-kill 18/7/19; GL-22 4 shots without reload, RL-09
+  2 shots requiring one reload; GL/RL hit all three clustered targets for 251.8/425.5 total damage.
+- Full-load damage capacity GL/RL 2200/1640 versus AR/LMG 3528/5100. S12-015 is now VERIFIED;
+  the comparison is controlled rather than a human-aim/full-mission economy test.
