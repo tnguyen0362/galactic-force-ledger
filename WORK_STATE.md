@@ -524,11 +524,31 @@ paraphrase error*. Same failure mode as the ER-16 conflict and the pity comment:
 `Constants` is not a `Configs` module, so `CheckRunner`'s spec section does not cover these values — that is why both drifts
 survived.
 
+**CONFORMANCE CHECK NOW COVERS `Constants` (place 476).** Evidence `evidence/v476-constants-conformance-check/EVIDENCE.md`.
+
+The bleedout (45 vs 60) and revive (3.5 vs 3) drifts survived because `CheckRunner` only asserted **`Configs`** modules —
+`Constants` was never compared to the spec. A tenth section now asserts WalkSpeed/SprintSpeed/AdsSpeed, RollCharges/Duration/
+Distance, HealthMax/ShieldMax, both regen delays, DownedTimeout and ReviveDuration, with ranges where the spec gives ranges.
+
+```
+before:  passed=625  failed=12   (config drifts only)
+after:   passed=635  failed=14   +10 conforming constants, +2 real drifts
+         CONST DRIFT: DownedTimeout = 45, spec 60-60
+         CONST DRIFT: ReviveDuration = 3.5, spec 3-3
+```
+
+Fixing the two values is four characters and changes how the game feels, so it stays the owner's call. Closing the **detection
+gap** is not an owner call: it is additive, changes no behaviour, and converts a defect class that needed a human to notice
+into a boot failure. Two batches ago the same work found OrbitalStrike and Sentry drifts that twelve manual passes missed.
+
+Not yet covered: `Combat.EnemyBudgetCap`, `MaxActiveEnemiesPerPlayer`, `InteractRange`, `RollRecharge`, and the regen **rates**
+(only delays are asserted). `BOSS_PITY`/`BOSS_BLUEPRINT_CHANCE` remain unassertable locals.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 475**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 476**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **475** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **476** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
