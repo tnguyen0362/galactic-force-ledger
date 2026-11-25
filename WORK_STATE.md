@@ -746,11 +746,31 @@ negative floor.
 **Why invisible:** every check validates augments *exist*. None asks whether a trait *does anything*. 639 passing assertions, none
 of them about effect.
 
+**`cooldown` AUGMENT WIRED — 8 of 14 keys now live (place 487).** Evidence `evidence/v487-cooldown-augment-applied/EVIDENCE.md`.
+
+`AbilityService` set cooldowns inline at four identical sites; all four now route through one `beginCooldown(player, s, ability)`
+that applies `ability.cooldown * math.max(0.25, 1 - bonus)`. Measured: Airstrike **90s → 46.1s** at bonus 0.4785
+(`90 × 0.5215 = 46.94`, sampled 0.8s after the cast). Before this batch the same cast read ~90.
+
+Now live (8): weakPoint, healthDamage, armorDamage, shieldDamage, magazine, reloadSpeed, adsSpeed, **cooldown**.
+Still dead (7 keys, 9 augments): recoil(8), blastRadius(4), swapSpeed(4), adsRecovery(2), followUpSpeed(2), movingAccuracy(2),
+sentryAmmo(2). Fully-placebo augments down from 12 to **9**.
+
+**The stacking defect now has a number:** bonus **0.4785 = 47.85% cooldown reduction**, where the spec caps support cooldown at
+**+20%**. `forProfile` sums additively with no clamp, so this is `S11-055` demonstrated rather than theorised.
+
+**Mistake caught in-batch:** my replacement loop counted 5 substitutions instead of 4 — it also matched the line inside the helper
+it had just inserted, yielding a syntax error at line 26. `loadstring` caught it before running. Rule: when inserting code that
+contains the string you are about to replace, insert *after* the replacements or anchor on surrounding context.
+
+**Authoring oddity for the owner:** `ExtendedSentryMagazine` carries `cooldown = 0.2` despite the name saying magazine — looks like
+a config slip.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 485**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 487**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **485** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **487** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
