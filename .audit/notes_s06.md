@@ -237,3 +237,7 @@ defaultRng() uses it, rarePool + drop-chance routed through it) — NOT yet depl
 Next: boot-check deploy, mark S11-030, save place, commit. Then continue harvest: missions/objectives partials,
 support abilities, implement small gaps. The batch-verify rhythm keeps working: read full notes -> mark honest
 completions -> implement small gaps -> probe -> commit.
+
+## UPDATE 15 — VERIFIED ~383 / UNKNOWN ~318 / PARTIAL ~111
+DONE: RNG defect fixed (dedicated seeded Random), INTERACT_RANGE 16->9 spec fix, defense HP verified,
+hacking rows batch-verified. Boot passes 706 assertions with all fixes. Mirror+tarball current; place save pending.
