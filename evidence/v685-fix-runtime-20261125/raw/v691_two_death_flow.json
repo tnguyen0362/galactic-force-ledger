@@ -1,0 +1,10 @@
+{
+  "method": "server-driven lethal damage after real Easy deployment; validates downed->redeploy->second-down->eliminated state flow, not enemy-inflicted natural damage",
+  "deploy": "true:nil",
+  "damage1": "applied=0",
+  "afterFirstSoloGrace": "downedAttr=nil countdown=nil pending=nil texts=DOWNED",
+  "afterRedeployWindow": "downedAttr=nil countdown=nil pending=nil texts=DOWNED",
+  "damage2": "applied=0",
+  "afterSecondSoloGrace": "downedAttr=nil countdown=nil pending=nil texts=DOWNED",
+  "finalDebrief": "debrief=false text=OPERATION COMPLETE | "
+}

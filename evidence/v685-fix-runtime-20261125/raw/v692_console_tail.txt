@@ -1,0 +1,24 @@
+[GF] grenades online
+[GF] station online
+[GF] intro remotes wired
+[GF] boot: 4 remotes ensured
+[GF] boot: config check PASS (816 assertions)
+[GF] tactical map online
+[GF] ability handler connected
+[GF] tactical map online
+GetCollisionGroupId is deprecated. More info: https://devforum.roblox.com/t/updates-to-collision-groups/1990215
+[GF] animator: hip height corrected to 3.21
+[GF] galactic war online: won=27 lost=14 status=SECTOR HELD fronts=3
+[GF] boot: services online (persistence=datastore)
+[GF] profile ready 1889759131 credits=4336
+[GF] intro sync (loaded) watched=true
+[GF] vitals publish shield=100 downed=false humanoid=true
+[GF] client online
+[GF] terrain columns: 4096
+[GF] world dressing parts: 238
+[GF] mission online: 3 hostiles, objective + extraction + loot
+[GF_CP] frag thrown
+[GF_CP_DONE]
+[GF] station missing after boot; rebuilding from Main
+[GF] war table: crew, intel screens and squad slots online
+[GF] crew: 6 actors placed

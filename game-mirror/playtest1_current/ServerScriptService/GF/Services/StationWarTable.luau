@@ -13,6 +13,7 @@ local Missions = require(ReplicatedStorage.GF.Shared.Configs.Missions)
 local Difficulties = require(ReplicatedStorage.GF.Shared.Configs.Difficulties)
 
 local StationWarTable = {}
+local buildHologram -- forward declaration: start() is called before the definition body executes
 local CREW_COLORS = {
 	Assault = Color3.fromRGB(196, 214, 232),
 	Heavy = Color3.fromRGB(232, 176, 96),
@@ -228,7 +229,7 @@ end
 -- S02-018: the war table projects a rotating holographic Veyra-7. Territory markers orbit the
 -- hologram and their colors follow the galactic war front state — the campaign map reads off the
 -- table at a glance, which is the point of putting it physically in the station.
-local function buildHologram(parent: Instance, center: Vector3)
+buildHologram = function(parent: Instance, center: Vector3)
 	local holo = Instance.new("Part")
 	holo.Name = "HoloPlanet"
 	holo.Shape = Enum.PartType.Ball

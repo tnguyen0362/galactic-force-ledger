@@ -393,6 +393,9 @@ local function step(state, dt)
 				local players = game:GetService("Players"):GetPlayers()
 				task.wait(1.3) -- the tell: a rising whine and barrel glow, always 1.3s
 				for pulse = 1, 3 do
+					if not model.Parent or not model.PrimaryPart then
+						break
+					end
 					for _, plr in ipairs(players) do
 						local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 						if root and (root.Position - model.PrimaryPart.Position).Magnitude < 70 then
