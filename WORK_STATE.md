@@ -848,11 +848,37 @@ per-shot growth (`0.600 → 0.667` over six shots); 1.0/s makes it meaningful.
 **Not verified:** scatter as hit geometry (only the angle was measured), `recoil` (no such augment equipped), and TTK/falloff were
 not recaptured — those rows are now valid only under `GF_ForceNoSpread`.
 
+**`recoil` + `movingAccuracy` WIRED — 11 of 14 keys live, and two sign bugs fixed (place 493).** Evidence `evidence/v493-recoil-movingaccuracy/EVIDENCE.md`.
+
+The augment data settled the sign, and I had it backwards twice:
+
+1. **My place-492 formula was inverted.** Every recoil augment is negative (StabilityCompensator −0.15 … MasterworkBore −0.25) and
+   negative means *less* dispersion, so `1 - recoilCut` was **increasing** spread by up to 25% for augments whose purpose is to
+   reduce it. Now `1 + recoilCut`.
+2. **My own place-490 clamp deleted the stat.** `math.clamp(v, 0, cap)` floors at 0, and with every recoil value negative that
+   **zeroed all eight recoil augments**. The spec's "negative floor 0" cannot apply to a stat whose benefit *is* negative. Added a
+   `SIGNED = { recoil, adsSpeed, movingAccuracy }` set clamping to `[-cap, cap]`; everything else still floors at 0.
+   `movingAccuracy` carries both signs in the data (Bipod +0.2, LongBarrel −0.05), so symmetric is the only safe treatment.
+
+`movingAccuracy` implemented: moving (`> 2` studs/s) adds a **1.5°** penalty reduced by a positive value. The 1.5° and the
+threshold are my invention — the spec names the stat but authors no magnitude.
+
+```
+stand 0.600  |  moving 2.100 (= 0.600 + 1.5)  |  + MasterworkBore 0.450 (= 0.600 x 0.75)
+recoil attribute −0.25 survived the signed clamp (floor-0 would have zeroed it)
+```
+
+Under the old formula that augment would have produced `0.750` — a 25% penalty on a "recoil reduction" stat.
+
+Live keys (11): weakPoint, healthDamage, armorDamage, shieldDamage, magazine, reloadSpeed, adsSpeed, cooldown, blastRadius,
+**recoil**, **movingAccuracy**. Still dead (5 augments): swapSpeed(4, needs a swap delay to exist), adsRecovery(2),
+followUpSpeed(2), sentryAmmo(2).
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 492**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 493**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **492** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **493** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
