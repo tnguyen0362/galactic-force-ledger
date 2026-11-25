@@ -352,11 +352,34 @@ on join. Verified in a fresh server — `attrXP=60` on join with no award that s
 This is the **seventh** false-negative mechanism in this project and the same shape as the rest: an instrument disagreeing with
 real state. Any HUD reading that attribute would show nothing for a returning player, which reads as lost progress.
 
+**SECOND AUGMENT SOCKET GATE FIXED — `S10-037` now VERIFIED (place 470).** Evidence `evidence/v470-socket-gate-level5/EVIDENCE.md`.
+
+Spec: *"starter one Augment socket, level5 second permanent socket"*. `AugmentService.socketsFor` compared **raw XP** against a
+constant named `SECOND_SOCKET_MASTERY = 5` — the name said level 5, the comparison used XP.
+
+**And my own change made it worse.** At the old 1-XP-per-kill rate with a cap of 10, `XP >= 5` happened to act like "five kills".
+After I rescaled mastery to the authored 10 XP per kill with a 650 cap two batches ago, it unlocked the second socket on the
+**first kill**. A latent naming bug became a visible exploit because of my fix.
+
+Now `SECOND_SOCKET_XP = 650` (the level-5 threshold), with the refusal message saying so. Verified at the boundary:
+
+```
+xp=0/10/100/500/649 -> 1 socket      xp=650/900 -> 2 sockets      unowned -> 0
+equip slot2 @500xp -> ok=false "requires mastery level 5 (650 XP)"
+equip slot2 @650xp -> ok=true
+```
+
+`xp=10 -> 1 socket` is the assertion that matters: one kill under the authored rate, which previously returned 2.
+
+**My own test errored first:** the probe called `A.assign(...)`, which does not exist, threw at line 14 *after* the sweep but
+*before* publishing its result, so the attribute read `nil` and looked like the fix had failed. The console named the cause in
+one line. Second instrument failure this session that briefly impersonated a code fault.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 469**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 470**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **469** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **470** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
