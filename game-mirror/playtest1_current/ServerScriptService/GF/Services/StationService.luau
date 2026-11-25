@@ -504,6 +504,7 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 	-- unique mission id for ledger/campaign dedup, plus difficulty for downstream consumers
 	workspace:SetAttribute("GF_MissionId", game:GetService("HttpService"):GenerateGUID(false))
 	workspace:SetAttribute("GF_MissionDifficulty", tostring(missionDifficulty or "Normal"))
+	workspace:SetAttribute("GF_ReinforcementTickets", mission.tickets)
 	-- per-player participation: reward eligibility begins at server-confirmed arrival (S09-026),
 	-- never at lobby join or mission creation
 	player:SetAttribute("GF_MissionParticipant", true)

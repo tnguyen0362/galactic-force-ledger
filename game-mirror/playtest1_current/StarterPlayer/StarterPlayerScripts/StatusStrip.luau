@@ -112,7 +112,8 @@ task.spawn(function()
 			redrawFeed()
 		end
 		local squad = workspace:GetAttribute("GF_SquadCount")
-		squadLabel.Text = string.format("SQUAD %d", tonumber(squad) or 1)
+		local tickets = tonumber(workspace:GetAttribute("GF_ReinforcementTickets")) or 0
+		squadLabel.Text = string.format("SQUAD %d · TICKETS %d", tonumber(squad) or 1, tickets)
 		gui:SetAttribute("GF_SquadText", squadLabel.Text)
 	end
 end)

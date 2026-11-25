@@ -17,10 +17,10 @@ local DownedService = {}
 local CombatConstants = require(ReplicatedStorage.GF.Shared.Constants).Combat or {}
 local BLEEDOUT = tonumber(CombatConstants.DownedTimeout) or 45
 local SOLO_REDEPLOY_DELAY = 10
--- Spec (S03-030): ONE automatic redeploy after the first permanent death, 8s countdown, safe pod,
--- full HP/shield/ammo/grenades, ability cooldowns preserved, salvage unaffected. Second permanent
--- death returns the player to debrief/lobby. The old ticket system is retired: reinforcement was
--- never a spec concept.
+-- Spec (S03-030/S03-031): permanent deaths consume the squad's shared reinforcement-ticket
+-- budget. While a ticket remains, redeploy is automatic after an 8s countdown with full HP/shield,
+-- ammo and grenades; when the budget is empty the soldier is out of the operation and a squad with
+-- nobody left fails. Ability cooldowns and shared salvage are preserved through redeploy.
 local REDEPLOY_COUNTDOWN = 8
 local redeployUsed: { [Player]: boolean } = {}
 local pendingRedeploy: { [Player]: number } = {}
@@ -59,6 +59,23 @@ local function countAttr(name: string): number
 	local value = (workspace:GetAttribute(name) or 0) + 1
 	workspace:SetAttribute(name, value)
 	return value
+end
+
+local function publishTickets()
+	local mission = State.getMission()
+	workspace:SetAttribute("GF_ReinforcementTickets", mission and math.max(0, tonumber(mission.tickets) or 0) or 0)
+end
+
+local function consumeTicket(): boolean
+	local mission = State.getMission()
+	if not mission or (tonumber(mission.tickets) or 0) <= 0 then
+		publishTickets()
+		return false
+	end
+	mission.tickets = math.max(0, (tonumber(mission.tickets) or 0) - 1)
+	publishTickets()
+	countAttr("GF_TicketsSpent")
+	return true
 end
 
 local function hasRescuer(downed: Player): boolean
@@ -207,9 +224,9 @@ function DownedService.failMission(player: Player)
 	end
 end
 
--- Permanent-death resolution (S03-030). First permanent death: one automatic redeploy after an
--- 8-second countdown. Second permanent death: the player returns to debrief/lobby and leaves the
--- mission; if no active or pending-redeploy players remain the mission itself fails.
+-- Permanent-death resolution. Each permanent death consumes one shared squad reinforcement ticket.
+-- Tickets are deliberately not per-player: a squad can spend its budget saving the same soldier twice,
+-- or distribute it across different casualties. Emergency extraction closes reinforcement support.
 function DownedService.reinforceOrFail(player: Player)
 	local mission = State.getMission()
 	if not mission then
@@ -217,19 +234,18 @@ function DownedService.reinforceOrFail(player: Player)
 		VitalsService.reset(player)
 		return
 	end
-	if redeployUsed[player] then
+	local supportClosed = workspace:GetAttribute("GF_EmergencyExtraction") == true
+	if supportClosed or not consumeTicket(player) then
 		countAttr("GF_SecondDeathCount")
-	trace("second permanent death player=" .. player.Name .. " used=true")
-		-- second permanent death: out of the mission, no spectating
+		trace("permanent death with no reinforcement ticket player=" .. player.Name .. " supportClosed=" .. tostring(supportClosed))
 		local s = State.get(player)
 		if s then
 			s.downed = false
 		end
 		ReplicatedStorage.GF.Remotes.MissionEvent:FireAllClients({
-			text = tostring(player.DisplayName) .. " is out of the fight.",
+			text = tostring(player.DisplayName) .. " is out of the fight. No reinforcements remain.",
 			kind = "eliminated",
 		})
-		-- mission failure only when nobody active or pending redeploy remains
 		local anyoneLeft = false
 		for _, other in Players:GetPlayers() do
 			if other ~= player then
@@ -244,12 +260,11 @@ function DownedService.reinforceOrFail(player: Player)
 		for _, _ in pairs(pendingRedeploy) do
 			pendingCount += 1
 		end
-		trace("second death resolution anyoneLeft=" .. tostring(anyoneLeft) .. " pendingCount=" .. tostring(pendingCount))
+		trace("no-ticket resolution anyoneLeft=" .. tostring(anyoneLeft) .. " pendingCount=" .. tostring(pendingCount))
 		if not anyoneLeft and pendingCount == 0 then
 			DownedService.failMission(player)
 			return
 		end
-		-- Multiplayer: this soldier is out, but the operation continues for everyone else.
 		VitalsService.reset(player)
 		local okStation, StationService = pcall(require, script.Parent.StationService)
 		if okStation and StationService and StationService.returnToStation then
@@ -259,16 +274,15 @@ function DownedService.reinforceOrFail(player: Player)
 		end
 		return
 	end
-	redeployUsed[player] = true
 	pendingRedeploy[player] = os.clock() + REDEPLOY_COUNTDOWN
 	countAttr("GF_FirstDeathCount")
-	trace("first permanent death; automatic redeploy pending player=" .. player.Name)
+	trace("permanent death; ticketed redeploy pending player=" .. player.Name .. " tickets=" .. tostring(mission.tickets))
 	-- Keep the soldier downed through the countdown. Clearing the flag here let the vitals regen
 	-- publisher immediately hide the K.I.A. overlay and even regenerate the corpse before redeploy.
 	workspace:SetAttribute("GF_RedeployCountdown", REDEPLOY_COUNTDOWN)
 	workspace:SetAttribute("GF_RedeployPendingFor", player.Name)
 	ReplicatedStorage.GF.Remotes.MissionEvent:FireAllClients({
-		text = string.format("%s down. Automatic redeploy in %ds.", tostring(player.DisplayName), REDEPLOY_COUNTDOWN),
+		text = string.format("%s down. Reinforcement pod in %ds. Tickets remaining: %d.", tostring(player.DisplayName), REDEPLOY_COUNTDOWN, tonumber(mission.tickets) or 0),
 		kind = "redeploypending",
 	})
 end
@@ -347,7 +361,7 @@ function DownedService.start()
 				local character = player.Character
 				if s and character then
 					if workspace:GetAttribute("GF_DebugDeathflow") == true then
-						workspace:SetAttribute("GF_DownedDebug", string.format("%s downed=%s at=%s for=%.1f pending=%s used=%s health=%s", player.Name, tostring(s.downed), tostring(s.downedAt), now - (s.downedAt or now), tostring(pendingRedeploy[player]), tostring(redeployUsed[player]), tostring(character:FindFirstChildOfClass("Humanoid") and character:FindFirstChildOfClass("Humanoid").Health)))
+						workspace:SetAttribute("GF_DownedDebug", string.format("%s downed=%s at=%s for=%.1f pending=%s used=%s health=%s", player.Name, tostring(s.downed), tostring(s.downedAt), now - (s.downedAt or now), tostring(pendingRedeploy[player]), tostring(false), tostring(character:FindFirstChildOfClass("Humanoid") and character:FindFirstChildOfClass("Humanoid").Health)))
 					end
 					if s.downed then
 						character:SetAttribute("GFDowned", true)

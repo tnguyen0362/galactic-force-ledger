@@ -1,0 +1,128 @@
+{
+  "checks": [
+    {
+      "t": 1795647296.943,
+      "name": "deploy_fire",
+      "value": "deploy-requested"
+    },
+    {
+      "t": 1795647297.276,
+      "name": "deploy_loading_immediate",
+      "value": "downedVisible=false downedText=DOWNED loading=true squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+    },
+    {
+      "t": 1795647297.71,
+      "name": "mission_active",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 tickets=6 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
+        "client": "downedVisible=false downedText=DOWNED loading=true squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795647302.375,
+      "name": "baseline_before_first_fall",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 tickets=6 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
+        "client": "downedVisible=false downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795647302.459,
+      "name": "first_fall_induce",
+      "value": "fall-induced:13.987958908081055, 244.90464782714844, 117.60435485839844"
+    },
+    {
+      "t": 1795647303.659,
+      "name": "first_down_detected",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=ROBLOXISUS101:200@304 downedAttr=true health=1 pos=14.0,30.0,117.6 tickets=6 lz=0, 32.475006103515625, 118 trace=nil ddebug=nil",
+        "client": "downedVisible=true downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795647313.758,
+      "name": "first_redeploy_pending",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=ROBLOXISUS101 countdown=8 fall=ROBLOXISUS101:200@304 downedAttr=true health=1 pos=14.0,30.2,117.6 tickets=4 lz=0, 32.475006103515625, 118 trace=11748.9 permanent death; ticketed redeploy pending player=ROBLOXISUS101 tickets=4 ddebug=nil",
+        "client": "downedVisible=true downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795647321.825,
+      "name": "automatic_redeploy_detected",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@304 downedAttr=nil health=100 pos=0.0,38.4,125.0 tickets=4 lz=0, 32.475006103515625, 118 trace=11756.9 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
+        "client": "downedVisible=false downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795647321.909,
+      "name": "ticket_count_after_first_redeploy",
+      "value": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@304 downedAttr=nil health=100 pos=0.0,35.6,125.0 tickets=4 lz=0, 32.475006103515625, 118 trace=11756.9 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil"
+    },
+    {
+      "t": 1795647324.025,
+      "name": "force_tickets_zero",
+      "value": "tickets-zero"
+    },
+    {
+      "t": 1795647324.109,
+      "name": "second_fall_induce",
+      "value": "fall-induced:13.993818283081055, 244.90464782714844, 124.80172729492188"
+    },
+    {
+      "t": 1795647325.308,
+      "name": "second_down_detected",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@307 downedAttr=true health=1 pos=14.0,29.9,124.8 tickets=0 lz=0, 32.475006103515625, 118 trace=11756.9 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
+        "client": "downedVisible=true downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795647343.342,
+      "name": "squad_eliminated_debrief",
+      "value": {
+        "ok": false,
+        "timeout": "squad-eliminated-debrief",
+        "last": {
+          "ok": false,
+          "server": "inMission=true endReason=nil pending=ROBLOXISUS101 countdown=0.4172917999985657 fall=ROBLOXISUS101:200@307 downedAttr=nil health=100 pos=-8.0,765.2,25.8 tickets=3 lz=0, 32.475006103515625, 118 trace=11770.5 permanent death; ticketed redeploy pending player=ROBLOXISUS101 tickets=3 ddebug=nil",
+          "client": "downedVisible=false downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+        }
+      }
+    },
+    {
+      "t": 1795647344.124,
+      "name": "final_state",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@307 downedAttr=nil health=100 pos=0.0,30.7,126.0 tickets=3 lz=0, 32.475006103515625, 118 trace=11778.6 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
+        "client": "downedVisible=false downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    }
+  ],
+  "captures": {
+    "ticketflow_deploy_loading": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\ticketflow_deploy_loading_0.jpg"
+    ],
+    "ticketflow_first_downed": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\ticketflow_first_downed_0.jpg"
+    ],
+    "ticketflow_kia_countdown": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\ticketflow_kia_countdown_0.jpg"
+    ],
+    "ticketflow_after_redeploy": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\ticketflow_after_redeploy_0.jpg"
+    ],
+    "ticketflow_squad_eliminated_debrief": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\ticketflow_squad_eliminated_debrief_0.jpg"
+    ]
+  },
+  "errors": []
+}
