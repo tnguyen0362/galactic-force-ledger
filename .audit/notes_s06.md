@@ -296,3 +296,8 @@ S03-035 solo resolution, S10-042 protection, S10-034 unlocks. Boot stable at 814
 REAL GAPS found (not implemented): kill-XP cap per unique enemy ID (S10-024), assist/last-hit weapon XP
 sharing (S10-023), boss ability damage cap 12% (S05-017), grief protection temp-no-friendly-fire (S03-026).
 These are candidates for small implementations rather than verification.
+
+## UPDATE 25 — VERIFIED ~440; implemented boss ability damage cap (S05-017) + geometry LOS check
+Ability blasts now raycast-verify no opaque geometry between blast origin and target, and per-cast boss
+ability damage caps at 12% of scaled starting HP. Boot 814 assertions green. Mirror+tarball current;
+place save pending for the boss-cap + reroll-gate + augment-catalog batch.
