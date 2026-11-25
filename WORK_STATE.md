@@ -296,11 +296,35 @@ no clean-path assertion; the failing one is simply gone.
 
 The remaining 12 failures are all **balance drift** and are the owner's to rule on.
 
+**MASTERY SETTLEMENT GATE FIXED — `S09-034` now VERIFIED (place 467).** Evidence `evidence/v467-mastery-settlement-gate/EVIDENCE.md`.
+
+The spec settles mastery on mission completion and not on an incomplete primary. The build did the opposite: `CombatService`
+called `addMastery` on every kill, and `addMastery` writes the profile immediately — so a player could farm kills, fail the
+primary and keep every point.
+
+Fixed structurally: kills credit a per-player `State.pendingMastery` bucket, and `ExtractionService.finish` settles it through
+`addMastery` only when the primary completed, clearing it either way.
+
+```
+case1 (primary NEVER completed)  mastery 0 -> 0   settled=0   50 earned, 0 credited
+case2 (primary completed, failed evac)  mastery 0 -> 50  settled=50
+```
+
+Case 2 is the requirement's other half: mastery is independent of the way out, so a squad that wins the primary and loses the
+dropship keeps what it earned.
+
+**Also added to `.goal/HANDOFF.md` as a known trap:** a tool-VM `require` is **cached across calls**, so after editing a
+module's `Source` the tool VM can return the *previous* compiled version with no error. It produced a phantom "ability missing
+from config" twice this session and made a working fix look broken. Verify edits in a fresh Play VM or from a temp
+`Script` in `ServerScriptService`.
+
+**Path correction:** earlier evidence during this audit cited `HANDOFF.md` at the repo root; it lives at `.goal/HANDOFF.md`.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 466**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 467**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **466** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **467** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session

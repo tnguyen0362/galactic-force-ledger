@@ -43,6 +43,12 @@ Everything below was **measured this session**, not asserted:
 - `DeployStateChanged` carries two payload shapes (zone publish and deploy verdict). Any listener must ignore payloads it does not
   understand.
 - Editing `Source` while a playtest runs fails; a broken edit fails **silently** until the log is read.
+- **A tool-VM `require` is cached across calls, so `Source` edits look like they did not apply.** After changing a
+  module's `Source`, calling `require(module).something()` from the MCP tool VM can return the **previous compiled version** —
+  not an error, just stale output. This produced a phantom "ability missing from config" twice in one session and made a
+  working fix look broken. Verify edits in a **fresh Play VM**, or from a temporary `Script` parented into
+  `ServerScriptService`, which compiles against the current source. Only trust the tool VM for reading `Source` text and
+  attributes.
 - `WHITE` does not exist in `StationUI` (constants: `CYAN`, `AMBER`, `PANEL`, `TEXT`, `MUTED`). A nil colour inside a handler kills
   the handler, not just the colour.
 
