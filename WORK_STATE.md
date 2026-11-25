@@ -1146,6 +1146,29 @@ stale instances.
 
 **Still missing:** `EXPAND +50` shows no cost preview (10 Cells + 3 Tech + 1000 Credits) before pressing.
 
+**CACHE DISTRIBUTION CONFORMANCE AUDITED — sums conform, per-difficulty table does not (place 504, no code change).**
+Evidence `evidence/v504-cache-distribution-conformance/EVIDENCE.md`.
+
+`Configs/Caches` holds one weight table per **tier**, and difficulty names a tier (`Easy→Common, Normal→Rare, Hard→Epic,
+Extreme→Legendary`):
+
+| difficulty | config C/R/E/L | spec C/R/E/L | verdict |
+|---|---|---|---|
+| Easy | 82/16/1.9/0.1 | 80/18/2/0 | close, not equal |
+| Normal | 48/43/8/1 | 65/29/5.5/0.5 | substantially off |
+| Hard | 18/48/30/4 | 40/43/15/2 | substantially off |
+| Extreme | 0/30/55/15 | 20/43/30/7 | **wrong shape** |
+
+Three findings: **Extreme cannot drop a Common** (spec keeps 20%, config has 0); the drift is **progressive**, the signature of hand-tuned
+tier weights standing in for an authored per-source table; and the **structure differs** — the spec models source→distribution (four
+difficulties plus four enemy classes), the build models tier→distribution with all enemies sharing one table.
+
+`S11-011` VERIFIED (all four tables sum to exactly 100; content counts 1/2/3/4 by tier). `S11-012`–`S11-015` → PARTIAL with the exact
+numbers recorded. **Not retuned** — this changes loot pacing for every difficulty and belongs with the pending owner balance decisions
+(boss HP, ability cooldowns, mission length, ADS ratio).
+
+Ledger: UNKNOWN 625 → 620, PARTIAL 156 → 161, VERIFIED 34 → 35.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
