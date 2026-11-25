@@ -805,6 +805,24 @@ was simply not equipped (the persisted loadout held only `CoolantLoop`). Chasing
 `AugmentService.equipAugment` directly, bypassing the only caller that marks dirty. Probe artifact, product path intact — but the
 fragility is real for future code. It also means the place-489 `blastRadius 11.25` was measured on state that never persisted.
 
+**NO SPREAD MODEL EXISTS — every weapon is perfectly accurate (place 490, no code change).** Evidence `evidence/v490-no-spread-model/EVIDENCE.md`.
+
+Chasing the two remaining big augment keys led to the real gap. `Configs/Weapons` declares `spreadBase`, `spreadPerShot` and `recoil`
+on every weapon (AR-01 0.6/0.35/1.0, LMG-12 3.2/0.2/2.0, SG-04 0.15/0.6/1.6 …) and a scan of `ServerScriptService` + `StarterPlayer`
+returns **zero consumers**.
+
+So: **no bloom, no per-shot growth, no aim penalty** — every shot lands exactly where the ray points, and the spec's ADS spread
+column is unimplemented. This re-reads `S04-036`: the spread values are not *missing from the table*, they are present and unused,
+which looks done and isn't.
+
+**This is why `recoil` (8 augments) and `movingAccuracy` (2) cannot be wired** — 10 of 36 augments sit behind one absent system.
+`swapSpeed` (4) is blocked differently: switching is instantaneous, so there is no delay to scale.
+
+**Not implemented on purpose.** Spread changes hit registration, and every exact-shot measurement in the ledger (18-shot TTK, the
+90/240 falloff curve, v461 falloff, arc-of-fire) was taken in a perfectly accurate world. Adding jitter would make that evidence
+irreproducible and move TTK, so it needs an owner call plus a `GF_ForceNoSpread` determinism switch — the same pattern as
+`GF_ForceNoBlueprintChance`.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 490**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
