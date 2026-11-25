@@ -2135,11 +2135,38 @@ not yet visible or restorable in play.
 
 Ledger: VERIFIED 45 → 46, PARTIAL 178 → 177.
 
+**HUD RESERVE DISPLAY: WIRED, NOT VERIFIED — batch stopped (place 539).** Evidence `evidence/v539-hud-reserve-unverified/EVIDENCE.md`.
+
+Wired reserve through the HUD (`setAmmo(ammo, magazine, reserve?)` renders `27 / 28  ·  168`), all six client call sites, both client payload handlers, three
+server payloads, a catalogue-seeded `State` default, and `CombatService.ensureReserve` for lazy seeding.
+
+**Observed, in order:** `28 / 28` → `27 / 28` → `27 / 28  ·  0` (suffix appeared, value wrong) → `28 / 28` (no suffix, and the shot did not register).
+
+The instrumented root cause of `· 0` was real and is fixed:
+
+```
+weapon=AR01  catalogReserve=168  s.reserve=0
+```
+
+`s.reserve` was already **0**, not nil, so `ensureReserve` (fills only nil) never seeded it — `State`'s default literal `0` defeated the lazy path. That default now
+seeds from the catalogue.
+
+**Not claimed:** no run ended with a non-zero reserve visible. The suffix formatting was seen working, everything compiles, and the `0` cause is identified — but the
+display is unverified.
+
+**Carried risk:** the `State` default now requires `Configs.Weapons` inside a function expression during state construction. It compiles and the place saved, but a
+require-cycle or ordering problem would only appear at runtime for a **new** player state, and no clean fresh-spawn run has happened since.
+
+**Resume order:** (1) confirm a fresh spawn yields `s.reserve = 168` with a reader only; (2) confirm one client shot yields `27 / 28  ·  168`; (3) restore the
+reserve-limited and empty-reserve live cases left inconclusive earlier.
+
+**Still absent:** supply crates/drops do not replenish reserve — there is no supply-crate system, only comments.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 536**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 539**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **536** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **539** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
