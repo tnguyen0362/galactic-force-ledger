@@ -225,3 +225,8 @@ extraction visual tails, engineering/QA process rows.
 
 ## UPDATE 12 — VERIFIED ~370 / UNKNOWN ~315 / PARTIAL ~125
 Batch-verified 9 enemy AI rows (director economy, caps, spawn validation, roles, boss HP config).
+
+## UPDATE 13 — VERIFIED ~377 / UNKNOWN ~320 / PARTIAL ~115
+Batch-verified 8 extraction rows. NOTE: several remaining partials are multiplayer-untestable in solo Studio
+(vote multi-player paths, squad splits) — honest verification ceiling there. Next fronts: implement remaining
+small spec gaps (S11-030 RNG defect), missions/objective partial tails, support-ability rows.
