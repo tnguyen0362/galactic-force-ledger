@@ -1786,6 +1786,35 @@ tested, `TutorialService.finishForTest` still ships, and the pick shows whenever
 
 Ledger: VERIFIED 42 → 43, PARTIAL 176 → 175.
 
+**DIFFICULTY IS COSMETIC: NO LETHALITY SCALING, REWARDS INVERTED (place 518, no code change).**
+Evidence `evidence/v518-difficulty-not-scaling/EVIDENCE.md`.
+
+`S06-032` asks for `(HP, damage, attack cadence, reinforcement pressure)` = `(.70,.60,.85,.65) / (1,1,1,1) / (1.50,1.30,1.10,1.25) / (2,1.60,1.20,1.50)`.
+**None of the four fields exists** in `Configs.Difficulties`, and `EnemyService`/`CombatService` have **zero** difficulty references — the only consumers
+are `StationService`/`StationWarTable` for tickets, payout and spawn budget. So Hard/Extreme are not harder to *fight*: budget rises (8/12/16/18) and
+payout rises, nothing else. `S06-032` → ABSENT.
+
+`S06-009` — reaction delay is a per-enemy-type constant (`def.chargeTime or def.telegraph or 0.55`), identical on every difficulty;
+`Difficulties.reactionMultiplier` (1.4/1/0.8/0.65) is **read by nothing** (another dead field). → PARTIAL.
+
+`S10-020` — measured drifts:
+
+| | spec credits | config `rewardMultiplier` |
+|---|---|---|
+| Easy | 0.8 | 1 |
+| Normal | 1 | 1.7 |
+| Hard | 1.35 | 2.6 |
+| Extreme | 1.65 | **3.5** |
+
+and tickets run **inverted**: solo Easy 5 / Normal 4 / Hard 2 / Extreme 1 against the specified 1 / 1.25 / 1.75 / 2.5 — paid most for the easiest content.
+
+`S06-033` (cadence must not shorten heavy/marksman warning below 0.9s) is satisfied **vacuously** — cadence does not vary at all.
+
+**Misread caught before writing:** the alphabetical config dump put `reactionMultiplier=1.4 rewardMultiplier=1` on Easy; I nearly recorded Easy paying
+1.4×. It pays 1×.
+
+Ledger: UNKNOWN 574 → 573, ABSENT 23 → 24.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 518**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
