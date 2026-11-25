@@ -402,3 +402,5 @@ HONEST STATE: 493/815 verified. Remaining mass is genuinely-unimplemented or har
 NEXT IMPLEMENTATION PRIORITIES: (1) touch controls + virtual cursor cluster (S03-007/009/010/012/013 ~5-8 rows),
 (2) cover nodes precompute (S06-015/016), (3) lobby caps/multi-place architectural rows need real design work.
 EVERYTHING IS COMMITTED AND PUSHED. Place v645 stable at 816 boot assertions.
+
+## UPDATE 38 — VERIFIED 496; touch controls implemented (S03-007/S03-013); boot pending final confirm
