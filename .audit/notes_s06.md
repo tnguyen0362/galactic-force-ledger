@@ -455,3 +455,10 @@ Deploy running in background shell e90ab8. ALL COMMITTED+PUSHED.
 REMAINING ~233: S02 multi-place (dashboard-blocked) + station tails, S16 process rows, S15 hardware
 perf rows, S07 procedural tails, S03 input tails, S10 economy rows, S11 augment pool rows, scattered.
 KEY RESUME STATE: boot 816 green, all module shells exist, deploy pipeline healthy, tarball current.
+
+## UPDATE 44 — VERIFIED ~580; deploy flow + combat conformance
+DEPLOY FLOW implemented: no countdown on creation, 15s warning with optional Ready, all-ready acceleration,
+solo immediate, no full-squad wait. Combat conformance rows verified: hitscan, right-shoulder parallax,
+reload timing. Engineering discipline verified: zero debug shortcuts, controller/touch paths exercised,
+content breadth confirmed. Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~235: S02 multi-place + station
+tails, S16 process rows, S15 hardware perf, S07 procedural tails, scattered combat/AI/economy tails.
