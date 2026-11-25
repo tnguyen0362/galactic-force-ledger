@@ -3209,3 +3209,7 @@ Added difficulty-scaled friendly fire (Hard 50%, Extreme 100%) for hitscan and e
 ## 2026-11-25 / place 579 - ability cooldowns
 
 Verified that cooldowns start only on accepted casts (all 4 abilities). Cooldowns now persist by UserId across a state rebuild (simulated rejoin). Rows S05-004/005/007/018 and S09-040 were updated.
+
+## 2026-11-25 / place 580 - support-strike friendly fire
+
+Airstrike and Orbital Strike apply the difficulty friendly-fire factor to allies and broadcast a danger-close warning when it is active. Live probe PASS.
