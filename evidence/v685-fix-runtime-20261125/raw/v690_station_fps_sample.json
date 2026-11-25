@@ -1,0 +1,4 @@
+{
+  "sample": "fps=14.9 memoryMB=2616.2 heartbeatMs=1.00 physicsMs=0.27",
+  "context": "Studio Play Solo client, station after forced-failure test; not a clean standalone client measurement"
+}

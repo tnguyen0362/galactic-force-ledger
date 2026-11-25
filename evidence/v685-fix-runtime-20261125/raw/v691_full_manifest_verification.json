@@ -1,0 +1,6 @@
+{
+  "editSource": "counter=true scanComment=true",
+  "fpsSample": "fps=14.9 memoryMB=2665.2",
+  "baseline": "fps=14.9 memoryMB=2606.2",
+  "context": "fresh Studio Play Solo station after full-manifest deploy and telemetry scan fix"
+}

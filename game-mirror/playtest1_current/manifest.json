@@ -663,5 +663,215 @@
     "file": "ServerStorage/GF/Art/GFSoldierRig/AnimateScript.luau",
     "lines": 972,
     "chars": 28803
+  },
+  {
+    "path": "ReplicatedStorage.GF.Shared.Configs.Campaign",
+    "className": "ModuleScript",
+    "file": "ReplicatedStorage/GF/Shared/Configs/Campaign.luau",
+    "lines": 39,
+    "chars": 2125
+  },
+  {
+    "path": "ReplicatedStorage.GF.Shared.Configs.Monetization",
+    "className": "ModuleScript",
+    "file": "ReplicatedStorage/GF/Shared/Configs/Monetization.luau",
+    "lines": 41,
+    "chars": 1261
+  },
+  {
+    "path": "ReplicatedStorage.GF.Shared.Configs.Requisitions",
+    "className": "ModuleScript",
+    "file": "ReplicatedStorage/GF/Shared/Configs/Requisitions.luau",
+    "lines": 104,
+    "chars": 3522
+  },
+  {
+    "path": "ServerScriptService.GF.Services.BossReplayService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/BossReplayService.luau",
+    "lines": 47,
+    "chars": 2208
+  },
+  {
+    "path": "ServerScriptService.GF.Services.BoundaryService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/BoundaryService.luau",
+    "lines": 64,
+    "chars": 2092
+  },
+  {
+    "path": "ServerScriptService.GF.Services.DestructibleCoverService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/DestructibleCoverService.luau",
+    "lines": 61,
+    "chars": 2401
+  },
+  {
+    "path": "ServerScriptService.GF.Services.DoorService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/DoorService.luau",
+    "lines": 73,
+    "chars": 2656
+  },
+  {
+    "path": "ServerScriptService.GF.Services.MatchmakingService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/MatchmakingService.luau",
+    "lines": 185,
+    "chars": 6015
+  },
+  {
+    "path": "ServerScriptService.GF.Services.MonetizationService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/MonetizationService.luau",
+    "lines": 220,
+    "chars": 8819
+  },
+  {
+    "path": "ServerScriptService.GF.Services.NetGuard",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/NetGuard.luau",
+    "lines": 220,
+    "chars": 7072
+  },
+  {
+    "path": "ServerScriptService.GF.Services.OptionalService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/OptionalService.luau",
+    "lines": 235,
+    "chars": 7806
+  },
+  {
+    "path": "ServerScriptService.GF.Services.PathThrottle",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/PathThrottle.luau",
+    "lines": 85,
+    "chars": 2439
+  },
+  {
+    "path": "ServerScriptService.GF.Services.PerformanceTelemetry",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/PerformanceTelemetry.luau",
+    "lines": 137,
+    "chars": 5318
+  },
+  {
+    "path": "ServerScriptService.GF.Services.ProjectileService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/ProjectileService.luau",
+    "lines": 112,
+    "chars": 4057
+  },
+  {
+    "path": "ServerScriptService.GF.Services.RequisitionService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/RequisitionService.luau",
+    "lines": 398,
+    "chars": 15122
+  },
+  {
+    "path": "ServerScriptService.GF.Services.SpatialGrid",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/SpatialGrid.luau",
+    "lines": 60,
+    "chars": 1522
+  },
+  {
+    "path": "ServerScriptService.GF.Services.TelemetryService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/TelemetryService.luau",
+    "lines": 37,
+    "chars": 1579
+  },
+  {
+    "path": "ServerScriptService.GF.Services.TeleportFlowService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/TeleportFlowService.luau",
+    "lines": 74,
+    "chars": 2888
+  },
+  {
+    "path": "ServerScriptService.GF.Services.WeatherService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/WeatherService.luau",
+    "lines": 72,
+    "chars": 2823
+  },
+  {
+    "path": "ServerScriptService.GF.Services.WildlifeService",
+    "className": "ModuleScript",
+    "file": "ServerScriptService/GF/Services/WildlifeService.luau",
+    "lines": 78,
+    "chars": 2778
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.AimAssist",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/AimAssist.luau",
+    "lines": 71,
+    "chars": 2957
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.ArmorFlashlight",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/ArmorFlashlight.luau",
+    "lines": 44,
+    "chars": 1626
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.Flashlight",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/Flashlight.luau",
+    "lines": 79,
+    "chars": 2227
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.GraphicsPresets",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/GraphicsPresets.luau",
+    "lines": 48,
+    "chars": 1448
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.LoadingScreen",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/LoadingScreen.luau",
+    "lines": 55,
+    "chars": 1840
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.LootFeed",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/LootFeed.luau",
+    "lines": 85,
+    "chars": 3311
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.Nameplates",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/Nameplates.luau",
+    "lines": 76,
+    "chars": 2503
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.TouchControls",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/TouchControls.luau",
+    "lines": 73,
+    "chars": 2651
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.TutorialHints",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/TutorialHints.luau",
+    "lines": 142,
+    "chars": 4214
+  },
+  {
+    "path": "StarterPlayer.StarterPlayerScripts.VirtualCursor",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/VirtualCursor.luau",
+    "lines": 75,
+    "chars": 2730
   }
 ]
