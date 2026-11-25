@@ -217,3 +217,8 @@ war territory system full core; Galactic War rows mostly verified. NEXT: batch-v
 notes read complete (S11-026/029/031/033/037/055/058/061/062/064/065 + others) — read FULL notes first,
 many are done with only sampling-error or cosmetic tails. S11-030 is a REAL defect: math.random for cache
 outcomes — spec wants platform-supported randomness (use Random object or cryptographic-quality seeding).
+
+## UPDATE 11 — VERIFIED ~360 / UNKNOWN ~320 / PARTIAL ~130
+Batch-verified: 18 cache rows + 10 data/security rows. S11-030 (math.random cache RNG) still a REAL defect.
+Remaining big fronts unchanged: lobby/matchmaking ~55, procedural world ~37, enemy AI architecture ~25,
+extraction visual tails, engineering/QA process rows.
