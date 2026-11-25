@@ -486,6 +486,23 @@ not a decision — and settlement must NOT read the ledger until durability exis
 **Downed eligibility answered by source, not runtime:** `DownedService` sets `state.downed` and never calls `State.clear`, so a
 downed soldier keeps their state and stays eligible, which is what `S09-027` requires. Stated as a read, not a test.
 
+**DOWNED ELIGIBILITY RUNTIME-VERIFIED (place 475, no source change).** Evidence `evidence/v475-downed-eligibility-runtime/EVIDENCE.md`.
+
+The previous batch recorded the downed case as *"source reading, not a runtime downing test"*. Now tested with real
+`VitalsService` calls:
+
+```
+before down   state=true  downed=false  eligible=1[1889759131]
+after down    state=true  downed=true   eligible=1[1889759131]     <- downed stays eligible
+after revive  state=true  downed=false  eligible=1[1889759131]     <- clean round trip
+```
+
+`S09-027` requires shared credits and salvage to reach each eligible **active/downed/pending-life** participant, so a downed
+soldier silently dropping out would under-pay the player who most needs it. They do not drop out.
+
+Still unproven: **pending-redeploy** (no distinct State representation exists, so genuinely unknown), **co-op** (one client),
+**disconnect grace** (no restore path), and the down was applied via `downPlayer` rather than lethal combat damage.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 475**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
