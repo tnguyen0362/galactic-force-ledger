@@ -1100,11 +1100,38 @@ and untested against a nearly-exhausted tier.
 
 **Disclosed:** the probe replaced and restored ownedAugments, augmentCapacity, caches and cacheInstances.
 
+**ORPHANED ACTIONS NOW HAVE BUTTONS — `S11-032` and `S11-035` VERIFIED (place 503).** Evidence
+`evidence/v503-armory-action-buttons/EVIDENCE.md`.
+
+Two features implemented in the previous three batches were unreachable in play. The armory now renders:
+
+```
+EXPAND +50 | OPEN 10 · Rare x14
+```
+
+with the bulk label reading the real held tier and count. `ArmoryService.state` exposes `caches`, a `bulkOpenCache` action wraps
+`openMany`, and both buttons fire the existing actions.
+
+Client-fired results:
+
+```
+expandResult = "false:already at max capacity"    (profile capacity is 400 from an earlier probe)
+GF_CacheHeld = "Rare:13"                           (was 14)
+GF_CacheBulk = "Rare wanted=10 opened=1 held=13 space=364"
+```
+
+`opened=1` with `space=364` is correct: the batch stopped because **no unowned Rare augments remained** — the nearly-exhausted-tier case
+I had listed as untested, degrading cleanly. `source=unknown` is the documented fallback for caches granted before instance records
+existed.
+
+**Feedback gap remains:** both results go to workspace attributes, not to an on-screen message, so a player still learns nothing from
+clicking; `EXPAND +50` shows no cost preview; and the held count does not refresh until the panel reopens.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 502**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 503**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **502** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **503** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
