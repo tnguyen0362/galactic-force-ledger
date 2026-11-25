@@ -195,3 +195,12 @@ S08-044/S08-045, save place, commit.
 ALSO unsaved in mirror: vault/mantle in Controller.luau, ammo/grenade pickups in LootService,
 eligibility fix in StationService+RewardLedgerService (probe-verified), projectile speed fixes.
 A save deploy ran earlier but verify version before assuming.
+
+## UPDATE 8 — VERIFIED 309+ / UNKNOWN ~340; place v633 saved healthy
+DONE: cinematic rewritten to exact spec (95s/7 segments/spec narration), armor names fixed + GF-05/06 confirmed,
+settings extended (7 new keys live-probed), damage numbers implemented, spread decay/cap fixed to spec (7/s, 2.5x),
+optional objectives system LIVE (probe GF_OP pass), ammo/grenade enemy drops live, eligibility fix live,
+source weight tables live, vault/mantle implemented. All pushed.
+BIG REMAINING CLUSTERS (implementation-heavy): lobby/matchmaking ~55 rows, procedural world ~37,
+enemy AI architecture ~30, Galactic War territory system ~19, narrative armor-variant exercise.
+Settings consumers pending: camera shake system, graphics quality consumer.
