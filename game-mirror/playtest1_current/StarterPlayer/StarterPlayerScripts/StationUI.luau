@@ -460,6 +460,10 @@ local function showDebrief(payload: any)
 		table.insert(lines, "")
 		table.insert(lines, "Reinforcement catch-up credit already paid — no mission share.")
 	end
+	if payload.endReason == "squad_eliminated" then
+		table.insert(lines, "")
+		table.insert(lines, "Automatic redeploys exhausted — the squad was eliminated.")
+	end
 	if not payload.objectiveComplete then
 		table.insert(lines, "")
 		table.insert(lines, "Primary objective incomplete — no completion payout.")
@@ -467,7 +471,7 @@ local function showDebrief(payload: any)
 		table.insert(lines, "")
 		table.insert(lines, "Extraction failed — unsecured salvage was lost.")
 	end
-	debriefTitle.Text = if payload.lateJoin then "EXTRACTED — REINFORCEMENT" elseif payload.objectiveComplete then "OPERATION COMPLETE" elseif payload.success then "EXTRACTED — OBJECTIVE OPEN" else "OPERATION FAILED"
+	debriefTitle.Text = if payload.lateJoin then "EXTRACTED — REINFORCEMENT" elseif payload.objectiveComplete then "OPERATION COMPLETE" elseif payload.success then "EXTRACTED — OBJECTIVE OPEN" elseif payload.endReason == "squad_eliminated" then "SQUAD ELIMINATED" else "OPERATION FAILED"
 	debriefTitle.TextColor3 = if payload.objectiveComplete then CYAN else AMBER
 	debriefBody.Text = table.concat(lines, "\n")
 	table_.Visible = false
@@ -509,7 +513,7 @@ function setFocus(target: any)
 end
 
 local function setMissionHudVisible(visible: boolean)
-	for _, name in { "GFMissionHUD", "GF_HUD" } do
+	for _, name in { "GFMissionHUD" } do
 		local gui = playerGui:FindFirstChild(name)
 		if gui and gui:IsA("ScreenGui") then
 			gui.Enabled = visible

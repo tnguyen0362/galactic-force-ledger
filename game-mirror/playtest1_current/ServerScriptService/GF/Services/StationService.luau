@@ -364,6 +364,7 @@ function StationService.resetMission(missionDifficulty: string, template: string
 	workspace:SetAttribute("GF_ObjectiveComplete", false)
 	workspace:SetAttribute("GF_ExtractionState", "idle")
 	workspace:SetAttribute("GF_LastPayout", nil)
+	workspace:SetAttribute("GF_MissionEndReason", nil)
 	SquadService.reset()
 	ExtractionService.reset()
 	-- A redeploy used to leave the previous mission's hostiles standing: clearAll only ran on

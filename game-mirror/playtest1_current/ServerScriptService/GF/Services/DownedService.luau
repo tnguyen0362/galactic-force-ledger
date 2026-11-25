@@ -162,6 +162,7 @@ local function nearestDowned(requester: Player): Player?
 end
 
 function DownedService.failMission(player: Player)
+	workspace:SetAttribute("GF_MissionEndReason", "squad_eliminated")
 	VitalsService.reset(player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -299,7 +300,10 @@ function DownedService.start()
 					pendingRedeploy[player] = nil
 				elseif now >= executeAt then
 					pendingRedeploy[player] = nil
+					workspace:SetAttribute("GF_RedeployCountdown", 0)
 					DownedService.redeploy(player)
+				else
+					workspace:SetAttribute("GF_RedeployCountdown", math.max(0, executeAt - now))
 				end
 			end
 

@@ -1,0 +1,7 @@
+{
+  "deploy": "true:nil",
+  "transitionImmediate": "teleporting=false loadingVisible=false",
+  "missionPos": "pos=-0.0,31.2,117.8 env=mission",
+  "failInvoke": "fail-invoked",
+  "debrief": "debrief=true texts=SQUAD ELIMINATED | Credits earned        +0\nMilitary XP            +0\nScrap secured           0\nEnergy Cells            0\nMilitary Technology     0\nMilitary Rank           1\n\nAutomatic redeploys exhausted \u2014 the squad was eliminated.\n\nPrimary objective incomplete \u2014 no completion payout."
+}

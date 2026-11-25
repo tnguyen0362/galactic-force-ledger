@@ -311,10 +311,14 @@ function HUD.init()
 		BackgroundTransparency = 0.72,
 		Visible = false,
 	})
-	local downedText = newLabel(downedFrame, "DOWNED", UDim2.fromScale(1, 1), UDim2.fromScale(0, 0), 48)
+	local downedText = newLabel(downedFrame, "DOWNED", UDim2.fromScale(1, 0.72), UDim2.fromScale(0, 0), 48)
 	downedText.TextXAlignment = Enum.TextXAlignment.Center
 	downedText.Font = Enum.Font.GothamBlack
 	downedText.TextColor3 = WARN
+	local downedDetail = newLabel(downedFrame, "Awaiting revive", UDim2.new(1, 0, 0, 42), UDim2.new(0, 0, 0.58, 0), 20)
+	downedDetail.TextXAlignment = Enum.TextXAlignment.Center
+	downedDetail.Font = Enum.Font.GothamBold
+	downedDetail.TextColor3 = Color3.fromRGB(255, 214, 170)
 
 	-- touch layer
 	touchLayer = newFrame(gui, {
@@ -410,6 +414,17 @@ function HUD.init()
 			end
 			if crosshair then
 				crosshair.Visible = inMission and not (downedFrame and downedFrame.Visible)
+			end
+			if downedFrame and downedFrame.Visible then
+				local pendingFor = workspace:GetAttribute("GF_RedeployPendingFor")
+				if pendingFor == player.Name then
+					local remaining = math.max(0, tonumber(workspace:GetAttribute("GF_RedeployCountdown")) or 0)
+					downedText.Text = "K.I.A."
+					downedDetail.Text = string.format("AUTOMATIC REDEPLOY IN %.0f — ABILITIES PRESERVED", remaining)
+				else
+					downedText.Text = "DOWNED"
+					downedDetail.Text = "AWAITING REVIVE — STAY IN RANGE"
+				end
 			end
 			-- boss HP bar: visible while a boss lives, phase-colored fill
 			do

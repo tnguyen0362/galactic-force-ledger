@@ -207,6 +207,7 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 			warCredits = profile and profile.warCredits or 0,
 			boss = bossReport,
 			mastery = masteryReport,
+			endReason = workspace:GetAttribute("GF_MissionEndReason"),
 		})
 	end
 	return payload
