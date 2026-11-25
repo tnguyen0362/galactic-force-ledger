@@ -3181,3 +3181,7 @@ Caution: the probe used the broad Common/Universal filter in the real test profi
 Fusion validation is now shared by `fusionPreview` and `fuse`. The Armory FUSE button requests a read-only preview showing source/target rarity, category and outcome chances, then requires CONFIRM. Live probe verified preview leaves inventory unchanged, Legendary and favorited inputs reject, and valid Rare AR inputs fuse into Epic AR (`LongBarrel`). Boot remained `config check PASS (688 assertions)`.
 
 Next: mixed-input rejection test and UI click evidence, then reward settlement durability.
+
+## 2026-11-25 / place 572 - settle-once payouts
+
+`RewardsService.grant` is idempotent per player per ledger missionId via persisted `profile.settledMissions`. Live probe: first grant +450 credits, second +0 with `duplicate=true`; test state restored.
