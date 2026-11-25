@@ -184,6 +184,15 @@ local function applyStance(player, character, humanoid)
 	if not character or not humanoid or humanoid.Health <= 0 then
 		return
 	end
+	local st = State.get(player)
+	if st and st.downed then
+		-- Downed soldiers crawl. Stance replication must never promote them back to walk/sprint/ADS speed.
+		character:SetAttribute("Sprinting", false)
+		character:SetAttribute("Aiming", false)
+		humanoid.WalkSpeed = 5
+		humanoid.JumpPower = 0
+		return
+	end
 	if character:GetAttribute("Aiming") == true then
 		-- The adsSpeed augment stat modifies aim speed specifically. Until now it was listed by
 		-- AugmentService but applied by nothing, so a rolled adsSpeed augment did nothing at all.
@@ -211,7 +220,8 @@ ReplicatedStorage.GF.Remotes.AimChanged.OnServerEvent:Connect(function(player, a
 	if not character or not humanoid or humanoid.Health <= 0 then
 		return
 	end
-	local on = aiming == true
+	local s = State.get(player)
+	local on = aiming == true and not (s and s.downed)
 	character:SetAttribute("Aiming", on)
 	if on and character:GetAttribute("Sprinting") == true then
 		character:SetAttribute("Sprinting", false)
@@ -230,7 +240,7 @@ ReplicatedStorage.GF.Remotes.SprintChanged.OnServerEvent:Connect(function(player
 			return
 		end
 		if character then
-			character:SetAttribute("Sprinting", sprinting == true)
+			character:SetAttribute("Sprinting", sprinting == true and not s.downed)
 		end
 		applyStance(player, character, humanoid)
 	end)

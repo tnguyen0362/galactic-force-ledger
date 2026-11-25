@@ -46,3 +46,18 @@ Passing v708 evidence in `raw/ticketflow_ticket_verification.json` / `raw/ticket
   - return-to-station loading visibility during transition
 
 The ticket-spend defect from v706 is corrected. Remaining open work is limited to presentation and edge cases: full visible reinforcement drop pod, downed crawl/pose, spawn-trap protection, multiplayer revive/redeploy timing, live squad-size ticket scaling, and disconnect/rejoin abuse resistance.
+
+## V709-V711 reinforcement presentation and downed crawl checkpoint
+
+v709 added a visible reinforcement pod, terrain-resolved spawn placement, diagonal dismount offset, and four-second visible spawn protection. v710 changed the pod from a monolithic rectangular blocker to a cylindrical drop-pod silhouette and moved the player dismount off the camera centerline. v711 enforced downed crawl stance in the central movement service: downed soldiers cannot be promoted back to sprint/ADS/walk speed by stance replication.
+
+Runtime evidence `raw/redeploy_pod_verification.json` and `raw/redeploy_pod_verify_v711.log`:
+
+- ticket count `5 -> 4` after first permanent death
+- redeployed health `100`, downed state cleared
+- exactly one `GF_ReinforcementPod` present after redeploy
+- `GF_RedeployProtection` ForceField present
+- downed crawl state measured as `WalkSpeed=5`, `JumpPower=0`
+- capture `raw/redeploy_pod_visible_0.jpg` shows the cylindrical pod at the LZ edge, no longer occluding the centerline
+
+Harness caveat: sprint/aim attribute assertions were not valid evidence because server-plugin execution cannot invoke client RemoteEvent input paths directly; their absence in JSON is not proof of the new stance guard. The authoritative crawl speed and jump prevention are proven. Pose/animation remains open: the soldier still uses the normal upright rig pose while crawling.

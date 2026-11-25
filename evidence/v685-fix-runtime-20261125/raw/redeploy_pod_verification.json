@@ -1,0 +1,11 @@
+{
+  "deploy": "fire",
+  "fall": "fall-induced:13.987958908081055, 244.90464782714844, 117.60435485839844",
+  "downed_stance": "{\"jump\":0,\"walk\":5}",
+  "redeploy_state": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@294 downedAttr=nil health=100 pos=12.0,31.1,126.0 tickets=4 lz=0, 32.475006103515625, 118 trace=13573.0 automatic redeploy executing player=ROBLOXISUS101 ddebug=nil",
+  "pod_query": "{\"forcefield\":true,\"tickets\":4,\"inMission\":true,\"pods\":1}",
+  "capture": [
+    "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\redeploy_pod_visible_0.jpg"
+  ],
+  "passed": false
+}

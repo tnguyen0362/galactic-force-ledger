@@ -95,6 +95,45 @@ local function hasRescuer(downed: Player): boolean
 	return false
 end
 
+local function groundPoint(point: Vector3): Vector3
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.IgnoreWater = true
+	local actors = workspace:FindFirstChild("ActiveActors")
+	params.FilterDescendantsInstances = actors and { actors } or {}
+	local hit = workspace:Raycast(point + Vector3.new(0, 500, 0), Vector3.new(0, -1200, 0), params)
+	return hit and (hit.Position + Vector3.new(0, 3, 0)) or point
+end
+
+local function spawnReinforcementPod(position: Vector3)
+	local pod = Instance.new("Model")
+	pod.Name = "GF_ReinforcementPod"
+	local shell = Instance.new("Part")
+	shell.Name = "Shell"
+	shell.Shape = Enum.PartType.Cylinder
+	shell.Size = Vector3.new(6, 4.5, 4.5)
+	shell.CFrame = CFrame.new(position + Vector3.new(0, 3.2, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	shell.Color = Color3.fromRGB(82, 91, 104)
+	shell.Material = Enum.Material.Metal
+	shell.Anchored = true
+	shell.CanCollide = false
+	shell.CanQuery = false
+	shell.Parent = pod
+	local glow = Instance.new("Part")
+	glow.Name = "Glow"
+	glow.Size = Vector3.new(5.2, 0.35, 5.2)
+	glow.CFrame = CFrame.new(position + Vector3.new(0, 0.45, 0))
+	glow.Color = Color3.fromRGB(120, 210, 255)
+	glow.Material = Enum.Material.Neon
+	glow.Anchored = true
+	glow.CanCollide = false
+	glow.CanQuery = false
+	glow.Parent = pod
+	pod.PrimaryPart = shell
+	pod.Parent = workspace
+	game:GetService("Debris"):AddItem(pod, 7)
+end
+
 function DownedService.redeploy(player: Player)
 	local mission = State.getMission()
 	if not mission then
@@ -130,11 +169,15 @@ function DownedService.redeploy(player: Player)
 			target = lz + Vector3.new(math.random(-8, 8), 6, math.random(-8, 8))
 		end
 	end
+	if target then
+		target = groundPoint(target)
+		spawnReinforcementPod(target)
+	end
 	player:LoadCharacter()
 	task.defer(function()
 		local newRoot = rootOf(player)
 		if newRoot and target then
-			newRoot.CFrame = CFrame.new(target)
+			newRoot.CFrame = CFrame.new(target + Vector3.new(6, 2, 7))
 		end
 		-- Full HP/shield come from VitalsService.reset above; ammo and grenades refill here.
 		-- Ability cooldowns are timestamps in player state and are deliberately not touched,
@@ -144,6 +187,14 @@ function DownedService.redeploy(player: Player)
 		end)
 		if _G.GrenadeRefill then
 			pcall(_G.GrenadeRefill, player)
+		end
+		local character = player.Character
+		if character then
+			local protection = Instance.new("ForceField")
+			protection.Name = "GF_RedeployProtection"
+			protection.Visible = true
+			protection.Parent = character
+			game:GetService("Debris"):AddItem(protection, 4)
 		end
 	end)
 	ReplicatedStorage.GF.Remotes.MissionEvent:FireAllClients({
