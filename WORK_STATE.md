@@ -3169,3 +3169,9 @@ Live lock probe: Legendary `MasterworkBore`, locked negative `magazine` at index
 Also fixed a pre-existing DeepSeek defect in `RewardsService`: the late-join payout path referenced `payload` before it existed inside the `MissionComplete` payload, so any late join settlement would crash before sending the zero-payout debrief. It now sends explicit zero/base/bonus fields.
 
 Remaining augment gaps: sentry destruction/targeting, live weapon-range/support-combat probes, canonical catalog identity, signature/pure-buff variants, bulk dismantle/fusion preview, offline Monte Carlo validation, exact UI visual evidence.
+
+## 2026-11-25 / place 570 - bulk dismantle preview/confirmation
+
+Added filtered bulk dismantle. The server computes eligible unprotected augment UIDs for a rarity/category filter, returns exact count/scrap/protected-skip preview, and confirmation dismantles that server-computed set rather than trusting client UID input. Armory UI now exposes rarity/category filter cycle buttons, preview text and a separate confirm button. Live probe verified exact Common scrap payout and favorite protection; boot remained `config check PASS (688 assertions)`.
+
+Caution: the probe used the broad Common/Universal filter in the real test profile and dismantled unprotected items matching that filter; these were primarily prior test inventory, but future probes should use unique synthetic categories or exact UID cleanup. Remaining work: UI click evidence and full equipped/saved/pending protection matrix.
