@@ -448,3 +448,10 @@ REMAINING BIG CLUSTERS: S02 44 (multi-place mostly dashboard-blocked), S16 35 (p
 S01 armor rows verified: boots+gold insignia implemented, full coverage confirmed, block soldiers conform.
 S07 biome rows verified: kits drive arid/forest parameterization, seed rotation live (line 58 Mission.luau),
 Veyra-7 single theater confirmed. Boot 816 green. ALL COMMITTED+PUSHED.
+
+## UPDATE 45 — VERIFIED ~582; extraction conformance complete
+EXTRACTION rows verified: zone reveal on primary-complete, hard deadline 240s, no boarding countdown.
+Deploy running in background shell e90ab8. ALL COMMITTED+PUSHED.
+REMAINING ~233: S02 multi-place (dashboard-blocked) + station tails, S16 process rows, S15 hardware
+perf rows, S07 procedural tails, S03 input tails, S10 economy rows, S11 augment pool rows, scattered.
+KEY RESUME STATE: boot 816 green, all module shells exist, deploy pipeline healthy, tarball current.
