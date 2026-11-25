@@ -1546,6 +1546,28 @@ cleared=1   after: 2=StabilityCompensator   secondRunCleared=0
 player (only `GF_AugmentSanitised*` attributes record it), `loadout.abilityAugment` is not validated, and a missing primary weapon in config would
 clear every Category augment.
 
+**JOIN REPAIR VERIFIED ACROSS A REAL RESTART (place 514, no code change).** Evidence `evidence/v514-join-repair-restart-verified/EVIDENCE.md`.
+
+Closing the gap declared at place 514 ("the `PlayerAdded` path itself was not exercised"). Three steps, the middle one easy to forget:
+
+1. Plant `Choke` (shotgun-only) into slot 1 with `primary = SMG03`, then `ProfileService.save` → `save=true`, `mode=datastore`.
+2. **Remove the planting probe before restarting** — left in place it would have re-planted the mismatch and made a passing test meaningless.
+3. Restart Play and read the observable from a fresh server.
+
+```
+sanitisedCount  = 1
+sanitisedDetail = "Choke from SMG03"
+```
+
+A new server loaded the persisted bad loadout, the `PlayerAdded` hook ran the repair, and the profile was dirty-marked so the repair persists. This is
+the first end-to-end test in the project exercising **DataStore round-trip + join hook together** rather than either half alone.
+
+**Still open on this row:** the player is not told anything was removed; `loadout.abilityAugment` is not validated; and nothing repairs a mismatch made
+while the player stays connected.
+
+**Self-correction:** my first draft of this evidence claimed a new `GF_AugmentSanitisedDetail` attribute had been added. It had not — the existing
+attributes were sufficient. Corrected before committing.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 514**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
