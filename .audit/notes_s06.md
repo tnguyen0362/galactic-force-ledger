@@ -1,102 +1,70 @@
-# S06 enemy AI — gap analysis and implementation plan (2026-11-25)
+# DURABLE WORK STATE — read first after any compaction
 
-## Discovery: architecture largely absent
+## Mission
+Burn down ALL 815 rows of galactic-force-ledger/REQUIREMENT_COVERAGE.csv per .goal/GOAL_2026-11-24.md
+(identical to user's Downloads/GOAL.md). User wants continuous autonomous work, no stopping. Auto-merge allowed.
 
-EnemyService.luau (809 lines) implements basic behavior-driven enemies:
-- behavior tags in config: GuardCover/FlankBeacon/ChargedShot/AreaBurst/CommandSquad/WalkerPhases/CommanderPhases
-- cover usage exists; single central heartbeat (good); enemies use cover in live tests (observed spine1)
-- NO hierarchical FSM states (Dormant/Patrol/Investigate/Acquire/Engage/Search/Return) — only "Guard" string found
-- NO confidence model exp(-age/4), NO lastSeen tracking, NO radio knowledge sharing
-- NO spatial grid, NO token-bucket pathfinding, NO threat-cost reinforcement economy
-- NO hitProb config (S06-028 spec values absent), NO threatCost table (S06-039 absent)
-- EncounterDirector.luau is only 238 lines — minimal spawn control
+## Current counts: UNKNOWN 412 / PARTIAL 224 / VERIFIED 176 / IMPL_UNVER 1 / ABSENT 2
+## Place saved: v614 (includes reseat fix + hit probability + all prior)
 
-Enemies config (78 lines): solid per-archetype hp/shield/damage/speed/sight/burst but no hitProb/threatCost.
+## Just completed
+- RESEAT BUG FIXED (v614): StationArt.reseat yanked players below y750 to deck when shell built at boot+6s.
+  Mission terrain y31 qualified → all early deploys snapped back. Fixed: exempt Mission-zone players.
+  THIS WAS THE ROOT CAUSE OF ALL PROBE GEOMETRY FAILURES. Evidence: evidence/v614-reseat-fix/
+- Hit probability verified live [GF_HP3]: stationary 13h/32m/45shots, rolling 0h/21m dodge works.
+  S06-021/028/029/030 VERIFIED. Implementation was already in place from pre-compaction work.
+- S05-008, S14-027, S01-013 VERIFIED by inspection. Pushed commit 209f4d9.
 
-## Spec targets (from rows S06-003..044)
+## Key facts
+- MISSION_SECONDS is ALREADY 900 (correct) — ledger note saying 1500 was STALE.
+- DomeShield duration ALREADY 10 (correct) — ledger note saying 20s STALE.
+  LESSON: audit blocker notes drift stale; verify current code before trusting them.
+- Grenade frag: throws work, charges decrement, detonation occurs; synthetic-target damage measurement
+  unreliable because bomb trajectory scatters. GFDebug folder publishes LastGrenade/LastGrenadeTargets/etc.
+- Charges default 3 per mission via chargesOf(); refill happens at deploy.
+- Probe harness: python3 gf_deploy.py <tgz|-> <probe.lua|-> <marker>; NOSAVE=1 to skip save; POLLS=n.
+  Tarballs need COPYFILE_DISABLE=1 and playtest1_current/ prefixed paths.
+- Client probe shell GF_TMP_CLIENTPROBE exists in StarterPlayerScripts (edit mode) — update its Source
+  via MCP execute_luau datamodel_type Edit before playtests; it fires remotes end-to-end.
+- Deploy probes: StationService.deploy(player, "Normal", "SABOTAGE_RELAY") works directly server-side.
+  Players NOW STAY at mission post-fix. Co-locate enemies with EnemyService.spawn("Rifleman", pos),
+  stimulate with EnemyService.hearGunfire(pos, radius).
+- ObjectiveService.complete() directly callable to skip to extraction/settlement.
+- Synthetic targets: Model in workspace.ActiveActors with GFEnemy=true, EnemyId, Health, Shield attributes.
 
-FSM states, central staggered scheduler (no per-NPC heartbeat — currently central single heartbeat: partial credit),
-LOS raycasts bounded (2 max per check), sight 110 studs/110 deg cone, near-proximity 14, hearing 90,
-confidence exp(-age/4), radio within 100 studs same group delay .5s, target scoring formula,
-downed-not-targeted, cover node reservation TTL, pathfinding token bucket 8/s, stuck recovery 2s/6s,
-hit probabilities rifleman .42 Vanguard .38 etc, suppressive-fire intentional misses, elite frequency 0/10/20/30%,
-active cap round(4+2*(P-1)) scaled, Normal solo 3-5 active, threat costs, reinforcement token formula,
-off-screen spawn validation 65-140 studs.
+## PARTIAL-row gap notes (from full scan — verify currency before trusting)
+Big clusters: Caches/Augments 39, Missions 31, EnemyAI 29, Extraction 26, Combat 20, Eng/QA 18, Economy 16,
+Data/security 16, Input/HUD 11, SupportAbilities 11.
+- S03-018/024/027: constants conform, need live measurement of regen/invuln timing only
+- S09-002: extraction VOTING unimplemented (implementation work)
+- S11-016..019: enemy-drop rarity distributions missing (config implementation)
+- S11-030: math.random not crypto-random (DEFECT — may need owner decision)
+- S08-036..043 hacking rows: mostly measured, minor gaps
+- Many S09/S10 rows: mostly verified components with one missing measurement each
 
-## Implementation plan (sub-batches)
+## Next steps
+1. Batch-verify combat/support rows live (shield regen timing, roll invuln, sentry/dome behavior) — one probe
+2. S11-016..019 enemy drop rarity distributions implementation
+3. Continue through mission/extraction measurement gaps
+4. Big implementation clusters remain: lobby/matchmaking 63, procedural world 38, narrative/onboarding 30,
+   Galactic War territories (S13) — GalacticWarService is only a simple counter, needs full implementation
 
-S06-A perception/FSM core: implement state machine (Dormant/Patrol/Investigate/Acquire/Engage/Search/Return),
-  LOS cone+distance checks, hearing on gunfire events, lastSeen+confidence, target scoring, downed exclusion.
-  Verify: probe observes state transitions via attributes when player exposes/hides.
-S06-B reinforcement economy: threat costs config, active caps by player count, token refill formula,
-  off-screen spawn validation. Verify: probe counts actives over a mission, spawn positions outside LOS.
-S06-C attack patterns: hitProb config per archetype, suppressive-fire zones, telegraph avoidance windows.
-  Verify: statistical probe on synthetic engagements.
-S06-D stuck recovery + cover reservation TTL + radio sharing.
+## CRITICAL HARNESS LESSON (compaction-proof)
+`python3 gf_deploy.py - probe.lua MARKER` with `-` as tgz DOES NOT DEPLOY ANYTHING.
+Mirror edits only reach the game via tarball: build with
+`cd /Users/timnguyen/gf && COPYFILE_DISABLE=1 tar czf gf_mirror.tgz --exclude='._*' --exclude='.DS_Store' playtest1_current`
+then run `NOSAVE=1 POLLS=10 python3 gf_deploy.py gf_mirror.tgz probe.lua MARKER`.
+Several probes before this realization measured OLD v614 code. Always deploy the tarball when testing mirror edits.
 
-Each sub-batch: implement -> deploy -> probe -> ledger update -> commit. Estimate multiple sessions.
-
-## Row triage note
-Config-checkable rows can be verified as implementation lands. Do NOT mark behavioral rows verified
-without live probes. S06-012 (footstep sound not needed) is a negative-requirement: verifiable by absence.
-
-## IN-FLIGHT at compaction (update after reading)
-
-S06-A perception/FSM: DONE, place saved v596, committed. Probe PASS hidden=Guardx9 alerts=9 afterFire=Investigate.
-
-S06-B reinforcement economy: IMPLEMENTED, verification in progress. Changes in EncounterDirector:
-- DIFFICULTY_PRESSURE table, THREAT_COST (Rifleman1 Scout1 Marksman1.5 Heavy2.5 Officer2 bosses6)
-- activeCap() = round(4+2*(P-1)) * pressure; refill tokens 0.12*P^0.7*pressure*phase*(0.5+A/100)/s burst cap 8
-- alert +6/gunfire decay 2/s (was 4, tuned); phase scalar .6/1/1.4/1.5; GF_ExtractionCalled attribute
-- isSpawnPointValid: 65-140 studs + outside LOS of all players
-- spawnAround consumes tokens by threat cost; refill ticker publishes GF_EconomyTokens/Alert/Cap
-- hearGunfire in EnemyService also calls EncounterDirector.noteGunfire
-FIXED forward-ref bug: refillTokens must use EnemyService.count() not activeCount (local defined later).
-Probe status: tokens=5.5 cap=4 publishing correct; spawn validation rejects correct; visible80=false correct.
-Final rerun was testing alert measurement race fix (probe now samples immediately). Shell 2ed4ac.
-NOT YET SAVED TO PLACE - deploy is NOSAVE. After PASS: save_place, evidence, ledger rows S06-036/038/039/040/041/042/044, commit.
-
-CRITICAL NEXT: after S06-B completes, pivot to mission/extraction verification sweep (cheaper rows) then continue remaining clusters per severity.
-
-## IN-FLIGHT at compaction (combat math fix)
-
-Combat probe measured: headshot ratio exactly 2.00 PASS, shield absorbs RAW 18 not boosted PASS, TTK derivation 2.70s in band PASS.
-BUG FOUND+FIXED: hitMultiplier was reset to 1 whenever augs existed, killing headshot bonus on shield overflow (measured 6 vs spec 12).
-Fix in CombatService.damageEnemy: removed fold, added weakFactor applied to health portion only. NOT YET SAVED.
-Probe rerun in progress (shell 24e143) expecting afterHead2 health=488. After PASS: save_place, evidence, update rows S04-014/S04-018/S04-046, commit.
-
-## INVESTIGATION IN PROGRESS at compaction (XP baseline S10-006/S10-025)
-
-Question: does kill XP exist to close the 650-900 XP band? Baseline objective+extraction = 600 XP measured.
-S10-025 spec says 650-900 "INCLUDING kills and optional" - so need per-kill XP value or confirmation none exists.
-If no per-kill XP exists: either implement it (spec implies kills contribute) or raise base. FIND per-kill XP first:
-grep VitalsService/CombatService for xp grants on kill. Mastery gain exists (spine1 measured GF_MasteryGain) but
-mastery may be separate from rank XP. Resolve: measure total XP from a mission with kills, or implement per spec.
-
-## IN-FLIGHT at compaction (projectiles batch)
-
-ProjectileService.luau NEW module created (shell in Studio done): kinematic server shells, GL22 55speed/35grav/6s, RL09 110/4/4s.
-Fire path: weapon.explosive now launches projectile instead of instant detonate. Remotes ProjectileFired/ProjectileDetonated added (contract v1 unchanged, additive).
-Probe GF_PROJ running (shell b8aa10): expects no instant detonation, positive travel time, detonation via collision/lifetime.
-NOT YET SAVED. After PASS: save_place, evidence, rows S04-048/S04-WPN-GL22/S04-WPN-RL09/S04-047, commit.
-KNOWN DEBT: immediate DamageFeedback still fires at trigger time in explosive branch (cosmetic); client visual shell animation not yet implemented (server ballistic params published via ProjectileFired remote).
-
-## IN-FLIGHT at compaction (hit probability batch)
-
-Hit probability implemented in EnemyService burst loop: per-shot baseProb from config (Rifleman .42/Scout .38/Marksman .75/Heavy .5/Officer .45),
-range factor falloff beyond 60% attack range, rolling targets auto-dodge, cover-broken targets safe, misses animate wide with GF_EnemyMisses counter.
-Deterministic-ish server roll via sin hash per-actor counter. Enemies config hitProb added.
-First probe FAIL was PERCEPTION WORKING CORRECTLY: silent player behind enemy outside cone never detected (0 shots) - not a bug.
-Fixed probe fires one shot to trigger hearing alert. Rerun in progress (shell 23526c).
-NOT YET SAVED. After PASS: save, evidence, rows S06-021/028/029/030, commit.
-
-## CRITICAL CORE-LOOP BUG INVESTIGATION (in progress)
-
-Players teleport correctly to mission terrain (0,31,118) on deploy, stand healthy ~3.5s, then get cleanly
-teleported back to station (-8,765,40) with no damage/death/downed/respawn. Active PivotTo by some system.
-NOT death (hp/shield constant, no nochar gap), NOT fall damage, NOT grace-related. Return position (-8,765,40)
-is the station spawn. Suspects exhausted: not CrewService (NPC rigs), not DownedService (never downed).
-NEXT: find what positions players at station spawn - check SpawnLocation/RespawnLocation logic, StationService
-returnToStation callers, any zone watchdog. Probe probes showed exact timing ~3.5-4s after arrival.
-This bug explains all the probe geometry fights - it may be THE critical core-loop defect.
-Hit probability batch still unsaved/in-flight (implementation done, EnemyService+Enemies config edited).
+## Fixes implemented (in mirror, verified deployed unless noted)
+- VitalsService shield regen bug: require(script.ClassService) -> script.Parent.ClassService. REGEN NEVER RAN
+  in any version <= v614. Verified fixed: shield 50 -> 82.5 in 1.5s at rate 25/s. (GF_RG probe)
+- Enemy drop rarity tables (S11-016..019): ENEMY_DROP_WEIGHTS infantry 85/14/1/0, elite 55/35/9/1,
+  Walker 0/70/28/2, Veyr 0/40/50/10 + enemyDropWeights() with DROP_SCALE difficulty scaling; open path
+  prefers enemy-source weights over tier weights when instance.source is an enemy id. NOT YET VERIFIED.
+- Spec redeploy model (S03-030) REPLACING ticket system: first permanent death -> 8s countdown ->
+  free automatic redeploy, full HP/shield/ammo/grenades via VitalsService.reset + applyLoadout +
+  _G.GrenadeRefill, ability cooldowns preserved (untouched). Second death -> returnToStation/debrief,
+  mission fails only if no active/pending players. DownedService.resetMission wired into StationService.
+  NOT YET VERIFIED (probe_redeploy.lua ready).
+- NOTE: WalkSpeed constant is 17.5, spec says 17 — minor deviation to fix. RollDistance 15.5 vs spec ~13.
