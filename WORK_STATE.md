@@ -1393,11 +1393,35 @@ class of error as asserting a dead constant: the number agrees, the behaviour do
 Not built: pellets change the combat model (8 raycasts per pull, per-pellet falloff, damage accumulation) and alter every shotgun TTK
 measurement, so it needs a decision about whether partial hits stack.
 
+**SG-04 NOW FIRES EIGHT PELLETS (place 508).** Evidence `evidence/v508-shotgun-pellets/EVIDENCE.md`.
+
+The spec settled the stacking question by arithmetic: authored `12/pellet × 8 = 96` and the config already carried `damage = 96`, so all
+pellet eight must stack on one target at point blank. `damagePerPellet = damage / pellets` reproduces the authored total exactly while making
+each pellet independent.
+
+`Configs/Weapons`: `SG04.pellets = 8`. `CombatService.fire`: the raycast-and-damage section is now a loop — pellet 1 uses the spread direction,
+pellets 2..N scatter around it using the weapon's own `adsSpread`/`spreadBase`, each resolving its own enemy/structure and falloff. Non-pellet
+weapons have `pellets = 1`, so their path is behaviourally identical.
+
+```
+SG04 pellets field=8  damage=96
+pellet markers observed=8   first=8/8 dmgEach=12.00   last=8/8 dmgEach=12.00
+```
+
+Eight independent rays per trigger pull at exactly 12.00 each.
+
+**Mistake caught in-batch:** the splice inserted five lines with a literal `[[` prefix, leaving `CombatService` unparseable
+(`got malformed string` at line 424). `loadstring` caught it before anything ran; prefixes stripped and recompiled. And the first verification
+reported `observed=0` because my marker lived inside the `enemyModel` branch — instrumentation, not the loop.
+
+**Not verified:** no enemy was in front of the muzzle, so 8 rays *emitted* is proven but 96 *received* is not; per-pellet weak-point and
+penetration interaction untested. **Shotgun TTK evidence from earlier in this project is now stale** — it was measured when one ray dealt 96.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 507**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 508**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **507** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **508** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
