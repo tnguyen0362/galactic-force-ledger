@@ -39,3 +39,21 @@ Each sub-batch: implement -> deploy -> probe -> ledger update -> commit. Estimat
 ## Row triage note
 Config-checkable rows can be verified as implementation lands. Do NOT mark behavioral rows verified
 without live probes. S06-012 (footstep sound not needed) is a negative-requirement: verifiable by absence.
+
+## IN-FLIGHT at compaction (update after reading)
+
+S06-A perception/FSM: DONE, place saved v596, committed. Probe PASS hidden=Guardx9 alerts=9 afterFire=Investigate.
+
+S06-B reinforcement economy: IMPLEMENTED, verification in progress. Changes in EncounterDirector:
+- DIFFICULTY_PRESSURE table, THREAT_COST (Rifleman1 Scout1 Marksman1.5 Heavy2.5 Officer2 bosses6)
+- activeCap() = round(4+2*(P-1)) * pressure; refill tokens 0.12*P^0.7*pressure*phase*(0.5+A/100)/s burst cap 8
+- alert +6/gunfire decay 2/s (was 4, tuned); phase scalar .6/1/1.4/1.5; GF_ExtractionCalled attribute
+- isSpawnPointValid: 65-140 studs + outside LOS of all players
+- spawnAround consumes tokens by threat cost; refill ticker publishes GF_EconomyTokens/Alert/Cap
+- hearGunfire in EnemyService also calls EncounterDirector.noteGunfire
+FIXED forward-ref bug: refillTokens must use EnemyService.count() not activeCount (local defined later).
+Probe status: tokens=5.5 cap=4 publishing correct; spawn validation rejects correct; visible80=false correct.
+Final rerun was testing alert measurement race fix (probe now samples immediately). Shell 2ed4ac.
+NOT YET SAVED TO PLACE - deploy is NOSAVE. After PASS: save_place, evidence, ledger rows S06-036/038/039/040/041/042/044, commit.
+
+CRITICAL NEXT: after S06-B completes, pivot to mission/extraction verification sweep (cheaper rows) then continue remaining clusters per severity.
