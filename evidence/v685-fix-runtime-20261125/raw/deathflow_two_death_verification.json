@@ -1,0 +1,114 @@
+{
+  "checks": [
+    {
+      "t": 1795643503.31,
+      "name": "deploy_fire",
+      "value": "deploy-requested"
+    },
+    {
+      "t": 1795643503.644,
+      "name": "deploy_loading_immediate",
+      "value": "downedVisible=false downedText=DOWNED loading=true squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+    },
+    {
+      "t": 1795643504.059,
+      "name": "mission_active",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 lz=0, 32.475006103515625, 118 trace=nil ddebug=ROBLOXISUS101 downed=false at=nil for=0.0 pending=nil used=nil health=100",
+        "client": "downedVisible=false downedText=DOWNED loading=true squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795643508.726,
+      "name": "baseline_before_first_fall",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=nil downedAttr=nil health=100 pos=-0.0,30.7,117.8 lz=0, 32.475006103515625, 118 trace=nil ddebug=ROBLOXISUS101 downed=false at=nil for=0.0 pending=nil used=nil health=100",
+        "client": "downedVisible=false downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795643508.809,
+      "name": "first_fall_induce",
+      "value": "fall-induced:13.987958908081055, 244.90464782714844, 117.60435485839844"
+    },
+    {
+      "t": 1795643510.009,
+      "name": "first_down_detected",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=nil fall=ROBLOXISUS101:200@309 downedAttr=true health=1 pos=14.0,29.6,117.6 lz=0, 32.475006103515625, 118 trace=nil ddebug=ROBLOXISUS101 downed=true at=7945.1526594 for=0.2 pending=nil used=nil health=1",
+        "client": "downedVisible=true downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795643520.792,
+      "name": "first_redeploy_pending",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=ROBLOXISUS101 countdown=7.199956700000257 fall=ROBLOXISUS101:200@309 downedAttr=true health=1 pos=14.0,30.2,117.6 lz=0, 32.475006103515625, 118 trace=7955.3 first permanent death; automatic redeploy pending player=ROBLOXISUS101 ddebug=ROBLOXISUS101 downed=true at=7945.1526594 for=10.9 pending=7963.2856594 used=true health=1",
+        "client": "downedVisible=true downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795643528.176,
+      "name": "automatic_redeploy_detected",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@309 downedAttr=nil health=100 pos=-3.0,38.4,118.0 lz=0, 32.475006103515625, 118 trace=7963.4 automatic redeploy executing player=ROBLOXISUS101 ddebug=ROBLOXISUS101 downed=false at=nil for=0.0 pending=nil used=true health=100",
+        "client": "downedVisible=false downedText=K.I.A. loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795643530.342,
+      "name": "second_fall_induce",
+      "value": "fall-induced:10.993772506713867, 244.90464782714844, 117.80162048339844"
+    },
+    {
+      "t": 1795643531.542,
+      "name": "second_down_detected",
+      "value": {
+        "ok": true,
+        "server": "inMission=true endReason=nil pending=nil countdown=0 fall=ROBLOXISUS101:200@301 downedAttr=true health=1 pos=11.0,29.3,117.8 lz=0, 32.475006103515625, 118 trace=7963.4 automatic redeploy executing player=ROBLOXISUS101 ddebug=ROBLOXISUS101 downed=true at=7966.7014084 for=0.0 pending=nil used=true health=1",
+        "client": "downedVisible=true downedText=DOWNED loading=false squadText=false debriefBody=false mouse=Enum.MouseBehavior.LockCenter"
+      }
+    },
+    {
+      "t": 1795643542.375,
+      "name": "squad_eliminated_debrief",
+      "value": {
+        "ok": true,
+        "server": "inMission=false endReason=squad_eliminated pending=nil countdown=0 fall=ROBLOXISUS101:200@301 downedAttr=nil health=100 pos=-0.0,771.2,21.8 lz=0, 32.475006103515625, 118 trace=7977.7 failMission stationRequire=true ddebug=ROBLOXISUS101 downed=true at=7966.7014084 for=10.2 pending=nil used=true health=0",
+        "client": "downedVisible=false downedText=DOWNED loading=true squadText=true debriefBody=true mouse=Enum.MouseBehavior.Default"
+      }
+    },
+    {
+      "t": 1795643542.809,
+      "name": "final_state",
+      "value": {
+        "ok": true,
+        "server": "inMission=false endReason=squad_eliminated pending=nil countdown=0 fall=ROBLOXISUS101:200@301 downedAttr=nil health=100 pos=0.0,766.7,21.8 lz=0, 32.475006103515625, 118 trace=7977.7 failMission stationRequire=true ddebug=ROBLOXISUS101 downed=false at=nil for=0.0 pending=nil used=true health=100",
+        "client": "downedVisible=false downedText=DOWNED loading=false squadText=true debriefBody=true mouse=Enum.MouseBehavior.Default"
+      }
+    }
+  ],
+  "captures": {
+    "deathflow_deploy_loading": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\deathflow_deploy_loading_0.jpg"
+    ],
+    "deathflow_first_downed": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\deathflow_first_downed_0.jpg"
+    ],
+    "deathflow_kia_countdown": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\deathflow_kia_countdown_0.jpg"
+    ],
+    "deathflow_after_redeploy": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\deathflow_after_redeploy_0.jpg"
+    ],
+    "deathflow_squad_eliminated_debrief": [
+      "C:\\Users\\tnguy\\galactic-force\\evidence\\v685-fix-runtime-20261125\\raw\\deathflow_squad_eliminated_debrief_0.jpg"
+    ]
+  },
+  "errors": []
+}

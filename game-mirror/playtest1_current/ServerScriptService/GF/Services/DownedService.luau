@@ -47,6 +47,20 @@ local function rootOf(player: Player): BasePart?
 	return character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 end
 
+local function trace(message: string)
+	-- Death flow crosses half a dozen services; without a compact server-side breadcrumb the difference
+	-- between "no failure branch", "failure payload lost" and "unexpected redeploy" is invisible in playtests.
+	local text = string.format("%.1f %s", os.clock(), message)
+	workspace:SetAttribute("GF_LastDeathTrace", text)
+	print("[GF] deathflow " .. message)
+end
+
+local function countAttr(name: string): number
+	local value = (workspace:GetAttribute(name) or 0) + 1
+	workspace:SetAttribute(name, value)
+	return value
+end
+
 local function hasRescuer(downed: Player): boolean
 	local downedRoot = rootOf(downed)
 	if not downedRoot then
@@ -67,8 +81,11 @@ end
 function DownedService.redeploy(player: Player)
 	local mission = State.getMission()
 	if not mission then
+		trace("redeploy aborted no-mission player=" .. player.Name)
 		return
 	end
+	countAttr("GF_RedeployExecCount")
+	trace("automatic redeploy executing player=" .. player.Name)
 	workspace:SetAttribute("GF_RedeployPendingFor", nil)
 	VitalsService.reset(player)
 	local character = player.Character
@@ -162,6 +179,8 @@ local function nearestDowned(requester: Player): Player?
 end
 
 function DownedService.failMission(player: Player)
+	countAttr("GF_DeathFailCount")
+	trace("failMission begin player=" .. player.Name)
 	workspace:SetAttribute("GF_MissionEndReason", "squad_eliminated")
 	VitalsService.reset(player)
 	local character = player.Character
@@ -174,10 +193,13 @@ function DownedService.failMission(player: Player)
 		kind = "fail",
 	})
 	local okExtraction, ExtractionService = pcall(require, script.Parent.ExtractionService)
+	trace("failMission extractionRequire=" .. tostring(okExtraction))
 	if okExtraction and ExtractionService and ExtractionService.finish then
 		ExtractionService.finish(false)
+		trace("failMission extractionFinished endReason=" .. tostring(workspace:GetAttribute("GF_MissionEndReason")))
 	end
 	local okStation, StationService = pcall(require, script.Parent.StationService)
+	trace("failMission stationRequire=" .. tostring(okStation))
 	if okStation and StationService and StationService.returnToStation then
 		pcall(function()
 			StationService.returnToStation(player)
@@ -191,10 +213,13 @@ end
 function DownedService.reinforceOrFail(player: Player)
 	local mission = State.getMission()
 	if not mission then
+		trace("reinforceOrFail no-mission player=" .. player.Name)
 		VitalsService.reset(player)
 		return
 	end
 	if redeployUsed[player] then
+		countAttr("GF_SecondDeathCount")
+	trace("second permanent death player=" .. player.Name .. " used=true")
 		-- second permanent death: out of the mission, no spectating
 		local s = State.get(player)
 		if s then
@@ -215,10 +240,17 @@ function DownedService.reinforceOrFail(player: Player)
 				end
 			end
 		end
-		if not anyoneLeft and next(pendingRedeploy) == nil then
+		local pendingCount = 0
+		for _, _ in pairs(pendingRedeploy) do
+			pendingCount += 1
+		end
+		trace("second death resolution anyoneLeft=" .. tostring(anyoneLeft) .. " pendingCount=" .. tostring(pendingCount))
+		if not anyoneLeft and pendingCount == 0 then
 			DownedService.failMission(player)
 			return
 		end
+		-- Multiplayer: this soldier is out, but the operation continues for everyone else.
+		VitalsService.reset(player)
 		local okStation, StationService = pcall(require, script.Parent.StationService)
 		if okStation and StationService and StationService.returnToStation then
 			pcall(function()
@@ -229,10 +261,10 @@ function DownedService.reinforceOrFail(player: Player)
 	end
 	redeployUsed[player] = true
 	pendingRedeploy[player] = os.clock() + REDEPLOY_COUNTDOWN
-	local s = State.get(player)
-	if s then
-		s.downed = false
-	end
+	countAttr("GF_FirstDeathCount")
+	trace("first permanent death; automatic redeploy pending player=" .. player.Name)
+	-- Keep the soldier downed through the countdown. Clearing the flag here let the vitals regen
+	-- publisher immediately hide the K.I.A. overlay and even regenerate the corpse before redeploy.
 	workspace:SetAttribute("GF_RedeployCountdown", REDEPLOY_COUNTDOWN)
 	workspace:SetAttribute("GF_RedeployPendingFor", player.Name)
 	ReplicatedStorage.GF.Remotes.MissionEvent:FireAllClients({
@@ -265,6 +297,9 @@ function DownedService.start()
 		while true do
 			task.wait(0.25)
 			local now = os.clock()
+			if workspace:GetAttribute("GF_DebugDeathflow") == true then
+				workspace:SetAttribute("GF_DownedLoopAlive", now)
+			end
 
 			for target, progress in reviving do
 				local targetState = State.get(target)
@@ -311,14 +346,19 @@ function DownedService.start()
 				local s = State.get(player)
 				local character = player.Character
 				if s and character then
+					if workspace:GetAttribute("GF_DebugDeathflow") == true then
+						workspace:SetAttribute("GF_DownedDebug", string.format("%s downed=%s at=%s for=%.1f pending=%s used=%s health=%s", player.Name, tostring(s.downed), tostring(s.downedAt), now - (s.downedAt or now), tostring(pendingRedeploy[player]), tostring(redeployUsed[player]), tostring(character:FindFirstChildOfClass("Humanoid") and character:FindFirstChildOfClass("Humanoid").Health)))
+					end
 					if s.downed then
 						character:SetAttribute("GFDowned", true)
-						local downedFor = now - (s.downedAt or now)
-						local rescuePossible = hasRescuer(player)
-						if not rescuePossible and downedFor >= SOLO_REDEPLOY_DELAY then
-							DownedService.reinforceOrFail(player)
-						elseif downedFor >= BLEEDOUT then
-							DownedService.reinforceOrFail(player)
+						if pendingRedeploy[player] == nil then
+							local downedFor = now - (s.downedAt or now)
+							local rescuePossible = hasRescuer(player)
+							if not rescuePossible and downedFor >= SOLO_REDEPLOY_DELAY then
+								DownedService.reinforceOrFail(player)
+							elseif downedFor >= BLEEDOUT then
+								DownedService.reinforceOrFail(player)
+							end
 						end
 					elseif character:GetAttribute("GFDowned") then
 						character:SetAttribute("GFDowned", nil)

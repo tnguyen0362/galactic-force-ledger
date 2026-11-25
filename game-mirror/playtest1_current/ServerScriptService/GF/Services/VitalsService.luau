@@ -29,7 +29,9 @@ function VitalsService.publish(player: Player)
 	end
 	local remotes = ReplicatedStorage.GF.Remotes
 	local humanoid = humanoidOf(player)
-	print(string.format("[GF] vitals publish shield=%s downed=%s humanoid=%s", tostring(s.shield), tostring(s.downed), tostring(humanoid ~= nil)))
+	if workspace:GetAttribute("GF_DebugVitals") == true then
+		print(string.format("[GF] vitals publish shield=%s downed=%s humanoid=%s", tostring(s.shield), tostring(s.downed), tostring(humanoid ~= nil)))
+	end
 	remotes.VitalsUpdated:FireClient(player, {
 		shield = s.shield,
 		shieldMax = s.shieldMax,
@@ -39,16 +41,33 @@ function VitalsService.publish(player: Player)
 	})
 end
 
+local function restorePreDownedCollision(character: Model?)
+	if not character then
+		return
+	end
+	for _, part in character:GetDescendants() do
+		if part:IsA("BasePart") then
+			local previous = part:GetAttribute("GF_PreDownedCanCollide")
+			if typeof(previous) == "boolean" then
+				part.CanCollide = previous
+				part:SetAttribute("GF_PreDownedCanCollide", nil)
+			end
+		end
+	end
+end
+
 function VitalsService.reset(player: Player)
 	local s = State.ensure(player)
 	s.shield = s.shieldMax
 	s.lastDamage = 0
 	s.downed = false
+	s.downedAt = nil
 	ReplicatedStorage.GF.Remotes.DownedChanged:FireClient(player, false)
 	local humanoid = humanoidOf(player)
 	if humanoid then
 		humanoid.Health = humanoid.MaxHealth
 	end
+	restorePreDownedCollision(player.Character)
 	VitalsService.publish(player)
 end
 
@@ -178,6 +197,9 @@ function VitalsService.downPlayer(player: Player)
 		if root then
 			for _, part in character:GetDescendants() do
 				if part:IsA("BasePart") then
+					if typeof(part:GetAttribute("GF_PreDownedCanCollide")) ~= "boolean" then
+						part:SetAttribute("GF_PreDownedCanCollide", part.CanCollide)
+					end
 					part.CanCollide = false
 				end
 			end
@@ -200,14 +222,7 @@ function VitalsService.revive(player: Player)
 		humanoid.WalkSpeed = Constants.Movement.WalkSpeed
 		humanoid.JumpPower = Constants.Movement.JumpPower
 	end
-	local character = player.Character
-	if character then
-		for _, part in character:GetDescendants() do
-			if part:IsA("BasePart") then
-				part.CanCollide = true
-			end
-		end
-	end
+	restorePreDownedCollision(player.Character)
 	ReplicatedStorage.GF.Remotes.DownedChanged:FireClient(player, false)
 	VitalsService.publish(player)
 end

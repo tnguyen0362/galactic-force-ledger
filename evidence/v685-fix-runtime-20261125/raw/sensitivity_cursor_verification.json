@@ -1,0 +1,67 @@
+{
+  "studio": {
+    "id": "0d5d4409-fdc9-49ad-ad7d-512c7af56ae2",
+    "mode": "Play",
+    "name": "Playtest1 (placeId: 120646942844931)",
+    "persistedToCloud": true,
+    "placeId": 120646942844931,
+    "state": "- Current Studio Mode: Play\n- Available DataModels: Client, Server\n- Focused DataModel in the viewport: Client",
+    "universeId": 10778576038
+  },
+  "initial_state": "- Current Studio Mode: Play\n- Available DataModels: Client, Server\n- Focused DataModel in the viewport: Client",
+  "checks": {},
+  "input_method": "real Windows mouse_event after focusing/clicking the 3D viewport",
+  "initial_camera": {
+    "ok": true,
+    "behavior": "Enum.MouseBehavior.LockCenter",
+    "sens": 1,
+    "yaw": 169.06796519321242
+  },
+  "locked_100mickeys": {
+    "before": {
+      "ok": true,
+      "behavior": "Enum.MouseBehavior.LockCenter",
+      "sens": 1,
+      "yaw": 169.06796519321242
+    },
+    "after": {
+      "ok": true,
+      "behavior": "Enum.MouseBehavior.LockCenter",
+      "sens": 1,
+      "yaw": 164.8395363400698
+    },
+    "delta_degrees": -4.228428853142617,
+    "absolute_delta_degrees": 4.228428853142617,
+    "expected_degrees_at_sens1": 5.156620156177409,
+    "pass": true
+  },
+  "cursor_140mickeys": {
+    "cursor_state": {
+      "behavior": "Enum.MouseBehavior.Default",
+      "uiOpen": true,
+      "ok": true,
+      "settingsEnabled": true
+    },
+    "before": {
+      "ok": true,
+      "behavior": "Enum.MouseBehavior.Default",
+      "sens": 1,
+      "yaw": 164.8395363400698
+    },
+    "after": {
+      "ok": true,
+      "behavior": "Enum.MouseBehavior.Default",
+      "sens": 1,
+      "yaw": 164.8395363400698
+    },
+    "delta_degrees": 0.0,
+    "pass": true
+  },
+  "after_close": {
+    "behavior": "Enum.MouseBehavior.LockCenter",
+    "uiOpen": false,
+    "ok": true,
+    "settingsEnabled": false
+  },
+  "passed": true
+}

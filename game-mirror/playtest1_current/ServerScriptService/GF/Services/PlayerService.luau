@@ -29,6 +29,13 @@ local function setupCharacter(player: Player, character: Model)
 	humanoid.WalkSpeed = Constants.Movement.WalkSpeed
 	humanoid.JumpPower = Constants.Movement.JumpPower
 	humanoid.UseJumpPower = true
+	-- Roblox's stock character Health script regenerates health independently of the authored
+	-- shield/health model and, worse, keeps healing a downed soldier during the redeploy countdown.
+	-- VitalsService owns all regeneration; remove the stock script rather than tuning two systems.
+	local stockHealth = character:FindFirstChild("Health")
+	if stockHealth and stockHealth:IsA("Script") then
+		stockHealth:Destroy()
+	end
 
 	local s = State.ensure(player)
 	local weapon = Weapons.get(s.weaponId)
@@ -36,6 +43,7 @@ local function setupCharacter(player: Player, character: Model)
 	s.reloading = false
 	s.shield = s.shieldMax
 	s.downed = false
+	s.downedAt = nil
 	s.lastShotId = 0
 	s.lastShotAt = 0
 	s.lastDamage = 0

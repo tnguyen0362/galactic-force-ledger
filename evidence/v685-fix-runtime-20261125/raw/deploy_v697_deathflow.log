@@ -1,0 +1,17 @@
+studio Playtest1 (placeId: 120646942844931) Play
+state - Current Studio Mode: Play
+- Available DataModels: Client, Server
+- Focused DataModel in the viewport: Client
+stopping play before edit deploy
+Game Stopped
+deployed 20 / 125
+deployed 40 / 125
+deployed 60 / 125
+deployed 80 / 125
+deployed 100 / 125
+deployed 120 / 125
+deployed 125 / 125
+failures 0
+saving place
+Saved: Saved to Roblox.
+{"location":"TeamCreate","status":"Saved","version":697,"message":"Saved to Roblox."}

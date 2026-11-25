@@ -19,7 +19,7 @@ local player = Players.LocalPlayer
 local remotes = ReplicatedStorage:WaitForChild("GF"):WaitForChild("Remotes")
 local Input = require(script.Parent:WaitForChild("Input"))
 
-local LOOK_SENS = 0.0026
+local LOOK_SENS = 0.0009
 local PITCH_MIN, PITCH_MAX = math.rad(-72), math.rad(58)
 local ZOOM_MIN, ZOOM_MAX = 4, 8
 local PAD_LOOK_SPEED = 2.4
@@ -356,6 +356,11 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		-- A visible cursor is menu/control input, not camera input. Without this guard, moving the
+		-- cursor across the war table or debrief continued to spin the game camera underneath the UI.
+		if UserInputService.MouseBehavior == Enum.MouseBehavior.Default then
+			return
+		end
 		if not touchMode or looking then
 			local sensitivity = tonumber(player:GetAttribute("GF_Setting_AimSensitivity")) or 1
 			local invert = player:GetAttribute("GF_Setting_InvertY") == true and -1 or 1
