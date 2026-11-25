@@ -1463,6 +1463,26 @@ through the 4.5° cone, so the explanation was right about that measurement but 
 **Still unexplained:** mid-range damage is partial and inconsistent — only ~2 of 8 pellets land at 38 studs although a 0.15° cone there is under 0.1
 studs wide. Something in the scatter maths remains wrong, and I did not guess at it.
 
+**NO SCATTER BUG — SG-04's `spreadBase` IS 3.2°, NOT 0.15° (place 510).** Evidence `evidence/v510-spreadbase-3-2-no-bug/EVIDENCE.md`.
+
+Retracting my own claim from the previous batch. I wrote that a 0.15° cone at 38 studs should land all eight pellets and therefore "something in the
+scatter maths is still wrong". Instrumenting the value at fire time:
+
+```
+aiming=false  angle=3.200  ads=4.5  base=3.2
+```
+
+**The hip base is 3.2°**, so at 38 studs only 4–5 of 8 pellets land a ~2-stud torso (measured 56.9 and 22.1 across runs, varying with random
+jitter). Mid-range behaviour is **correct**. I had asserted a config value I never read for this weapon.
+
+The stance bug fixed at 510 was real but **an order of magnitude less severe than I claimed** — 4.5° instead of 3.2°, not 4.5° instead of 0.15°.
+
+**Fourth time this session** a wrong premise produced a wrong conclusion from correct measurements (`e.stats` vs `e.effect`; `#e.trait`; searching
+`"ODDS"`; recalling `spreadBase 0.15`). Every fix was to print the value instead of recalling it — that belongs in the method, not the epilogue.
+
+**State:** point-blank 96.0 confirmed against the authored 8 × 12; mid-range explained by configuration; reload 2.8 vs authored 2 is the one open
+SG-04 issue.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 510**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
