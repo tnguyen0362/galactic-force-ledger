@@ -3213,3 +3213,7 @@ Verified that cooldowns start only on accepted casts (all 4 abilities). Cooldown
 ## 2026-11-25 / place 580 - support-strike friendly fire
 
 Airstrike and Orbital Strike apply the difficulty friendly-fire factor to allies and broadcast a danger-close warning when it is active. Live probe PASS.
+
+## 2026-11-25 / place 582 - boarding extraction redesign
+
+Extraction is now per-player: server cabin volume marks aboard state, the prompt flips to Extract Squad with +25% only when every eligible survivor is aboard, a 2s departure warning cancels on exit, individual extraction pays one player and leaves the ship for the rest, and everyone still in the mission at close returns to the station. Aboard players cannot fire, use abilities or take damage. (Place 581 was not created by this session.)
