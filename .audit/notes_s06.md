@@ -331,3 +331,11 @@ genuine small gaps, implementable. Thrown signal-flare abilities (S05-003) — t
 Lobby cluster mostly genuinely unimplemented 20-player architecture — keep UNKNOWN honestly.
 NEXT: implement small gaps (S04-057/058/064 are each <30 lines), verify loot feed rows, save place
 checkpoint (accumulated: grief/assist/boss-cap/camera/reroll since v640).
+
+## UPDATE 29 — VERIFIED ~458; S04-064 shield-preservation verified (already conformant)
+Enemy death visual = sink+fade (NOT ragdoll collapse) — S04-057 stays partial honestly. Loot feed exists
+with merge-on-repeat in StatusStrip but tier icon/sound unclear — S08-049 partial. NEXT SESSION priorities:
+implement ragdoll collapse (S04-057, small), shield-break directional sounds (S04-058), thrown flare
+abilities (S05-003 medium), cache open animation (S11-036). Save place checkpoint overdue — accumulated
+implementations since v640: grief protection, assist XP, boss cap, right-shoulder camera, reroll gate,
+augment catalog identities. Run: cd /Users/timnguyen/gf && python3 gf_deploy.py gf_mirror.tgz - GF_NONE
