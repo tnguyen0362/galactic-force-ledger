@@ -201,3 +201,57 @@ owner named: cross 600k → prune just under it → grow → cross again. `conte
 - orders candidates oldest-first from a single index pass, not `indexOf` inside a comparator.
 Tests: `.audit/test_context_gc.ts` **16/16**, including "stays tight between floor and soft" and
 "leaves tight below the floor". Orchestrator: **23/23**, including "refuses start without a named blocker".
+
+## 2026-11-24 — The orchestrator is installed, and it decides for itself when to escalate
+
+**Why it never fired: it was not loaded, and its auto path could not run.** `gf-orchestrator.ts` had been
+moved to `.audit/quarantine/` during the boot-safety cleanup, so `gf_orchestrate` did not exist in any
+session — `.goal/ORCH_LOG.jsonl` did not exist either, i.e. zero launches ever, not "too few". The
+quarantined copy also built its `Orchestrator` lazily **inside the tool call**, so the automatic path's
+`if (!engine) return` was always true until someone called the tool by hand. Reinstalled at
+`~/.pi/agent/extensions/gf-orchestrator.ts`; construction is now behind `ensureEngine()` and both the tool
+and the automatic path go through it.
+
+**It escalates on being stuck, not on a schedule.**
+- repeated failure: 3 identical normalised tool-error signatures in the window, or 3 failures in a row;
+- ledger stall: the last 4 `LOOP.log` iterations carry a byte-identical ledger line **and** span ≥5 min.
+  Identical counts alone are ordinary (one row can legitimately take several turns); identical counts over
+  minutes means tokens are being spent without moving the ledger.
+Knobs: `GF_ORCH_AUTO=0` disables automation; `GF_ORCH_STALL_AFTER` (4), `GF_ORCH_STALL_MIN_MS` (300000),
+`GF_ORCH_AUTO_COOLDOWN_MS` (900000), `GF_ORCH_AUTO_MAX` (3 per session).
+
+**One writer at a time.** An automatic escalation writes `.goal/PAUSE` (and remembers the exact text it
+wrote) before the planner runs, then deletes it when the run ends, so the loop resumes by itself. Only the
+exact text this extension wrote is ever removed — an owner's PAUSE is never overwritten or deleted. An
+escalation for a loop recorded as owned by another session is refused outright.
+
+**Ownership is not claimed by helpers.** `gf-escalation.ts` stamped `OWNER_SESSION` and the heartbeat on
+every `session_start` and every 30s, in every session, which silently defeated the goal loop's sidecar gate
+(the last chat to start owned the loop; a harness chat at `C:/Users/tnguy` took it at 20:18). It now
+refreshes the heartbeat only when the recorded owner *is* the current session.
+
+**Deploy note:** extensions load at session start. A chat that is already open keeps the old code until it
+is reloaded, so the orchestrator and the heartbeat gate only take effect there after a reload.
+
+Tests: `.audit/test_orchestrator.ts` **36/36** — adds `parseLoopLog`/`detectStall`, foreign-owner refusal,
+stall launch with PAUSE release, and "auto works before the tool was ever called".
+
+## 2026-11-24 — Scope correction: only the orchestrator was de-GF'd
+
+The rename pass briefly touched the goal loop and the escalation advisor too. Both are reverted: their file
+names, `GF_REPO`, and the fixed `.goal` location are exactly as before. The scope was the orchestrator
+extension. The heartbeat-ownership gate in `gf-escalation.ts` stays, because that was an approved bug fix
+rather than a rename.
+
+What remains changed, all inside the orchestrator:
+- `gf-orchestrator.ts` → **`orchestrator.ts`**; tool `orchestrate`, with `gf_orchestrate` still registered
+  as an alias so existing goal text and decisions keep working.
+- `GF_ORCH_*` → **`ORCH_*`**, `GF_REPO` → **`GOAL_ROOT`**; the legacy names still resolve.
+- It no longer hardcodes a repository: nearest ancestor with `.goal`, else `GOAL_ROOT`, else a directory
+  whose single child project has `.goal` (the home-directory case), else the cwd. Two candidates is
+  ambiguous and nothing is guessed, so it can never plan against the wrong project.
+
+Verified from `C:/Users/tnguy`: `orchestrate status` resolves its log to
+`<local>\.goal\ORCH_LOG.jsonl` — the GF project is found without being named.
+Live source is mirrored at `.audit/quarantine/orchestrator.ts`; the old `gf-orchestrator.ts` snapshot is
+back to its committed state as history. Tests: orchestrator **37/37**, goal loop **15/15**, boot check clean.

@@ -1,0 +1,23 @@
+# OS / editor
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Local tooling noise
+.audit/*.log
+.audit/quarantine/
+.node_modules/
+node_modules/
+__pycache__/
+*.pyc
+
+# Rojo build output (the place file is binary and versioned by Roblox, not git)
+*.rbxl
+*.rbxlx
+*.rbxm
+build/
+
+# Local secrets if any ever appear
+.env
+.env.*
