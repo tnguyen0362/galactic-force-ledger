@@ -965,6 +965,28 @@ protection and the UI, so it belongs with the same durability decision pending f
 
 Ledger: ABSENT 2 → 3, IMPLEMENTED_UNVERIFIED 2 → 1.
 
+**`COUNT-CLASS` VERIFIED — four classes, both passives, values conform (place 495, no source change).**
+Evidence `evidence/v495-classes-verified/EVIDENCE.md`.
+
+Config values match `GOAL_2026-11-24.md` L66 verbatim for all eight numbers. Runtime, applying each class on a real profile:
+
+```
+Assault  move=0.00  reload=0.15  shield=0.00  regen=0.00
+Heavy    move=0.00  reload=0.00  shield=0.20  regen=0.00
+Recon    move=0.05  reload=0.00  shield=0.00  regen=0.00
+Support  move=0.00  reload=0.00  shield=0.00  regen=0.10
+```
+
+All four apply with **no gate**; personal + team both land on the owner (Assault `0.15 = 0.10 + 0.05`, Heavy `0.20 = 0.15 + 0.05`),
+which is the spec's "solo is its own squad" rule; each class produces a distinct effect. Recon's personal `DodgeRecharge` and
+Support's personal `ReviveSpeed` are not in the published attribute, so those two readings show only the team component — that is
+consistent with the config, not evidence of a missing bonus.
+
+**Unproven (needs a second client):** aura reaching a squad-mate, duplicate-stack prevention, and the +25% movement/reload/shield
+caps. Also unverified: max-shield applied without free healing.
+
+Ledger: IMPLEMENTED_UNVERIFIED 1 → 0, VERIFIED 31 → 32.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 495**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
