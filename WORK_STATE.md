@@ -3270,3 +3270,21 @@ Live probes all PASS: GF_NET (buckets/validators/malformed/end-to-end client flo
 Trap discovered: Roblox attribute NAMES cannot contain colons - NetGuard reject keys are now sanitized. Another: `LocalScript.Source` cannot be set by server scripts at runtime; client probes must be pre-created in Edit mode.
 
 Ledger: UNKNOWN 533->525, VERIFIED 76->80. Evidence: evidence/v594-data-security/EVIDENCE.md.
+
+## 2026-11-25 / ledger-only - S14 inspection rows + S16 process sweep
+
+S14 inspection rows resolved from code/repo evidence gathered during the NetGuard batch (module layout, replicated-module audit: 17 pure data/contract modules, zero secrets, no server RNG client-side; zero load-time require cycles across 53 modules; no UnreliableRemoteEvent anywhere; strict coverage 67/100). S16 process-discipline rows audited against demonstrated practice: 68 VERIFIED with terse per-row evidence notes, 7 PARTIAL (controller input, device matrix, broad-pcall inventory, test-hook isolation, perf measurement, capture sequences, scaling analysis). Rows needing gameplay verification (test matrix S16-077..091, BETA-*, ordering rows S16-066..076) deliberately left UNKNOWN - they resolve as the game verifies. Acceptance gates untouched pending owner.
+
+Ledger: UNKNOWN 440, PARTIAL 218, VERIFIED 154.
+
+## NEXT ACTIONS for the continuation (read this first after compaction)
+
+Campaign state: user directive = finish ALL rows continuously, severity order, graphics last. Do not stop.
+
+Completed this session: S14 core (NetGuard+profile hardening, place 591-594 all probes PASS), S14 inspection rows, S16 process sweep. Committed through this entry.
+
+NEXT BATCH (highest leverage): end-to-end mission-spine live harness. One mission playtest can verify dozens of rows across Missions/objectives (14 UNKNOWN), Extraction/settlement (18), Economy/mastery (20), Enemy AI (53), Combat/weapons (30). Existing probe patterns in ~/gf/probe_*.lua; mission driving demonstrated in evidence/v388-variants. Key open measurement rows: S14-025 (server-owns kill/loot/war measurement), S14-027 (countdown drift), S14-028 (rejoin during mission).
+
+Then: Lobby/matchmaking (59 UNKNOWN - the biggest behavioral cluster, but much needs multi-client/cross-place which Studio cannot do - honest BLOCKED/PARTIAL documentation expected), Procedural world (32), Input/HUD (33), Narrative/onboarding (25), Galactic War (19), Combat/weapons detail rows, Economy detail rows.
+
+Harness reminders: COPYFILE_DISABLE=1 for tarballs; paths need playtest1_current/ prefix; new module shells need MCP execute_luau first; attribute names cannot contain colons; LocalScript.Source cannot be set at runtime (pre-create client probes in Edit mode); test userId 1889759131; always snapshot+restore real profile state in probes.
