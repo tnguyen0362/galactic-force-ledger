@@ -455,11 +455,29 @@ Still **record-only**: `RewardsService` pays its own way, so these values do not
 
 `S10-012`–`S10-021` are now PARTIAL rather than ABSENT.
 
+**LEDGER `eligibleUserIds` ADDED (place 475).** Evidence `evidence/v475-ledger-eligible-users/EVIDENCE.md`.
+
+`S09-025` names `eligibleUserIds`; `SquadService` has no eligibility notion (`join, leave, add, snapshot, total, reset`), so the
+set is derived from live session state — a player with a runtime `State` entry is present and owed.
+
+```
+#1 primary_complete   eligible=1889759131
+#2 extraction_success eligible=1889759131
+eligible with state=1, after State.clear=0     <- removed player correctly excluded
+```
+
+Every field the spec names now exists on each event. **Durability is the only missing input**: the journal is in-memory, so it
+cannot provide the retention or idempotent recovery `S09-025` also asks for. Wiring settlement into a journal that evaporates
+on restart would produce something that looks implemented and loses money on the first server bounce.
+
+Untested eligibility states: **downed**, **pending-redeploy**, **co-op** (one client only), and **disconnect grace** (no restore
+path exists).
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 474**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 475**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **474** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **475** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
