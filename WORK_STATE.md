@@ -2060,6 +2060,29 @@ attacker is passed to `damageEnemy`. Boss part coefficients (`S06-053`) are also
 
 Ledger: VERIFIED 44 → 45, PARTIAL 178 → 177.
 
+**THERE IS NO RESERVE AMMO — RELOAD REFILLS FROM NOWHERE (place 530, no code change).** Evidence `evidence/v530-no-reserve-ammo/EVIDENCE.md`.
+
+`S04-025` specifies `n = min(capacity - mag, reserve)`, subtract reserve, add n on commit. **Reserve is not modelled at all**: `State` has `ammo` and no reserve key;
+`weapon.reserve` appears only in `CheckRunner`'s config assertions; and the commit is `live.ammo = weapon.magazine` with no `min()` and no decrement.
+
+Measured end to end through the real client remotes:
+
+```
+fire one shot:   ammo 20 -> 19   Accepted=1  lastShotId=1
+reload:          ammo 28         reloadCount=1  reserveKeys=NONE
+```
+
+Effective ammunition is **infinite**, and the authored reserve values (168/216/225/42/72/16/7/72) are dead data. `S04-025` and `S04-027` → PARTIAL.
+
+**What does work:** reload commits after `reloadTime`, refuse-when-full, refuse-while-reloading, and cancel-before-commit leaves ammo untouched (the delayed commit
+checks `reloading and now() >= reloadDone`) — so the cancellation half of `S04-026` is real.
+
+**A hypothesis I retracted mid-batch:** several probes made client `FireWeapon` look dead (`lastShotId` stayed 0). An ad-hoc listener proved transport fine, and
+firing with `origin = root.Position` worked instantly. The instrument that settles this is `workspace.GFDebug`'s `Received`/`Accepted`/`LastReject` counters —
+the same wrong-container trap as earlier (they are NOT on `workspace`).
+
+Not changed: adding reserve touches every weapon's economy, the HUD ammo readout, supply crates and drops. Recorded instead.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 530**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
