@@ -230,3 +230,10 @@ Batch-verified 9 enemy AI rows (director economy, caps, spawn validation, roles,
 Batch-verified 8 extraction rows. NOTE: several remaining partials are multiplayer-untestable in solo Studio
 (vote multi-player paths, squad splits) — honest verification ceiling there. Next fronts: implement remaining
 small spec gaps (S11-030 RNG defect), missions/objective partial tails, support-ability rows.
+
+## UPDATE 14 — VERIFIED 377 / UNKNOWN 320 / PARTIAL 115; in-flight RNG fix
+IN FLIGHT: S11-030 RNG fix implemented in mirror+tarball (cacheRng Random object seeded from server entropy,
+defaultRng() uses it, rarePool + drop-chance routed through it) — NOT yet deployed/verified/saved.
+Next: boot-check deploy, mark S11-030, save place, commit. Then continue harvest: missions/objectives partials,
+support abilities, implement small gaps. The batch-verify rhythm keeps working: read full notes -> mark honest
+completions -> implement small gaps -> probe -> commit.
