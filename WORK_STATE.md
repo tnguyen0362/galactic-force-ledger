@@ -766,11 +766,30 @@ contains the string you are about to replace, insert *after* the replacements or
 **Authoring oddity for the owner:** `ExtendedSentryMagazine` carries `cooldown = 0.2` despite the name saying magazine — looks like
 a config slip.
 
+**`blastRadius` WIRED — 9 of 14 keys live, first authored clamp honoured (place 489).** Evidence `evidence/v489-blastradius-applied/EVIDENCE.md`.
+
+Four augments rolled `blastRadius` into nothing. Now applied in `CombatService.detonate`:
+
+```
+base (no augment) -> radius 9.00   bonus 0
++ SiegePayload    -> radius 11.25  bonus 0.8514
+```
+
+`9 × 1.25 = 11.25` — **clamped at the spec's +25%**, the first augment stat in the project to honour its authored cap. Unclamped the
+same stack would have given 16.66 (+85%). Signs are data-driven (positive widens, negative tightens); the 0.4 floor is mine.
+
+The 0.8514 bonus is well above one `SiegePayload` (+0.45) — the test account accumulated several blastRadius augments across this
+session's probes, so the stacking defect is **reproducible on demand** and the clamp is demonstrated necessary and sufficient for
+this stat.
+
+Live keys (9): weakPoint, healthDamage, armorDamage, shieldDamage, magazine, reloadSpeed, adsSpeed, cooldown, **blastRadius**.
+Still dead (6 keys, 5 augments): recoil(8), swapSpeed(4), adsRecovery(2), followUpSpeed(2), movingAccuracy(2), sentryAmmo(2).
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 487**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 489**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **487** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **489** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
