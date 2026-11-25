@@ -370,3 +370,11 @@ Implemented 72h defense phase scheduler (S13-014). Verified S02-031/060. Boot st
 
 ## UPDATE 34 — VERIFIED ~481; implemented thrown signal-flare abilities (S05-003/006)
 All abilities now deploy from ballistic red flare devices. Boot verify pending in this batch.
+
+## UPDATE 35 — VERIFIED ~484 / UNKNOWN ~268 / PARTIAL ~62; place v645
+SINCE UPDATE 34: verified S03-017 vault, S03-004 controller, S03-008 no-hijack. GRENADE TAP/HOLD (S03-005/
+S04-054) is a REAL deviation: throw is tap-only, no hold-preview — implementable client feature, medium.
+Enemy AI architecture rows (S06-011/015/016/017/018/034) are genuinely different from spec (no pathfinding,
+no radio system) — honest UNKNOWNs requiring real implementation, NOT fabrication. Lobby/procedural same.
+The burn-down has reached the genuinely-unimplemented core — cheap verification mostly exhausted. Remaining
+throughput requires implementing spec systems: hold-preview grenades, radio knowledge, cover nodes, biome kits.
