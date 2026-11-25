@@ -711,11 +711,25 @@ check: passed=639 failed=17
 Open: AdsSpeed 13 is 0.74× walk, not 0.8× (14); aim-over-crouch precedence is unspecified and my choice; RMB still toggles camera
 look as well; LT/L2 and touch aim are not wired; no FOV/camera shift or crosshair tightening.
 
+**ADS RATIO + AUGMENT WIRED (place 485).** Evidence `evidence/v485-ads-ratio-and-augment/EVIDENCE.md`.
+
+`AdsSpeed` 13 → **14**: the spec gives a ratio ("0.8× walk") and 0.8 × 17.5 = 14, so 13 was 0.74×. Measured `aim on → true:14`.
+
+The `adsSpeed` augment stat was inert and now applies. **Correction to place 482:** my scan said "0 augments use adsSpeed" — a
+false negative from reading `e.stats` when the field is `e.effect`. Exactly one augment rolls it,
+`StabilityCompensator = -0.08`. Real key census: `recoil 8 · weakPoint 8 · healthDamage 7 · armorDamage 5 · blastRadius 4 ·
+reloadSpeed 4 · swapSpeed 4 · cooldown 3 · magazine 3 · adsRecovery 2 · followUpSpeed 2 · movingAccuracy 2 · sentryAmmo 2 ·
+adsSpeed 1`.
+
+**Sign convention is a judgement, documented as one.** A negative value on a "compensator" must make aiming *less* restrictive,
+so the formula is `AdsSpeed * (1 - bonus)`. Measured with the augment equipped: `true:15.12` = 14 × 1.08. If the author meant the
+opposite, it is one line to flip.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 484**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 485**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **484** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **485** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
