@@ -320,3 +320,14 @@ place v640+ saving; Studio instance e08db1e5-fdca-41c4-b603-85b73b777c92.
 
 ## UPDATE 27 — VERIFIED ~453; implemented assist/last-hit weapon XP sharing (S10-023) + grief protection (S03-026)
 Both real gaps closed this session. Boot stable 814 assertions. Place save of latest batch pending.
+
+## UPDATE 28 — COMPACTION-RESUME BRIEF (VERIFIED ~457 / UNKNOWN ~283 / PARTIAL ~72)
+SINCE UPDATE 27: verified S03-015 right-shoulder camera (implemented CameraOffset 1.75), S03-032/033
+squad-wipe resolution, S04-062 rate formula. Loot feed EXISTS in StatusStrip (merge-on-repeat rows,
+GF_LootFeed attribute) — S08-049/050 candidates for verification reading the full implementation.
+Cache open animation (S11-036) NOT found — genuine gap. Ragdoll collapse (S04-057), directional shield
+break sounds (S04-058), buff roster system (S04-063), shield-preserve-on-max-change (S04-064) NOT found —
+genuine small gaps, implementable. Thrown signal-flare abilities (S05-003) — the remaining MEDIUM feature.
+Lobby cluster mostly genuinely unimplemented 20-player architecture — keep UNKNOWN honestly.
+NEXT: implement small gaps (S04-057/058/064 are each <30 lines), verify loot feed rows, save place
+checkpoint (accumulated: grief/assist/boss-cap/camera/reroll since v640).
