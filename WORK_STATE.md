@@ -3217,3 +3217,5 @@ Airstrike and Orbital Strike apply the difficulty friendly-fire factor to allies
 ## 2026-11-25 / place 582 - boarding extraction redesign
 
 Extraction is now per-player: server cabin volume marks aboard state, the prompt flips to Extract Squad with +25% only when every eligible survivor is aboard, a 2s departure warning cancels on exit, individual extraction pays one player and leaves the ship for the rest, and everyone still in the mission at close returns to the station. Aboard players cannot fire, use abilities or take damage. (Place 581 was not created by this session.)
+
+Follow-up probe: aboard players take 0 damage; a downed player inside the cabin is not aboard.

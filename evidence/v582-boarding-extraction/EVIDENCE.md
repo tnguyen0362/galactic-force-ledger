@@ -19,3 +19,11 @@ Probe: deploy, force-complete the objective, 2s countdown override, step into th
 ```
 
 Not verified: multi-player split extraction (one leaves early, rest extract later), downed-player board block, enemies failing to enter the interior, and client rendering of the bonus line.
+
+## Aboard immunity and downed boarding (live, place 582)
+
+```text
+[GF_ABOARD2] PASS aboard=true damageApplied=0 downedAboard=false
+```
+
+A player inside the cabin volume takes 0 damage, and setting `downed` un-marks them as aboard even while standing inside.
