@@ -34,3 +34,16 @@ Live server playtests, test userId 1889759131. Probes: probe_spine1.lua, probe_s
 - S14-025: kill + mastery + war-point commit all originate server-side. Loot pickup measurement still owed.
 - S10-026: successful-primary war credits Normal=10 measured; failure-zero probe still owed.
 - S14-027: server-published countdown evidenced; client-drift comparison still owed.
+
+## LOOT — `[GF_LOOT] PASS kind=scrap amount=25`
+
+- spawnPickup values decided server-side survive collection unchanged (kind=scrap, amount=25).
+- Collection is proximity-based in the server heartbeat; LootService has zero remotes (structural).
+- Credit flows through SquadService.add which validates kind membership and 0<amount<=1000 server-side.
+- Comprehensive scan of all 26 server remote handlers: no production client payload carries reward
+  values anywhere. The single payload.amount read (ArmoryService) sits behind the GF_TestHooks gate
+  and fails closed in production. RewardsService "payload" references are its own compute() output.
+
+## S14-025 conclusion: VERIFIED
+NPC/projectile damage (spine1), kill credit and mastery (spine1), war-point commit (spine2),
+loot drops and collection (this probe + structural no-remote proof) all originate server-side.
