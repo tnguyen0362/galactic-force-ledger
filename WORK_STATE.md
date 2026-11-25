@@ -1958,6 +1958,36 @@ even a correct line to `Torso` hits `ChestPlate`.
 
 `S04-014` stays PARTIAL: body ×1 conformance and head ×2 drift both measured; *marked weakpoint* still unimplemented (no `WeakPoint` attribute on any rig part).
 
+**SHIELD ROUTING CORRECT, BUT TWO AUTHORED SHIELD RULES ARE VIOLATED (place 522, no code change).**
+Evidence `evidence/v522-shield-rules-violated/EVIDENCE.md`.
+
+Measured on one `Rifleman` with the combat harness (mission active, rig anchored, origin chosen where the first raycast hit is the intended part):
+
+```
+overflow(shield 10):   shield 10 -> 0    health 5000 -> 4992   (-8 exactly = 18 - 10)
+shieldOnly(shield 40): shield 40 -> 22   health 5000 -> 5000   (-18, health untouched)
+noShield(shield 0):    health 5000 -> 4982                     (-18)
+```
+
+**Correct:** shield absorbs first, overflow is exact, no double-charging.
+
+**Violation 1 — head bonus applies to shields.** A headshot drained shield **36**, not 18. Spec: *"no ordinary head bonus on shield"*. `fire` pre-multiplies
+before `damageEnemy`'s shield branch, so it cannot be excluded without restructuring.
+
+**Violation 2 — armour applies to shield damage.** With `ArmorFactor 0.5`, a body shot drained **9** from shield (18 × 0.5). Spec line 47: *"armor multiplier
+on health only"*. Cause is ordering in `damageEnemy`: `amount = amount * armorFactor` sits **before** the shield branch. Consequence: a shielded Heavy
+(`ArmorFactor 0.75`) has shields 25% tougher than authored — the shield-break phase is slower than designed.
+
+**Violation 3 — no `shieldFactor` exists.** `S04-018`'s raw-versus-mention split (`shieldBefore/shieldFactor`) is unimplemented in structure, not merely
+mistuned.
+
+`S04-015`, `S04-018`, `S04-021` → PARTIAL. (`S04-021`'s *behaviour* is verified exact, but the row asks for **unit tests** and no CombatService damage test
+harness exists — `CheckRunner` asserts configs and constants only.)
+
+Not changed: fixing this reorders the damage maths and changes every shielded TTK figure, including ones already recorded. Owner's balance pass.
+
+Ledger: UNKNOWN 572 → 570, PARTIAL 176 → 179.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 522**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
