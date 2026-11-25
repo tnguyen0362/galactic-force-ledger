@@ -1815,6 +1815,37 @@ and tickets run **inverted**: solo Easy 5 / Normal 4 / Hard 2 / Extreme 1 agains
 
 Ledger: UNKNOWN 574 → 573, ABSENT 23 → 24.
 
+**CORRECTION: MY TICKET AND CREDITS CLAIMS WERE WRONG (place 518).** Amendment appended to
+`evidence/v518-difficulty-not-scaling/EVIDENCE.md`.
+
+**Retracted:** *"tickets run inverted against spec 1/1.25/1.75/2.5"*. Those figures are **XP/mastery multipliers** (`S10-020`), not tickets — and the spec
+specifies **no ticket counts at all** (one unrelated "ticket" hit, about TeleportService reserved servers). I compared a ticket curve against the XP column.
+
+**Retracted:** *"credits multiplier 1/1.7/2.6/3.5 against a specified 0.8/1/1.35/1.65"*. Wrong target. The multipliers that compute rewards are
+`RewardLedgerService.CREDIT_MULT` / `XP_MULT` and they **match the spec exactly**:
+
+```lua
+CREDIT_MULT = { Easy = 0.8, Normal = 1, Hard = 1.35, Extreme = 1.65 }
+XP_MULT     = { Easy = 1,   Normal = 1.25, Hard = 1.75, Extreme = 2.5 }
+```
+
+`Difficulties.rewardMultiplier` (1/1.7/2.6/3.5) is a **different field** read only by `StationWarTable` — the pre-deploy **reward estimate**.
+
+**The corrected, narrower findings:**
+1. Reward maths conforms (`S10-019` × `S10-020` → Veyr kill on Extreme = 165cr / 625xp).
+2. The **war-table estimate is wrong** — it previews from `rewardMultiplier` instead of `CREDIT_MULT`, so Easy shows 1× while paying 0.8×.
+3. **Settlement uses a third path** — `RewardsService.compute` reads `Economy.PayoutByDifficulty` (Easy 250cr/330xp … Extreme 950cr/1350xp), which
+   `RewardLedgerService` documents as transitional. `S10-020` → PARTIAL.
+
+Also recorded: `Configs/Difficulties` line 30 cites *"spec: Easy 3+2P…"* for tickets — **that text is not in the spec**, so a code comment asserts a
+conformance basis that does not exist.
+
+**Survives unchanged:** `S06-032` ABSENT (no HP/damage/cadence/pressure scaling anywhere) — the load-bearing finding; `S06-009` PARTIAL; `S06-033`
+vacuously satisfied.
+
+**Pattern:** eighth wrong conclusion this session, third from comparing a spec number to the **wrong field** rather than a missing one. The discipline:
+find the field that *feeds the behaviour*, not the one whose name resembles it.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 518**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.

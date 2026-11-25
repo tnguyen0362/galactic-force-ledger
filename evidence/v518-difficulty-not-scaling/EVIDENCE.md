@@ -76,3 +76,52 @@ for "four difficulties" while the authored challenge curve is entirely absent.
 High on the absences — config field enumeration is exhaustive and both combat services have zero difficulty references. I did **not** check whether
 enemy stat tables are duplicated per difficulty elsewhere (e.g. per-difficulty enemy definitions), which would change the "no scaling" conclusion; the
 `Configs.Enemies` list carries per-role base stats only, and `S06-023`–`S06-027` show those are "Normal" baselines.
+
+---
+
+# CORRECTION (same session): the ticket and credits claims were wrong
+
+Two findings in this document are retracted after reading the code that actually applies them.
+
+## Retraction 1 — "tickets run inverted against spec 1/1.25/1.75/2.5"
+
+**Wrong.** `1 / 1.25 / 1.75 / 2.5` are **XP and mastery multipliers** from `S10-020`:
+
+> *"Difficulty XP/mastery multipliers Easy1, Normal1.25, Hard1.75, Extreme2.5; Credits multiplier Easy.8, Normal1, Hard1.35, Extreme1.65."*
+
+I compared `Difficulties.ticketsFor` against the XP column and called the ticket curve inverted. **The spec does not specify ticket counts anywhere** — a search for "ticket" returns one unrelated hit about TeleportService reserved servers.
+
+Related: `Configs/Difficulties` line 30 carries the comment
+
+```lua
+-- Reinforcement tickets = base + perPlayer * squadSize (spec: Easy 3+2P, Normal 2+2P, Hard 1+P, Extreme P)
+```
+
+Those formulas **do not appear in the spec**. The values may be a reasonable design, but the comment asserts a spec basis that does not exist — worth removing or relabelling, because it makes a fabricated citation look like conformance.
+
+## Retraction 2 — "credits multiplier 1/1.7/2.6/3.5 against a specified 0.8/1/1.35/1.65"
+
+**Wrong target.** The multipliers that actually compute rewards live in `RewardLedgerService`, and they match the spec **exactly**:
+
+```lua
+local CREDIT_MULT = { Easy = 0.8, Normal = 1, Hard = 1.35, Extreme = 1.65 }
+local XP_MULT     = { Easy = 1,   Normal = 1.25, Hard = 1.75, Extreme = 2.5 }
+```
+
+I compared the spec against `Difficulties.rewardMultiplier` (1 / 1.7 / 2.6 / 3.5), which is a **different field**. Its only reader is `StationWarTable` line 201 — the **reward estimate shown before deploying**.
+
+So the precise statement is narrower and more useful:
+
+- **Reward maths conforms.** Credits and XP/mastery multipliers are authored correctly and used to compute per-event values (`S10-019` × `S10-020` → e.g. a Veyr kill on Extreme = 165 credits, 625 XP).
+- **The war table's estimate is wrong**, because it reads `Difficulties.rewardMultiplier` (1/1.7/2.6/3.5) instead of the real multipliers (0.8/1/1.35/1.65). A player sees an inflated preview, especially on Easy where the estimate implies 1× but the payout is 0.8×.
+- **Settlement uses a third path.** `RewardsService.compute` reads `Economy.PayoutByDifficulty` (Easy 250cr/330xp … Extreme 950cr/1350xp), not the multiplier model. `RewardLedgerService` documents this as transitional: *"Settlement still computes payouts the old way until a later batch switches it."*
+
+## What survives from the original document
+
+- **`S06-032` ABSENT** — no HP/damage/cadence/reinforcement-pressure scaling anywhere; `EnemyService` and `CombatService` have zero difficulty references. This is the load-bearing finding and it is unaffected.
+- **`S06-009` PARTIAL** — reaction delay is a per-type constant; `reactionMultiplier` is read by nothing.
+- **`S06-033`** — vacuously satisfied, since cadence does not vary.
+
+## Pattern
+
+This is the eighth wrong conclusion of the session, and the third that came from comparing a spec number against **the wrong config field** rather than from a missing value (`e.stats`/`e.effect`, and now `rewardMultiplier` vs `CREDIT_MULT`). The discipline that catches it: before asserting a drift, find the field that **feeds the behaviour**, not the field whose name resembles it.
