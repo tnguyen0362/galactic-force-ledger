@@ -1,0 +1,2 @@
+--!strict
+-- inert: crouch is a spec exclusion (S00-024), removed from the control map
