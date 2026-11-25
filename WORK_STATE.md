@@ -2252,11 +2252,34 @@ not exist), so `+2 grenades` would require inventing that state and its cap firs
 
 **Next step:** wire `SupplyService.spawn` into mission setup or the loot path, then verify a player can run dry and recover inside a live mission.
 
+**SUPPLY NOW SPAWNS WITH MISSIONS — `S04-027` VERIFIED (place 545).** Evidence `evidence/v545-supply-integrated/EVIDENCE.md`.
+
+Closing last batch's gap ("nothing spawns a crate"). `SupplyService` gained `placeMissionCrates()` (3 crates around the squad insertion point, ground-snapped by
+raycast), `clearCrates()`, `count()` and `start()`, which watches `GF_InMission` — true places, false clears. Wired into `Main`.
+
+```
+in mission:  attribute=3  count=3  inWorld=3
+after end:   attribute=0  inWorld=0
+```
+
+Combined with the prior live test (`ammo 4 -> 28`, `reserve 20 -> 188`, second use refused, crate destroyed) the whole player path exists: mission starts → crates
+appear → press Resupply → magazine fills and reserve tops to the +60% cap → crate gone.
+
+`S04-027` → VERIFIED (limited ammo/reserve, supply, no paid advantages). `S08-047` → PARTIAL: the **ammo** half of the per-player one-use crate is done; **`+2
+grenades`** is not, because **no grenade-charge state exists anywhere in the project** — that has to be invented first (and `S04-053` specifies the caps).
+
+**Not covered:** drop-based supply, per-crate contents variation, resupply feedback beyond the prompt, and co-op placement (only the first player's position anchors
+the crates, so a distant teammate could spawn far from them). Single-player verified only.
+
+**Next candidate:** invent grenade-charge state (max 3 per `S04-053`), extend `refillPlan` to add +2 grenades within the cap, then verify live.
+
+Ledger: VERIFIED 46 → 47, UNKNOWN 569 → 568.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 543**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 545**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **543** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **545** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
