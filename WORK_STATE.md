@@ -1312,11 +1312,35 @@ rate, no new state or persistence. Cheapest meaningful player-facing win left on
 
 Ledger: UNKNOWN 595 → 592, ABSENT 15 → 18.
 
+**CACHE ODDS DISCLOSED — `S11-027` and `S11-028` VERIFIED (place 506).** Evidence `evidence/v506-cache-odds-disclosed/EVIDENCE.md`.
+
+`CacheService.oddsFor(tierId)` computes from the **same weight table `rollRarity` consumes**: `perDraw = w/total*100` and
+`atLeastOne = (1-(1-p)^draws)*100` with `draws = tier.augments`. `ArmoryService.state.cacheOdds` supplies it for the most-held tier and the
+armory renders a dedicated row:
+
+```
+Rare x2  ·  Common 48.0% · Rare 43.0% · Epic 8.0% · Legendary 1.0%  ·  Legendary in this cache 2.0%
+```
+
+Rare weights are 48/43/8/1 so the per-draw shares match exactly, and `1-(0.99)² = 1.99%` renders as 2.0%. **The numbers shown are the numbers
+used** — derived live, not hardcoded.
+
+**My measurement error, recorded:** the first verification said `ODDS=0` and I nearly filed the feature broken. The scan looked for the
+substring `"ODDS"`, which only appears in the empty state (`"ODDS  no cache held"`); the live text begins `"Rare x2 …"`. Third false negative
+this session from a probe encoding an assumption about output *format* instead of the property under test.
+
+**Still open:** only the most-held tier is disclosed; enemy drop chances (0.01/0.04/0.07) are not shown; and the disclosed weights are the
+config ones, which the earlier audit showed disagree with the authored table — so the disclosure is honest about an off-spec distribution.
+
+`S11-029` → PARTIAL (this surface names a probability, but shop/pity/bundle copy is unaudited).
+
+Ledger: UNKNOWN 592 → 590, VERIFIED 36 → 38, ABSENT 18 → 17.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 506**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **504** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **506** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
