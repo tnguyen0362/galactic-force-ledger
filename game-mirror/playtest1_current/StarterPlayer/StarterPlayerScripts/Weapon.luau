@@ -169,10 +169,16 @@ local function tryFire()
 	end
 	if hit then
 		local model = hit.Instance:FindFirstAncestorOfClass("Model")
-		local shielded = model ~= nil and model:GetAttribute("GFEnemy") == true
-			and (tonumber(model:GetAttribute("Shield")) or 0) > 0
+		local isEnemy = model ~= nil and model:GetAttribute("GFEnemy") == true
+		local shielded = isEnemy and (tonumber(model:GetAttribute("Shield")) or 0) > 0
 		VFX.impact(hit.Position, hit.Normal, hit.Material.Name, shielded)
-		Audio.play(shielded and "hit_shield" or "hit_flesh", hit.Position)
+		-- Terrain and props are not flesh: the old fallback played the organic hit cue for every
+		-- surface in the world, which made ordinary misses sound like wet enemy hits.
+		if isEnemy then
+			Audio.play(shielded and "hit_shield" or "hit_flesh", hit.Position)
+		else
+			Audio.play("hit_surface", hit.Position)
+		end
 	end
 	HUD.setAmmo(state.ammo, state.magazine, state.reserve)
 end

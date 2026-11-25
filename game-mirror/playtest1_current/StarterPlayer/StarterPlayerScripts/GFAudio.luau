@@ -28,6 +28,7 @@ local EVENTS = {
 	rifle_fire     = { id = "rbxasset://sounds/metal.ogg",                pitch = { 1.55, 1.95 }, volume = 0.38, range = 130 },
 	shotgun_fire   = { id = "rbxasset://sounds/bass.wav",                pitch = { 1.20, 1.45 }, volume = 0.52, range = 140 },
 	hit_flesh      = { id = "rbxasset://sounds/snap.wav",                pitch = { 0.72, 0.92 }, volume = 0.28, range = 90 },
+	hit_surface    = { id = "rbxasset://sounds/snap.wav",                pitch = { 1.05, 1.28 }, volume = 0.16, range = 70 },
 	hit_shield     = { id = "rbxasset://sounds/electronicpingshort.wav", pitch = { 1.05, 1.30 }, volume = 0.30, range = 80 },
 	enemy_death    = { id = "rbxasset://sounds/metal.ogg",              pitch = { 0.55, 0.72 }, volume = 0.36, range = 110 },
 	player_hurt    = { id = "rbxasset://sounds/bass.wav",                pitch = { 0.72, 0.88 }, volume = 0.24, range = 40 },
