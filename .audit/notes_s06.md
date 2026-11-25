@@ -64,3 +64,11 @@ Combat probe measured: headshot ratio exactly 2.00 PASS, shield absorbs RAW 18 n
 BUG FOUND+FIXED: hitMultiplier was reset to 1 whenever augs existed, killing headshot bonus on shield overflow (measured 6 vs spec 12).
 Fix in CombatService.damageEnemy: removed fold, added weakFactor applied to health portion only. NOT YET SAVED.
 Probe rerun in progress (shell 24e143) expecting afterHead2 health=488. After PASS: save_place, evidence, update rows S04-014/S04-018/S04-046, commit.
+
+## INVESTIGATION IN PROGRESS at compaction (XP baseline S10-006/S10-025)
+
+Question: does kill XP exist to close the 650-900 XP band? Baseline objective+extraction = 600 XP measured.
+S10-025 spec says 650-900 "INCLUDING kills and optional" - so need per-kill XP value or confirmation none exists.
+If no per-kill XP exists: either implement it (spec implies kills contribute) or raise base. FIND per-kill XP first:
+grep VitalsService/CombatService for xp grants on kill. Mastery gain exists (spine1 measured GF_MasteryGain) but
+mastery may be separate from rank XP. Resolve: measure total XP from a mission with kills, or implement per spec.
