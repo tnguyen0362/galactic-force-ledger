@@ -1,0 +1,134 @@
+{
+  "ok": false,
+  "rows": [
+    {
+      "attempt": 1,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    },
+    {
+      "attempt": 2,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    },
+    {
+      "attempt": 3,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    },
+    {
+      "attempt": 4,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    },
+    {
+      "attempt": 5,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    },
+    {
+      "attempt": 6,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    },
+    {
+      "attempt": 7,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    },
+    {
+      "attempt": 8,
+      "ids": [
+        "Marksman",
+        "Rifleman",
+        "Officer"
+      ],
+      "accepted": true
+    }
+  ],
+  "final": {
+    "sweepHits": 0,
+    "inMission": true,
+    "channels": 0,
+    "playerHealth": 100,
+    "actors": [
+      {
+        "shield": 60,
+        "id": "Marksman",
+        "y": 64.4327392578125,
+        "state": "Idle",
+        "x": 22.516660690307617,
+        "name": "Marksman",
+        "z": -107,
+        "perception": 0,
+        "health": 147,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 65.04595947265625,
+        "state": "Idle",
+        "x": 13,
+        "name": "Rifleman",
+        "z": -97.48333740234375,
+        "perception": 0,
+        "health": 168,
+        "dead": false
+      },
+      {
+        "shield": 160,
+        "id": "Officer",
+        "y": 65.8602294921875,
+        "state": "CallReinforcements",
+        "x": 10,
+        "name": "Officer",
+        "z": -110,
+        "perception": 0,
+        "health": 294,
+        "dead": false
+      }
+    ],
+    "lastCharge": "nil",
+    "difficulty": "Easy",
+    "player": "ROBLOXISUS101",
+    "cancels": 0,
+    "lastAttack": "nil",
+    "sweeps": 0,
+    "completions": 0,
+    "playerPos": {
+      "y": 31.215320587158203,
+      "x": -0.005859464406967163,
+      "z": 117.80258178710938
+    },
+    "template": "SABOTAGE_RELAY"
+  }
+}
