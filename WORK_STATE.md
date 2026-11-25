@@ -1868,6 +1868,35 @@ attack 15% *faster* than Normal, contradicting every other column. Recorded as a
 
 `S06-032` → PARTIAL.
 
+**DAMAGE AND CADENCE SCALING VERIFIED LIVE — the earlier "unproven" was a test artifact (place 522).**
+Evidence `evidence/v522-difficulty-scaling-verified-live/EVIDENCE.md`.
+
+**My previous diagnosis was wrong.** I recorded that hostiles "never entered their attack cycle". A probe watching the counters returned
+`tracked=1 engaged=1 tickErrors=0` — the enemy acquires and fires. The damage was swallowed deliberately:
+
+```lua
+-- VitalsService.applyDamage
+if workspace:GetAttribute("GF_InMission") == false then return 0 end
+```
+
+My test world had `GF_InMission = false`. No AI failure; a gate.
+
+```
+Normal:  shield 100 -> 28   hits=9  sizes=[8.0 ×9]
+Extreme: shield 100 -> 0    hits=8  sizes=[12.8 ×7, 10.4]     (12.8 = 8 × 1.60; 10.4 = clamped remainder)
+cadence: Normal gaps=[0.20,0.17,1.30,0.20]  Extreme gaps=[1.10,0.20,0.17,1.07]
+```
+
+The post-burst gap shrinks 1.30 s → ~1.08 s (ratio 1.20 = authored cadence) while intra-burst spacing is unchanged — cadence scales the **cycle**, not
+the burst, which also confirms the rate-not-interval reading.
+
+**Still open on `S06-032`:** the `pressure` multiplier (budget/eliteFrequency are a separate mechanism; applying both double-counts) and shield
+scaling (spec says "HP"). Stays PARTIAL.
+
+**Method lesson (inverse of the session's usual error):** I asserted *absence of behaviour* and was wrong because **an intended gate looks identical to a
+broken system from outside**. Before recording "X does not work", check whether something upstream deliberately suppresses it — `GF_InMission`, deploy
+grace and console mitigation are all silencers on this path.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 522**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
