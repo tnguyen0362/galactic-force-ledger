@@ -2472,11 +2472,31 @@ live   (HP 500):           health 428,          4 hits   (500 - 4x18 = 428 exact
 the caller still spawn there. The corpse guard returns before damage, so the shot still consumes ammo (correct — a shot into a corpse is a miss). The roof behaviour
 is fixed *inside spawn*; any other code path that places enemies on ceilings directly is not covered.
 
+**ENCOUNTER DIRECTOR: REAL SPAWN BUDGET ADDED; `reset()` LEAK FIXED (place 554).** Evidence `evidence/v554-director-budget-and-reset-fix/EVIDENCE.md`.
+
+**There was no budget, only a concurrency cap.** The module's own comment claims "Budget is capped so a long fight cannot overpopulate the map" and the spec says "not
+infinite spawning", but `MAX_ACTIVE = 8` capped *concurrency* and `spawnedThisMission` was never compared to anything. Measured by spawn-then-clear rounds: **5 → 13 →
+17 → 21, still rising** — killing hostiles freed capacity indefinitely.
+
+Added `MISSION_SPAWN_BUDGET = MAX_ACTIVE * 4` with a gate in `spawnAround` and `budget` exposed in `stats()`. **Verified:** five rounds placed **exactly 32**, then
+`post-drain asked=8 placed=0`.
+
+**`reset()` never cleared enemies.** It destroyed `ActiveActors` children with a `Humanoid`, but enemies have none, so reset removed nothing — measured `count` still
+**9** after reset, and those survivors blocked the cap. It now also matches `GFEnemy`. **Verified: 9 → 0.**
+
+**Regression:** `passed=671 failed=17 nonDrift=0`.
+
+**Still open on `S06-035`:** a mission **starts above its own cap** (measured `active=9 cap=8`) because `beginMission` spawns posts + patrol + commander + boss without
+a joint check; the "dynamic" budget is **static** (PATROL_COUNT 4, fixed budget, nothing adapts to squad size/difficulty/time); extraction pressure is an interval (2
+per 9s) rather than authored wave composition.
+
+**Note:** these two edits were made in the previous turn but only saved now — the turn had ended with them live in Studio but unsaved. Durable as of place 554.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 551**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 554**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **551** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **554** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
