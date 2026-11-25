@@ -900,6 +900,26 @@ augments equipped. Not proven: that either stat changes behaviour.
 **Next batch must start by instrumenting the reject path** (rejects, lastShotAt, ammo, lastShotId) and dumping
 `selectedLoadout.weaponAugments` to find the duplicated slot — before wiring any further key.
 
+**BOTH ANOMALIES DIAGNOSED — they were my probes, not the code (place 495, no source change).** Evidence
+`evidence/v495-anomalies-diagnosed-adsrecovery-verified/EVIDENCE.md`.
+
+A clean 4-shot run with per-shot instrumentation behaved perfectly (`bloom 0.35 → 0.51 → 0.67 → 0.83`, ammo decrementing, no
+rejects). The earlier "bloom=0.35 after three shots" was **not** a firing fault: **each of my probes mutated the persisted loadout**
+by equipping a different augment into slot 1, so "baseline" and "with augment" were different loadouts. Dumping the slots next to
+the measurement is what exposed it — that should have been in every probe from the start.
+
+**Third finding:** `unequipAugment(profile, slot)` takes **two** parameters. My probe passed three (`profile, "AR01", i`), so `slot`
+got the string `"AR01"` and the call silently no-opped. Slot numbers are one table per loadout, not per weapon.
+
+**`adsRecovery` VERIFIED** with a same-session A/B: 3 ADS shots gave `bloom=0.69` without it and `0.41` with `adsRecovery=0.25`,
+matching the predicted `0.35 × 0.75` per-shot with 1.15× decay. **`followUpSpeed` supported but NOT isolated** — TargetDiscipline was
+in both arms, so no control; the decay matches 1.15× baseline but that is arithmetic agreement, not an A/B.
+
+13 of 14 keys wired. Never applied: **swapSpeed** (no swap delay exists) and **sentryAmmo** (sentry has no ammo pool).
+
+**The hard lesson:** a wrong harness looks exactly like a passing test. Every reading taken without dumping the loadout alongside it
+is suspect — including the place-495 "failure", where the code was probably right and the measurement was wrong.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 495**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
