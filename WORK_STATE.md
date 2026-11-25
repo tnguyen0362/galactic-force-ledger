@@ -3159,3 +3159,13 @@ Saved to Roblox across versions 562-565. Cache opening now writes a committed `c
 The first implementation used time+session sequence cache IDs and a repeated key exposed cross-session collision risk; this was fixed to GUID `cache_` IDs before the checkpoint. Armory cache rows now include a `CAT ...` selector for ANY/Universal/AR/SMG/LMG/Shotgun/Marksman/Launcher/Pistol/Support and pass that choice through single and bulk open requests. Server sampling verified 30/30 Legendary draws remained AR when constrained to AR. Fresh boot remained `config check PASS (688 assertions)` with datastore persistence.
 
 Remaining gaps: actual force-close/reconnect test, click-path evidence for the CAT selector, per-category sampling for all choices, and broader cache UI polish.
+
+## 2026-11-25 / place 569 - augment stat consumers, reroll lock, reward crash fix
+
+Saved to Roblox across versions 566-569. Added missing generated/aggregated stat keys `range`, `supportDamage` and `sentryHP` with canonical rarity bands and positive/negative clamps. Weapon range/falloff now scales from `range`; Airstrike/Sentry/Orbital damage scales from `supportDamage`; Dome/support blast radius scales from `blastRadius`; new sentries publish scaled 180-base `Health`/`MaxHealth`. Epic/Legendary Armory rows now expose a lock selector and pass `lockIndex` into reroll.
+
+Live lock probe: Legendary `MasterworkBore`, locked negative `magazine` at index 2, cost exactly 300, locked key/value/quality preserved, Accept charged no second fee and cleared pending state. Boot remained `config check PASS (688 assertions)`.
+
+Also fixed a pre-existing DeepSeek defect in `RewardsService`: the late-join payout path referenced `payload` before it existed inside the `MissionComplete` payload, so any late join settlement would crash before sending the zero-payout debrief. It now sends explicit zero/base/bonus fields.
+
+Remaining augment gaps: sentry destruction/targeting, live weapon-range/support-combat probes, canonical catalog identity, signature/pure-buff variants, bulk dismantle/fusion preview, offline Monte Carlo validation, exact UI visual evidence.
