@@ -288,3 +288,11 @@ harness = cd /Users/timnguyen/gf && python3 gf_deploy.py gf_mirror.tgz probe_fil
 ## UPDATE 23 — VERIFIED ~429 / UNKNOWN ~311 / PARTIAL ~72; boot now 814 assertions
 DONE: augment catalog spec identities added (S11-047/048 verified) — all categories carry authored archetypes.
 Note: legacy non-spec names coexist for inventory persistence; spec identities are the canonical rows.
+
+## UPDATE 24 — VERIFIED ~438 / UNKNOWN ~304 / PARTIAL ~72
+Since UPDATE 23: verified S08-007 failure machine, S11-063 loadout freeze (implemented reroll mission gate),
+S11-050 support augment effects, S09-021 emergency linkage, S06-014 downed exclusion, S03-002 input layer,
+S03-035 solo resolution, S10-042 protection, S10-034 unlocks. Boot stable at 814 assertions, place v640.
+REAL GAPS found (not implemented): kill-XP cap per unique enemy ID (S10-024), assist/last-hit weapon XP
+sharing (S10-023), boss ability damage cap 12% (S05-017), grief protection temp-no-friendly-fire (S03-026).
+These are candidates for small implementations rather than verification.
