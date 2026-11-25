@@ -673,11 +673,28 @@ the "by difficulty/variant" clause is unimplemented — there is one countdown, 
 unconsumed), `StationService.MISSION_SECONDS = 1500` (what runs), and a spec value of **900**. Not centralised here — mission
 length is governed by `StationService` and moving it is too large for this batch.
 
+**DEAD-CONSTANT INVENTORY; ADS IS UNIMPLEMENTED (place 482).** Evidence `evidence/v481-dead-constant-inventory/EVIDENCE.md`.
+
+46 `Constants` keys parsed from current Source: **25 have no consumer**. Two findings:
+
+1. **`AdsSpeed` and `RollDistance` have zero consumers** — so the assertions added at place 476 were certifying dead config, the
+   `DownedTimeout` mistake repeated. Both removed (`passed 638 → 636`, `failed` unchanged).
+2. **Aiming does not slow movement.** Spec requires ADS 0.8× walk; `Movement.AdsSpeed = 13` is never read and no code changes
+   `WalkSpeed` while aiming. Consequence: `AugmentService`'s `adsSpeed` stat key is inert, so an augment can roll it and do
+   nothing — a paid dead trait.
+
+**Negative result:** an in-game "every key has a consumer" check is **impossible** — a runtime `Script` cannot read `.Source`
+(`lacking capability PluginOrOpenCloud`). It can only run plugin-side.
+
+**The dead-key list is a map of unimplemented systems:** `Squad.Extraction*`/`MaxPlayers` → no voting (`S09-002`);
+`Net.FireRateLimitPerSecond`/`MaxRemoteBytesPerSecond` → no rate limiting (`S14-023`); `Progression.Mastery*` → duplicate of
+ProfileService's thresholds; `World.*` → procedural params unused; `Mission.Duration*` → `StationService.MISSION_SECONDS` rules.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 481**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 482**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **481** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **482** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
