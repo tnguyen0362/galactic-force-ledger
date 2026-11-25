@@ -1568,11 +1568,30 @@ while the player stays connected.
 **Self-correction:** my first draft of this evidence claimed a new `GF_AugmentSanitisedDetail` attribute had been added. It had not — the existing
 attributes were sufficient. Corrected before committing.
 
+**ABILITY SOCKET NOW VALIDATED TOO (place 515).** Evidence `evidence/v515-ability-socket-validated/EVIDENCE.md`.
+
+Place 514's sanitiser repaired weapon slots only, so a Category augment parked in `loadout.abilityAugment` survived every join. Added four lines to
+`sanitiseLoadout`; cleared items also count toward `GF_AugmentSanitisedCount`, so a double repair reports 2 rather than 1.
+
+```
+planted abilityAugment=Choke (Category)  cleared=1  after=nil  detail="Choke from ability socket"
+valid ExtendedSentryMagazine kept=true   cleared=0   (applies = Ability)
+```
+
+The Category augment was discarded and the valid Ability augment survived, so the check discriminates rather than emptying the socket.
+
+**Only `Category` is refused** — `Ability` belongs there and `Universal` is permitted to fit anything; refusing Universal would invent a restriction
+the data does not express.
+
+**Still open:** the player is not told anything was removed (now on both sockets); Universal on the ability socket may be under-enforced if the design
+intends it weapon-only; mismatches made while connected are not repaired; and this branch's `PlayerAdded` path was not re-run across a restart (the
+weapon-slot equivalent was, at place 514).
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 514**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **514** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **515** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
