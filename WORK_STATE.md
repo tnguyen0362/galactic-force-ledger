@@ -987,11 +987,34 @@ caps. Also unverified: max-shield applied without free healing.
 
 Ledger: IMPLEMENTED_UNVERIFIED 1 → 0, VERIFIED 31 → 32.
 
+**AUGMENT INVENTORY CAPACITY IMPLEMENTED — `S11-032` ABSENT → PARTIAL (place 497).** Evidence `evidence/v497-augment-capacity/EVIDENCE.md`.
+
+Spec: 200 baseline, +50 per expansion for 10 Cells + 3 Tech + 1000 Credits, max 400. None of it existed.
+
+`AugmentService` gained the constants, a capacity count in `grantAugment` (publishing `GF_AugmentCapacity`) and
+`expandCapacity(profile)`; `ArmoryService` gained an `expandAugmentInventory` action that marks the profile dirty — through the armory,
+so the write persists.
+
+```
+capacity=1 owned=1  grant=false  marker "full 1/1"      capacity=2  grant=true  marker "2/2"
+expand: cap 37 -> 87 (+50); credits 5000->4000, cells 40->30, tech 10->7
+baseline with unset field: default=200
+```
+
+**Not verified:** the 400 clamp and its "already at max" refusal (needs 400 owned), every insufficient-funds branch, and **no armory
+UI button exists** — the action works when invoked but a player cannot buy an expansion through the interface. Capacity also relies on
+`or BASELINE_CAPACITY` rather than being written into the load-time schema.
+
+**Disclosed:** the probe temporarily swapped `ownedAugments` for a one-entry table to make the blocking rule reachable, restored it,
+and left `augmentCapacity` at 87 on the test profile.
+
+Ledger: ABSENT 3 → 2, PARTIAL 155 → 156.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 495**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 497**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **495** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **497** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
