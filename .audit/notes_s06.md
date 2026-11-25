@@ -301,3 +301,19 @@ These are candidates for small implementations rather than verification.
 Ability blasts now raycast-verify no opaque geometry between blast origin and target, and per-cast boss
 ability damage caps at 12% of scaled starting HP. Boot 814 assertions green. Mirror+tarball current;
 place save pending for the boss-cap + reroll-gate + augment-catalog batch.
+
+## UPDATE 26 — COMPACTION-RESUME BRIEF (VERIFIED ~446 / UNKNOWN ~295 / PARTIAL ~72 / place saving)
+PROVEN WORKFLOW: read full note -> implement small gaps (constants/config) OR mark honest completions ->
+boot-verify (gf_deploy.py gf_mirror.tgz probe_health.lua GF_HC, rebuild tarball after edits!) -> mark VERIFIED
+with evidence -> commit+push immediately. CRASH-SAFE csv write pattern (tmp+replace) always.
+SINCE UPDATE 25: verified S04-020 caps, S04-060 class passives, S04-065 no-role-queue, S04-056 flinch,
+S13-015 war dedup, S10-024 kill-XP-once-per-instance. Implemented boss ability damage cap (S05-017).
+REMAINING REAL GAPS to implement: S10-023 assist/last-hit weapon XP sharing, S03-026 grief protection
+(temp-no-friendly-fire for repeat offenders), S05-003 thrown signal-flare abilities (MEDIUM feature),
+S08-007 add'l failure triggers. UNKNOWN big clusters: lobby 55 (mostly genuinely unimplemented 20-player
+public architecture — mark UNKNOWN honestly, don't fabricate), procedural world 37, engineering/QA 36
+(process rows — some closable: S16-042 pcall sweep, S16-099 milestone labels, S16-111 loop already fixed).
+VERIFY-CHEAP candidates: S09-028/030 disconnect grace (structural), S08-049/050 loot feed facts,
+S11-036 cache animation, S04-054 grenade tap/hold constants, S03-039 reticle spec shape.
+KEY FACTS: live ledger = repo CSV; boot gate now 814 assertions; harness from /Users/timnguyen/gf;
+place v640+ saving; Studio instance e08db1e5-fdca-41c4-b603-85b73b777c92.
