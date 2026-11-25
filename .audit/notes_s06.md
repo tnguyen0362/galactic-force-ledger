@@ -259,3 +259,9 @@ VERIFIED 406 / UNKNOWN 319 / PARTIAL 87 / ABSENT 2. Half-way milestone crossed.
 
 ## UPDATE 20 — VERIFIED ~419 / UNKNOWN ~319 / PARTIAL ~74
 Batch-verified 13 extraction/AI rows (phases, downed-exclusion, emergency, hearing/confidence, roles).
+
+## UPDATE 21 — VERIFIED ~424 / UNKNOWN ~314 / PARTIAL ~74
+Batch-verified rank gates/armor factor/recoil/semi-auto/ability-damage rows by structural inspection.
+NEXT SESSION: attack UNKNOWN clusters — lobby/matchmaking (~55 rows, biggest), procedural world (~37),
+engineering/QA discipline rows. Implement missing small features (mission-failure state S08-007, grenade
+tap/hold verify, flinch absence verify). Use probes for runtime verification where cheap.
