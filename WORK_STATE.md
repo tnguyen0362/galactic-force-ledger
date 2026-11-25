@@ -1988,11 +1988,40 @@ Not changed: fixing this reorders the damage maths and changes every shielded TT
 
 Ledger: UNKNOWN 572 → 570, PARTIAL 176 → 179.
 
+**SHIELD MODEL REWRITTEN TO THE AUTHORED FORMULA — `S04-015` VERIFIED (place 527).**
+Evidence `evidence/v527-shield-model-fixed/EVIDENCE.md`.
+
+Fixed the two ordering bugs measured last batch. `damageEnemy` now divides the hit multiplier back out of the incoming amount to recover **raw**, gives the shield
+raw damage, and applies `hitMultiplier * armorFactor` only to the overflow that reaches health:
+
+```
+head + shield 100:              shield 100 -> 82   health untouched   (-18, no head bonus)
+body + armour 0.5 + shield 100: shield 100 -> 82   health untouched   (-18, armour not on shield)
+body + armour 0.5 + health:     health -9                             (18 x 0.5)
+overflow: shield 10, armour .5: shield 0, health -4                   ((18-10) x 0.5)
+```
+
+All four match the spec, including the overflow case it spells out.
+
+**Behaviour changes to expect:** shields break ~25% faster on `ArmorFactor 0.75` enemies (now the authored value); a headshot no longer shreds shields (18, not
+36, so 5 shots to break 80 rather than 3); and **every shielded TTK figure recorded earlier in this project is stale**. Unshielded numbers are unchanged — the
+`else` branch reproduces the old maths, confirmed by the health-only case.
+
+**Not done:** no `shieldFactor` field exists, so the spec's shield factor is implicitly **1** (the only shield-side lever is the `shieldDamage` augment); and
+`S04-021` still wants **unit tests** — this is verified by probe, not regression test, so a future edit could silently undo it.
+
+Limits: one archetype, one weapon, armour forced to 0.5 rather than a Heavy's real 0.75, and augment-scaled paths (`weakPoint`, `armorDamage`, `healthDamage`,
+`shieldDamage`) were not exercised with a player carrying augments.
+
+`S04-015` → VERIFIED. `S04-018` → PARTIAL (formula implemented and measured; no separate shield factor).
+
+Ledger: VERIFIED 43 → 44, PARTIAL 179 → 178.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 522**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 527**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **522** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **527** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
