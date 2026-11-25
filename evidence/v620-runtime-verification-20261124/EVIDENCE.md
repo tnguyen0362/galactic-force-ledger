@@ -72,6 +72,14 @@ No config-file or script-presence claims. Harness assistance is labeled where us
 8. **Officer energy sweep** — 1.6s telegraphed radial burst, 30-stud radius, 14-20s cooldown,
    damage routed through VitalsService (correct shield-first path).
 
+## OBSERVED BUGS / ANOMALIES (owner-reported + probe-observed, NEED INVESTIGATION)
+- Owner reports spawn bugs in play (unverified specifics — reproduce first)
+- Enemies held at LZ platform edge without firing — possible pathing/LOS deadlock on elevated geometry
+- Enemy positions jumped ~200m between probes — respawn relocation or duplicate confusion
+- Bastion Walker despawn cascade on player death is abrupt (correct in principle, harsh in practice)
+- Military rank displayed 15 in a failure debrief during a memory-mode session — possible XP inflation or display bug
+- v684 AI batch itself is unverified — new bugs possible in FSM resolver/beacon/sweep paths
+
 ## HONESTLY UNVERIFIED / OPEN
 - Tutorial steps 2-5 end-to-end (shoot/reload/dodge/ability validation)
 - Other mission templates: RECOVER_TECH carry, ELIM/CONQUEST variants (DEFEND_BEACON now verified)
