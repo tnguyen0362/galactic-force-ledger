@@ -504,3 +504,12 @@ flashlight, atomic seat reservation, experimental unlock economy, farm preventio
 telemetry, boss arena conformance. Boot 816 green. ALL COMMITTED+PUSHED.
 REMAINING ~105: S15 23 (mostly hardware perf measurement), S16 21 (validation matrix needs live multiplayer),
 BETA 12 (device testing), S03 9 (input polish), S02 7 (multi-place core dashboard-blocked), S01/S04/S07 tails.
+
+## UPDATE 52 — VERIFIED 738; sustained burn-down checkpoint
+PROGRESS: 548→738 this session (+190 rows). Everything committed+pushed, boot 816 assertions green,
+all module shells created, deploy pipeline healthy (gf_deploy.py + gf_mirror.tgz + probe_health.lua GF_HC).
+REMAINING ~77: S15 ~16 (hardware perf measurement rows — need real devices), S16 ~17 (validation matrix —
+needs live multiplayer sessions), BETA 12 (device testing), S02 6 (multi-place core — dashboard-blocked
+place creation), S03 ~5 (input polish tails), scattered S01/S04/S07/S10/S11 tails.
+WORKFLOW PER ROW-BATCH: implement in mirror → tar → deploy background → mark rows → commit+push.
+KEY FILES: notes in .audit/notes_s06.md, ledger REQUIREMENT_COVERAGE.csv, mirror playtest1_current/.
