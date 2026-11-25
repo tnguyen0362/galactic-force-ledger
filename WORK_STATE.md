@@ -1264,6 +1264,20 @@ one pass — before any further clamp tuning.
 
 `S11-051` → PARTIAL (`swapSpeed` runs 20–46% against the authored reload bands 2–4/3–6/5–9/7–12).
 
+**RNG IS `math.random`; DOME DURATION IS 20s AGAINST A GUARANTEED 10s (place 504, no code change).** Evidence
+`evidence/v504-rng-and-dome-duration/EVIDENCE.md`.
+
+- `S11-030` — every cache outcome (rarity, category, archetype, trait value) and the enemy drop check resolve through
+  `math.random()`, Luau's process PRNG. That is not "cryptographically appropriate unpredictable randomness"; `Random.new()` seeded per
+  session would at least be distinct. The picker **is** injectable (`roll(tier, owned, rng)`), which is good for reproducible tests and is what
+  let this audit reason about odds without gambling — but it does not make production unpredictable.
+- `S11-043` — `DomeShield duration = 20` against the spec's *"remains guaranteed 10s"*. A 20s bubble on a 70s cooldown is 29% uptime where
+  the authored intent is 14%. The other half of the clause (*"shield radius eligible"*) is unmet in the opposite direction: `blastRadius`
+  acts only in `CombatService.detonate`, so the dome's 18-stud radius never scales with augments.
+
+Both → PARTIAL with exact values. Duration belongs with the ability-cooldown drifts already recorded (OrbitalStrike, OrbitalLance,
+ReflectiveBarrier, Sentry).
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
