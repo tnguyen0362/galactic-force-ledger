@@ -2017,11 +2017,30 @@ Limits: one archetype, one weapon, armour forced to 0.5 rather than a Heavy's re
 
 Ledger: VERIFIED 43 → 44, PARTIAL 179 → 178.
 
+**DAMAGE MATHS NOW HAS A REGRESSION GUARD — AND CHECKRUNNER CAUGHT A BUG I SHIPPED (place 529).**
+Evidence `evidence/v529-damage-regression-checks/EVIDENCE.md`.
+
+`GF.Test.DamageChecks` runs **headless**: it builds a scratch `Model` with only the attributes `damageEnemy` reads, so no rig, mission, AI or player vitals are
+involved, and exercises the real numeric paths. **8/8 pass**: unshielded body −18; shield absorbs −18 with health untouched; headshot vs shield −18 (not −36);
+headshot vs health −36; armour vs shield −18; armour vs health −9; overflow shield 10 + armour 0.5 → shield −10, health −4; and shield+health lost = 18 exactly.
+
+Wired into `CheckRunner.run()`, so the project's single proof command now covers combat damage.
+
+**It immediately caught my own regression from the starter-pick batch**: `unregistered remote in folder: ClaimStarter` — I had added a RemoteEvent without
+registering it in `Shared.Remotes.Names`, and nothing else noticed. Fixed by registering it properly (not by loosening the check). I also broke `Remotes` once
+while fixing it by inserting the name at a quote outside the `Names` table; reverted and re-applied with a line anchor.
+
+After the fix: `passed=650 failed=17 nonDrift=0` — every remaining failure is a catalogued spec drift awaiting owner decision (RL09/GL22 radii,
+OrbitalStrike/Lance, Sentry, ReflectiveBarrier, boss HP, downed timeout, revive duration, extraction countdown, pity).
+
+**Remaining gap on `S04-021`:** the row also names **component damage** (bosses/multipart targets), which these checks do not model; and the augment-scaled
+branches are untested because no player attacker is passed. Stays PARTIAL.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 527**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 529**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **527** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **529** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
