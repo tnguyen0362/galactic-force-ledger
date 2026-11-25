@@ -80,3 +80,23 @@ Fire path: weapon.explosive now launches projectile instead of instant detonate.
 Probe GF_PROJ running (shell b8aa10): expects no instant detonation, positive travel time, detonation via collision/lifetime.
 NOT YET SAVED. After PASS: save_place, evidence, rows S04-048/S04-WPN-GL22/S04-WPN-RL09/S04-047, commit.
 KNOWN DEBT: immediate DamageFeedback still fires at trigger time in explosive branch (cosmetic); client visual shell animation not yet implemented (server ballistic params published via ProjectileFired remote).
+
+## IN-FLIGHT at compaction (hit probability batch)
+
+Hit probability implemented in EnemyService burst loop: per-shot baseProb from config (Rifleman .42/Scout .38/Marksman .75/Heavy .5/Officer .45),
+range factor falloff beyond 60% attack range, rolling targets auto-dodge, cover-broken targets safe, misses animate wide with GF_EnemyMisses counter.
+Deterministic-ish server roll via sin hash per-actor counter. Enemies config hitProb added.
+First probe FAIL was PERCEPTION WORKING CORRECTLY: silent player behind enemy outside cone never detected (0 shots) - not a bug.
+Fixed probe fires one shot to trigger hearing alert. Rerun in progress (shell 23526c).
+NOT YET SAVED. After PASS: save, evidence, rows S06-021/028/029/030, commit.
+
+## CRITICAL CORE-LOOP BUG INVESTIGATION (in progress)
+
+Players teleport correctly to mission terrain (0,31,118) on deploy, stand healthy ~3.5s, then get cleanly
+teleported back to station (-8,765,40) with no damage/death/downed/respawn. Active PivotTo by some system.
+NOT death (hp/shield constant, no nochar gap), NOT fall damage, NOT grace-related. Return position (-8,765,40)
+is the station spawn. Suspects exhausted: not CrewService (NPC rigs), not DownedService (never downed).
+NEXT: find what positions players at station spawn - check SpawnLocation/RespawnLocation logic, StationService
+returnToStation callers, any zone watchdog. Probe probes showed exact timing ~3.5-4s after arrival.
+This bug explains all the probe geometry fights - it may be THE critical core-loop defect.
+Hit probability batch still unsaved/in-flight (implementation done, EnemyService+Enemies config edited).

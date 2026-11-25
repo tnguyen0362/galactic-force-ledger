@@ -3288,3 +3288,10 @@ NEXT BATCH (highest leverage): end-to-end mission-spine live harness. One missio
 Then: Lobby/matchmaking (59 UNKNOWN - the biggest behavioral cluster, but much needs multi-client/cross-place which Studio cannot do - honest BLOCKED/PARTIAL documentation expected), Procedural world (32), Input/HUD (33), Narrative/onboarding (25), Galactic War (19), Combat/weapons detail rows, Economy detail rows.
 
 Harness reminders: COPYFILE_DISABLE=1 for tarballs; paths need playtest1_current/ prefix; new module shells need MCP execute_luau first; attribute names cannot contain colons; LocalScript.Source cannot be set at runtime (pre-create client probes in Edit mode); test userId 1889759131; always snapshot+restore real profile state in probes.
+
+## v614 — core-loop defect repaired (mission reseat)
+StationArt.reseat yanked any player below y750 onto the deck when the shell finished building
+(boot+~6s): mission terrain at y31 qualified, so early deploys were teleported back mid-insertion.
+Root-caused by live bisection (~15 rounds); fixed by exempting Mission-zone players; verified
+[GF_FV] yseq flat at 31 through the window. Evidence: evidence/v614-reseat-fix/. This unblocked
+all mission-side probe measurement (hit probability verification next).
