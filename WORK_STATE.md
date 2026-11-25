@@ -473,6 +473,19 @@ on restart would produce something that looks implemented and loses money on the
 Untested eligibility states: **downed**, **pending-redeploy**, **co-op** (one client only), and **disconnect grace** (no restore
 path exists).
 
+**DURABILITY DECISION RECORDED (no code) — `.goal/DECISIONS.md`.** Also: `HANDOFF.md` claimed *"Place version at handoff:
+318"*, stale by 157 saves; corrected to **475**.
+
+Two shapes for `S09-025` durability were written up with trade-offs: a **per-user journal inside the profile** (rides the
+DataStore, serialisation, retry and dirty-marking already proven surviving two restarts at build 430; cost is one mission
+spread across N records) versus a **per-mission DataStore journal** keyed by `missionId` (matches the spec schema literally;
+cost is a second durability surface with its own retention and idempotency). **Recommendation: per-user journal**, because the
+proven machinery already exists and option 2 duplicates it with a second silent-failure point. Recorded as a recommendation,
+not a decision — and settlement must NOT read the ledger until durability exists.
+
+**Downed eligibility answered by source, not runtime:** `DownedService` sets `state.downed` and never calls `State.clear`, so a
+downed soldier keeps their state and stays eligible, which is what `S09-027` requires. Stated as a read, not a test.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 475**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.

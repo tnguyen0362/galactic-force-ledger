@@ -117,3 +117,34 @@ through `RemoteService.ensureRemotes` / `ensureRemote`.
 Source and property edits made while a playtest is running are discarded when the playtest stops.
 They appear to apply inside the running session, which makes the mistake invisible until the next
 launch. Verify after stopping, then save.
+
+## Reward ledger durability: per-user journal in ProfileService (recommended, NOT yet built)
+
+`S09-025` requires an append-only rewards ledger with "durable receipt history/settlement retention appropriate
+to platform retries" and idempotent recovery. `RewardLedgerService` (place 473-475) now records every field the
+spec names, but it is **in-memory**: a server restart loses it.
+
+Two shapes were considered:
+
+1. **Per-user journal inside the existing profile** (`profile.rewardJournal`). Rides the DataStore path,
+   per-user serialisation, retry/backoff, dirty-marking and `BindToClose` behaviour that `ProfileService`
+   already provides and that was verified surviving two server restarts at build 430. Cost: one mission's
+   events are spread across N player records, so a squad-wide audit means gathering N profiles.
+2. **Per-mission DataStore journal** keyed by `missionId`. Matches the spec's `missionId`-keyed schema most
+   literally and makes one mission atomically auditable. Cost: a second durability surface with its own
+   retention policy, its own idempotency keying, and no shared machinery with the profile path.
+
+**Recommendation: option 1.** The deciding factor is that the durability machinery already exists and is proven;
+option 2 duplicates it and introduces a second place where a write can fail silently. The squad-audit cost is
+acceptable because settlement is per-player anyway, and `missionId` is already stored on every event, so
+gathering across profiles is a query, not a migration.
+
+**This is a recommendation, not a decision made.** It is recorded here so the next session does not re-litigate
+the shape from scratch. Settlement must NOT be switched to read the ledger until durability exists — a payout
+path backed by an in-memory journal would look implemented and lose money on the first server bounce.
+
+## Downed players remain eligible because DownedService never clears State
+`RewardLedgerService.eligibleUserIds()` treats a player with a runtime `State` entry as present and owed.
+`DownedService` sets `state.downed` and never calls `State.clear`, so a downed soldier keeps their entry and stays
+eligible — which is what `S09-027` requires. This is verified by **source reading, not by a runtime downing test**;
+the flag path has not been exercised end to end.

@@ -3,7 +3,7 @@
 Place: `Playtest1`, placeId 120646942844931, universeId 10778576038. **Studio id is not stable — always call
 `list_roblox_studios` first**; a missing place is a hard block, never a ledger edit.
 
-**Place version at handoff: 318.** Last commits: `6b4457a` (terminal damage measured), `9bfdd77` (HUD band de-conflict),
+**Place version at handoff: 475.** (318 was stale — the place was saved forward many times; 475 is authoritative as of the rewards-ledger batch.) Last commits: `6b4457a` (terminal damage measured), `9bfdd77` (HUD band de-conflict),
 `a8ef2f5` (carry visuals), `61fd34e` (RECOVER carry), `14a7ecb` (glyph re-render), `50b639a` (survivable drop).
 
 ## State of the truth
