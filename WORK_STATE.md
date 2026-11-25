@@ -1192,6 +1192,33 @@ queue (mission distributions, boss HP, cooldowns, mission length, ADS ratio).
 
 Ledger: UNKNOWN 620 → 614, PARTIAL 160 → 164, ABSENT 0 → 2.
 
+**`S11-005` VERIFIED; ENTIRE REROLL/DISMANTLE/FUSION CLUSTER ABSENT (place 504, no code change).** Evidence
+`evidence/v504-item-lifecycle-absent/EVIDENCE.md`.
+
+**No class lock — verified.** `ArmoryService` touches `selectedClass` in four places (a comment, the class list, the state payload, and
+the setter at line 473). No lock check exists, and all four classes were applied in sequence on one profile at place 495.
+
+**`S11-057`–`S11-067` are ABSENT — one missing subsystem, not eleven gaps:**
+
+```
+reroll     both hits are "preRolled" (substring)
+dismantle  NO references
+fuse       only inside "refused"
+fusion     NO references
+```
+
+Reroll, dismantle and fusion have no entry point at all. Every row in the cluster needs per-instance augment records that can hold a
+pending offer, a lock flag and a protected flag — the same instance model blocked on `S11-031`.
+
+**Two consequences worth noting:** dismantle is the only sink that would make the now-verified 200-slot capacity meaningful (with no
+dismantle, a full inventory can only be expanded, never cleaned); and because `Augments.rollTrait` already samples the authored range,
+reroll would be cheap to add once instances exist — the blocker is identity, not the roll.
+
+**Process note:** my first pass silently updated nothing because `f"S11-{n}"` produced `S11-57`, not `S11-057`. Caught by checking the
+status counter rather than trusting the loop.
+
+Ledger: UNKNOWN 613 → 602, ABSENT 2 → 13, VERIFIED 35 → 36.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
