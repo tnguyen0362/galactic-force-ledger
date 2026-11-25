@@ -1219,6 +1219,29 @@ status counter rather than trusting the loop.
 
 Ledger: UNKNOWN 613 → 602, ABSENT 2 → 13, VERIFIED 35 → 36.
 
+**TRAIT MAGNITUDES ARE 3–8× THE AUTHORED BANDS (place 504, no code change).** Evidence `evidence/v504-trait-magnitude-inflation/EVIDENCE.md`.
+
+Authored per-rarity bands (S11-042) against the config:
+
+| stat | config Common | authored Common | ratio |
+|---|---|---|---|
+| recoil | 7–17 | 3–6 | ~2.5× |
+| magazine | 20–32 | 3–6 | ~5× |
+| weakpoint | 16–25 | 2–3 | **~8×** |
+| reload (Rare) | 10–26 | 3–6 | ~3× |
+
+Rarity ordering is not respected either: a **Common** `StabilityCompensator` rolls recoil `12–17`, overlapping the authored **Legendary**
+band `10–17`, and a **Common** weakpoint augment `16–24` is roughly four times the authored Legendary ceiling `6–10`.
+
+**This is the root cause of three earlier findings.** It explains the measured 47.85% cooldown reduction and +85% stacked blast radius
+(two augments overshoot a 20–25% cap immediately at this scale); it explains why the clamp table I added at place 490 makes augments feel
+far weaker than their displayed ranges; and it explains why `StabilityCompensator`'s rolled −0.08 disagrees with its declared 12–17% band.
+
+**Recommendation:** rescale the bands **before** revisiting the clamps — the caps only make sense once the magnitudes are authorised. This
+probably belongs first in the owner balance pass.
+
+`S11-042` → PARTIAL. Not retuned: rescaling all 36 augments is economy-wide.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
