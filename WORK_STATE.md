@@ -563,11 +563,30 @@ with it. Fixing it is now a one-line change in one obvious place.
 **The false comment is left in place deliberately** so the record of why the value moved survives, but it is contradicted by a
 failing assertion rather than standing unchallenged.
 
+**REGEN RATES + ROLL RECHARGE ASSERTED — all three conform (place 478).** Evidence `evidence/v478-regen-rate-assertions/EVIDENCE.md`.
+
+Closing the gap the constants batch named: `ShieldRegenRate 25`, `HealthRegenRate 8` and `RollRecharge 3.5` are all pinned in
+the spec and are now asserted.
+
+```
+before:  passed=635  failed=16
+after:   passed=638  failed=16   new-section drifts: 0
+```
+
+`+3` passing, no new drifts — a check that grew without finding a defect. Worth recording that not every batch finds one.
+
+**Two deliberately left unasserted:**
+
+- `Combat.InteractRange` = **10**, while `v388`'s evidence mentions `INTERACT_RANGE (16 studs)`. Possible discrepancy, but no
+  authored value exists to assert against, so it stays an open question rather than a green tick built on evidence prose.
+- `EnemyBudgetCap` / `MaxActiveEnemiesPerPlayer` — the spec gives a *formula* (`round(4+2*(P-1))` × difficulty factor), not
+  constants. Asserting 12 or 3 would mean inventing the mapping.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 477**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 478**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **477** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **478** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
