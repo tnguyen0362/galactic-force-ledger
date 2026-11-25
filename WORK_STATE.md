@@ -3189,3 +3189,7 @@ Next: mixed-input rejection test and UI click evidence, then reward settlement d
 ## 2026-11-25 / place 573 - destructible sentries
 
 Hostiles now target visible sentries that are nearer than their player target, and sentries are destroyed at 0 HP. Live probe: a Rifleman destroyed a 60 HP synthetic sentry (first hit 0.8s). Boot still passes 688 assertions.
+
+## 2026-11-25 / place 574 - dome/sentry per-owner cap
+
+A new valid Dome or Sentry cast replaces the owner's previous one, and dome rim/posts no longer leak after expiry. Live probe: `domes=1 sentries=1 strayRimPosts=0`.
