@@ -2422,6 +2422,37 @@ Recorded as a defect note on `S06-035` (encounter director) with a suggested gua
 **Next attempt:** spawn where no overhead geometry can capture the ground ray (or validate `(boxCentre - playerPos).Magnitude < 25` and retry), aim at the verified box
 centre, read the `LocalScript` feedback log.
 
+**`S04-032` VERIFIED — DAMAGE, HITMARKER AND KILL ALL CONFIRMED (place 548, no source change).**
+Evidence `evidence/v548-hitmarker-kill-verified/EVIDENCE.md`.
+
+**The roof-spawn is systematic, not occasional.** Retrying `EnemyService.spawn` at six offsets and validating each against `GetBoundingBox()`:
+
+```
+all six: vertical ≈ 31-32, flat 13.4-14.6      (enemy on the ceiling every time)
+```
+
+The player was under a ~30-stud roof, and the spawn raycast starts 40 studs up — so it hits the roof's **top** surface every time. **Indoors, hostiles would spawn on
+the ceiling systematically.** Strengthened on `S06-035`.
+
+**The verification run:** a target part built on the aim line at the player's own height (766.46 both), 200 HP, 12 studs ahead, 16 shots:
+
+```
+hits=16  lastDmg=18  health 200 -> 0  Dead=true
+client: d=18 k=false x11, d=18 k=true x1, then d=18 k=false x4   kills=1
+```
+
+Server damage, client hitmarkers and a kill confirmation all arrived. Damage clamps at 0, never negative.
+
+**Defect found (not fixed):** shots 13–16 hit an **already dead** target and still produced `d=18 k=false` — hitmarkers on a corpse. The hit branch has no "already
+dead" guard. Cosmetic (health no longer moves), queued for its own batch since the fix lives in `CombatService.fire`.
+
+**Limits:** the target was a hand-built part, so this proves the damage→feedback→kill pipeline, not enemy-model hitboxes or death animation. `workspace.GF_ClientKills`
+reads nil server-side because a client-set attribute does not replicate — the client's own counter is the valid observation.
+
+Ledger: VERIFIED 50 → 51, PARTIAL 177 → 176.
+
+**Next candidates:** the "already dead" hitmarker guard (small, contained), or the roof-spawn guard on `EnemyService.spawn` (affects every indoor encounter).
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 548**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
