@@ -602,11 +602,32 @@ also wrong against 9, so connecting it would put a second wrong number in a live
 
 Note `v388` measured the code's number rather than the spec's: behaviour was measured and still wrong.
 
+**DEAD CONFIG REMOVED: `Constants.Combat.InteractRange` (place 479).** Evidence `evidence/v479-remove-dead-interact-constant/EVIDENCE.md`.
+
+Scanned every `LuaSourceContainer` under `ServerScriptService`, `ReplicatedStorage`, `ServerStorage`, `StarterPlayer` and
+`StarterGui` for `interactrange`: **one hit, the definition itself.** Zero consumers. Removed.
+
+```
+Combat.InteractRange = nil
+Combat keys = DownedTimeout, EnemyBudgetCap, MaxActiveEnemiesPerPlayer, ReviveDuration, ReviveRange
+boot: ok=false passed=638 failed=16     <- identical to before, so nothing read it
+```
+
+Boot parity is the proof: had any consumer read the key it would now be `nil` and something would have failed.
+
+**Why remove rather than leave it:** a dead constant reads as authoritative and sits beside live values. This one produced a
+false lead that cost part of a batch — 10-vs-16 looked like a contradiction when only 16 was ever live.
+
+**Still wrong:** `ObjectiveService.INTERACT_RANGE = 16` against the spec's **<=9**. But there is now exactly one interact range
+in the project, so the question is unambiguous. When the owner sets it, the clean order is: move to `Constants.Combat` at 9 →
+have `ObjectiveService` read it → assert in `CheckRunner`. Doing it in that order means the check never goes red against a
+constant nothing uses.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 478**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 479**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **478** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **479** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
