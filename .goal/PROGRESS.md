@@ -428,3 +428,10 @@ Still dark in the corner — recorded as the open defect rather than papered ove
   2 shots requiring one reload; GL/RL hit all three clustered targets for 251.8/425.5 total damage.
 - Full-load damage capacity GL/RL 2200/1640 versus AR/LMG 3528/5100. S12-015 is now VERIFIED;
   the comparison is controlled rather than a human-aim/full-mission economy test.
+
+## 2026-11-25 — monetization boundary (place 588)
+
+- Implemented disabled placeholder product config plus server-only receipt validation, entitlement
+  interfaces, purchase-id idempotency, and mock receipt processing. No real product id or live charge.
+- Live probes passed: first mock grant `PurchaseGranted`, duplicate replay idempotent, live-shaped
+  placeholder refused, and fresh-session cleanup confirmed no test receipt persisted. S12-018 VERIFIED.
