@@ -582,6 +582,26 @@ after:   passed=638  failed=16   new-section drifts: 0
 - `EnemyBudgetCap` / `MaxActiveEnemiesPerPlayer` — the spec gives a *formula* (`round(4+2*(P-1))` × difficulty factor), not
   constants. Asserting 12 or 3 would mean inventing the mapping.
 
+**INTERACT RANGE: 16 vs AUTHORED 9, AND A DEAD CONSTANT (place 478, no source change).** Evidence `evidence/v478-interact-range-9-vs-16/EVIDENCE.md`.
+
+Resolving the open question from the previous batch. There are **two separate things**, not a conflict:
+
+| symbol | value | referenced by |
+|---|---|---|
+| `ObjectiveService` local `INTERACT_RANGE` | **16** | 7 call sites (crates, terminals, pads; one at +4 = 20) |
+| `Constants.Combat.InteractRange` | **10** | **nothing — dead configuration** |
+
+So `v388`'s "16 studs" was right and `Constants` is simply unused.
+
+**But 16 is wrong against the spec**, verbatim: *"Interact instant on valid range **<=9 studs**/LOS except hacking/revive"*. The
+build allows 16, and one terminal path 20 — between 1.8× and 2.2× authored. A player can trigger objectives from nearly twice
+the intended distance, and the hacking/revive carve-out is not implemented either way.
+
+**Not changed** (feel parameter: pacing and combat pressure). Also deliberately NOT wired the dead `Constants` value in — 10 is
+also wrong against 9, so connecting it would put a second wrong number in a live path while looking like a tidy-up.
+
+Note `v388` measured the code's number rather than the spec's: behaviour was measured and still wrong.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 478**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
