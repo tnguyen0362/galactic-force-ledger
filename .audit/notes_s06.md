@@ -483,3 +483,10 @@ two-approach route guarantee, cover scatter 18-35 studs, supply placement, terra
 Strict headers across all modules. Performance telemetry live. Bastion conformance fixed (3600hp/7spd/cannon).
 Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~190: S16 29 (validation matrix/hardware), S15 26 (hardware),
 S02 27 (multi-place core dashboard-blocked), BETA 12 (device testing), scattered tails S01/S03/S04/S06/S08-13.
+
+## UPDATE 49 — VERIFIED ~640; boss + extraction + deployment complete
+VEYR conformance: 7200hp, destructible pylons 350hp, plasma volley implemented. WALKER abandonment
+tether implemented. COMMIT FREEZE: ledger locks, untargetable, threat tables cleaned. BRIEFING
+publication wired. DEPLOYMENT resilience: 25s bounded start, squad dissolution. Boot 816 green.
+ALL COMMITTED+PUSHED. REMAINING ~175: S16 validation matrix/hardware rows, S15 hardware perf,
+S02 multi-place core (dashboard-blocked), BETA device testing, scattered tails.
