@@ -35,3 +35,13 @@ The first-person-visible spawn scene now has:
 - a greener, less saturated sky/terrain grade.
 
 This is not a complete terrain-generation or skybox solution. The terrain still reads as terraced/noisy rather than a fully composed Helldivers-style theater, and the supply-crate cap still reads as a simple yellow plate. Those remain open foundational visual-quality items.
+
+## Loading transition verification
+
+A separate v696 runtime probe triggered `returnToStation` and sampled inside the transition window:
+
+- during: `teleporting=true loadingVisible=true`
+- after: `teleporting=false loadingVisible=false`
+- capture: `raw/v696_loading_transition_0.jpg`
+
+This verifies the loading screen can appear and clear during a real in-session station-return transition. It does not yet prove every transition path (initial join, deployment, extraction, failure) or that the fixed-duration window is visually sufficient on slow machines.
