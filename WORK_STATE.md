@@ -1483,6 +1483,31 @@ The stance bug fixed at 510 was real but **an order of magnitude less severe tha
 **State:** point-blank 96.0 confirmed against the authored 8 × 12; mid-range explained by configuration; reload 2.8 vs authored 2 is the one open
 SG-04 issue.
 
+**CATEGORY COMPATIBILITY IS NEVER ENFORCED (place 510, no code change).** Evidence `evidence/v510-category-compat-unenforced/EVIDENCE.md`.
+
+Every augment carries `applies` ∈ {`Ability` (4), `Category` (28), `Universal` (4)}. `AugmentService` has **zero** checks involving `applies` or
+`incompatible`; the field's only consumer is cosmetic (`description = def.applies or ""` in ArmoryService), and `CheckRunner` only validates it is a
+legal string.
+
+Verified by repro, not inference:
+
+```
+aug=Choke  applies=Category  cat=Shotgun
+weapon=AR01  cat=Rifle
+equipAccepted=true   why=nil   effectsInForce=1
+```
+
+A shotgun weak-point augment equipped onto an assault rifle **and its effect took force**. 28 of 36 archetypes are Category augments, so the majority
+behave as Universal.
+
+**Why it matters:** weapon identity collapses; and it is the mirror of the placebo-augment problem — augments doing something they were explicitly
+not meant to. Worse, the UI *displays* the restriction while the server accepts it anywhere.
+
+**Not implemented deliberately:** enforcing it removes power from every existing mismatched loadout (including the test profile, which now carries a
+shotgun `Choke` on `AR01` from this probe). Belongs with the balance pass.
+
+`S11-052` → PARTIAL.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 510**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
