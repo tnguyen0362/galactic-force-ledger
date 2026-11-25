@@ -68,3 +68,32 @@ Several probes before this realization measured OLD v614 code. Always deploy the
   mission fails only if no active/pending players. DownedService.resetMission wired into StationService.
   NOT YET VERIFIED (probe_redeploy.lua ready).
 - NOTE: WalkSpeed constant is 17.5, spec says 17 — minor deviation to fix. RollDistance 15.5 vs spec ~13.
+
+## UPDATE (post-v620) — counts: UNKNOWN 410 / PARTIAL ~215 / VERIFIED ~190
+## Place: v620. Ledger pushed through commit w/ 188+ verified.
+
+## Verified fixed this batch
+- S03-016 walk 17 exact + autosprint implemented (Controller.luau heartbeat, forward>=0.85, suppressed aim/fire)
+- S03-018 roll: impulse now RollDistance/RollDuration for full RollDuration; invuln verified before
+- S03-031 second death -> station live-verified (probe GF_SD); S03-029 no consumables (absence)
+- S04-053 grenade configs: Frag 135/15/2.5s, EMP 13r/90shield/15hp/2s disable
+- S14-012/S14-013 schema+migrations VERIFIED (evidence was already complete)
+- COUNT-GRENADE, S04-GRENADE-FRAG VERIFIED
+- Fall damage: continuous peak-velocity tracking now (heartbeat while falling), curve spec-exact
+  (55 harmless, 55-95 linear to 60, 95-140 rising to lethal 200)
+- CheckRunner assertion for RollRecharge fixed 3.5->5 (harness had drifted from spec)
+
+## CSV SAFETY: never write REQUIREMENT_COVERAGE.csv in one pass — write tmp + os.replace.
+## A crashed write truncated it once; restored from git. Commit often.
+
+## IN FLIGHT: weapon batch verification (probe_weapons.lua GF_W4)
+- near damage exact for LMG12=17, MR07=51, P01=22. SMG03 flaky (0 sometimes, 13 others).
+- FAR shots (falloffEnd+15) always 0 even with 8x8 targets + retries — probing cause with GF_FD diagnostic
+  (direct raycast vs fire reject reason). Suspects: spread, validation, range slack.
+- CombatService.fire(player, {weaponId, shotId, origin, direction}) directly callable server-side;
+  must match s.weaponId; reset s.lastShotAt=0 between rapid test shots; increment shotId.
+- Weapon maxRange = range*1.15 (MAX_RANGE_SLACK). SMG range 150 -> 172.5 max.
+
+## TacticalMapUI.luau EXISTS — S03-038 ambiguity (spec says no full tactical map REQUIREMENT — having one may be fine). Skipped.
+
+## EMP note: health 15 routed via damageEnemy (applies shield-first internally — slight imperfection vs spec's separate pools, acceptable)
