@@ -623,11 +623,35 @@ in the project, so the question is unambiguous. When the owner sets it, the clea
 have `ObjectiveService` read it → assert in `CheckRunner`. Doing it in that order means the check never goes red against a
 constant nothing uses.
 
+**MY OWN CONFORMANCE CHECK WAS CERTIFYING DEAD CONFIG (place 480).** Evidence `evidence/v480-downed-reads-constants/EVIDENCE.md`.
+
+Scanning the 64 service-local numeric tunables found two alarms in the first ten lines.
+
+**1. `DownedService` never requires `Constants`.** It had its own `BLEEDOUT = 45`, `REVIVE_TIME = 3.5`, `REVIVE_RANGE = 12`,
+while `Constants.Combat` carried the same three names with — verified by consumer scan — **no consumers at all**. So my
+"CONST DRIFT: DownedTimeout = 45" and "ReviveDuration = 3.5" assertions were certifying values nothing reads. That is exactly the
+failure mode I warned about one batch earlier when refusing to centralise `INTERACT_RANGE` — and I had already committed it two
+batches before saying so. The numbers happened to agree, so the drift was still true of behaviour; the **method** was wrong. A
+check pointed at an unused copy proves nothing: had DownedService said 30 while Constants said 45, the check would have passed
+while the game bled players out in 30 seconds.
+
+Fixed by centralisation, not retuning: `DownedService` now reads `Constants.Combat` (45 / 3.5 / 12 unchanged). Boot parity
+`passed=638 failed=16` proves no behaviour changed, and the two drift assertions now cover the governing value.
+
+**2. The mission clock is 25 minutes, not 15.** `StationService.MISSION_SECONDS = 1500` against the spec's *"15min standard
+active clock"*. `v433` recorded a fresh deploy showing `MISSION 24:52` — measured correctly, never compared to the spec.
+Recorded, not changed: a 40% shorter mission changes the whole game's pacing.
+
+**Consumer-scan results worth keeping:** `RollRecharge` → MovementService, `ShieldRegenRate`/`HealthRegenRate` → VitalsService,
+`Pity` → ProfileService (all sound). `DownedTimeout`/`ReviveDuration`/`ReviveRange` → none (now centralised).
+
+**The rule this proves:** assert the value at its consumer, or centralise so the consumer cannot disagree.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 479**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 480**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **479** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **480** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
