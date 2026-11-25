@@ -503,6 +503,27 @@ soldier silently dropping out would under-pay the player who most needs it. They
 Still unproven: **pending-redeploy** (no distinct State representation exists, so genuinely unknown), **co-op** (one client),
 **disconnect grace** (no restore path), and the down was applied via `downPlayer` rather than lethal combat damage.
 
+**INPUT/PLAYER/HUD CONSTANTS AUDIT — two real drifts, two row-text errors (place 475, no source change).** Evidence `evidence/v475-input-constants-audit/EVIDENCE.md`.
+
+`Constants` read whole and compared against the spec (L384/L921/L145), **not** against the ledger's own paraphrases:
+
+| constant | value | spec | verdict |
+|---|---|---|---|
+| `Combat.DownedTimeout` | **45s** | **60s bleedout** | **defect** — dies 15s early |
+| `Combat.ReviveDuration` | **3.5s** | **"hold revive 3s"** | **defect** — every revive costs +0.5s |
+| `Movement.WalkSpeed` | 17.5 | ~17–18 | conforms |
+| `Movement.AdsSpeed` | 13 | ~12–14 | conforms |
+| `Movement.RollDistance` | 15.5 | ~14–17 | conforms |
+| `Vitals.HealthMax/ShieldMax` | 100 / 100 | 100 / 100 | conforms |
+| `ShieldRegenDelay` / `HealthRegenDelay` | 4 / 9 | 4 / 9 | conforms |
+
+**Two ledger rows were themselves wrong, and I nearly filed false defects because of it.** `S03-016` says "Walk 17" (spec says
+~17–18) and `S03-018` says "roll ~13 studs" (spec says ~14–17) — in both cases the *config was right and the row text was the
+paraphrase error*. Same failure mode as the ER-16 conflict and the pity comment: a secondary description treated as the spec.
+
+`Constants` is not a `Configs` module, so `CheckRunner`'s spec section does not cover these values — that is why both drifts
+survived.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 475**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
