@@ -3151,3 +3151,11 @@ Implemented:
 Evidence is in `evidence/v561-augment-instance-model/EVIDENCE.md`: live server probe passed duplicate UID, quantized quality, equip, tradeoff, reroll cost/keep, fusion, favorite protection and dismantle checks; UI probe confirmed item rows and pending old/new/accept/keep rendering; every fresh boot passed `config check PASS (688 assertions)` with datastore persistence.
 
 Still incomplete in this cluster: crash-atomic cache-open journaling, full category picker UX, exact canonical catalog/template identity, missing stat consumers (range/support damage/sentry HP/dome radius), signature/pure-buff variants, lock edge tests, bulk dismantle preview/filter/confirmation, Monte Carlo/offline simulation and full concurrency/race validation. Continue there before cosmetic augment work.
+
+## 2026-11-25 / place 565 - cache receipts and category selection
+
+Saved to Roblox across versions 562-565. Cache opening now writes a committed `cacheOpenJournal` receipt before materializing results. The receipt records a GUID cache UID, tier, source, category choice and fully hydrated draw data (item UID + traits), so recovery replays the same results by UID rather than rerolling or duplicating them. A live server probe forced a completed receipt back to `committed` and verified `CacheService.reconcileProfile` completed it without increasing inventory count. Completed journals are bounded to 50 entries.
+
+The first implementation used time+session sequence cache IDs and a repeated key exposed cross-session collision risk; this was fixed to GUID `cache_` IDs before the checkpoint. Armory cache rows now include a `CAT ...` selector for ANY/Universal/AR/SMG/LMG/Shotgun/Marksman/Launcher/Pistol/Support and pass that choice through single and bulk open requests. Server sampling verified 30/30 Legendary draws remained AR when constrained to AR. Fresh boot remained `config check PASS (688 assertions)` with datastore persistence.
+
+Remaining gaps: actual force-close/reconnect test, click-path evidence for the CAT selector, per-category sampling for all choices, and broader cache UI polish.
