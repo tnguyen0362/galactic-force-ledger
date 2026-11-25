@@ -80,6 +80,12 @@ No config-file or script-presence claims. Harness assistance is labeled where us
 - Military rank displayed 15 in a failure debrief during a memory-mode session — possible XP inflation or display bug
 - v684 AI batch itself is unverified — new bugs possible in FSM resolver/beacon/sweep paths
 
+## OWNER NOTES FOR FUTURE PASSES (not yet scoped as work items)
+- Graphics polish pass needed broadly — visual quality uneven across station/mission surfaces
+- UI/UX polish pass needed — owner flagged without specifics; audit screens against spec S12/S26
+  (HUD legibility minimums, restrained military slate/cyan/amber system, no clutter)
+- These are quality observations, not conformance failures — schedule after correctness bugs
+
 ## HONESTLY UNVERIFIED / OPEN
 - Tutorial steps 2-5 end-to-end (shoot/reload/dodge/ability validation)
 - Other mission templates: RECOVER_TECH carry, ELIM/CONQUEST variants (DEFEND_BEACON now verified)
