@@ -3258,3 +3258,15 @@ Implemented the receipt/entitlement boundary without enabling monetization: plac
 ## 2026-11-25 / place 589 - first rendered graphics pass
 
 Began the owner-requested graphics pass with real screen captures. Initial station/armory review found the armory alcove still reading as a black pocket despite prior lighting work. Added two local pendant practicals, strengthened/marked the armory fill, and gave the player rim highlight a subtle fill. Post-fix rendered capture `graphics_armory_after` shows the rack wall, mannequin, bench, floor and cyan details clearly while retaining the dark military style. Evidence: `evidence/v589-armory-lighting/EVIDENCE.md`. Remaining visual debt: player back body still dark, indoor minimap not meaningful, broad station surfaces remain blockout/simple.
+
+## 2026-11-25 / place 591-594 - data/security core (S14)
+
+Owner directive: finish ALL remaining GOAL rows continuously, severity order, graphics last. Batch 1 of that campaign.
+
+NetGuard implemented (server-only): per-action token buckets (interact 5/s, purchase 2/s, equip 4/s, queue 1/s, fire outer 20/s) wired into every client-facing handler; finite validators catching what typeof cannot (NaN vectors pass typeof and every magnitude check); oversized-payload refusal; aggregate rejection logging. Profile data layer hardened: schema completion (revision/tutorialProgress/firstMissionBonusClaimed/settledMissions/ownedBlueprints/recentTransactionIds), deep migration validation with NaN scrubbing, per-player load-failure fencing (never overwrite on failed load), session-lease+revision optimistic concurrency, autosave corrected to 75s, saveWithRetry bounded backoff, transaction journal write-through. tutorialProgress persists per validated step with resume.
+
+Live probes all PASS: GF_NET (buckets/validators/malformed/end-to-end client flood, place 591), GF_PROF (schema/migration/lease/concurrency exact-once, place 593), GF_JRN (journal+mode, place 594). Boot 701 assertions throughout.
+
+Trap discovered: Roblox attribute NAMES cannot contain colons - NetGuard reject keys are now sanitized. Another: `LocalScript.Source` cannot be set by server scripts at runtime; client probes must be pre-created in Edit mode.
+
+Ledger: UNKNOWN 533->525, VERIFIED 76->80. Evidence: evidence/v594-data-security/EVIDENCE.md.
