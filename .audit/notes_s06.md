@@ -265,3 +265,22 @@ Batch-verified rank gates/armor factor/recoil/semi-auto/ability-damage rows by s
 NEXT SESSION: attack UNKNOWN clusters — lobby/matchmaking (~55 rows, biggest), procedural world (~37),
 engineering/QA discipline rows. Implement missing small features (mission-failure state S08-007, grenade
 tap/hold verify, flinch absence verify). Use probes for runtime verification where cheap.
+
+## UPDATE 22 — COMPACTION-RESUME BRIEF (VERIFIED ~427 / UNKNOWN ~314 / PARTIAL ~74 / place v640)
+PROVEN WORKFLOW: batch-verify rows whose notes read complete (read FULL note first — many are stale-positive),
+implement small gaps (spec deviations are usually constants), deploy via gf_deploy.py gf_mirror.tgz probe GF_X,
+mark VERIFIED with honest evidence strings, commit+push immediately (crash-safe tmp-write pattern).
+RESUME TARGETS in priority order:
+1. Augment catalog identities (S11-047/048) — real naming deviations: spec wants Long Bore/Shield Disruptor AR
+   identities; implementation has BorePolish/LongBarrel. Precision Chamber miscategorized (Marksman not AR).
+   Fix = restructure Augments.luau entry rows. MEDIUM effort.
+2. Grenade throw verify (S04-054: tap 35-50 studs, hold preview capped 70) — find config in Weapons.luau
+   Grenades section; verify constants + hold-preview path in client Input.
+3. Engineering/QA discipline rows (18 partial) — most are honest process rows; some closable (S16-111 loop
+   fixed this session, S16-042 pcall sweep implementable, S16-099 milestone labels implementable in WORK_STATE).
+4. UNKNOWN mass: lobby/matchmaking biggest cluster — inspect Structural rows first (many may exist already).
+5. Implement mission failure state (S08-007) — no Failed state exists; spec needs failure path.
+6. Mission-time loadout snapshot freeze (S11-063) — unequipped reroll enforcement.
+KEY FACTS: place v640 saved; live ledger = repo CSV (Downloads copy stale); boot gate = 706 assertions;
+harness = cd /Users/timnguyen/gf && python3 gf_deploy.py gf_mirror.tgz probe_file.lua GF_MARKER
+(rebuild tarball after mirror edits!); Studio instance e08db1e5-fdca-41c4-b603-85b73b777c92.
