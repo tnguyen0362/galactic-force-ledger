@@ -80,6 +80,19 @@ No config-file or script-presence claims. Harness assistance is labeled where us
 - Military rank displayed 15 in a failure debrief during a memory-mode session — possible XP inflation or display bug
 - v684 AI batch itself is unverified — new bugs possible in FSM resolver/beacon/sweep paths
 
+## TERRAIN MATH — EPISTEMIC STATUS (owner framing, endorsed)
+- Generative noise math implements the spec's APPROACH faithfully (verified by reading)
+- Measurable constraint enforcement is half-built: no 300-650 stud objective distance targeting,
+  no slope checks in placement despite comments claiming them, no connectivity validation,
+  silent overlap fallback after 40 attempts
+- OUTCOME PROOF is limited to existence proof: one full mission completed on generated terrain
+  (one seed). No statistical confidence across the seed space exists
+- THE FIX: extend the offline seed harness to measure traversability, slope distribution,
+  objective distances, and footprint validity across thousands of seeds — converts "unknown"
+  into a measured acceptance rate with named failing seed families (spec stage-8 intent)
+- Tuning constants (octave scales, terrace 4.5, spine blend 0.62, corridor 55) were never
+  validated against outcomes — treat as unproven hypotheses until the harness measures them
+
 ## OWNER NOTES FOR FUTURE PASSES (not yet scoped as work items)
 - Graphics polish pass needed broadly — visual quality uneven across station/mission surfaces
 - UI/UX polish pass needed — owner flagged without specifics; audit screens against spec S12/S26
