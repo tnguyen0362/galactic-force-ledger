@@ -2162,11 +2162,39 @@ reserve-limited and empty-reserve live cases left inconclusive earlier.
 
 **Still absent:** supply crates/drops do not replenish reserve — there is no supply-crate system, only comments.
 
+**HUD RESERVE VERIFIED — AND THE PREVIOUS BATCH HAD BROKEN PLAYER STATE (place 541).**
+Evidence `evidence/v541-state-crash-and-hud-reserve-verified/EVIDENCE.md`.
+
+Following my own resume step 1 (confirm a fresh spawn yields `reserve = 168`) returned **`no state`** — no player state at all. The log:
+
+```
+ServerScriptService.GF.Services.State:56: attempt to index nil with 'GF'
+```
+
+My catalogue-seeding expression used `ReplicatedStorage.GF...`, but `State` has **no top-level `ReplicatedStorage` local** (it calls `game:GetService` inline). The
+expression threw during state construction, so `State.create` failed for **every player** — combat, vitals, movement and abilities were all dead. The build was
+unplayable at place 539, while my evidence for that batch said only "HUD display unverified".
+
+Fixed by using `game:GetService("ReplicatedStorage")` inline, then verified:
+
+```
+state ok: weaponId=AR01  ammo=28  reserve=168
+ammo label after one client shot: 27 / 28  ·  168
+```
+
+Suite unchanged: `passed=657 failed=17 nonDrift=0`.
+
+**Three lessons, all recorded above the fold in the evidence:** a cosmetic change can be fatal; **`no state` in a probe is not a probe problem by default** (three batches
+treated it that way); and writing an explicit resume order at the end of a batch is what caught a build-breaking bug one step later.
+
+**Still not done on `S04-027`:** supply crates/drops do not replenish reserve (no system exists, only comments), no cap on accumulation, and the reserve-limited /
+empty-reserve live paths remain unverified (arithmetic is unit-tested).
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 539**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 541**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **539** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **541** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
