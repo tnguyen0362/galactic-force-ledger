@@ -394,7 +394,7 @@ deploy.Activated:Connect(function()
 	end)
 end)
 
-label(table_, "WASD move  ·  LMB fire  ·  RMB aim  ·  Q dodge  ·  R reload  ·  Z / X abilities",
+label(table_, "WASD move  ·  LMB fire  ·  RMB aim  ·  CTRL dodge  ·  R reload  ·  Q / F abilities",
 	UDim2.new(1, -40, 0, 18), UDim2.new(0, 24, 1, -26), MUTED, 12)
 
 -- Final ordering pass, after every widget exists: display order is declared once, here, instead of being

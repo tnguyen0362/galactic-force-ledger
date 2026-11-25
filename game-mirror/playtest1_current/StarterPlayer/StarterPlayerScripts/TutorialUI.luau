@@ -82,7 +82,7 @@ beam.Parent = workspace
 -- Glyphs per input family, not a combined string: "WASD / left stick" tells a gamepad player to use a
 -- keyboard and vice versa. The card shows only the control the player can actually press.
 local HINTS = {
-	kbm = { move = "W A S D", shoot = "Hold LMB on the target", reload = "R", dodge = "Left Shift", ability = "Q" },
+	kbm = { move = "W A S D", shoot = "Hold LMB on the target", reload = "R", dodge = "Left Control", ability = "Q" },
 	pad = { move = "Left thumbstick", shoot = "Hold RT on the target", reload = "X", dodge = "B", ability = "Right bumper" },
 	touch = { move = "Drag the left thumb pad", shoot = "Tap FIRE on the target", reload = "Tap RELOAD", dodge = "Tap ROLL", ability = "Tap AIR" },
 }

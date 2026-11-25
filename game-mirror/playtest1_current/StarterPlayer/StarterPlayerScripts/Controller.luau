@@ -395,14 +395,43 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 
 
+local function interactiveUiOpen(): boolean
+	local playerGui = player:FindFirstChild("PlayerGui")
+	if not playerGui then
+		return false
+	end
+	local station = playerGui:FindFirstChild("GFStation")
+	local stationPanel = station and station:FindFirstChildWhichIsA("Frame")
+	if stationPanel and stationPanel.Visible then
+		return true
+	end
+	local debrief = playerGui:FindFirstChild("GFDebrief")
+	local debriefPanel = debrief and debrief:FindFirstChildWhichIsA("Frame")
+	if debriefPanel and debriefPanel.Visible then
+		return true
+	end
+	local armory = playerGui:FindFirstChild("GF_Armory")
+	local armoryPanel = armory and armory:FindFirstChild("Panel")
+	if armoryPanel and armoryPanel.Visible then
+		return true
+	end
+	local settings = playerGui:FindFirstChild("GF_Settings")
+	if settings and settings.Enabled then
+		return true
+	end
+	local tactical = playerGui:FindFirstChild("TacticalMap")
+	if tactical and tactical.Enabled then
+		return true
+	end
+	return false
+end
+
 task.spawn(function()
 	while true do
-		task.wait(0.2)
-		if workspace:GetAttribute("GF_UIOpen") == true then
-			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-		else
-			UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-		end
+		task.wait(0.15)
+		local open = interactiveUiOpen()
+		workspace:SetAttribute("GF_UIOpen", open)
+		UserInputService.MouseBehavior = open and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
 	end
 end)
 

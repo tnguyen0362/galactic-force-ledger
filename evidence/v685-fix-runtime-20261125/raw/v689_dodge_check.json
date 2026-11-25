@@ -1,0 +1,5 @@
+{
+  "before": "-0.01,21.80",
+  "afterLeftControl": "pos=-0.01,8.25 rolling=false dodge=DODGE 2/2",
+  "warTableCursorCheck": "panel=true mouse=Enum.MouseBehavior.Default uiopen=true boss=false"
+}

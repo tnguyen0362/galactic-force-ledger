@@ -1,11 +1,11 @@
 --!strict
--- Station vs mission UI gating. The vitals HUD and the mission HUD belong to a live operation; on the
--- concourse the player should only see station UI. GF_EnvironmentPreset is authoritative (Environment
--- sets it on every preset swap), so gate on that rather than on mission internals.
+-- Station vs mission UI gating. The operation objective HUD belongs to a live operation; the base
+-- combat HUD stays available on the concourse so ability loadout and dodge charges remain visible.
+-- GF_EnvironmentPreset is authoritative (Environment sets it on every preset swap).
 local Players = game:GetService("Players")
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
-local MISSION_ONLY = { "GF_HUD", "GFMissionHUD" }
+local MISSION_ONLY = { "GFMissionHUD" }
 
 local function apply()
 	local inMission = workspace:GetAttribute("GF_EnvironmentPreset") == "mission"

@@ -58,16 +58,36 @@ local function doDodge(player: Player, payload: any)
 			character:SetAttribute("Rolling", false)
 		end
 	end)
-	local impulse = Instance.new("LinearVelocity")
+	-- Spec: the roll covers ~13 studs over 0.55s. Use a planar LinearVelocity: it is a real physics
+	-- constraint (so it works with character network ownership), but it constrains only X/Z and leaves
+	-- vertical velocity to gravity and impacts. The previous vector constraint targeted Y=0 and made the
+	-- roll hover; the direct-velocity replacement was fought by client network ownership and moved only
+	-- a few studs. Plane mode is the correct middle ground.
+	local rollDirection = flat.Unit
+	local rollSpeed = Constants.Movement.RollDistance / Constants.Movement.RollDuration
+	local speedScale = 1
+	do
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { character }
+		local hit = workspace:Raycast(root.Position, rollDirection * 2.8, params)
+		if hit then
+			speedScale = math.clamp((hit.Distance - 0.8) / 2.8, 0.15, 1)
+		end
+	end
 	local attachment = Instance.new("Attachment")
+	attachment.Name = "GFDodgeAttachment"
 	attachment.Parent = root
+	local impulse = Instance.new("LinearVelocity")
+	impulse.Name = "GFDodgeVelocity"
 	impulse.Attachment0 = attachment
-	impulse.MaxForce = math.huge
-	-- Spec: the roll covers ~13 studs over its 0.55s duration. The old impulse lasted 0.18s and
-	-- travelled barely half of that, which also made RollDistance dead data. Duration-matched impulse:
-	impulse.VectorVelocity = flat.Unit * (Constants.Movement.RollDistance / Constants.Movement.RollDuration)
-	impulse.Parent = root
 	impulse.RelativeTo = Enum.ActuatorRelativeTo.World
+	impulse.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+	impulse.PrimaryTangentAxis = Vector3.new(1, 0, 0)
+	impulse.SecondaryTangentAxis = Vector3.new(0, 0, 1)
+	impulse.PlaneVelocity = Vector2.new(rollDirection.X * rollSpeed * speedScale, rollDirection.Z * rollSpeed * speedScale)
+	impulse.MaxForce = math.huge
+	impulse.Parent = root
 	task.delay(Constants.Movement.RollDuration, function()
 		if impulse.Parent then
 			impulse:Destroy()

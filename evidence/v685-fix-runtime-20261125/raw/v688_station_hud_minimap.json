@@ -1,0 +1,4 @@
+{
+  "baseline": "pos=-0.0,21.8 minimapStation=true layout=nil ammo=false cross=false mouse=Enum.MouseBehavior.LockCenter labels=28 / 28:true;AIRSTRIKE [Q]:true;DOME [F]:true;DODGE 2/2:true",
+  "afterLeftControl": "pos=-0.0,18.5 rolling=false dodge=DODGE 1/2"
+}

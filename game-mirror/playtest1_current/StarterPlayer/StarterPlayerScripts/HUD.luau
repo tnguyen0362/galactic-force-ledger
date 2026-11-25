@@ -401,6 +401,16 @@ function HUD.init()
 	task.spawn(function()
 		while gui.Parent do
 			task.wait(0.1)
+			-- Lobby keeps abilities/dodge/vitals visible, but not firing-range furniture. The crosshair and
+			-- ammo box are combat-only; hiding the whole HUD made the loadout invisible on the station.
+			local inMission = workspace:GetAttribute("GF_EnvironmentPreset") == "mission"
+			local ammoBox = gui:FindFirstChild("Ammo")
+			if ammoBox and ammoBox:IsA("GuiObject") then
+				ammoBox.Visible = inMission
+			end
+			if crosshair then
+				crosshair.Visible = inMission and not (downedFrame and downedFrame.Visible)
+			end
 			-- boss HP bar: visible while a boss lives, phase-colored fill
 			do
 				local bossBar = gui:FindFirstChild("BossBar", true)
@@ -408,7 +418,7 @@ function HUD.init()
 					local hp = workspace:GetAttribute("BossHealth") or 0
 					local phase = workspace:GetAttribute("BossPhase") or 1
 					local active = workspace:GetAttribute("BastionActive") == true or (hp and hp > 0)
-					bossBar.Visible = active and hp > 0
+					bossBar.Visible = inMission and active and hp > 0
 					if bossBar.Visible then
 						local fill = bossBar:FindFirstChild("Fill")
 						local maxHp = workspace:GetAttribute("BossMaxHealth") or 3600

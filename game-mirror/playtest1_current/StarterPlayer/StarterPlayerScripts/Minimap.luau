@@ -63,6 +63,96 @@ arrow.BackgroundColor3 = Color3.fromRGB(240, 250, 255)
 arrow.BorderSizePixel = 0
 arrow.Parent = frame
 
+
+-- Station mode: the mission radar was a blank/irrelevant disc on the concourse. Draw a compact deck
+-- plan instead, with the four places a player actually needs: war table, armoury, dispatch and pod bay.
+local stationLayer = Instance.new("Frame")
+stationLayer.Name = "StationLayout"
+stationLayer.Size = UDim2.fromOffset(RADIUS * 2, RADIUS * 2)
+stationLayer.BackgroundTransparency = 1
+stationLayer.Visible = false
+stationLayer.Parent = field
+
+local function stationMapOffset(x, z)
+	return RADIUS + x * 0.56, RADIUS + (z - 20) * 0.56
+end
+
+local function stationBox(name, x, z, w, h, color, transparency)
+	local cx, cy = stationMapOffset(x, z)
+	local box = Instance.new("Frame")
+	box.Name = name
+	box.Size = UDim2.fromOffset(w, h)
+	box.AnchorPoint = Vector2.new(0.5, 0.5)
+	box.Position = UDim2.fromOffset(cx, cy)
+	box.BackgroundColor3 = color
+	box.BackgroundTransparency = transparency or 0.72
+	box.BorderSizePixel = 1
+	box.BorderColor3 = Color3.fromRGB(72, 104, 126)
+	box.Parent = stationLayer
+	return box
+end
+
+-- Simplified architectural footprint: central concourse, west/east alcoves, and the deployment bay.
+stationBox("MainConcourse", 0, 18, 118, 48, Color3.fromRGB(24, 38, 48), 0.78)
+stationBox("WestAlcove", -82, 0, 44, 64, Color3.fromRGB(32, 42, 50), 0.78)
+stationBox("EastAlcove", 82, -18, 44, 58, Color3.fromRGB(32, 42, 50), 0.78)
+stationBox("DeploymentBay", 0, 66, 70, 34, Color3.fromRGB(28, 48, 56), 0.74)
+
+local stationTitle = Instance.new("TextLabel")
+stationTitle.Name = "StationTitle"
+stationTitle.Size = UDim2.fromOffset(70, 14)
+stationTitle.AnchorPoint = Vector2.new(0.5, 1)
+stationTitle.Position = UDim2.new(0.5, 0, 1, -5)
+stationTitle.BackgroundTransparency = 1
+stationTitle.Font = Enum.Font.GothamBold
+stationTitle.TextSize = 9
+stationTitle.TextColor3 = Color3.fromRGB(142, 188, 210)
+stationTitle.Text = "STATION DECK"
+stationTitle.Parent = stationLayer
+
+local stationPois = {
+	{ text = "WAR", x = 0, z = -34, color = Color3.fromRGB(96, 210, 255) },
+	{ text = "ARM", x = -94, z = -2, color = Color3.fromRGB(255, 188, 92) },
+	{ text = "DSP", x = 88, z = -28, color = Color3.fromRGB(255, 188, 92) },
+	{ text = "POD", x = 0, z = 72, color = Color3.fromRGB(128, 255, 184) },
+}
+for _, poi in ipairs(stationPois) do
+	local px, py = stationMapOffset(poi.x, poi.z)
+	local dot = Instance.new("Frame")
+	dot.Size = UDim2.fromOffset(7, 7)
+	dot.AnchorPoint = Vector2.new(0.5, 0.5)
+	dot.Position = UDim2.fromOffset(px, py)
+	dot.BackgroundColor3 = poi.color
+	dot.BorderSizePixel = 0
+	dot.Parent = stationLayer
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = dot
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromOffset(34, 12)
+	text.AnchorPoint = Vector2.new(0.5, 0)
+	text.Position = UDim2.fromOffset(px, py + 5)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.GothamBold
+	text.TextSize = 8
+	text.TextColor3 = poi.color
+	text.TextStrokeTransparency = 0.35
+	text.Text = poi.text
+	text.Parent = stationLayer
+end
+
+local stationPlayer = Instance.new("Frame")
+stationPlayer.Name = "StationPlayer"
+stationPlayer.Size = UDim2.fromOffset(8, 8)
+stationPlayer.AnchorPoint = Vector2.new(0.5, 0.5)
+stationPlayer.BackgroundColor3 = Color3.fromRGB(245, 252, 255)
+stationPlayer.BorderSizePixel = 0
+stationPlayer.Visible = false
+stationPlayer.Parent = stationLayer
+local spCorner = Instance.new("UICorner")
+spCorner.CornerRadius = UDim.new(0.5, 0)
+spCorner.Parent = stationPlayer
+
 -- Hostile blips: observed or audible only, never a wallhack. Visibility is a client-side raycast from
 -- the player's head, so the map cannot know about an enemy the player cannot see; firing makes a
 -- hostile "audible" for three seconds. Entries fade out after that.
@@ -254,20 +344,46 @@ task.spawn(function()
 				rebuildCells(lastHeights, lastMeta)
 			end
 		end
-		if type(markersRaw) == "string" then
-			markersSig = markersRaw
-			gui:SetAttribute("GF_MinimapBlips", rebuildBlips(markersRaw))
-		end
-		refreshHostiles()
-		drawHostiles()
-		local camera = workspace.CurrentCamera
-		if camera then
-			local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			local look = (rootPart and rootPart.CFrame.LookVector) or camera.CFrame.LookVector
-			local heading = math.deg(math.atan2(look.X, -look.Z))
-			field.Rotation = -heading
-			north.Position = UDim2.new(0.5, -7 + math.sin(math.rad(heading)) * (RADIUS - 14), 0, 6 + (1 - math.cos(math.rad(heading))) * 6)
-			gui:SetAttribute("GF_MinimapHeading", math.floor(heading))
+		local rootPart = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local inStation = rootPart ~= nil and rootPart.Position.Y > 500
+		stationLayer.Visible = inStation
+		stationPlayer.Visible = inStation
+		arrow.Visible = not inStation
+		if inStation then
+			-- Deck map is north-up and does not rotate; the player marker moves within the footprint.
+			field.Rotation = 0
+			for _, cell in ipairs(cells) do
+				cell.Visible = false
+			end
+			for _, blip in ipairs(blips) do
+				blip.Visible = false
+			end
+			for _, blip in ipairs(hostileBlips) do
+				blip.Visible = false
+			end
+			if rootPart then
+				local px, py = stationMapOffset(rootPart.Position.X, rootPart.Position.Z)
+				stationPlayer.Position = UDim2.fromOffset(math.clamp(px, 8, RADIUS * 2 - 8), math.clamp(py, 8, RADIUS * 2 - 8))
+				stationPlayer.Rotation = -math.deg(math.atan2(rootPart.CFrame.LookVector.X, -rootPart.CFrame.LookVector.Z))
+			end
+			gui:SetAttribute("GF_MinimapStation", true)
+			gui:SetAttribute("GF_MinimapBlips", #stationPois)
+		else
+			gui:SetAttribute("GF_MinimapStation", false)
+			if type(markersRaw) == "string" then
+				markersSig = markersRaw
+				gui:SetAttribute("GF_MinimapBlips", rebuildBlips(markersRaw))
+			end
+			refreshHostiles()
+			drawHostiles()
+			local camera = workspace.CurrentCamera
+			if camera then
+				local look = (rootPart and rootPart.CFrame.LookVector) or camera.CFrame.LookVector
+				local heading = math.deg(math.atan2(look.X, -look.Z))
+				field.Rotation = -heading
+				north.Position = UDim2.new(0.5, -7 + math.sin(math.rad(heading)) * (RADIUS - 14), 0, 6 + (1 - math.cos(math.rad(heading))) * 6)
+				gui:SetAttribute("GF_MinimapHeading", math.floor(heading))
+			end
 		end
 	end
 end)
