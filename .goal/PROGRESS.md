@@ -435,3 +435,9 @@ Still dark in the corner — recorded as the open defect rather than papered ove
   interfaces, purchase-id idempotency, and mock receipt processing. No real product id or live charge.
 - Live probes passed: first mock grant `PurchaseGranted`, duplicate replay idempotent, live-shaped
   placeholder refused, and fresh-session cleanup confirmed no test receipt persisted. S12-018 VERIFIED.
+
+## 2026-11-25 — first graphics pass (place 589)
+
+- Real rendered captures identified the armory as a black pocket. Added local pendant practicals,
+  strengthened the alcove fill, and made the player rim subtly visible. Post-fix capture shows the armory
+  rack wall, mannequin, bench and floor clearly. This is visual polish only; no gameplay contract changed.
