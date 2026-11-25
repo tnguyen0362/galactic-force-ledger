@@ -1,0 +1,122 @@
+{
+  "scenario": "weak_core_hit_framed",
+  "harness": "Player harness-positioned behind live Officer; firing uses real client FireWeapon remote/server hitscan. Camera tracks the live WeakCore for framing only.",
+  "listener": "damage-listener2-started",
+  "position": "positioned:3.202440023422241, 35.1347770690918, -104.32217407226562 core:6.67338752746582, 35.622276306152344, -110.57317352294922 transparency:1",
+  "camera": "camera-track-started",
+  "video_start": "Success",
+  "fire": "fired-at-core:7.499159812927246, 35.622276306152344, -112.05913543701172 shot:2106584218",
+  "still_captures": [
+    "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore2_immediate_0.jpg"
+  ],
+  "video_stop": {
+    "status": "completed",
+    "warnings": [],
+    "recording_id": "wob-20428000014",
+    "artifacts": {
+      "manifest": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\8F63DA61-3B49-4A6F-802C-FD0EBE709757\\manifest.json",
+      "frame_times": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\8F63DA61-3B49-4A6F-802C-FD0EBE709757\\pts.json",
+      "video": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\8F63DA61-3B49-4A6F-802C-FD0EBE709757\\wob-20428000014.mp4"
+    },
+    "copied_artifacts": {
+      "manifest": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore_hit_framed_manifest.json",
+      "frame_times": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore_hit_framed_frame_times.json",
+      "video": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore_hit_framed_video.mp4"
+    }
+  },
+  "damage_log": [
+    {
+      "position": "6.721389293670654, 36.33689498901367, -110.66090393066406",
+      "killed": false,
+      "t": 2106.6346547,
+      "weakPoint": false,
+      "damage": 18
+    }
+  ],
+  "final": {
+    "sweepHits": 5,
+    "channels": 0,
+    "playerHealth": 44.21449661254883,
+    "lastCharge": "Marksman:1.1",
+    "fireSlots": 2,
+    "clock": 2110.6024507999996,
+    "inMission": true,
+    "enemyHits": 6,
+    "actors": [
+      {
+        "shield": 60,
+        "id": "Marksman",
+        "y": 34.74098205566406,
+        "state": "Advance",
+        "x": 16.372451782226562,
+        "name": "Marksman",
+        "z": -102.6596908569336,
+        "perception": 1,
+        "health": 147,
+        "charging": 2108.6528498999996,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 34.2803955078125,
+        "state": "Advance",
+        "x": 16.405654907226562,
+        "name": "Rifleman",
+        "z": -109.70893859863281,
+        "perception": 1,
+        "health": 168,
+        "dead": false
+      },
+      {
+        "shield": 124,
+        "id": "Officer",
+        "y": 34.88616943359375,
+        "state": "Advance",
+        "x": -4.999628067016602,
+        "name": "Officer",
+        "z": -109.40438079833984,
+        "perception": 1,
+        "health": 294,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 35.0589599609375,
+        "state": "Advance",
+        "x": 3.6742067337036133,
+        "name": "Rifleman",
+        "z": -104.8441390991211,
+        "perception": 1,
+        "health": 168,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 34.78923416137695,
+        "state": "Advance",
+        "x": 9.434584617614746,
+        "name": "Rifleman",
+        "z": -99.50260162353516,
+        "perception": 1,
+        "health": 168,
+        "dead": false
+      }
+    ],
+    "enemyMisses": 9,
+    "difficulty": "Easy",
+    "player": "ROBLOXISUS101",
+    "cancels": 0,
+    "lastAttack": "miss",
+    "sweeps": 5,
+    "completions": 0,
+    "playerPos": {
+      "y": 39.1431770324707,
+      "x": 3.5996642112731934,
+      "z": -104.90003967285156
+    },
+    "template": "SABOTAGE_RELAY"
+  }
+}

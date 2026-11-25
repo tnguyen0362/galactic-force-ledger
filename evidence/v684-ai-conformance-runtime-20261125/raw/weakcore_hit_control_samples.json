@@ -1,0 +1,130 @@
+{
+  "scenario": "weak_core_hit_stunned_control",
+  "harness": "A live Officer is EMP-stunned using the game's existing stun attribute so the small weak-core hit volume stays stationary. Player is positioned behind it. Shots use real client FireWeapon remote/server hitscan; damage feedback is logged client-side.",
+  "listener": "damage-listener3-started",
+  "setup": "stunned-positioned root:6.987178802490234, 34.5921516418457, -107.94271850585938 core:6.2343244552612305, 35.2796516418457, -108.33731842041016 look:0.885712742805481, 0, 0.46423396468162537",
+  "camera": "weakcore-camera-started",
+  "video_start": "Success",
+  "fire_weak": "fired-weak core:6.234313011169434, 35.2796516418457, -108.33729553222656 shot:2160049734",
+  "still_captures": [
+    "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore3_immediate_0.jpg"
+  ],
+  "fire_control": "fired-control torso:6.987178802490234, 34.5921516418457, -107.94271850585938 shot:2161767134",
+  "video_stop": {
+    "status": "completed",
+    "warnings": [],
+    "recording_id": "wob-20428000016",
+    "artifacts": {
+      "manifest": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\867D1E27-AEF0-4A85-AFB5-CF934A894FE2\\manifest.json",
+      "frame_times": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\867D1E27-AEF0-4A85-AFB5-CF934A894FE2\\pts.json",
+      "video": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\867D1E27-AEF0-4A85-AFB5-CF934A894FE2\\wob-20428000016.mp4"
+    },
+    "copied_artifacts": {
+      "manifest": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore_hit_control_manifest.json",
+      "frame_times": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore_hit_control_frame_times.json",
+      "video": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\weakcore_hit_control_video.mp4"
+    }
+  },
+  "damage_log": [
+    {
+      "position": "4.434041500091553, 36.68205261230469, -109.28302001953125",
+      "killed": false,
+      "t": 2160.0996584,
+      "weakPoint": false,
+      "damage": 18
+    },
+    {
+      "position": "6.068669319152832, 35.38685989379883, -108.42515563964844",
+      "killed": false,
+      "t": 2161.8326202,
+      "weakPoint": true,
+      "damage": 27
+    }
+  ],
+  "final": {
+    "sweepHits": 5,
+    "channels": 0,
+    "playerHealth": 79.0167465209961,
+    "lastCharge": "Marksman:1.1",
+    "fireSlots": 2,
+    "clock": 2164.3331816,
+    "inMission": true,
+    "enemyHits": 12,
+    "actors": [
+      {
+        "shield": 60,
+        "id": "Marksman",
+        "y": 35,
+        "state": "Advance",
+        "x": 0.3737081289291382,
+        "name": "Marksman",
+        "z": -110.12731170654297,
+        "perception": 1,
+        "health": 147,
+        "charging": 2163.0658043999997,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 33.190696716308594,
+        "state": "Advance",
+        "x": 0.8616125583648682,
+        "name": "Rifleman",
+        "z": -111.19377899169922,
+        "perception": 1,
+        "health": 168,
+        "dead": false
+      },
+      {
+        "shield": 106,
+        "id": "Officer",
+        "y": 34.5921516418457,
+        "state": "Stunned",
+        "x": 6.987178802490234,
+        "name": "Officer",
+        "z": -107.94271850585938,
+        "perception": 0,
+        "health": 294,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 35,
+        "state": "Advance",
+        "x": -1.6796178817749023,
+        "name": "Rifleman",
+        "z": -109.10416412353516,
+        "perception": 1,
+        "health": 168,
+        "dead": false
+      },
+      {
+        "shield": 62,
+        "id": "Rifleman",
+        "y": 35,
+        "state": "Advance",
+        "x": 10.18627643585205,
+        "name": "Rifleman",
+        "z": -112.12008666992188,
+        "perception": 1,
+        "health": 168,
+        "dead": false
+      }
+    ],
+    "enemyMisses": 14,
+    "difficulty": "Easy",
+    "player": "ROBLOXISUS101",
+    "cancels": 0,
+    "lastAttack": "miss",
+    "sweeps": 5,
+    "completions": 0,
+    "playerPos": {
+      "y": 38.63731002807617,
+      "x": 0.6718852519989014,
+      "z": -111.32201385498047
+    },
+    "template": "SABOTAGE_RELAY"
+  }
+}
