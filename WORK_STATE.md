@@ -1658,6 +1658,32 @@ no-double-charge finding is confirmed rather than assumed.
 insufficient-credit refusal untested; ownership was manipulated directly rather than through a supported flow. Profile left at `credits = 4500`,
 `SG04` owned. All probe scripts removed.
 
+**CORRECTION: ARMORY REFUSALS ARE REPORTED, WITH PRECISE REASONS (place 515).** Evidence `evidence/v515-armory-refusals-reported/EVIDENCE.md`.
+
+I recorded that `buy` returned no reason and that the UI "must be inferring success from profile state". **Wrong on the substance.** `buy` returns
+`nil`, but every failure branch calls:
+
+```lua
+fail(player, reason)  ->  workspace:SetAttribute("GF_ArmoryRejected", reason)
+                          push(player, { ok = false, reason = reason })
+```
+
+Measured through that attribute:
+
+```
+SG04 with 10 credits  -> "needs 500 credits"
+AR01 (owned)          -> "already owned"
+NOPE (unknown id)     -> "unknown weapon"
+```
+
+Each names the exact shortfall rather than a generic refusal. I had read `buy`'s body, seen `return fail(...)` with no value, and concluded no reason was
+reported — without reading `fail`. **Sixth instance of reasoning from an unread name.**
+
+**Still untested:** the rank gate, because this profile is rank **15** while the highest weapon requirement is rank **7**; `buyAbility`/`buyGrenade`/
+`buyArmor` refusals; and the success path returns no value by design (`ok=true` is pushed).
+
+**The "silent refusal" defect I recorded does not exist.**
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
