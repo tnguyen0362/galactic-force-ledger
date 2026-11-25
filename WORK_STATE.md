@@ -1010,11 +1010,37 @@ and left `augmentCapacity` at 87 on the test profile.
 
 Ledger: ABSENT 3 → 2, PARTIAL 155 → 156.
 
+**CAPACITY RULES FULLY VERIFIED — `S11-032` VERIFIED (place 498).** Evidence `evidence/v498-capacity-branches-verified/EVIDENCE.md`.
+
+`ProfileService.defaults` now writes `augmentCapacity = 200` explicitly instead of relying on `or BASELINE_CAPACITY`, and every branch
+was exercised:
+
+```
+default on a real profile = 200
+noCells   = false (not enough energy cells)          cells 9
+noTech    = false (not enough military technology)   tech 2
+noCredits = false (not enough credits)               999
+funded    = true  (250)                              exactly 1000 / 10 / 3
+atMax400  = false (already at max capacity)
+from380   = true  cap = 400                          380 + 50 clamped, not 430
+```
+
+Each refusal names the specific shortfall, all three resource checks are independently reachable, the spec's exact cost boundary is both
+sufficient and required, and the ceiling clamps rather than overshoots.
+
+**Still open elsewhere:** no armory UI button for the expansion (action works via the remote); and `grantAugment` is the only guarded
+path — any future code writing `ownedAugments[id] = true` directly would bypass the cap, the same shape as the `markDirty` bypass found
+earlier.
+
+**Disclosed:** the probe wrote credits/salvage/augmentCapacity on the test profile across six trials, leaving `augmentCapacity = 400`.
+
+Ledger: PARTIAL 156 → 155, VERIFIED 32 → 33.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 497**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 498**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **497** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **498** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
