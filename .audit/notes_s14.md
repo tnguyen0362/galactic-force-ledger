@@ -37,3 +37,24 @@ FireWeapon, ReloadWeapon, EquipWeapon?, SetLoadout, RequestLoadout, UseAbility, 
 2. Wire buckets into all OnServerEvent handlers (map above).
 3. fire(): NaN/finite validation on origin+direction.
 4. Probe: malformed NaN/oversized/wrong-type payloads rejected with logged reasons; buckets enforce; boot PASS; legit fire still works.
+
+## Mission-spine batch notes (in progress when written)
+
+Deploy mechanics (StationService.deploy):
+- deploy(player, difficulty?, template?) validates: VALID_TEMPLATES, DIFFICULTY_RANK rank gates, TEMPLATE_RANK gates
+- resetMission for template; sets GF_InMission=true; zone[player]="Mission"; GF_LZ=spawnPoint; teleports player; GF_DeployGraceUntil=os.clock()+4
+- Mission spawn derived from MISSION_SPAWN constant (groundPoint); station spawn separate
+- ExtractionService.grant at line 270 = individual extraction payout; grantAll at 454 = squad settlement
+- RewardsService.grant(player,difficulty,success,objectiveComplete,squadBonus) — dedup by settledMissions[missionKey]; missionKey from RewardLedgerService.missionId()
+
+Probe-driving pattern: server probe requires services directly, calls StationService.deploy(player,"Normal","SABOTAGE_RELAY"), observes workspace attributes + ActiveActors folder. Evidence v388 shows missions driven this way successfully.
+
+Rows targeted by this batch (measurement cluster): S14-025 (server-origin kill/loot/war), combat TTK/falloff rows (S04-*), enemy archetype rows (S06-*), mission objective rows (S07/S08-*), extraction rows (S09-*), economy settlement rows (S10-*). VERIFY AGAINST CSV before claiming - get exact row ids.
+
+## Mission-spine progress (update as probes land)
+
+SPINE1 PASS (place ~594 working copy): live deploy works; archetype spawn varies per seed (run1: Heavy2 Marksman2 Rifleman3 Officer2; run3: Rifleman5 Marksman1 Officer3); synthetic-target measurement inside live mission: 18 shots 18 hits 324 dmg vs synthetic Rifleman (240+80) through validated fire path = server-authoritative damage proven; TTK 18 shots EXACTLY matches spec S04-046 calibration (320 HP+shield at 100% accuracy); kill credited server-side; mastery accrued server-side. Enemy live targets use cover so are bad measurement subjects — use synthetic targets (pattern in probe_premium_weapons.lua: Model+GFEnemy attr+anchored CanQuery Torso part in workspace.ActiveActors).
+
+Key mechanics learned: ObjectiveService.complete() directly callable (objective mechanics get own batch); war points commit server-side at completion via GalacticWarService.commitPrimary; ExtractionService.call needs objective complete first; GF_ExtractionCountdownOverride documented Studio hook; objective publishes GF_ObjectiveComplete/GF_ObjectiveFailed workspace attrs + ObjectiveProgress remote (NOT GF_ObjectiveProgress).
+
+Row evidence mapping pending: S04-046 TTK anchor verified at 100% accuracy point; S14-025 kill+mastery server-origin proven (loot/war pending spine2); S04-018 shield-first ordering evidenced (324 = shield raw absorbed first).
