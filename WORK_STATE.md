@@ -3151,3 +3151,65 @@ Implemented:
 Evidence is in `evidence/v561-augment-instance-model/EVIDENCE.md`: live server probe passed duplicate UID, quantized quality, equip, tradeoff, reroll cost/keep, fusion, favorite protection and dismantle checks; UI probe confirmed item rows and pending old/new/accept/keep rendering; every fresh boot passed `config check PASS (688 assertions)` with datastore persistence.
 
 Still incomplete in this cluster: crash-atomic cache-open journaling, full category picker UX, exact canonical catalog/template identity, missing stat consumers (range/support damage/sentry HP/dome radius), signature/pure-buff variants, lock edge tests, bulk dismantle preview/filter/confirmation, Monte Carlo/offline simulation and full concurrency/race validation. Continue there before cosmetic augment work.
+
+## 2026-11-25 / place 565 - cache receipts and category selection
+
+Saved to Roblox across versions 562-565. Cache opening now writes a committed `cacheOpenJournal` receipt before materializing results. The receipt records a GUID cache UID, tier, source, category choice and fully hydrated draw data (item UID + traits), so recovery replays the same results by UID rather than rerolling or duplicating them. A live server probe forced a completed receipt back to `committed` and verified `CacheService.reconcileProfile` completed it without increasing inventory count. Completed journals are bounded to 50 entries.
+
+The first implementation used time+session sequence cache IDs and a repeated key exposed cross-session collision risk; this was fixed to GUID `cache_` IDs before the checkpoint. Armory cache rows now include a `CAT ...` selector for ANY/Universal/AR/SMG/LMG/Shotgun/Marksman/Launcher/Pistol/Support and pass that choice through single and bulk open requests. Server sampling verified 30/30 Legendary draws remained AR when constrained to AR. Fresh boot remained `config check PASS (688 assertions)` with datastore persistence.
+
+Remaining gaps: actual force-close/reconnect test, click-path evidence for the CAT selector, per-category sampling for all choices, and broader cache UI polish.
+
+## 2026-11-25 / place 569 - augment stat consumers, reroll lock, reward crash fix
+
+Saved to Roblox across versions 566-569. Added missing generated/aggregated stat keys `range`, `supportDamage` and `sentryHP` with canonical rarity bands and positive/negative clamps. Weapon range/falloff now scales from `range`; Airstrike/Sentry/Orbital damage scales from `supportDamage`; Dome/support blast radius scales from `blastRadius`; new sentries publish scaled 180-base `Health`/`MaxHealth`. Epic/Legendary Armory rows now expose a lock selector and pass `lockIndex` into reroll.
+
+Live lock probe: Legendary `MasterworkBore`, locked negative `magazine` at index 2, cost exactly 300, locked key/value/quality preserved, Accept charged no second fee and cleared pending state. Boot remained `config check PASS (688 assertions)`.
+
+Also fixed a pre-existing DeepSeek defect in `RewardsService`: the late-join payout path referenced `payload` before it existed inside the `MissionComplete` payload, so any late join settlement would crash before sending the zero-payout debrief. It now sends explicit zero/base/bonus fields.
+
+Remaining augment gaps: sentry destruction/targeting, live weapon-range/support-combat probes, canonical catalog identity, signature/pure-buff variants, bulk dismantle/fusion preview, offline Monte Carlo validation, exact UI visual evidence.
+
+## 2026-11-25 / place 570 - bulk dismantle preview/confirmation
+
+Added filtered bulk dismantle. The server computes eligible unprotected augment UIDs for a rarity/category filter, returns exact count/scrap/protected-skip preview, and confirmation dismantles that server-computed set rather than trusting client UID input. Armory UI now exposes rarity/category filter cycle buttons, preview text and a separate confirm button. Live probe verified exact Common scrap payout and favorite protection; boot remained `config check PASS (688 assertions)`.
+
+Caution: the probe used the broad Common/Universal filter in the real test profile and dismantled unprotected items matching that filter; these were primarily prior test inventory, but future probes should use unique synthetic categories or exact UID cleanup. Remaining work: UI click evidence and full equipped/saved/pending protection matrix.
+
+## 2026-11-25 / place 571 - fusion preview/confirmation
+
+Fusion validation is now shared by `fusionPreview` and `fuse`. The Armory FUSE button requests a read-only preview showing source/target rarity, category and outcome chances, then requires CONFIRM. Live probe verified preview leaves inventory unchanged, Legendary and favorited inputs reject, and valid Rare AR inputs fuse into Epic AR (`LongBarrel`). Boot remained `config check PASS (688 assertions)`.
+
+Next: mixed-input rejection test and UI click evidence, then reward settlement durability.
+
+## 2026-11-25 / place 572 - settle-once payouts
+
+`RewardsService.grant` is idempotent per player per ledger missionId via persisted `profile.settledMissions`. Live probe: first grant +450 credits, second +0 with `duplicate=true`; test state restored.
+
+## 2026-11-25 / place 573 - destructible sentries
+
+Hostiles now target visible sentries that are nearer than their player target, and sentries are destroyed at 0 HP. Live probe: a Rifleman destroyed a 60 HP synthetic sentry (first hit 0.8s). Boot still passes 688 assertions.
+
+## 2026-11-25 / place 574 - dome/sentry per-owner cap
+
+A new valid Dome or Sentry cast replaces the owner's previous one, and dome rim/posts no longer leak after expiry. Live probe: `domes=1 sentries=1 strayRimPosts=0`.
+
+## 2026-11-25 / place 575 - emergency disables support
+
+Ability casts are rejected during emergency extraction, and unlanded Airstrike/Orbital strikes are cancelled with feedback. Fixed a nil `reportReject` call: out-of-range strike casts used to error. Live probe PASS.
+
+## 2026-11-25 / place 577 - mission loadout lock
+
+Equip/class/augment/loadout changes are rejected server-side while the player is in the Mission zone, and accepted again after returning to the station. Live probe PASS. (Place version 576 was not created by this session.)
+
+## 2026-11-25 / place 578 - friendly fire
+
+Added difficulty-scaled friendly fire (Hard 50%, Extreme 100%) for hitscan and explosive damage; the explosive scales were verified live.
+
+## 2026-11-25 / place 579 - ability cooldowns
+
+Verified that cooldowns start only on accepted casts (all 4 abilities). Cooldowns now persist by UserId across a state rebuild (simulated rejoin). Rows S05-004/005/007/018 and S09-040 were updated.
+
+## 2026-11-25 / place 580 - support-strike friendly fire
+
+Airstrike and Orbital Strike apply the difficulty friendly-fire factor to allies and broadcast a danger-close warning when it is active. Live probe PASS.
