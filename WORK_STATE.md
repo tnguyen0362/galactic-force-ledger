@@ -1737,11 +1737,32 @@ Free starter items **do** exist as priced-zero catalogue entries (`AR01`, `P01`,
 **Method note:** my first pass searched `TutorialService` for `grant|credits|reward|ownedWeapons` and got zero, reading as "grants nothing". The award
 is spelled `ProfileService.award(...)` — **wrong vocabulary produced a false negative for the seventh time this session.**
 
+**TUTORIAL AWARD CORRECTED TO 350/410 + 1 COMMON CACHE (place 516).** Evidence `evidence/v516-tutorial-award-corrected/EVIDENCE.md`.
+
+`TutorialService.finish` now calls `ProfileService.award(player, 350, 410)` and grants one Common cache, replacing `award(200, 400)` with no cache. This
+is spec conformance (`S10-009` names the figures explicitly), not balance tuning.
+
+A test hook `TutorialService.finishForTest(player)` was added on the same pattern as the existing `resetForTest` — `finish` is a local function, so the
+completion path was otherwise unreachable without playing the whole tutorial, which is why the reward had only ever been code-read.
+
+```
+credits 1000 -> 1350 (+350)   xp 0 -> 410 (+410)   Common cache 0 -> 1   completed=true
+```
+
+**Deliberately not implemented:** the fourth component — *"first-time choose AR/SMG/LMG free"* — needs a choice UI and grant flow, so `SMG-03` (600)
+and `LMG-12` (1400) stay unaffordable for a new player who did not pick them. And `tutorialCompleted` remains unread, so "unlocks Easy/Normal" has no
+mechanism; whether those difficulties should even be locked is a design call I did not invent.
+
+**Verification limit:** measured via `finishForTest`, so everything downstream of `finish` is proven, but the step-tracking that decides *when* `finish`
+runs is unexercised. The hook also ships in the place — harmless, but test-support surface that should be removed or gated before private beta.
+
+`S10-009` → PARTIAL (3 of 4 components verified), `S01-027` → PARTIAL (first cache now granted).
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 516**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **515** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **516** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
