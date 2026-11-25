@@ -416,11 +416,28 @@ same session.
 **Side effect:** SMG03 is now at 650 XP / level 5 on the test account (the probe pushed it), which also unlocks its second
 augment socket. The Rifle was already there from the ladder test.
 
+**REWARDS LEDGER EXISTS — record-only, no payout changed (place 473).** Evidence `evidence/v473-rewards-ledger-record-only/EVIDENCE.md`.
+
+`S09-025` was deferred four times on the grounds that shaping it wrong would be expensive to unwind. That was true and also an
+excuse. Resolution: build the **recording** half only — `RewardsService` still pays exactly what it did, so nothing about the
+economy moves until a later batch deliberately makes settlement read from the ledger.
+
+New `RewardLedgerService`: `begin`, `append`, `isClaimed`, `snapshot`. Invariants: `seq` monotonic per mission, and a
+`sourceId` claimable exactly once so a retry cannot pay twice. Wired at three sites, all `pcall`-wrapped so a ledger fault
+cannot break gameplay.
+
+Measured: setup → seq 0; primary completion → `#1 primary_complete`; duplicate source refused with a reason; extraction →
+`#2 extraction_success`; next mission restarts at seq 0 with old claims cleared.
+
+**Still PARTIAL, deliberately:** no `eligibleUserIds` (single `userId` only), not durable (in-memory, lost on restart), and
+every `resourceDelta` is 0 because no per-event deltas are computed yet (`S10-012`–`S10-019`). Durability ownership is the next
+real design decision.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 472**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 473**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **472** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **473** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
