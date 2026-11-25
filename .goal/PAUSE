@@ -1,14 +1,1 @@
-paused by the agent: goal-loop.ts fixes are on disk but NOT loaded (the /reload never dispatched, so /goal started the pre-fix extension).
-
-Run `/reload` as its own command, then `/goal-unpause`, then verify the next continuation names UNKNOWN 711.
-
-Two bugs were fixed in C:\Users\tnguy\.pi\agent\extensions\goal-loop.ts:
-1. session_shutdown did not clear settleTimer/pauseTimer, so a timer armed before a session replacement fired pi.sendUserMessage on a stale pi and threw "stale after session replacement or reload", stopping the loop. LOGOOP.log shows that error four times.
-2. A freshly mounted instance held pristine defaults (active:false, goal:"", iteration:0) and its session_shutdown wrote them over a live loop, which is how LOOP_STATE.json lost the owner's goal.
-3. ledgerLine() counted only five statuses and never counted UNKNOWN, so it reported "ABSENT 0 | PARTIAL 68" while 732 of 815 rows had never been audited.
-
-Audit progress so far (committed, repo-only, no place changes): 21 rows populated.
-  UNKNOWN 732 -> 711 | PARTIAL 68 -> 81 | VERIFIED 14 -> 19 | ABSENT 0 -> 2
-See WORK_STATE.md "Audit pass 2026-11-24" and .audit/audit_batch_*.py.
-
-Studio was not connected for this pass (list_roblox_studios returned []), so nothing here claims a place change.
+PAUSED 2026-11-24 by owner request at continuation 81; place 515; resume: verify first-purchase charging for S12-010
