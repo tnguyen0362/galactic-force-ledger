@@ -320,6 +320,25 @@ from config" twice this session and made a working fix look broken. Verify edits
 
 **Path correction:** earlier evidence during this audit cited `HANDOFF.md` at the repo root; it lives at `.goal/HANDOFF.md`.
 
+**Kill-to-bucket path fired, closing the gap stated last batch (place 467).** Evidence `evidence/v467-kill-credits-bucket/EVIDENCE.md`.
+
+A real `EnemyService.spawn("Rifleman", ...)` + `CombatService.damageEnemy(...)` kill through the real damage path:
+
+```
+weapon=SMG03  profile=0 pending=0
+afterKill        profile=0  pending=10  dead=true
+afterFailFinish  profile=0  pending=0   settled=0
+```
+
+Confirms three things: the kill credits the authored **10** XP to the bucket, the **profile is untouched** on the kill (before
+place 467 the same kill called `addMastery` and moved it), and a failed primary discards the bucket.
+
+**Open question, recorded not dismissed:** the previous batch's settlement test wrote 50 XP to SMG03 on this account, and this
+server read SMG03 as **0**. Either the write missed the spec's ~60–90 s autosave window (previous server stopped quickly), or
+`weaponMastery` does not survive the DataStore round-trip — which would make mastery session-only. Not called a defect: the
+autosave explanation is at least as likely. To settle it: award mastery, wait past autosave, stop the server, start a new one,
+read the same weapon.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 467**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
