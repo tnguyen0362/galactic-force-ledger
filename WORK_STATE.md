@@ -3197,3 +3197,7 @@ A new valid Dome or Sentry cast replaces the owner's previous one, and dome rim/
 ## 2026-11-25 / place 575 - emergency disables support
 
 Ability casts are rejected during emergency extraction, and unlanded Airstrike/Orbital strikes are cancelled with feedback. Fixed a nil `reportReject` call: out-of-range strike casts used to error. Live probe PASS.
+
+## 2026-11-25 / place 577 - mission loadout lock
+
+Equip/class/augment/loadout changes are rejected server-side while the player is in the Mission zone, and accepted again after returning to the station. Live probe PASS. (Place version 576 was not created by this session.)
