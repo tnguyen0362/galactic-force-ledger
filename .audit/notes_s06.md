@@ -355,3 +355,12 @@ probe_health.lua GF_HC (REBUILD tarball after mirror edits: COPYFILE_DISABLE=1 t
 ## UPDATE 31 — VERIFIED ~462; cache reveal + directional damage + buff roster implemented
 S04-058, S04-063, S11-036 all closed this session. Boot now 816 assertions. Only remaining identified
 feature gap: thrown signal-flare abilities (S05-003, medium). Lobby/procedural clusters honest UNKNOWNs.
+
+## UPDATE 32 — COMPACTION-RESUME BRIEF (VERIFIED ~471 / UNKNOWN ~272 / PARTIAL ~69 / place v645)
+SINCE UPDATE 31: verified S16-099/111/103 (milestone label in WORK_STATE), S00-010/015, S11-056, S12-021,
+S13-008/018. WORK_STATE now declares PARTIAL BUILD with exact counts.
+REMAINING: S16-042 pcall sweep (kept PARTIAL honestly — large refactor), S05-003 thrown flares (medium),
+S13-014 72h defense phase (partially implemented — counteroffensive exists but no wall-clock cycle),
+lobby/procedural clusters honest UNKNOWNs. Boot stable 816 assertions at v645.
+WORKFLOW unchanged: read full note -> implement small gap OR mark honest completion -> boot-verify ->
+crash-safe ledger write -> commit+push.
