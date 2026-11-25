@@ -125,8 +125,8 @@ local function buildModel(def: any, cframe: CFrame): Model
 	-- power core — a glowing vulnerable node offset high on the back plate, so flanking or
 	-- precision fire is rewarded per spec. The combat service reads the WeakPoint attribute on hit.
 	if (tonumber(def.weakPointMultiplier) or 1) > 1 then
-		local core = part("WeakCore", Vector3.new(0.55, 0.55, 0.3) * scale, palette.light, Enum.Material.Neon)
-		core.CFrame = cframe * CFrame.new(0, 0.55 * scale, 0.68 * scale)
+		local core = part("WeakCore", Vector3.new(0.68, 0.68, 0.42) * scale, palette.light, Enum.Material.Neon)
+		core.CFrame = cframe * CFrame.new(0, 0.55 * scale, 0.82 * scale)
 		core.Transparency = 0
 		core.Anchored = false
 		core:SetAttribute("WeakPoint", tonumber(def.weakPointMultiplier))
@@ -192,7 +192,7 @@ local function buildModel(def: any, cframe: CFrame): Model
 		rig.Parent = model
 		rig:SetAttribute("GFEnemyRig", true)
 		for _, p in model:GetChildren() do
-			if p:IsA("BasePart") and p ~= root then p.Transparency = 1 end
+			if p:IsA("BasePart") and p ~= root and p.Name ~= "WeakCore" then p.Transparency = 1 end
 		end
 		model:SetAttribute("HasRig", true)
 	end
@@ -712,6 +712,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 		-- A target that is gone must not stay on the actor: GF_EnemiesTracked counted stale pointers
 		-- (13 while the player stood on the station), which made it useless as a "who is hunting me" signal.
 		actor.target = nil
+		actor.engagementStarted = false
 		-- FSM (S06-004): Investigate the last known position while confidence holds, Search around it
 		-- on arrival, Return home when confidence decays below the give-up threshold, Guard/idle at home.
 		local conf = actor.confidence or 0
@@ -796,6 +797,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 				-- retreat: walk home, clear all engagement memory — the fight is abandoned
 				actor.coverPos = nil
 				actor.target = nil
+				actor.engagementStarted = false
 				actor.confidence = 0
 				actor.stuckSince = nil
 				model:SetAttribute("GFState", "Return")
@@ -808,9 +810,9 @@ local function tickActor(model: Model, actor: any, dt: number)
 			end
 		end
 	end
-	local priorState = model:GetAttribute("GFState")
 	model:SetAttribute("GFState", "Engage")
-	if priorState ~= "Engage" then
+	if not actor.engagementStarted then
+		actor.engagementStarted = true
 		-- First tick of engagement: sample the difficulty reaction band once, so a hostile never
 		-- instant-fires the moment it spots someone. cadence cannot shorten heavy/marksman warnings
 		-- below 0.9s regardless (spec), which the telegraph path already enforces separately.
@@ -985,8 +987,8 @@ local function tickActor(model: Model, actor: any, dt: number)
 		workspace:SetAttribute("GF_LastCharge", model.Name .. ":" .. tostring(windUp))
 	end
 		actor.telegraphTarget = target
-		ReplicatedStorage.GF.Remotes.EnemyTelegraph:FireAllClients(model, (def.telegraph or 0.55))
-		task.delay((def.telegraph or 0.55), function()
+		ReplicatedStorage.GF.Remotes.EnemyTelegraph:FireAllClients(model, windUp)
+		task.delay(windUp, function()
 		workspace:SetAttribute("GF_LastAttackAttempt", "entry")
 			if model:GetAttribute("Dead") then
 				return

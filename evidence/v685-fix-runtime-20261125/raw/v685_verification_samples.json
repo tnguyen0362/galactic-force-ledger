@@ -1,0 +1,2084 @@
+{
+  "difficultyButtons": [
+    {
+      "path": "Players.ROBLOXISUS101.PlayerGui.GFStation.Frame.WarBody.Frame.TextButton",
+      "text": "EASY"
+    },
+    {
+      "path": "Players.ROBLOXISUS101.PlayerGui.GFStation.Frame.WarBody.Frame.TextButton",
+      "text": "NORMAL"
+    },
+    {
+      "path": "Players.ROBLOXISUS101.PlayerGui.GFStation.Frame.WarBody.Frame.TextButton",
+      "text": "HARD"
+    },
+    {
+      "path": "Players.ROBLOXISUS101.PlayerGui.GFStation.Frame.WarBody.Frame.TextButton",
+      "text": "EXTREME"
+    }
+  ],
+  "cameraHip": "2.0999999046325684, 0.5, 0|70",
+  "cameraAds": "1.350000023841858, 0.44999998807907104, 0|57",
+  "missionStart": {
+    "sweepHits": 0,
+    "channels": 0,
+    "playerHealth": 100,
+    "lastCharge": "nil",
+    "fireSlots": 0,
+    "clock": 3057.7478571999995,
+    "inMission": true,
+    "enemyHits": 0,
+    "actors": [
+      {
+        "shield": 60,
+        "id": "Marksman",
+        "y": 33.096378326416016,
+        "state": "Idle",
+        "x": 22.516660690307617,
+        "name": "Marksman",
+        "z": -107,
+        "perception": 0,
+        "health": 147,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 32.85112762451172,
+        "state": "Idle",
+        "x": 13,
+        "name": "Rifleman",
+        "z": -97.48333740234375,
+        "perception": 0,
+        "health": 168,
+        "dead": false
+      },
+      {
+        "shield": 160,
+        "id": "Officer",
+        "y": 33.875,
+        "state": "Idle",
+        "x": 10,
+        "name": "Officer",
+        "z": -110,
+        "perception": 0,
+        "health": 294,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 36.713687896728516,
+        "state": "Idle",
+        "x": 14,
+        "name": "Rifleman",
+        "z": -108,
+        "perception": 0,
+        "health": 168,
+        "dead": false
+      },
+      {
+        "shield": 80,
+        "id": "Rifleman",
+        "y": 36.828887939453125,
+        "state": "Idle",
+        "x": 6,
+        "name": "Rifleman",
+        "z": -108,
+        "perception": 0,
+        "health": 168,
+        "dead": false
+      }
+    ],
+    "enemyMisses": 0,
+    "difficulty": "Easy",
+    "player": "ROBLOXISUS101",
+    "cancels": 0,
+    "lastAttack": "nil",
+    "sweeps": 0,
+    "completions": 0,
+    "playerPos": {
+      "y": 31.215320587158203,
+      "x": -0.005859464406967163,
+      "z": 117.80258178710938
+    },
+    "template": "SABOTAGE_RELAY"
+  },
+  "spawn": "spawned:true,true,true",
+  "forcedVisuals": "[{\"transparency\":0.21806317567825318,\"name\":\"OfficerSweepTelegraph\",\"size\":\"0.18000000715255737, 55.73052215576172, 55.73052215576172\"},{\"transparency\":0.21806557476520539,\"name\":\"OfficerSweepTelegraph\",\"size\":\"0.18000000715255737, 55.72995376586914, 55.72995376586914\"},{\"transparency\":0.12261423468589783,\"name\":\"ScoutBeaconChannel\",\"size\":\"0.41999998688697815, 17.029884338378906, 0.41999998688697815\"}]",
+  "samples": [
+    {
+      "t": 0.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3058.5641391,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 0.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3059.3141966,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 1.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3060.0645087999997,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 1.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3060.8154086,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 2.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3061.5643895,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 2.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3062.3139689,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 3.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3063.0646356999996,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 3.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3063.8141136,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 4.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3064.5643210999997,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 4.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3065.3131764,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 5.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3066.0634661999998,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 5.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3066.8140304999997,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 6.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3067.5645731,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 6.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3068.3133435,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 7.0,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3069.0654646999997,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    },
+    {
+      "t": 7.5,
+      "summary": {
+        "sweepHits": 0,
+        "channels": 0,
+        "playerHealth": 100,
+        "lastCharge": "nil",
+        "fireSlots": 0,
+        "clock": 3069.8140347999997,
+        "inMission": true,
+        "enemyHits": 0,
+        "actors": [
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 33.096378326416016,
+            "state": "Idle",
+            "x": 22.516660690307617,
+            "name": "Marksman",
+            "z": -107,
+            "perception": 0,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 32.85112762451172,
+            "state": "Idle",
+            "x": 13,
+            "name": "Rifleman",
+            "z": -97.48333740234375,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 33.875,
+            "state": "Idle",
+            "x": 10,
+            "name": "Officer",
+            "z": -110,
+            "perception": 0,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.713687896728516,
+            "state": "Idle",
+            "x": 14,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 80,
+            "id": "Rifleman",
+            "y": 36.828887939453125,
+            "state": "Idle",
+            "x": 6,
+            "name": "Rifleman",
+            "z": -108,
+            "perception": 0,
+            "health": 168,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Marksman",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -5.005859375,
+            "name": "Marksman",
+            "z": 83.80258178710938,
+            "health": 147,
+            "dead": false
+          },
+          {
+            "shield": 160,
+            "id": "Officer",
+            "y": 29.875,
+            "state": "nil",
+            "x": 4.994140625,
+            "name": "Officer",
+            "z": 83.80258178710938,
+            "health": 294,
+            "dead": false
+          },
+          {
+            "shield": 60,
+            "id": "Scout",
+            "y": 29.100000381469727,
+            "state": "nil",
+            "x": -0.005859464406967163,
+            "name": "Scout",
+            "z": 95.80258178710938,
+            "health": 147,
+            "dead": false
+          }
+        ],
+        "enemyMisses": 0,
+        "difficulty": "Easy",
+        "player": "ROBLOXISUS101",
+        "cancels": 0,
+        "lastAttack": "nil",
+        "sweeps": 0,
+        "completions": 0,
+        "playerPos": {
+          "y": 31.215320587158203,
+          "x": -0.005859464406967163,
+          "z": 117.80258178710938
+        },
+        "template": "SABOTAGE_RELAY"
+      },
+      "visuals": [],
+      "cores": "Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Marksman:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815;Officer:0:0.8500000238418579, 0.8500000238418579, 0.5249999761581421;Scout:0:0.6800000071525574, 0.6800000071525574, 0.41999998688697815"
+    }
+  ],
+  "video": {
+    "manifest": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\v685_ai_verification_manifest.json",
+    "frame_times": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\v685_ai_verification_frame_times.json",
+    "video": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\v685_ai_verification_video.mp4"
+  }
+}

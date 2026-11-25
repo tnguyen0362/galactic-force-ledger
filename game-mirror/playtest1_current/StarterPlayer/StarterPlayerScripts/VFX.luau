@@ -309,4 +309,129 @@ do
 	end
 end
 
+
+-- S11 player-readable ability telegraphs published as enemy attributes. These are polled rather than
+-- remote-driven because the server already publishes lifetime state; the visual layer only interprets it.
+do
+	local RunService = game:GetService("RunService")
+	local activeBeacons: { [Model]: boolean } = {}
+	local activeSweeps: { [Model]: boolean } = {}
+
+	local function enemyRoot(model: Model): BasePart?
+		return (model:FindFirstChild("HumanoidRootPart") or model.PrimaryPart) :: BasePart?
+	end
+
+	local function startBeacon(model: Model)
+		if activeBeacons[model] then return end
+		local root = enemyRoot(model)
+		if not root then return end
+		activeBeacons[model] = true
+
+		local beam = Instance.new("Part")
+		beam.Name = "ScoutBeaconChannel"
+		beam.Anchored = true
+		beam.CanCollide = false
+		beam.CanQuery = false
+		beam.CanTouch = false
+		beam.CastShadow = false
+		beam.Material = Enum.Material.Neon
+		beam.Color = Color3.fromRGB(96, 220, 255)
+		beam.Transparency = 0.12
+		beam.Parent = workspace
+
+		local labelAnchor = Instance.new("Part")
+		labelAnchor.Name = "ScoutBeaconLabelAnchor"
+		labelAnchor.Anchored = true
+		labelAnchor.CanCollide = false
+		labelAnchor.CanQuery = false
+		labelAnchor.CanTouch = false
+		labelAnchor.Transparency = 1
+		labelAnchor.Size = Vector3.new(0.2, 0.2, 0.2)
+		labelAnchor.Parent = workspace
+		local billboard = Instance.new("BillboardGui")
+		billboard.Name = "ScoutBeaconBillboard"
+		billboard.Size = UDim2.fromOffset(150, 34)
+		billboard.AlwaysOnTop = true
+		billboard.Parent = labelAnchor
+		local text = Instance.new("TextLabel")
+		text.Size = UDim2.fromScale(1, 1)
+		text.BackgroundTransparency = 1
+		text.Font = Enum.Font.GothamBold
+		text.TextSize = 15
+		text.TextColor3 = Color3.fromRGB(120, 235, 255)
+		text.TextStrokeTransparency = 0.25
+		text.Text = "TRANSMITTING"
+		text.Parent = billboard
+
+		local conn
+		conn = RunService.RenderStepped:Connect(function()
+			local deadline = tonumber(model:GetAttribute("TransmissionUntil"))
+			if not deadline or os.clock() >= deadline or not model.Parent or not root.Parent then
+				conn:Disconnect()
+				beam:Destroy()
+				labelAnchor:Destroy()
+				activeBeacons[model] = nil
+				return
+			end
+			local height = 17 + math.sin(os.clock() * 10) * 1.4
+			beam.Size = Vector3.new(0.42, height, 0.42)
+			beam.CFrame = CFrame.new(root.Position + Vector3.new(0, height * 0.5 + 0.4, 0))
+			beam.Transparency = 0.1 + 0.08 * math.sin(os.clock() * 13)
+			labelAnchor.CFrame = CFrame.new(root.Position + Vector3.new(0, 7.2, 0))
+		end)
+	end
+
+	local function startSweep(model: Model)
+		if activeSweeps[model] then return end
+		local root = enemyRoot(model)
+		if not root then return end
+		activeSweeps[model] = true
+
+		local ring = Instance.new("Part")
+		ring.Name = "OfficerSweepTelegraph"
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Anchored = true
+		ring.CanCollide = false
+		ring.CanQuery = false
+		ring.CanTouch = false
+		ring.CastShadow = false
+		ring.Material = Enum.Material.Neon
+		ring.Color = Color3.fromRGB(255, 96, 64)
+		ring.Transparency = 0.32
+		ring.Parent = workspace
+
+		local conn
+		conn = RunService.RenderStepped:Connect(function()
+			local deadline = tonumber(model:GetAttribute("SweepTelegraphUntil"))
+			if not deadline or os.clock() >= deadline or not model.Parent or not root.Parent then
+				conn:Disconnect()
+				ring:Destroy()
+				activeSweeps[model] = nil
+				return
+			end
+			local remaining = math.max(0, deadline - os.clock())
+			local frac = math.clamp(1 - remaining / 1.6, 0, 1)
+			local radius = 4 + 26 * frac
+			ring.Size = Vector3.new(0.18, radius * 2, radius * 2)
+			ring.CFrame = CFrame.new(root.Position + Vector3.new(0, -2.65, 0)) * CFrame.Angles(0, 0, math.rad(90))
+			ring.Transparency = 0.42 - 0.22 * frac
+		end)
+	end
+
+	local scanAt = 0
+	RunService.Heartbeat:Connect(function()
+		local now = os.clock()
+		if now < scanAt then return end
+		scanAt = now + 0.12
+		local folder = workspace:FindFirstChild("ActiveActors")
+		if not folder then return end
+		for _, model in folder:GetChildren() do
+			if model:IsA("Model") then
+				if tonumber(model:GetAttribute("TransmissionUntil")) then startBeacon(model) end
+				if tonumber(model:GetAttribute("SweepTelegraphUntil")) then startSweep(model) end
+			end
+		end
+	end)
+end
+
 return VFX

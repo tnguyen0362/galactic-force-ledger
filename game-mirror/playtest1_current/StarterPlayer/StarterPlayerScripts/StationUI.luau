@@ -200,7 +200,7 @@ local diffLayout = Instance.new("UIListLayout")
 diffLayout.FillDirection = Enum.FillDirection.Horizontal
 diffLayout.Padding = UDim.new(0, 8)
 diffLayout.Parent = diffRow
-local difficulties = { "Easy", "Normal" }
+local difficulties = { "Easy", "Normal", "Hard", "Extreme" }
 for i, name in difficulties do
 	local b = button(diffRow, string.upper(name), UDim2.fromOffset(120, 32), UDim2.fromOffset(0, 0), CYAN)
 	difficultyButtons[name] = b
