@@ -443,3 +443,8 @@ spd11 dmg38 rng180. PathThrottle module implemented (4-token bucket, 2/s refill,
 PerformanceTelemetry+PathThrottle shells created — ALL modules load, boot 816 assertions green.
 REMAINING BIG CLUSTERS: S02 44 (multi-place mostly dashboard-blocked), S16 35 (process rows), S15 29
 (hardware perf), S07 26 (procedural depth), S06 ~16, S01 17 (armor visual polish), BETA 12, S04 12.
+
+## UPDATE 43 — VERIFIED ~562; armor + biome sweep
+S01 armor rows verified: boots+gold insignia implemented, full coverage confirmed, block soldiers conform.
+S07 biome rows verified: kits drive arid/forest parameterization, seed rotation live (line 58 Mission.luau),
+Veyra-7 single theater confirmed. Boot 816 green. ALL COMMITTED+PUSHED.
