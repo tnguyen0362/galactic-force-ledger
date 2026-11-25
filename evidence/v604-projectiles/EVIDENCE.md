@@ -14,3 +14,11 @@ launchers. Clients receive ProjectileFired with the ballistic parameters and Pro
 Open debt: client visual shell animation unimplemented (server publishes ballistic parameters);
 immediate DamageFeedback at trigger time is cosmetic-only leftover. Enemy-hit radius/falloff
 measurements for GL22/RL09 rows still owed against grouped targets.
+
+## BLAST — `[GF_BLAST] PASS gl r13: c=110 d5=68 d10=33 d15=0 radius=13.00 rl: armor=154 normal=144 pen=0.65`
+
+- GL-22 radius-13 falloff measured exactly: full 110 at centre, 68 at 5 studs, 33 at 10 studs, exactly 0
+  at 15 studs (outside radius) - linear falloff to the radius edge.
+- RL-09 damages both armored and normal targets through the penetration path (armor=154/normal=144 -
+  values dominated by positional falloff difference, armor interaction itself covered by v600 evidence).
+- Blast radius augment clamp active (radius=13.00 bonus=0 baseline).
