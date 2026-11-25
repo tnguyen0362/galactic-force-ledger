@@ -218,11 +218,45 @@ in the file cannot be trusted as a record. Both recorded, neither changed (drop 
 But the five levels with thresholds `[0,100,240,420,650]` appear **nowhere** in the project, and accrual happens per hit
 mid-mission — so a player who fails the primary keeps all mastery, the exact opposite of the settlement rule.
 
+**MASTERY LADDER FIXED — it was unreachable by construction (place 464).** Evidence `evidence/v464-mastery-ladder/EVIDENCE.md`.
+
+First, a correction to my own previous note: mastery is awarded **+1 per kill**, not per hit. The award sits inside the
+`if newHealth <= 0` branch, and the spec also forbids per-hit credit. The structure was right; the arithmetic was not.
+
+```lua
+local updated = math.min(10, current + math.floor(amount))
+```
+
+The spec sets five levels at `[0, 100, 240, 420, 650]` and caps XP at level 5. **A cap of 10 sits below level 2's 100, so no
+weapon could ever leave level 1**, and the level-5 augment socket was unreachable by construction. The thresholds existed
+nowhere in the project.
+
+Fixed: cap 10 → 650; new `MASTERY_THRESHOLDS` + `ProfileService.masteryLevel`; and `CombatService` now awards the authored
+per-archetype value (Rifleman/Scout/Marksman 10, Heavy 20, Officer 35, Walker 100, Veyr 250) instead of a flat 1 — a flat 1
+could not reach 100 either, so rate and cap had to move together.
+
+Measured with a real loaded profile:
+
+```
+thresholds=0,100,240,420,650
+after +10    xp=15  lvl=1
+after +90    xp=105 lvl=2
+after +140   xp=245 lvl=3
+after +10000 xp=650 lvl=5
+```
+
+**A process slip, caught:** my first insertion was spliced with an off-by-one and produced `Expected identifier when parsing
+expression, got '}'`. `loadstring` caught it before Play and it was repaired. This is the silent-edit hazard HANDOFF records —
+every edit this session is compile-checked before running.
+
+**Still open:** `S09-034` settlement is untouched — mastery still writes to the profile per kill, so a player who fails the
+primary keeps it. That needs an in-mission bucket, not a constant change.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 463**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 464**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 164 populated, 651 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **463** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **464** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
