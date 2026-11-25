@@ -3116,3 +3116,20 @@ The last line is where I stopped: the raycast from above **does** reach the name
 
 ## Environment
 `.goal/PAUSE` absent. Studio in Edit mode, place saved at 385, HEAD includes this batch after commit.
+
+## 2026-11-25 cloud recovery / place 558 - canonical numeric conformance checkpoint
+
+Context: power-loss recovery session. The live Studio place was reachable through Roblox MCP (`Playtest1`, placeId `120646942844931`) and the cloud ledger was current through place 554. The first bounded implementation batch aligned numeric config drift rather than creating a new scaffold.
+
+Edits saved to Roblox as **place version 558**:
+- `Configs/Abilities`: Dome Shield duration/radius 10/14; Sentry duration/radius/damage 30/65/10; Orbital Strike radius/damage 13/390; Orbital Lance cooldown/duration/damage 165/3/420; Reflective Barrier cooldown/duration/radius 85/7/10.
+- `Configs/Weapons`: GL22 explosive radius 13; RL09 explosive radius 10.
+- `Configs/Enemies`: Bastion Walker health 3600; High Marshal Veyr health 7200.
+- `StationService`: standard mission clock 900s.
+- `Shared/Constants`: revive 3s, bleedout 60s, extraction countdown 75s, boss pity target 5 / chance 0.15.
+
+Verification evidence: compile probe returned `compileErrors=0`; fresh Studio playtest console showed `[GF] boot: config check PASS (688 assertions)` and `[GF] boot: services online (persistence=datastore)`. Before the batch the same boot showed 12 numeric drifts; after the first five edits it showed only the final five constants, then passed after those were aligned.
+
+Ledger updates: exact numeric clauses in S03-027/S03-028, launcher blast radii rows, S05-012..S05-016, boss HP rows, S06-072, S08-006 and S09-004 were annotated. These rows are **not** marked fully VERIFIED: runtime behavior (duration, damage distribution, extraction flow, pity settlement, combat effects) still needs measured playtests.
+
+Next high-value dependency remains the augment instance model (`augmentInventory[uid]`) because it gates reroll, dismantle, fusion, duplicate identity and pending-offer durability. Do not restart or rescatffold.
