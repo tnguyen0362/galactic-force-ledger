@@ -56,6 +56,13 @@
     "chars": 27120
   },
   {
+    "path": "StarterPlayer.StarterPlayerScripts.EnemyAnimClient",
+    "className": "LocalScript",
+    "file": "StarterPlayer/StarterPlayerScripts/EnemyAnimClient.luau",
+    "lines": 103,
+    "chars": 3061
+  },
+  {
     "path": "StarterPlayer.StarterPlayerScripts.VFX",
     "className": "ModuleScript",
     "file": "StarterPlayer/StarterPlayerScripts/VFX.luau",

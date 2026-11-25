@@ -36,6 +36,11 @@ local function debug(): Folder
 	return debugFolder
 end
 local function note(key: string, value: any)
+	-- Combat telemetry is useful in verification but expensive in the hot path: every hit/miss/reject
+	-- replicated an attribute change to every client. Verification harnesses opt in explicitly.
+	if workspace:GetAttribute("GF_DebugCombat") ~= true then
+		return
+	end
 	debug():SetAttribute(key, value)
 end
 local function reject(reason: string)

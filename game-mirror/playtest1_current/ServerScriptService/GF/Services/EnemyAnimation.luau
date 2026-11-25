@@ -106,7 +106,10 @@ local function step(dt: number)
 	end
 end
 
-RunService.Heartbeat:Connect(step)
+-- Server-side C0 writes replicated every joint movement to every client. Enemy locomotion animation is
+-- presentation-only, so EnemyAnimClient performs the same procedural joint work locally on each client.
+-- This module remains as documentation/shared reference and intentionally does not run a server heartbeat.
+-- RunService.Heartbeat:Connect(step)
 
 return { tracked = tracked }
 

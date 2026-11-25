@@ -646,7 +646,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 					local dmgMult = tonumber(model:GetAttribute("DamageMultiplier")) or 1
 					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, sentryPos)
 					EnemyService.damageSentry(sentry, def.damage * dmgMult * shots, def.id)
-					workspace:SetAttribute("GF_SentryShotsTaken", (workspace:GetAttribute("GF_SentryShotsTaken") or 0) + 1)
+					debugAttr("GF_SentryShotsTaken", (workspace:GetAttribute("GF_SentryShotsTaken") or 0) + 1)
 				end)
 			end
 			return
@@ -696,7 +696,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 							-- Structure fire is deliberately weaker than anti-personnel fire: measured at full damage, eight
 							-- hostiles took a 600 HP generator from full to zero inside the defend window.
 							require(script.Parent.CombatService).damageStructure(structure, def.damage * 0.25, nil)
-							workspace:SetAttribute("GF_StructureShots", (workspace:GetAttribute("GF_StructureShots") or 0) + 1)
+							debugAttr("GF_StructureShots", (workspace:GetAttribute("GF_StructureShots") or 0) + 1)
 						end
 					end)
 					EnemyService.releaseFireSlot(model)
@@ -737,7 +737,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 							EnemyService.releaseFireSlot(model)
 							if model.Parent and not model:GetAttribute("Dead") then
 								ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, targetPos)
-								workspace:SetAttribute("GF_SuppressionShots", (workspace:GetAttribute("GF_SuppressionShots") or 0) + 1)
+								debugAttr("GF_SuppressionShots", (workspace:GetAttribute("GF_SuppressionShots") or 0) + 1)
 							end
 						end)
 					end
@@ -989,7 +989,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 		actor.telegraphTarget = target
 		ReplicatedStorage.GF.Remotes.EnemyTelegraph:FireAllClients(model, windUp)
 		task.delay(windUp, function()
-		workspace:SetAttribute("GF_LastAttackAttempt", "entry")
+		debugAttr("GF_LastAttackAttempt", "entry")
 			if model:GetAttribute("Dead") then
 				return
 			end
@@ -1000,9 +1000,9 @@ local function tickActor(model: Model, actor: any, dt: number)
 			end
 			if not lineOfSight(root.Position, stillRoot.Position, { model, stillTarget }) then
 				return
-			workspace:SetAttribute("GF_LastAttackAttempt", "los-fail")
+			debugAttr("GF_LastAttackAttempt", "los-fail")
 			end
-			workspace:SetAttribute("GF_LastAttackAttempt", "los-pass")
+			debugAttr("GF_LastAttackAttempt", "los-pass")
 			local d = (stillRoot.Position - root.Position).Magnitude
 			if d > def.attackRange * 1.35 then
 				return
@@ -1037,17 +1037,17 @@ local function tickActor(model: Model, actor: any, dt: number)
 				local isHit = (not rolling) and (not blocked) and (roll < hitChance)
 				if isHit then
 					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position)
-					workspace:SetAttribute("GF_LastShotPos", liveRoot.Position)
+					debugAttr("GF_LastShotPos", liveRoot.Position)
 					local dmgMult = tonumber(model:GetAttribute("DamageMultiplier")) or 1
 					VitalsService.applyDamage(target, def.damage * dmgMult, def.id, liveRoot.Position)
-					workspace:SetAttribute("GF_LastAttackAttempt", "hit")
-					workspace:SetAttribute("GF_EnemyHits", (workspace:GetAttribute("GF_EnemyHits") or 0) + 1)
+					debugAttr("GF_LastAttackAttempt", "hit")
+					debugAttr("GF_EnemyHits", (workspace:GetAttribute("GF_EnemyHits") or 0) + 1)
 				else
 					-- visible miss: tracer lands wide of the target so the shot reads as a near miss
 					local missOffset = Vector3.new((math.random() - 0.5) * 8, math.random() * 3, (math.random() - 0.5) * 8)
 					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position + missOffset)
-					workspace:SetAttribute("GF_LastAttackAttempt", rolling and "dodged" or (blocked and "cover" or "miss"))
-					workspace:SetAttribute("GF_EnemyMisses", (workspace:GetAttribute("GF_EnemyMisses") or 0) + 1)
+					debugAttr("GF_LastAttackAttempt", rolling and "dodged" or (blocked and "cover" or "miss"))
+					debugAttr("GF_EnemyMisses", (workspace:GetAttribute("GF_EnemyMisses") or 0) + 1)
 				end
 				if interval > 0 and shot < shots then
 					task.wait(interval)
@@ -1121,11 +1121,11 @@ function EnemyService.claimFireSlot(model: Model): boolean
 		count += 1
 	end
 	if count >= MAX_FIRING then
-		workspace:SetAttribute("GF_FireSlotsHeld", count)
+		debugAttr("GF_FireSlotsHeld", count)
 		return false
 	end
 	firing[model] = now
-	workspace:SetAttribute("GF_FireSlotsHeld", count + 1)
+	debugAttr("GF_FireSlotsHeld", count + 1)
 	return true
 end
 
@@ -1176,6 +1176,13 @@ function EnemyService.resetCalls()
 end
 local CALL_TIME = 2
 local CALL_RANGE = 70
+
+
+local function debugAttr(key: string, value: any)
+	if workspace:GetAttribute("GF_DebugEnemy") == true then
+		workspace:SetAttribute(key, value)
+	end
+end
 
 function EnemyService.callState()
 	local rows = {}

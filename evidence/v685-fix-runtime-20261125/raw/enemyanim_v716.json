@@ -1,0 +1,52 @@
+{
+  "teleport": "pivoted:5",
+  "states": [
+    "Engage",
+    "Engage",
+    "Engage",
+    "Engage",
+    "Engage"
+  ],
+  "client_anim_moving": false,
+  "server_joints_static": true,
+  "details": [
+    {
+      "id": "Marksman",
+      "state": "Engage",
+      "changed": []
+    },
+    {
+      "id": "Rifleman",
+      "state": "Engage",
+      "changed": []
+    },
+    {
+      "id": "Officer",
+      "state": "Engage",
+      "changed": []
+    },
+    {
+      "id": "Rifleman",
+      "state": "Engage",
+      "changed": []
+    },
+    {
+      "id": "Rifleman",
+      "state": "Engage",
+      "changed": []
+    }
+  ],
+  "gated": {
+    "attempt": "nil",
+    "flag": "nil"
+  },
+  "optin": {
+    "attempt": "nil"
+  },
+  "client_rows": 5,
+  "server_rows": 5,
+  "aggroed": true,
+  "gate_ok": true,
+  "optin_ok": false,
+  "passed": false
+}
