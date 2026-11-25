@@ -433,11 +433,33 @@ Measured: setup → seq 0; primary completion → `#1 primary_complete`; duplica
 every `resourceDelta` is 0 because no per-event deltas are computed yet (`S10-012`–`S10-019`). Durability ownership is the next
 real design decision.
 
+**AUTHORED PER-EVENT TABLE + FRACTIONAL TOTALS (place 474).** Evidence `evidence/v474-event-reward-table/EVIDENCE.md`.
+
+`RewardLedgerService` now carries the L150-L157 event table and the L161 difficulty multipliers, and computes each event
+fractionally — no rounding per event, one floor at settlement.
+
+```
+value primary_complete@Normal   cr=300.00  xp=437.50
+value primary_complete@Extreme  cr=495.00  xp=875.00      (300x1.65, 350x2.5)
+value kill_Heavy@Normal         cr=3.00    xp=25.00  m=25.00
+
+real mission: #1 primary_complete 300/437.5 · #2 extraction_success 100/125
+totals 400.00 cr / 562.50 xp      floored once -> 400 cr / 562 xp
+```
+
+Still **record-only**: `RewardsService` pays its own way, so these values do not yet decide a payout.
+
+**Eighth instance of the instrument pattern, and I wrote this one.** The first measurement printed `cr=-1.00 xp=-1.00` while
+`totals()` returned the correct 400/562.5 — `snapshot()` copied events through a fixed field list that omitted `credits`,
+`xp`, `mastery` and `difficulty`. Stored data was right; the view dropped it. Fixed with the reason commented in place.
+
+`S10-012`–`S10-021` are now PARTIAL rather than ABSENT.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 473**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 474**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **473** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **474** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
