@@ -2083,11 +2083,33 @@ the same wrong-container trap as earlier (they are NOT on `workspace`).
 
 Not changed: adding reserve touches every weapon's economy, the HUD ammo readout, supply crates and drops. Recorded instead.
 
+**RESERVE AMMO IMPLEMENTED; LIVE COMMIT STILL DOESN'T FIRE (place 533).** Evidence `evidence/v533-reserve-ammo-implemented/EVIDENCE.md`.
+
+`State` gained `reserve`; equip seeds it from the catalog; reload uses the authored `n = min(capacity - ammo, reserve)` via a **pure** `CombatService.reloadPlan`;
+the commit adds n and consumes n; a reload with an empty reserve is refused; `AmmoUpdated` publishes reserve.
+
+**Arithmetic unit-tested** (4 new checks, all inside `CheckRunner`): `(20,28,168)=8`, `(0,28,10)=10`, `(28,28,168)=0`, `(5,28,0)=0`. Suite:
+**`passed=657 failed=17 nonDrift=0`**.
+
+**NOT proven end to end.** A real reload through `ReloadWeapon` with `ammo=19, reserve=168` gives `reloadCount=1`, ammo **19**, reserve **168**, and my instrumented
+commit line is **never reached**. Two candidates: the `live ~= s` state-table identity guard aborting after a state rebuild inside the ~2 s window, or another path
+clearing `reloading`.
+
+**This is a real defect independent of reserve:** a reload can silently no-op if `State` is replaced mid-reload. Infinite ammo was masking it, because a full
+refill on an aborted commit looked like "nothing happened, still full".
+
+**Not done:** HUD does not read `reserve`; supply crates/drops do not replenish it; no accumulation cap.
+
+`S04-025` and `S04-027` remain PARTIAL — scaffolded and unit-tested, not yet true in play.
+
+Next step when resuming: instrument the callback's `live ~= s` branch specifically, or log `State` identity across a reload window, to confirm which of the two causes
+applies.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 530**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 533**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **530** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **533** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
