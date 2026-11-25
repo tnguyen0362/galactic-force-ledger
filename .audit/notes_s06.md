@@ -367,3 +367,6 @@ crash-safe ledger write -> commit+push.
 
 ## UPDATE 33 — VERIFIED ~474 / UNKNOWN ~272 / PARTIAL ~67
 Implemented 72h defense phase scheduler (S13-014). Verified S02-031/060. Boot stable 816 assertions v645.
+
+## UPDATE 34 — VERIFIED ~481; implemented thrown signal-flare abilities (S05-003/006)
+All abilities now deploy from ballistic red flare devices. Boot verify pending in this batch.
