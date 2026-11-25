@@ -248,3 +248,8 @@ Batch-verified friendly-fire/HUD/settings/sentry/launcher rows. Place save pendi
 ## UPDATE 17 — VERIFIED ~397 / UNKNOWN ~318 / PARTIAL ~97
 Batch-verified support abilities (orbital strike/lance/barrier config exact) + downed mechanics + area-hit row.
 IMPORTANT: place save of v635+ fixes still pending — run save deploy when possible.
+
+## UPDATE 18 — VERIFIED ~406 / UNKNOWN ~319 / PARTIAL ~87
+Batch-verified 9 economy rows (S10-014..019 payout tables measured, salvage/loadout/persistence rows).
+EXTERNAL BLOCKERS confirmed honest: device farm (gamepad/PS/touch/xbox), multi-client co-op — untestable in solo Studio.
+Next fronts: mission/objective remaining implementations, lobby/matchmaking cluster, procedural world.
