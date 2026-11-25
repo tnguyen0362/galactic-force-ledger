@@ -72,3 +72,11 @@ S10-025 spec says 650-900 "INCLUDING kills and optional" - so need per-kill XP v
 If no per-kill XP exists: either implement it (spec implies kills contribute) or raise base. FIND per-kill XP first:
 grep VitalsService/CombatService for xp grants on kill. Mastery gain exists (spine1 measured GF_MasteryGain) but
 mastery may be separate from rank XP. Resolve: measure total XP from a mission with kills, or implement per spec.
+
+## IN-FLIGHT at compaction (projectiles batch)
+
+ProjectileService.luau NEW module created (shell in Studio done): kinematic server shells, GL22 55speed/35grav/6s, RL09 110/4/4s.
+Fire path: weapon.explosive now launches projectile instead of instant detonate. Remotes ProjectileFired/ProjectileDetonated added (contract v1 unchanged, additive).
+Probe GF_PROJ running (shell b8aa10): expects no instant detonation, positive travel time, detonation via collision/lifetime.
+NOT YET SAVED. After PASS: save_place, evidence, rows S04-048/S04-WPN-GL22/S04-WPN-RL09/S04-047, commit.
+KNOWN DEBT: immediate DamageFeedback still fires at trigger time in explosive branch (cosmetic); client visual shell animation not yet implemented (server ballistic params published via ProjectileFired remote).
