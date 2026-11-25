@@ -2398,6 +2398,30 @@ welded the hitboxes stayed behind while aim followed the moved part. **Aim at th
 
 Ledger: UNKNOWN 566 → 565, PARTIAL 176 → 177.
 
+**FOUND WHY MY SHOTS MISS: ENEMIES CAN SPAWN ON OVERHEAD PLATFORMS (place 548, no source change).**
+Evidence `evidence/v548-spawn-on-roof-found/EVIDENCE.md`.
+
+Reading `model:GetBoundingBox()` instead of a relocated part:
+
+```
+enemy box centre  0.00, 800.08, 5.19
+player position   0.00, 766.5,  21.8      <- enemy 34 studs directly ABOVE the player
+```
+
+Shots were blocked by the platform between us. **Root cause** in `EnemyService.spawn`: the ground raycast starts at `position + (0, 40, 0)`, so if a platform sits
+above the requested point the ray begins *above* it and its first hit is the platform's **top** — `groundY` becomes the roof and the enemy is placed on it.
+
+**This is a real spawn-placement defect**, not just a probe artefact: enemies can appear on a roof or gantry whenever the spawn point is under geometry, and they are
+then unreachable by direct fire. It also explains the wildly inconsistent hit results across this batch (same aiming code, different nearby geometry).
+
+Recorded as a defect note on `S06-035` (encounter director) with a suggested guard: reject a ground hit **above** the requested Y, or clamp
+`groundY <= position.Y + tolerance`. **Not changed** — it alters spawn behaviour for every encounter and has not been measured in real missions yet.
+
+`S04-032` stays PARTIAL: damage verified exactly; hitmarker/kill delivery still unverified, now for a known reason.
+
+**Next attempt:** spawn where no overhead geometry can capture the ground ray (or validate `(boxCentre - playerPos).Magnitude < 25` and retry), aim at the verified box
+centre, read the `LocalScript` feedback log.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 548**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
