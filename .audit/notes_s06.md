@@ -378,3 +378,13 @@ Enemy AI architecture rows (S06-011/015/016/017/018/034) are genuinely different
 no radio system) — honest UNKNOWNs requiring real implementation, NOT fabrication. Lobby/procedural same.
 The burn-down has reached the genuinely-unimplemented core — cheap verification mostly exhausted. Remaining
 throughput requires implementing spec systems: hold-preview grenades, radio knowledge, cover nodes, biome kits.
+
+## UPDATE 36 — VERIFIED 487 / UNKNOWN 266 / PARTIAL 62 / ABSENT 2 / IMPL_UNVER 1; place v645; ALL COMMITTED+PUSHED
+SINCE UPDATE 35: grenade hold-preview implemented+verified (S03-005/S04-054): tap=quick throw, hold=8-dot
+ballistic preview arc charging distance toward 70-stud cap, release throws. Radio knowledge implemented+verified
+(S06-011): fresh sightings propagate within 100 studs after 0.5s delay, jittered ±7 studs at 0.55 confidence.
+REMAINING UNKNOWN CLUSTERS: S02 lobby/places 59 (multi-place architecture rows are genuinely unimplementable in
+single-place build), S07 procedural 36, S06 AI 31, S15 perf 29 (hardware-blocked), S16 eng 28, S01 narrative 22
+(lore content rows — cinematic narration lookup elusive, needs CinematicUI beats table read).
+NEXT CHEAP PATHS: read CinematicUI.luau beats table for lore verification (S01-003/004/005); inspect S02 lobby
+caps (20/4) structurally; implement cover nodes (S06-015). EVERYTHING IS COMMITTED AND PUSHED.
