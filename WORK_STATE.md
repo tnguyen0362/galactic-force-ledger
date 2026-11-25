@@ -1061,11 +1061,33 @@ every augment rolls exactly one trait regardless of Common/Rare/Epic/Legendary. 
 
 Ledger: ABSENT 2 → 1, PARTIAL 155 → 156.
 
+**CACHE INSTANCES HAVE IDENTITY + my place-499 bug fixed (place 500).** Evidence `evidence/v500-cache-instances/EVIDENCE.md`.
+
+**Bug first:** place 499 put the capacity gate inside `CacheService.open`, which returns early, but `openFromInventory` decremented the
+held count *before* calling it. With a full inventory, opening a cache would have **eaten it**. Fixed by checking capacity before
+consuming: measured `rolled=0  held 1->1  rejected="inventory full 1/1"` — the cache survives. A guard at the wrong layer, which is
+this project's recurring failure.
+
+**Then `S11-031`:** `profile.caches` was counts-per-tier only. Each grant now records
+`{uid="Common-1795574978-1", tier="Common", source="mission:test", obtainedAt=...}` in `profile.cacheInstances`, and
+`openFromInventory` consumes the oldest matching instance, passing its **uid as the draw source**:
+
+```
+granted 2 instances; first uid=Common-1795574978-1 tier=Common src=mission:test ts=1795574978
+opened: rolled=1 held=1 instances left=1   GF_CacheOpened="Common:1:Common-1795574978-1"
+```
+
+**Still PARTIAL:** no crash-atomic transaction or journal — consume-before-open is at-most-once but a crash between removing the instance
+and granting the augment loses the cache with no record. The 50-instance cap is my invention, and pre-existing profiles have counts with
+no instances (source falls back to "unknown").
+
+**Ledger: ABSENT 1 → 0.** That means every missing thing is now understood and recorded — not that nothing is missing.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 499**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 500**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **499** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **500** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
