@@ -3193,3 +3193,7 @@ Hostiles now target visible sentries that are nearer than their player target, a
 ## 2026-11-25 / place 574 - dome/sentry per-owner cap
 
 A new valid Dome or Sentry cast replaces the owner's previous one, and dome rim/posts no longer leak after expiry. Live probe: `domes=1 sentries=1 strayRimPosts=0`.
+
+## 2026-11-25 / place 575 - emergency disables support
+
+Ability casts are rejected during emergency extraction, and unlanded Airstrike/Orbital strikes are cancelled with feedback. Fixed a nil `reportReject` call: out-of-range strike casts used to error. Live probe PASS.
