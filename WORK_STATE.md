@@ -1710,6 +1710,33 @@ A refused purchase grants nothing, and the control case shows the gate discrimin
 
 Ledger: UNKNOWN 580 → 579, PARTIAL 172 → 173.
 
+**TUTORIAL REWARD IS 200/400, SPEC SAYS 350/410 PLUS A CACHE AND STARTER ITEMS (place 515, no code change).** Evidence
+`evidence/v515-tutorial-reward-drift/EVIDENCE.md`.
+
+`TutorialService.finish` sets `tutorialCompleted`, marks dirty, and calls `ProfileService.award(player, 200, 400)` → **200 credits, 400 XP**.
+
+| | spec (`S10-009`) | build |
+|---|---|---|
+| Credits | 350 | **200** |
+| XP | 410 | **400** |
+| Common cache | 1 | none |
+| Starter items | yes | none |
+
+**The completion flag has no consumer.** A search for `tutorialCompleted`/`Tutorial_Complete` returns 10 hits, all writers or UI displays — nothing
+gates a difficulty, grants a cache or offers a weapon pick. So `S01-027`'s three outcomes are all unimplemented (and "unlocks Easy/Normal" may be
+vacuous if those are never locked).
+
+Free starter items **do** exist as priced-zero catalogue entries (`AR01`, `P01`, `Airstrike`, `DomeShield`); what is missing is the tutorial's
+*"first-time choose AR/SMG/LMG free"* pick, which is how a player would get `SMG-03` (600) or `LMG-12` (1400) for nothing.
+
+**No monetisation exists at all** — zero references to `MarketplaceService`, `DeveloperProduct`, `GamePass`, `PromptPurchase` or `robux`. So
+`S12-016`/`S12-017` are VERIFIED **vacuously** (nothing can be bought), and the spec's premium requisition cannot exist as written.
+
+`S01-027`, `S10-009`, `S12-009` → PARTIAL. Ledger: UNKNOWN 579 → 574, PARTIAL 173 → 176, VERIFIED 40 → 42.
+
+**Method note:** my first pass searched `TutorialService` for `grant|credits|reward|ownedWeapons` and got zero, reading as "grants nothing". The award
+is spelled `ProfileService.award(...)` — **wrong vocabulary produced a false negative for the seventh time this session.**
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
