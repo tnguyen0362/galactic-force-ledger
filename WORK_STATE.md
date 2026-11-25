@@ -823,11 +823,36 @@ which looks done and isn't.
 irreproducible and move TTK, so it needs an owner call plus a `GF_ForceNoSpread` determinism switch — the same pattern as
 `GF_ForceNoBlueprintChance`.
 
+**SPREAD MODEL IMPLEMENTED (place 492).** Evidence `evidence/v492-spread-model/EVIDENCE.md`.
+
+I implemented what I deferred last batch: spread is an authored functional requirement with explicit spec values, and the config
+fields already existed — the intended design was clear.
+
+- **Data:** `adsSpread` did not exist on ANY weapon (the spec's ADS column was never transcribed). Added all eight from L53-L60.
+- **Model** in `CombatService.fire`: bloom +`spreadPerShot` per shot, decays 1.0/s, capped 6; hip uses `spreadBase`, aiming uses
+  `adsSpread`; `recoil` augment cuts the remainder; jitter rotates the unit direction; **`GF_ForceNoSpread`** disables all of it so
+  the existing TTK/falloff evidence stays reproducible.
+
+```
+6 shots at 600 RPM: 0.600 0.817 1.026 1.250 1.467 1.682   (bloom building)
+GF_ForceNoSpread=true: "disabled"                          (truthful, not stale)
+hip 0.600  vs  ads 0.550                                   (authored AR-01 adsSpread)
+```
+
+**Two self-inflicted bugs fixed mid-batch:** with the switch on I never wrote the attribute, so a disabled run reported the previous
+value — the fourth stale-attribute trap this session, in code I had written minutes earlier. And decay 2.5/s nearly cancelled
+per-shot growth (`0.600 → 0.667` over six shots); 1.0/s makes it meaningful.
+
+**Mine, not the spec's:** decay 1.0/s, bloom cap 6, recoil floor 0.4, uniform (not gaussian) jitter.
+
+**Not verified:** scatter as hit geometry (only the angle was measured), `recoil` (no such augment equipped), and TTK/falloff were
+not recaptured — those rows are now valid only under `GF_ForceNoSpread`.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 490**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 492**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **490** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **492** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
