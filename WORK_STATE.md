@@ -785,11 +785,31 @@ this stat.
 Live keys (9): weakPoint, healthDamage, armorDamage, shieldDamage, magazine, reloadSpeed, adsSpeed, cooldown, **blastRadius**.
 Still dead (6 keys, 5 augments): recoil(8), swapSpeed(4), adsRecovery(2), followUpSpeed(2), movingAccuracy(2), sentryAmmo(2).
 
+**PER-STAT CLAMPS IMPLEMENTED + ABILITY-TRAIT BUG FIXED (place 490).** Evidence `evidence/v490-augment-clamp-table/EVIDENCE.md`.
+
+`AugmentService.forProfile` now clamps the summed bonus per stat to the authored caps and floors negatives at 0 — the requirement
+in `S11-055` that previously existed nowhere:
+
+```
+before: cooldown 0.4785  -> Airstrike 46.1s
+after:  cooldown 0.200   -> Airstrike 71.9s   (90 x 0.8 = 72)
+blastRadius: WideCharge +0.3 -> 0.250         (clamped to the +25% cap)
+```
+
+**Real bug found on the way:** the ability augment's trait was *never* applied — `applyTrait(out, profile, id)` used `id`, an
+out-of-scope weapon-slot loop variable, instead of `ability`. Fixed.
+
+**Two false leads ruled out before they became claims.** `blastRadius` read `0`, which looked like the clamp zeroing a value; it
+was simply not equipped (the persisted loadout held only `CoolantLoop`). Chasing that found `AugmentService` has **zero**
+`markDirty` calls vs `ArmoryService`'s fourteen — which looked like "augment changes never persist". They do: my probes called
+`AugmentService.equipAugment` directly, bypassing the only caller that marks dirty. Probe artifact, product path intact — but the
+fragility is real for future code. It also means the place-489 `blastRadius 11.25` was measured on state that never persisted.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 489**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 490**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **489** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **490** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
