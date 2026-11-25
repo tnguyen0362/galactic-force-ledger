@@ -170,3 +170,13 @@ Hard 40/43/15/2, Extreme 20/43/30/7) wired into open path for source="mission" c
 on ALL mission-context grants. Verification probe GF_SW (probe_srcw.lua) was running at compaction — shell c4ea94.
 If passed: mark S11-012/013/014/015 VERIFIED, rebuild+save place, commit.
 Input bindings fixed to spec (Ctrl dodge, Q/F abilities) — deployed in mirror, verify not regressed.
+
+## UPDATE 6 — VERIFIED ~266 / UNKNOWN ~377 / PARTIAL ~165 (latest counts)
+DONE THIS SEGMENT: 9 op-variant rows, hacking rows S08-036/037/041/043, dome radius/duration S11-043,
+quality display S11-039/040, mission-source weight tables S11-012..015 implemented+verified (GF_SW probe PASS).
+Mirror has: input binding fixes (Ctrl dodge, Q/F abilities) + source weights — place save was in flight.
+NEXT: check the save (was backgrounded), then continue partial harvest.
+Candidate rows to examine: S03-036 (armory lockouts — tail may be complete), S08-031 (defense pause/grace),
+S06-024 (flanking/intel missing — keep partial). Ledger-note-staleness pattern keeps paying: verify code first.
+Big remaining fronts: economy ledger refactor (S10-014..019 chain), lobby/matchmaking cluster, Galactic War,
+procedural world, narrative. Keep the same rhythm: inspect -> implement -> probe -> mark -> commit.
