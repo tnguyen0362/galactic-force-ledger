@@ -1127,11 +1127,30 @@ existed.
 **Feedback gap remains:** both results go to workspace attributes, not to an on-screen message, so a player still learns nothing from
 clicking; `EXPAND +50` shows no cost preview; and the held count does not refresh until the panel reopens.
 
+**ARMORY NOW REPORTS ACTION RESULTS ON SCREEN (place 504).** Evidence `evidence/v504-armory-status-line/EVIDENCE.md`.
+
+Place 503 made both actions reachable but left the caveat that results only went to workspace attributes. A status row now mirrors those
+attributes via `GetAttributeChangedSignal`, so no new remote was needed:
+
+```
+before firing:  READY | READY | READY
+after firing:   READY | READY | OPENED 0 CACHE(S)
+```
+
+`OPENED 0` is correct — every unowned Rare augment had already been granted by earlier probes, so the roll had nothing to give. Third
+time that exhausted-tier path has degraded cleanly.
+
+**Two limits:** a single shared line means messages overwrite (the expansion result appeared then was replaced by the bulk result), so the
+expansion message was not captured in isolation; and three `READY` labels exist, suggesting the panel list is rebuilt without destroying
+stale instances.
+
+**Still missing:** `EXPAND +50` shows no cost preview (10 Cells + 3 Tech + 1000 Credits) before pressing.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 503**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **503** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **504** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
