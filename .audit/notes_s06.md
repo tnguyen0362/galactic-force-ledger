@@ -469,3 +469,10 @@ reconciliation. BOUNDARY SERVICE implemented: warn-then-reposition, never death 
 milestone-only, zero spend paths. PRIORITY DISPATCH HUD button implemented. Augment weight tables done.
 Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~220: S02 multi-place core (dashboard-blocked) + tails,
 S16 process rows, S15 hardware perf, S07 procedural tails, scattered combat/economy/input tails.
+
+## UPDATE 47 — VERIFIED ~605; mid-burn checkpoint
+BIOMES complete: 5 kits parameterized. BASTION conformance: HP 3600, speed 7, sweeping cannon implemented.
+STRICT headers across all modules. MISSION TIMER 15min guidance. LIGHTS clamped to 48 studs max.
+Boot 816 green. ALL COMMITTED+PUSHED. REMAINING ~210: S16 32, S15 29 (hardware), S02 27 (multi-place core
+dashboard-blocked), S07 23, S06 15, S01 14, BETA 12 (device testing), scattered tails across all sections.
+RESUME STATE: boot 816 green, all shells exist, deploy pipeline healthy, tarball current, gf_deploy.py works.
