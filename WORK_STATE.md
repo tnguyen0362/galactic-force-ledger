@@ -1373,6 +1373,26 @@ and SG-04 — the close-quarters throughput classes, where SMG-03's authored 1 s
 
 Not changed: reload is core feel and interacts with the verified `reloadSpeed` augment stat. Owner queue.
 
+**THE SHOTGUN FIRES ONE RAY, NOT EIGHT PELLETS (place 507, no code change).** Evidence `evidence/v507-no-pellets/EVIDENCE.md`.
+
+A scan for **`pellet`** across `ServerScriptService` and `StarterPlayer` returns **zero references**. `SG-04 damage = 96` is exactly `8 × 12`, so
+the *data* was transcribed correctly — but `CombatService.fire` resolves one ray and applies 96 as a single hit.
+
+| authored | build |
+|---|---|
+| 8 rays, 12 each | 1 ray, 96 |
+| graded damage at range | all-or-nothing |
+| per-pellet falloff | one falloff on the total |
+| shotgun pattern | single-ray spread |
+
+Affects `S04-022` (*"shotgun per pellet"*) and `S04-WPN-SG04` (*"8 pellets; D: 12/pellet"*).
+
+**Why this was easy to miss:** one batch ago I recorded SG-04 as `96 = 8 × 12 ✓` — correct about the arithmetic, wrong about the mechanic. Same
+class of error as asserting a dead constant: the number agrees, the behaviour does not.
+
+Not built: pellets change the combat model (8 raycasts per pull, per-pellet falloff, damage accumulation) and alter every shotgun TTK
+measurement, so it needs a decision about whether partial hits stack.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 507**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
