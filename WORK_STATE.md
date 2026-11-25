@@ -1635,6 +1635,29 @@ confirm refusal.
 
 Test profile left with `credits = 10000`.
 
+**FIRST PURCHASE CHARGES EXACTLY; `S12-010` VERIFIED (place 515).** Evidence `evidence/v515-first-purchase-charges-exactly/EVIDENCE.md`.
+
+The pause point was that every priced item was already owned, so only the "already owned" branch was reachable. Re-listing confirmed it: `Sentry 900`,
+`OrbitalStrike 1800`, all weapons owned; the only unowned item was `ReflectiveBarrier` at **cost 0**.
+
+Made testable by un-owning `SG04` (500) and re-buying:
+
+```
+un-owned SG04; credits=5000
+FIRST  buy  credits 5000 -> 4500   delta=500   owned=true
+SECOND buy  credits 4500 -> 4500   owned=true
+```
+
+Exact catalogue price deducted, ownership granted, second purchase charged nothing — so both halves now hold **on the same item**, and the earlier
+no-double-charge finding is confirmed rather than assumed.
+
+**Separate API-quality finding:** `ArmoryService.buy` returns `nil` for **both** success and refusal with no reason string, unlike `equipAugment`'s
+`(ok, why)`. The UI must be inferring success from profile state.
+
+**Limits:** weapons only — `buyAbility`/`buyGrenade`/`buyArmor` were not charged-path tested (`buyAbility` granted a free item and returned nothing);
+insufficient-credit refusal untested; ownership was manipulated directly rather than through a supported flow. Profile left at `credits = 4500`,
+`SG04` owned. All probe scripts removed.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 515**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
