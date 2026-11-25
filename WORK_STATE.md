@@ -874,11 +874,37 @@ Live keys (11): weakPoint, healthDamage, armorDamage, shieldDamage, magazine, re
 **recoil**, **movingAccuracy**. Still dead (5 augments): swapSpeed(4, needs a swap delay to exist), adsRecovery(2),
 followUpSpeed(2), sentryAmmo(2).
 
+**`adsRecovery` + `followUpSpeed` WIRED BUT NOT VERIFIED — two unexplained anomalies (place 495).** Evidence
+`evidence/v495-adsrecovery-followup-unverified/EVIDENCE.md`.
+
+Signs were read from the data first this time: `adsRecovery` positive helps (FastHands 0.15, ReflexSear 0.25), `followUpSpeed`
+negative helps (TargetDiscipline/PrecisionChamber -0.15) — opposite conventions, both fit `1 - bonus`. Wired as bloom-decay
+multiplier and per-shot growth scaling while aiming.
+
+**Verification failed and is recorded as such:**
+
+```
+slot1 ReflexSear=true  slot2 TargetDiscipline=true
+adsRecovery=0.25  followUp=-0.15  swap=0.8000590953796903
+hip3 = 0.600:bloom=0.35      ads3 = 0.550:bloom=0.35
+```
+
+- `bloom=0.35` after three shots, where a control run reached `0.82` — shots 2 and 3 did not accumulate, though no rejection was
+  reported. Cause unproven.
+- `swap=0.8` where only ReflexSear (0.4) carries `swapSpeed` — a slot looks **double-counted** after a session of repeated probe
+  equips.
+
+Proven: both keys are read correctly off a real loadout (the previously-dead plumbing works), and ADS spread still works with two
+augments equipped. Not proven: that either stat changes behaviour.
+
+**Next batch must start by instrumenting the reject path** (rejects, lastShotAt, ammo, lastShotId) and dumping
+`selectedLoadout.weaponAugments` to find the duplicated slot — before wiring any further key.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 493**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 495**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **493** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **495** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
