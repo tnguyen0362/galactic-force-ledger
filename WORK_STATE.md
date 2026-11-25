@@ -1508,11 +1508,32 @@ shotgun `Choke` on `AR01` from this probe). Belongs with the balance pass.
 
 `S11-052` → PARTIAL.
 
+**AUGMENT COMPATIBILITY ENFORCED — `S11-052` VERIFIED (place 512).** Evidence `evidence/v512-augment-compatibility-enforced/EVIDENCE.md`.
+
+`applies` (Ability 4 / Category 28 / Universal 4) was decorative: it only fed the armory description, while the server accepted any augment in any
+socket. Added the check at the single equip choke point in `AugmentService.equipAugment`:
+
+```
+Choke on AR01 slot1  -> false ("fits Shotgun weapons only")
+Choke on SG04 slot1  -> true  (nil)
+StabilityCompensator on AR01 slot2 -> true (nil)   (Universal unaffected)
+```
+
+The refusal names the required category rather than failing generically.
+
+**Why done without an owner ruling:** it removes power from mismatched loadouts, which normally means balance — but the alternative is a UI that
+promises a restriction the server ignores. That is a correctness bug with a balance side effect, not the reverse, and `Universal` still means
+universal.
+
+**Consequences to expect:** the test profile's `Choke` on `AR01` is now invalid (left in place, not silently stripped); saved loadouts holding a
+mismatched augment keep its effect until unequipped because nothing validates slots on load; and the armory still prints the raw `"Category"` string
+instead of naming the category.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 510**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 512**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **510** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **512** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
