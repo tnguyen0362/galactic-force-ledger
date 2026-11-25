@@ -1846,11 +1846,33 @@ vacuously satisfied.
 **Pattern:** eighth wrong conclusion this session, third from comparing a spec number to the **wrong field** rather than a missing one. The discipline:
 find the field that *feeds the behaviour*, not the one whose name resembles it.
 
+**DIFFICULTY COMBAT SCALING IMPLEMENTED; HP VERIFIED, DAMAGE UNPROVEN LIVE (place 522).**
+Evidence `evidence/v522-difficulty-combat-scaling/EVIDENCE.md`.
+
+`Configs.Difficulties.modifiersFor` now carries the authored `S06-032` table, and `EnemyService.spawn` applies it from the live `GF_OperationDifficulty`:
+health × hp, plus `DamageMultiplier` / `CadenceRate` attributes consumed by the attack interval (divided by rate) and player damage (× multiplier).
+Applied **at spawn** so a mid-mission difficulty change cannot retroactively buff enemies already on the field.
+
+```
+Easy hp=168 (0.70) | Normal hp=240 (1) | Hard hp=360 (1.50) | Extreme hp=480 (2.00)   base 240
+```
+
+**Damage and cadence are wired but NOT proven live.** An enemy 6–8 studs from the player produced zero shield/hp loss and `charges=0` over 8 s with
+`GF_InMission=false` — hostiles never entered their attack cycle outside a mission. Worth recording: if hostiles will not engage a player who is not in a
+mission, an out-of-mission test world can never exercise enemy combat.
+
+**Not implemented:** `pressure` (budget/eliteFrequency are a different mechanism; applying both would double-count) and shield scaling (spec says "HP").
+
+**Interpretation flagged:** `cadence` is treated as a **rate** multiplier, so Easy's 0.85 lengthens the interval. The alternative reading would make Easy
+attack 15% *faster* than Normal, contradicting every other column. Recorded as a reading, not a certainty.
+
+`S06-032` → PARTIAL.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 518**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 522**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **518** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **522** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
