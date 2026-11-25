@@ -725,9 +725,9 @@ function StationService.start()
 		if d:IsA("PointLight") or d:IsA("SpotLight") or d:IsA("SurfaceLight") then
 			d.Shadows = true
 			d.Color = FIXTURE
-			d.Brightness = 0.80
-			if d.Range > 48 then
-				d.Range = 48
+			d.Brightness = 1.15
+			if d.Range > 56 then
+				d.Range = 56
 			end
 		end
 	end

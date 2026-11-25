@@ -21,10 +21,13 @@ local Input = require(script.Parent:WaitForChild("Input"))
 
 local LOOK_SENS = 0.0026
 local PITCH_MIN, PITCH_MAX = math.rad(-72), math.rad(58)
-local ZOOM_MIN, ZOOM_MAX = 8, 12
+local ZOOM_MIN, ZOOM_MAX = 4, 8
 local PAD_LOOK_SPEED = 2.4
 
-local yaw, pitch, zoom = 0, math.rad(-10), 10
+local yaw, pitch, zoom = 0, math.rad(-10), 6.5
+local shoulderSide = 1
+local smoothShoulder = 2.1
+local smoothZoom = 6.5
 local looking = false
 local padMove = Vector2.zero
 local padLook = Vector2.zero
@@ -53,6 +56,7 @@ local function flatRight(): Vector3
 	return Vector3.new(math.cos(yaw), 0, -math.sin(yaw))
 end
 
+local updateCameraDt = 1/60
 local function updateCamera()
 	local cam = workspace.CurrentCamera
 	if not cam or not root then
@@ -89,9 +93,23 @@ local function updateCamera()
 		cam.CameraSubject = humanoid or cam.CameraSubject
 		workspace:SetAttribute("GF_PhotoCamActive", false)
 	end
-	local focus = root.Position + Vector3.new(0, 1.55, 0)
+	local dt = updateCameraDt or 1/60
 	local rot = CFrame.fromEulerAnglesYXZ(pitch, yaw, 0)
-	cam.CFrame = CFrame.lookAt(focus - rot.LookVector * zoom, focus)
+	local aiming = workspace:GetAttribute("GF_PlayerAiming") == true
+	local targetShoulder = (aiming and 1.35 or 2.1) * shoulderSide
+	local targetZoom = math.clamp(zoom - (aiming and 1.9 or 0), ZOOM_MIN, ZOOM_MAX)
+	smoothShoulder += (targetShoulder - smoothShoulder) * math.min(1, dt * 12)
+	smoothZoom += (targetZoom - smoothZoom) * math.min(1, dt * 12)
+	local focus = root.Position + Vector3.new(0, 1.55, 0)
+	local shoulderOffset = rot.RightVector * smoothShoulder + Vector3.new(0, 0.18, 0)
+	local desired = focus - rot.LookVector * smoothZoom + shoulderOffset
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { player.Character }
+	params.IgnoreWater = true
+	local hit = workspace:Raycast(focus, desired - focus, params)
+	local camPos = hit and (hit.Position + hit.Normal * 0.25) or desired
+	cam.CFrame = CFrame.new(camPos) * rot
 end
 
 local function keyboardMove(): Vector2
@@ -215,6 +233,10 @@ end
 Input.onPress("Dodge", function()
 	print("[GF] action dodge")
 	dodge()
+end)
+Input.onPress("ShoulderSwap", function()
+	shoulderSide = -shoulderSide
+	workspace:SetAttribute("GF_CameraShoulder", shoulderSide > 0 and "Right" or "Left")
 end)
 Input.onPress("Ability1", function()
 	print("[GF] action ability1")
@@ -353,6 +375,7 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 RunService.RenderStepped:Connect(function(dt)
+	updateCameraDt = dt
 	if padLook.Magnitude > 0.08 then
 		local sensitivity = tonumber(player:GetAttribute("GF_Setting_AimSensitivity")) or 1
 		local invert = player:GetAttribute("GF_Setting_InvertY") == true and -1 or 1
