@@ -3227,3 +3227,22 @@ Enemy-drop caches record their drop difficulty, open with scaled non-Common weig
 ## 2026-11-25 / place 584 - war credits and first-mission credits
 
 Successful primary extraction now pays fixed War Credits by difficulty (Normal 10 verified, duplicate-settlement blocked), never multiplied by the squad bonus. The first completed mission also pays the one-time +200 Credits. Live probe PASS; test state restored.
+
+## 2026-11-25 / place 587 - military requisitions
+
+Saved to Roblox across versions 585-587. The Armory now contains the permanent two-catalog military requisition system: free Frontline Arsenal and premium Siege Division (1000 War Credits), three tiers per catalog, per-catalog spend thresholds at 600/1600 Credits, preview/progress rows, rank and tier locks shown separately, and shared ownership/spend ledgers between catalog and plain-Armory purchase paths.
+
+The final corrective pass closed two bypass/data defects before checkpointing: premium armor catalog prices are canonical at GF-05 500 / GF-06 750 (the old plain-Armory 2200/3200 prices were aligned down), and plain-Armory purchases of premium items now enforce Siege tier progression as well as the Siege unlock. Internal armor ids TROPHY/BLACKSTAR remain for save compatibility, but display names now match the spec identities GF-05 Ash Sentinel and GF-06 Frost Warden; their palettes were shifted toward ash/ember and frost respectively.
+
+Live probe:
+
+```text
+[GF] boot: config check PASS (689 assertions)
+[GF_REQ] PASS credits=4650 frontSpend=2050 siegeSpend=3300 scrap=44 cells=26
+```
+
+The probe covered unlock charging exactly 1000 War Credits, duplicate unlock protection, any-order purchases, rank refusals, premium access and tier refusals through the plain Armory, exact resource bundles, both 600/1600 tier crossings, once-only resupply/Rare-cache behavior, cache grant, shared SG-04/RL-09 ownership preventing duplicate charges across surfaces, and exact premium armor names/prices. Test profile state was restored afterward. Visual captures `v587_armory_scroll560`, `v587_requisitions_frontline`, and `v587_requisitions_siege` show the armor prices, Frontline progress/rows, and locked Siege preview with `UNLOCK 1000 WC`.
+
+Important unspecified-data decision: GOAL §12 does not give a price for the tier3 one-time Rare cache entry. It is implemented as a free once-only claim and explicitly flagged in `evidence/v587-requisitions/EVIDENCE.md`; owner acceptance is still required.
+
+CSV rows updated by exact id only: COUNT-REQ, COUNT-REQ-TIERS, S12-003..015, S12-018, S12-REQ-FRONTLINE/SIEGE, plus S01-017 and S01-ARMOR-GF05/GF06 as partial armor-identity rows. S12-015 remains PARTIAL because the premium weapon comparison is numeric/config-level, not a live target-dummy TTK/splash test. S12-018 remains PARTIAL because mock/test receipts, placeholder Robux product config, receipt idempotency and platform entitlement validation are absent.

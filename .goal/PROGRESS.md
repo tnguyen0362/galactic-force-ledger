@@ -408,3 +408,16 @@ The ARMORY sign existed with bare deck behind it. Built racks, mannequin, bench 
 the captures caught: alcove was unlit (pendants + a range-30 fill), rack label was a glowing bar, mannequin
 jammed into the racks, bench lamp swung over the walkway. Three captures, three fixes, all in the ledger.
 Still dark in the corner — recorded as the open defect rather than papered over.
+
+## 2026-11-25 — military requisitions (place 587)
+
+- Implemented permanent Frontline Arsenal + Siege Division requisitions in the Armory: 3 tiers each,
+  per-catalog spend thresholds 600/1600, 1000-WC Siege unlock, any-order catalog purchases, separate
+  rank/tier gates, shared Armory/catalog ownership and spend ledgers, once-only resource/cache entries.
+- Corrected premium armor canonical data to GF-05 500 / GF-06 750 and display identities GF-05 Ash
+  Sentinel / GF-06 Frost Warden; plain-Armory premium purchases now enforce both Siege unlock and tier.
+- Probe passed with boot `config check PASS (689 assertions)` and `[GF_REQ] PASS credits=4650
+  frontSpend=2050 siegeSpend=3300 scrap=44 cells=26`; visual captures are recorded in
+  `evidence/v587-requisitions/EVIDENCE.md`.
+- Open acceptance flag: the unspecified premium tier3 one-time Rare cache price is implemented as a free
+  once-only claim. S12-015/S12-018 remain partial (live weapon comparison and receipt/entitlement harness).
