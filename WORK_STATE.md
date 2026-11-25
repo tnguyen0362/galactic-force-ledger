@@ -1278,6 +1278,25 @@ one pass — before any further clamp tuning.
 Both → PARTIAL with exact values. Duration belongs with the ability-cooldown drifts already recorded (OrbitalStrike, OrbitalLance,
 ReflectiveBarrier, Sentry).
 
+**CATALOG IS SINGLE-TRAIT: no tradeoff pairing, no signature variants (place 504, no code change).** Evidence
+`evidence/v504-single-trait-catalog/EVIDENCE.md`.
+
+All 36 archetypes carry exactly these fields: `applies, category, cost, displayName, effect, id, rarity, slot, trait`. **No `variant`,
+`signature` or `tier` field exists**, and trait sign splits **30 positive / 6 negative** — one trait per archetype.
+
+- `S11-044` → PARTIAL: negative tradeoff *data* exists (6 of 36), but several of those are **benefits expressed as negative numbers** (the
+  recoil group), not tradeoffs. No augment pairs a positive entry with a negative one, and rarity does not govern the count.
+- `S11-045`, `S11-046` → ABSENT: with one trait slot and no variant field there is nowhere to express *"strong signature variants as 1.25×
+  ordinary defining range"*. All 36 are ordinary by construction.
+
+**Three separate spec features collapse into one absence** — multi-trait generation, tradeoff pairing and signature variants all need an
+augment that can hold N traits, which is the same instance model blocking `S11-031` and the 11-row reroll/dismantle/fusion cluster.
+
+The fair characterisation: the catalog is **not broken, it is simpler than specified** — 36 working single-trait augments rather than 36
+multi-trait items with variants. Playable; roughly a third of the authored depth.
+
+Ledger: UNKNOWN 598 → 595, PARTIAL 168 → 169, ABSENT 13 → 15.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 504**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
