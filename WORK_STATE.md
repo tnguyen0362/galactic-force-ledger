@@ -1937,6 +1937,27 @@ at the `Head` part does hit `Head`, while a ray aimed at `Torso` hits **`ChestPl
 **Still unmeasured:** an end-to-end headshot, because the moving enemy's ray hits `ChestPlate` as often as `Head`. Needs a stationary target. The ×2 is a proven
 multiplier on a proven caller path, not a measured in-play headshot.
 
+**HEADSHOTS MEASURED END TO END: ×2.00 vs authored ×1.50 (place 522, no code change).**
+Evidence `evidence/v522-headshot-measured-end-to-end/EVIDENCE.md`.
+
+```
+torso = 18.0 (AR01 base)      head = 36.0 = base × 2.00      authored 1.50
+```
+
+The drift is now measured through the real `fire` path with a frozen rig, not inferred from `weakMultiplier`.
+
+**Why three earlier attempts failed** — none was the game: wrong attribute container (`workspace.GFDebug`, not `workspace`); a poisoned shot sequence from a
+prior `math.random(1e6)` id; `origin-too-far` because candidate origins sat 6–18 studs away against `MAX_ORIGIN_OFFSET` **8**; and chest-plate occlusion —
+even a correct line to `Torso` hits `ChestPlate`.
+
+**Reusable combat-test recipe (all four are required):**
+1. `workspace:SetAttribute("GF_InMission", true)` + clear `GF_DeployGraceUntil`, or every hit is swallowed.
+2. Anchor the rig's parts so aim and raycast see one pose.
+3. Stand within 8 studs of the target.
+4. Choose an aim origin whose **first** raycast hit is the intended part — aiming at a part does not mean hitting it.
+
+`S04-014` stays PARTIAL: body ×1 conformance and head ×2 drift both measured; *marked weakpoint* still unimplemented (no `WeakPoint` attribute on any rig part).
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 522**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
