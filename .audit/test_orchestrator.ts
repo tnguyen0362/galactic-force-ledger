@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 const repo = join(tmpdir(), `gf-orch-${Date.now()}`);
 mkdirSync(join(repo, ".goal"), { recursive: true });
 mkdirSync(join(repo, "REPO"), { recursive: true });
-process.env.GF_REPO = repo;
+process.env.GOAL_ROOT = repo;
 
 // Minimal ledger + work state so the planner prompt has something real to read.
 const header = '"requirement_id","area","requirement","status"';
@@ -74,20 +74,28 @@ events.on("prompt-template:subagent:request", (req: any) => {
 
 // --- extension under test -------------------------------------------------------------------
 const sent: string[] = [];
+const lifecycle = new Map<string, ((...args: any[]) => unknown)[]>();
+const tools: any[] = [];
 const pi = {
 	events,
 	registerTool(def: any) {
-		(globalThis as any).__tool = def;
+		tools.push(def);
+	},
+	on(name: string, fn: (...args: any[]) => unknown) {
+		const list = lifecycle.get(name) ?? [];
+		list.push(fn);
+		lifecycle.set(name, list);
 	},
 	sendMessage(message: any) {
 		sent.push(String(message?.content ?? ""));
 	},
 };
 
-const mod = await import(`file:///C:/Users/tnguy/.pi/agent/extensions/gf-orchestrator.ts?t=${Date.now()}`);
+const mod = await import(`file:///C:/Users/tnguy/.pi/agent/extensions/orchestrator.ts?t=${Date.now()}`);
 mod.default(pi as any);
-const tool = (globalThis as any).__tool;
-check("registers gf_orchestrate", Boolean(tool) && tool.name === "gf_orchestrate");
+const tool = tools.find((t) => t.name === "orchestrate");
+check("registers orchestrate", Boolean(tool));
+check("keeps gf_orchestrate as an alias", tools.some((t) => t.name === "gf_orchestrate"));
 
 const call = (params: any) => tool.execute("call", params, undefined, undefined, {});
 
@@ -189,11 +197,106 @@ const call = (params: any) => tool.execute("call", params, undefined, undefined,
 
 // --- missing event bus is an error, not a crash ----------------------------------------------
 {
-	const pi2 = { registerTool(def: any) { (globalThis as any).__tool2 = def; }, sendMessage() {} };
+	const pi2 = { registerTool(def: any) { (globalThis as any).__tool2 = def; }, sendMessage() {}, on() {} };
 	mod.default(pi2 as any);
 	const tool2 = (globalThis as any).__tool2;
 	const out = await tool2.execute("c", { action: "start" }, undefined, undefined, {});
 	check("missing event bus reports instead of throwing", String(out.content[0].text).includes("event bus is unavailable"));
+}
+
+// --- stall detection (pure) -------------------------------------------------------------------
+{
+	const base = Date.UTC(2026, 10, 25, 4, 0, 0);
+	const line = (n: number, min: number, sig = "815 rows | VERIFIED 43 | UNKNOWN 573") =>
+		`[${new Date(base + min * 60_000).toISOString()}] iteration ${n} — ${sig}`;
+	const parsed = mod.parseLoopLog([line(1, 0), line(2, 1), line(3, 6), line(4, 7)].join("\n"));
+	check("parseLoopLog reads iteration lines", parsed.length === 4 && parsed[3].iteration === 4, `${parsed.length} parsed`);
+
+	const stalled = mod.detectStall(parsed, 4, 300_000);
+	check("detectStall fires on an identical ledger spanning 5m+", stalled?.count === 4, JSON.stringify(stalled));
+
+	const burst = mod.parseLoopLog([line(1, 0), line(2, 0), line(3, 0), line(4, 0)].join("\n"));
+	check("detectStall ignores a fast burst with no elapsed time", mod.detectStall(burst, 4, 300_000) === null);
+
+	const moved = mod.parseLoopLog([line(1, 0), line(2, 2), line(3, 4, "815 rows | VERIFIED 44 | UNKNOWN 572"), line(4, 6)].join("\n"));
+	check("detectStall ignores a ledger that moved", mod.detectStall(moved, 4, 300_000) === null);
+
+	const mixed = mod.parseLoopLog([line(1, 0), line(2, 2, "815 rows | VERIFIED 44"), line(3, 4), line(4, 6)].join("\n"));
+	check("detectStall needs every iteration identical", mod.detectStall(mixed, 4, 300_000) === null);
+
+	check("parseLoopLog ignores noise", mod.parseLoopLog("not a log line\n[bad] iteration x — y").length === 0);
+	check("detectStall tolerates an empty history", mod.detectStall([], 4, 0) === null);
+}
+
+// --- automatic escalation: ownership gate, then a real stall ---------------------------------
+{
+	check("registers lifecycle handlers", Boolean(lifecycle.get("agent_settled")?.length) && Boolean(lifecycle.get("session_start")?.length));
+	const settle = lifecycle.get("agent_settled")![0];
+	const ctxFor = (id: string) => ({ sessionManager: { getSessionId: () => id } });
+	const writeLoop = (active: boolean, owner: string) => {
+		writeFileSync(join(repo, ".goal", "LOOP_STATE.json"), JSON.stringify({ active, goal: "g", iteration: 4 }), "utf8");
+		writeFileSync(join(repo, ".goal", "OWNER_SESSION"), `${owner}\n`, "utf8");
+	};
+	const stalledLog = [0, 3, 6, 9]
+		.map((min, i) => `[${new Date(Date.now() - 20 * 60_000 + min * 60_000).toISOString()}] iteration ${i + 1} — 815 rows | VERIFIED 43 | UNKNOWN 573`)
+		.join("\n");
+	writeFileSync(join(repo, ".goal", "LOOP.log"), `${stalledLog}\n`, "utf8");
+	rmSync(join(repo, ".goal", "PAUSE"), { force: true });
+
+	writeLoop(true, "some-other-session");
+	seen.length = 0;
+	await settle({ aborted: false }, ctxFor("this-session"));
+	await new Promise((r) => setTimeout(r, 50));
+	check("auto-escalation refuses a loop owned by another session", seen.length === 0, `launched ${seen.length}`);
+
+	writeLoop(true, "this-session");
+	plan = {
+		objective: "recover the stalled ledger",
+		batches: [
+			{
+				id: "b1",
+				title: "stall recovery",
+				rows: ["S04-001"],
+				workers: [{ agent: "worker", task: "Reproduce the stalled row and report the exact blocking check.", context: "fresh" }],
+				verify: "node .audit/boot_check.mjs",
+			},
+		],
+	};
+	gateVerdict = "ACCEPTED — reproduced with a command and a path";
+	seen.length = 0;
+	await settle({ aborted: false }, ctxFor("this-session"));
+	await new Promise((r) => setTimeout(r, 50));
+	check("auto-escalation launches on a stalled ledger", seen.some((s) => s.nodeId === "planner"), seen.map((s) => s.nodeId).join(","));
+	const pausePath = join(repo, ".goal", "PAUSE");
+	check("auto-escalation releases the loop afterwards", !existsSync(pausePath), existsSync(pausePath) ? String(readFileSync(pausePath, "utf8")).slice(0, 60) : "");
+	const orchLog = readFileSync(join(repo, ".goal", "ORCH_LOG.jsonl"), "utf8");
+	check("auto-escalation records its blocker", orchLog.includes("auto: ledger stall"));
+}
+
+// --- automatic escalation works before the tool has ever been called -------------------------
+{
+	writeFileSync(join(repo, ".goal", "LOOP_STATE.json"), JSON.stringify({ active: false, goal: "g", iteration: 0 }), "utf8");
+	const freshLifecycle = new Map<string, ((...args: any[]) => unknown)[]>();
+	const pi3 = {
+		events,
+		registerTool() {},
+		on(name: string, fn: (...args: any[]) => unknown) {
+			const list = freshLifecycle.get(name) ?? [];
+			list.push(fn);
+			freshLifecycle.set(name, list);
+		},
+		sendMessage() {},
+	};
+	const mod3 = await import(`file:///C:/Users/tnguy/.pi/agent/extensions/orchestrator.ts?fresh=${Date.now()}`);
+	mod3.default(pi3 as any);
+	const settle3 = freshLifecycle.get("agent_settled")![0];
+	for (const handler of freshLifecycle.get("tool_execution_end") ?? []) {
+		for (let i = 0; i < 3; i += 1) await handler({ isError: true, result: "ENOENT: C:/x/y.ts not found" });
+	}
+	seen.length = 0;
+	await settle3({ aborted: false }, { sessionManager: { getSessionId: () => "chat-1" } });
+	await new Promise((r) => setTimeout(r, 50));
+	check("auto-escalation fires before gf_orchestrate was ever invoked", seen.some((s) => s.nodeId === "planner"), seen.map((s) => s.nodeId).join(","));
 }
 
 console.log(results.join("\n"));

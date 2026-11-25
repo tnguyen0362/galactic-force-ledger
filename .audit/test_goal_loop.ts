@@ -36,7 +36,7 @@ const pi = {
 	},
 };
 
-const ctx = { ui: { notify: (m: string) => sent.push(`[notify] ${m}`) } };
+const ctx = { ui: { notify: (m: string) => sent.push(`[notify] ${m}`) }, sessionManager: { getSessionId: () => "test-session" } };
 
 async function fire(event: string, payload: any = {}) {
 	for (const fn of handlers.get(event) ?? []) await fn({ type: event, ...payload }, ctx);
