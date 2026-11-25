@@ -2347,6 +2347,34 @@ not exist.
 
 **Next candidate:** the tuning decision batch, or scope the stun by adding target-kind metadata.
 
+**ADVERSARIAL SHOT VALIDATION: 8 OF 9 HOSTILE PAYLOADS REJECTED (place 548, no source change).**
+Evidence `evidence/v548-adversarial-shot-validation/EVIDENCE.md`.
+
+Nine payloads fired straight at the `FireWeapon` remote, bypassing the client weapon script:
+
+```
+Received=9   Rejected=8   Accepted=1
+LastReject=stale-shot-id:10<=10      LastMiss=0.14, 766.80, -30.45
+```
+
+Rejected: wrong weaponId (equip mismatch), string origin, origin 400 studs away, zero direction, negative shotId, missing shotId, same-frame second shot (rate limit),
+and a replay of an accepted shotId. Only the well-formed shot was accepted, ammo −1. **Counters are server-written**, so they are not self-reported.
+
+`S04-030` → **VERIFIED**: `fire()` reads exactly four payload fields (`weaponId`, `shotId`, `origin`, `direction`) — no damage, no target. Damage comes from config +
+augments; the target from a server raycast.
+
+`S04-031` → **VERIFIED by construction**: a whole-tree search for rewind/lagcomp/historical/timestamp returns **one** hit, an unrelated `CacheService` comment. No lag
+compensation exists, so the server cannot rewind through cover, and no client timestamp is accepted. Replay protection is monotonic `shotId` instead. **Risk stated:**
+if lag compensation is ever added, this guarantee must be re-established with explicit bounds.
+
+`S04-029` → **PARTIAL, 6 of 7 measured**: ammo, RPM, sequence, origin/aim, equip and life state all reject correctly. **Gap:** "plausible movement" is only
+`MAX_ORIGIN_OFFSET` from the root — there is **no cross-shot speed check**, so a client teleporting a short distance between shots inside that radius is not caught.
+
+**Process note:** mid-batch I read `Accepted=nil, LastReject=nil` and briefly concluded the handler never ran. The `GFDebug` counters were simply written *after* my
+read; they settled at `Received=6 Rejected=6` moments later. **Do not read those counters immediately after firing — wait for them to settle.**
+
+Ledger: VERIFIED 48 → 50, PARTIAL 176, UNKNOWN 568 → 566.
+
 ## Current build
 - Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 548**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
