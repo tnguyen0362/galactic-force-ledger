@@ -210,3 +210,10 @@ DONE: Galactic War territory system core implemented+verified (8 territories, po
 flips, neighbor opening, bounded counteroffensive, Voss announcements, DataStore persistence proven).
 GF_MissionId now published per deploy (GUID) + GF_MissionDifficulty. Campaign config module added.
 Remaining war rows: S13-001/007/008 structural, S13 display rows.
+
+## UPDATE 10 — VERIFIED ~337 / UNKNOWN ~320 / PARTIAL ~155; place v635, all pushed
+DONE: extraction vote fixed to spec (solo immediate, 15s window/throttle — VOTE_WINDOW was 20, now 15);
+war territory system full core; Galactic War rows mostly verified. NEXT: batch-verify S11 cache rows whose
+notes read complete (S11-026/029/031/033/037/055/058/061/062/064/065 + others) — read FULL notes first,
+many are done with only sampling-error or cosmetic tails. S11-030 is a REAL defect: math.random for cache
+outcomes — spec wants platform-supported randomness (use Random object or cryptographic-quality seeding).
