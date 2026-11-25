@@ -204,3 +204,9 @@ source weight tables live, vault/mantle implemented. All pushed.
 BIG REMAINING CLUSTERS (implementation-heavy): lobby/matchmaking ~55 rows, procedural world ~37,
 enemy AI architecture ~30, Galactic War territory system ~19, narrative armor-variant exercise.
 Settings consumers pending: camera shake system, graphics quality consumer.
+
+## UPDATE 9 — VERIFIED ~320 / UNKNOWN ~330
+DONE: Galactic War territory system core implemented+verified (8 territories, points formula exact,
+flips, neighbor opening, bounded counteroffensive, Voss announcements, DataStore persistence proven).
+GF_MissionId now published per deploy (GUID) + GF_MissionDifficulty. Campaign config module added.
+Remaining war rows: S13-001/007/008 structural, S13 display rows.
