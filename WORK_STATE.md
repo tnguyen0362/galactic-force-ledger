@@ -1439,11 +1439,35 @@ way**, and the exact body-hit 96 remains unconfirmed because every landed test i
 **Useful discovery:** `ActiveActors` enemies have **no Humanoid** — health/shield/armor are model attributes (`Health`, `Shield`, `ArmorFactor`,
 `Dead`). Two probes failed before that was noticed.
 
+**THE 70-STUD MYSTERY WAS A BUG IN MY OWN PELLET CODE (place 510).** Evidence `evidence/v510-pellet-scatter-stance-bug/EVIDENCE.md`.
+
+Two causes, both real:
+
+1. **Probe artifact:** the first shot of a range sweep used a stale root position (`dist=750.7`), because aim was computed immediately after
+   writing `root.CFrame`. Waiting for physics and recomputing fixed the measurement.
+2. **Place-508 bug:** pellet scatter used `tonumber(weapon.adsSpread) or ...` **even when hip-firing** — 4.5° instead of SG-04's 0.15° base, a 30×
+   wider cone, so most pellets sailed past a torso beyond ~30 studs. Fixed by hoisting `isAiming` and applying the same stance rule as the primary
+   spread.
+
+After the fix:
+
+```
+12 studs: delta=96.0  (h 210->174, sh 60->0)   dist=6.4     <- authored 8 x 12, CONFIRMED
+40 studs: delta=22.1                            dist=37.7
+70 studs: delta=0.0                             dist=69.0
+```
+
+**`96.0` confirms the authored figure for the first time.** It also retro-explains the previous batch's 196.8: that reading was a headshot pattern
+through the 4.5° cone, so the explanation was right about that measurement but the measurement itself was distorted by my bug.
+
+**Still unexplained:** mid-range damage is partial and inconsistent — only ~2 of 8 pellets land at 38 studs although a 0.15° cone there is under 0.1
+studs wide. Something in the scatter maths remains wrong, and I did not guess at it.
+
 ## Current build
-- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 508**.
+- Studio `a828ce66-ff1a-43c5-b662-dc096996bcc4`, place `Playtest1` (placeId 120646942844931), saved as **version 510**.
 - Spec `.goal/GOAL_2026-11-24.md`; ledger `REQUIREMENT_COVERAGE.csv` **815 rows, 168 populated, 648 UNKNOWN**.
 - Ledger state: PARTIAL 126 | VERIFIED 26 | ABSENT 2 | IMPLEMENTED_UNVERIFIED 2 | OWNER_ACCEPTED 0.
-- Place version **508** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
+- Place version **510** is authoritative (saved this session). Earlier documents claiming 448, 318, 232
   or 461 are all stale; 461 was the last commit-labelled build, 463 is the saved place version.
 
 ## Verified this session
