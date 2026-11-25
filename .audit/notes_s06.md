@@ -244,3 +244,7 @@ hacking rows batch-verified. Boot passes 706 assertions with all fixes. Mirror+t
 
 ## UPDATE 16 — VERIFIED ~390 / UNKNOWN ~318 / PARTIAL ~104
 Batch-verified friendly-fire/HUD/settings/sentry/launcher rows. Place save pending (v635+ has all fixes).
+
+## UPDATE 17 — VERIFIED ~397 / UNKNOWN ~318 / PARTIAL ~97
+Batch-verified support abilities (orbital strike/lance/barrier config exact) + downed mechanics + area-hit row.
+IMPORTANT: place save of v635+ fixes still pending — run save deploy when possible.
