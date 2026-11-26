@@ -422,12 +422,106 @@ def a_rubble_block(k):
     k.box((-1.2, -1.05, 1.9), (2.0, 0.06, 0.1), BR, (0, 0, 0.2))
 
 
+def ashlar(k, cx, cy, w, d, z0, h, rows, col=None, seed=0):
+    """Dark joint lines + staggered vertical joints on all four faces of a prismatic mass: reads as cut stone courses."""
+    col = AS if col is None else col
+    rh = h / rows
+    for r in range(1, rows):
+        k.box((cx, cy, z0 + r * rh), (w + 0.05, d + 0.05, 0.05), col)
+    n = max(2, int(w / 1.1))
+    for r in range(rows):
+        off = 0.5 if (r + seed) % 2 else 0.0
+        for i in range(n):
+            x = cx - w / 2 + (i + off) * (w / n)
+            if abs(x - cx) < w / 2 - 0.1:
+                zc = z0 + (r + 0.5) * rh
+                k.box((x, cy + d / 2, zc), (0.05, 0.05, rh), col)
+                k.box((x, cy - d / 2, zc), (0.05, 0.05, rh), col)
+
+
+def a_monolith(k):
+    for i, (w, d, z) in enumerate(((5.2, 2.6, 0.5), (4.2, 2.1, 0.5), (3.3, 1.6, 0.5))):
+        k.box((0, 0, 0.25 + 0.5 * i), (w, d, z), DS if i != 1 else AS)
+    k.box((0, 0, 7.6), (2.5, 1.0, 12.0), VG)                         # main shaft: violet-gray stone
+    ashlar(k, 0, 0, 2.5, 1.0, 1.6, 12.0, 8, AS)
+    k.box((0, 0, 7.6), (1.9, 1.04, 10.4), OB)                        # recessed obsidian face panel
+    k.box((0, 0, 7.6), (1.9, 1.08, 0.12), BR)                        # panel mid band
+    k.wedge((0, 0), 2.5, 1.0, 13.6, 13.7, 14.5, OB)                  # canted crown
+    k.box((0, 0, 13.45), (2.7, 1.2, 0.2), IV)                        # ivory cap course
+    k.box((0, 0.56, 8.9), (0.09, 0.05, 3.2), VI)                     # restrained violet slit
+    k.box((0, -0.56, 8.9), (0.09, 0.05, 3.2), VI)
+    for sx in (-1, 1):
+        k.box((sx * 1.36, 0, 6.0), (0.3, 1.3, 8.8), OB)              # buttress fins
+        k.box((sx * 1.36, 0, 10.6), (0.34, 1.34, 0.22), BR)
+    for z in (2.4, 11.9):
+        k.box((0, 0.54, z), (2.3, 0.05, 0.12), BR)
+        k.box((0, -0.54, z), (2.3, 0.05, 0.12), BR)
+
+
+def a_gate(k):
+    for sx in (-1, 1):
+        k.box((sx * 5.4, 0, 0.45), (3.6, 3.6, 0.9), DS)
+        k.box((sx * 5.4, 0, 6.6), (2.2, 2.2, 11.4), VG)
+        ashlar(k, sx * 5.4, 0, 2.2, 2.2, 0.9, 11.4, 9, AS, seed=sx)
+        k.box((sx * 5.4, 1.13, 6.0), (0.9, 0.05, 8.4), OB)           # recessed face inlay
+        k.box((sx * 5.4, -1.13, 6.0), (0.9, 0.05, 8.4), OB)
+        k.box((sx * 5.4, 1.15, 6.0), (0.12, 0.04, 8.2), BR)
+        k.box((sx * 5.4, -1.15, 6.0), (0.12, 0.04, 8.2), BR)
+        k.box((sx * 5.4, 0, 12.5), (2.8, 2.8, 0.5), OB)
+        k.box((sx * 5.4, 0, 12.85), (2.5, 2.5, 0.2), IV)
+    k.box((0, 0, 11.6), (13.2, 2.6, 1.6), VG)                        # lintel
+    ashlar(k, 0, 0, 13.2, 2.6, 10.8, 1.6, 2, AS, seed=1)
+    k.box((0, 0, 12.7), (14.0, 2.9, 0.4), OB)
+    k.box((0, 0, 13.05), (13.4, 2.6, 0.2), IV)
+    k.box((0, 1.33, 11.6), (11.6, 0.05, 0.14), BR)
+    k.box((0, -1.33, 11.6), (11.6, 0.05, 0.14), BR)
+    k.box((0, -1.36, 11.6), (1.0, 0.07, 1.1), IV)
+    k.box((0, 1.36, 11.6), (1.0, 0.07, 1.1), IV)
+    k.box((0, 0, 0.1), (8.2, 3.0, 0.2), AS)
+
+
+def a_spire(k):
+    for i, r in enumerate((3.4, 2.8, 2.3)):
+        k.loft((0, 0, i * 0.55), (0, 0, (i + 1) * 0.55), r, r * 0.95, 4, DS if i < 2 else VG, rot0=math.pi / 4)
+    k.loft((0, 0, 1.65), (0, 0, 8.0), 1.7, 1.12, 4, OB, rot0=math.pi / 4)
+    k.loft((0, 0, 8.0), (0, 0, 15.0), 1.12, 0.55, 4, VG, rot0=math.pi / 4)
+    for z, r in ((5.0, 1.45), (9.0, 1.12), (12.5, 0.8)):
+        k.loft((0, 0, z), (0, 0, z + 0.22), r * 1.08, r * 1.08, 4, BR, rot0=math.pi / 4)
+    for z, r in ((3.3, 1.58), (6.9, 1.28), (10.8, 0.96), (13.8, 0.68)):
+        k.loft((0, 0, z), (0, 0, z + 0.1), r * 1.04, r * 1.04, 4, AS, rot0=math.pi / 4)
+    k.loft((0, 0, 15.0), (0, 0, 16.4), 0.55, 0.12, 4, IV, rot0=math.pi / 4)
+    k.box((0.0, -0.62, 7.0), (0.08, 0.05, 3.0), VI)
+
+
+def a_rubble_block(k):
+    k.box((-1.3, 0.0, 0.45), (2.8, 2.0, 0.9), OB, (0.05, 0.12, 0.2))
+    k.box((-1.1, 0.1, 1.15), (2.2, 1.7, 0.8), VG, (-0.1, 0.08, 0.35))
+    k.box((1.7, 0.7, 0.55), (2.0, 1.6, 1.1), OB, (0.1, -0.15, -0.4))
+    k.box((0.2, 2.0, 0.35), (1.8, 1.3, 0.7), VG, (0.2, 0.1, 0.7))
+    k.box((2.4, -0.9, 0.2), (1.2, 0.9, 0.4), DS, (0, 0.2, 0.9))
+    k.box((-2.5, 1.5, 0.18), (1.0, 0.8, 0.36), AS, (0.1, 0, 1.2))
+    k.box((0.6, -1.4, 0.15), (0.8, 0.6, 0.3), DS, (0.2, 0.1, 0.3))
+    k.box((-1.1, -0.9, 1.55), (1.6, 0.06, 0.12), BR, (-0.1, 0.08, 0.35))
+
+
+def a_wall(k):
+    k.box((0, 0, 0.3), (8.6, 1.8, 0.6), DS)
+    k.box((0, 0, 1.7), (8.0, 1.2, 2.2), VG)
+    ashlar(k, 0, 0, 8.0, 1.2, 0.6, 2.2, 3, AS)
+    k.box((0, 0, 2.9), (8.4, 1.5, 0.3), OB)
+    k.box((0, 0, 3.12), (8.0, 1.2, 0.14), IV)
+    for x in (-3.9, 3.9):
+        k.box((x, 0, 1.9), (0.5, 1.5, 2.6), OB)
+    k.box((0, 0.62, 1.7), (5.6, 0.05, 0.1), BR)
+    k.box((0, -0.62, 1.7), (5.6, 0.05, 0.1), BR)
+
+
 KITS = {
     "Human": [("Wall", h_wall), ("Pillar", h_pillar), ("Bunker", h_bunker), ("Watchtower", h_tower),
               ("Barrier", h_barrier), ("Hedgehog", h_hedgehog), ("Crate", h_crate), ("Crates", h_crates),
               ("FuelTank", h_tank), ("Generator", h_generator), ("CommMast", h_mast)],
     "Ascendancy": [("Monolith", a_monolith), ("Gate", a_gate), ("Bulwark", a_bulwark), ("Spire", a_spire),
-                   ("Rubble", a_rubble_block)],
+                   ("Rubble", a_rubble_block), ("Wall", a_wall)],
 }
 
 

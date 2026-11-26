@@ -10,8 +10,9 @@ Kit_Human_Crates,96912439161712,Approved,
 Kit_Human_FuelTank,116803000293681,Approved,
 Kit_Human_Generator,109771967204366,Approved,
 Kit_Human_CommMast,85691648944984,Approved,displayName was replaced with ####### by Roblox name filter; asset id valid
-Kit_Ascendancy_Monolith,91015425713994,Approved,
-Kit_Ascendancy_Gate,94664697958999,Approved,
-Kit_Ascendancy_Bulwark,72636059338655,Approved,
-Kit_Ascendancy_Spire,78931911662518,Approved,
-Kit_Ascendancy_Rubble,119761555911079,Approved,
+Kit_Ascendancy_Monolith,91015425713994,Approved,v2 revision (masonry) submitted 2026-11-26
+Kit_Ascendancy_Gate,94664697958999,Approved,v2 revision (masonry)
+Kit_Ascendancy_Bulwark,72636059338655,Approved,v2 revision submitted (geometry unchanged except no-op)
+Kit_Ascendancy_Spire,78931911662518,Approved,v2 revision (course lines + ivory tip)
+Kit_Ascendancy_Rubble,119761555911079,Approved,v2 revision (broken blocks)
+Kit_Ascendancy_Wall,137704617030736,Approved,added in v2

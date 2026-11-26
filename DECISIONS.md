@@ -261,3 +261,6 @@ back to its committed state as history. Tests: orchestrator **37/37**, goal loop
 - Ascendancy armor: dark obsidian/bronze/ivory with RESTRAINED violet tech accents only; no red accents; not a human-kit recolor. Final violet balance decided at owner gate with an in-game sample.
 - Phase-15 work extends the existing GFArtKit/gf-art-build program rather than restarting it; gf-art-build/EVIDENCE.md items fold into VISUAL_REVIEW/BUILD_MANIFEST, no third ledger.
 - 2026-11-26 (claude) Mission biome rotation changed {Forest, Arid, Tundra, Volcanic} -> {Forest, Arid, Tundra, Industrial}: Volcanic was never an approved biome; Industrial (already in WorldDressing kits) is. Volcanic data retained, unused. Per-biome lighting lives in Services/BiomeLook.luau (data + apply), called last by Environment.apply("mission").
+
+## 2026-11-26 claude: Phase 15 art direction = Helldivers 2 feel (owner)
+Gritty, hazy, large-scale war backdrop: low heavy sun through haze with god rays (BiomeLook RAYS), cosmetic orbital-war sky (SkyWar: strikes, streaks, capital ships; client-only, capped, off on Low), fortified outpost kit (Human), restrained monolithic masonry kit (Ascendancy, no spikes/crystals/horns). Asset updates go out as PATCH revisions of existing asset ids. Studio deploy is deferred to one runbook pass (tools/art/STUDIO_WINDOW_RUNBOOK.md).

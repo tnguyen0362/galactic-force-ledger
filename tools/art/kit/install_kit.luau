@@ -16,7 +16,7 @@ local IDS = {
 	Kit_Human_Generator = 109771967204366, Kit_Human_CommMast = 85691648944984,
 	Kit_Ascendancy_Monolith = 91015425713994, Kit_Ascendancy_Gate = 94664697958999,
 	Kit_Ascendancy_Bulwark = 72636059338655, Kit_Ascendancy_Spire = 78931911662518,
-	Kit_Ascendancy_Rubble = 119761555911079,
+	Kit_Ascendancy_Rubble = 119761555911079, Kit_Ascendancy_Wall = 137704617030736,
 }
 
 local installed, failed = 0, {}
