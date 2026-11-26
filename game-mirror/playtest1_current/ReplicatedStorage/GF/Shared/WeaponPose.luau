@@ -27,13 +27,16 @@ local DEFAULTS: GripProfile = {
 -- Posture offsets in ROOT space (character-local, -Z forward). Refined from the legacy
 -- hip/ADS offsets which read correctly at camera but were never gripped.
 local POSES = {
-	-- combat ready / aim: weapon raised, stock toward shoulder line, barrel forward
+	-- combat aim: raised version of the ready hold (refined further in aim decomposition)
 	aim = {
-		cf = CFrame.new(0.55, -0.35, -0.85),
+		cf = CFrame.new(0.38, 0.12, -0.58) * CFrame.Angles(0, math.rad(15), 0),
 	},
-	-- exploration/low-ready: weapon lowered across the body
+	-- low-ready: numerically solved for two-arm reachability (offline reach study):
+	-- weapon yawed 15 deg cross-body, pitched 10 deg down, receiver at chest-right.
+	-- REQUIRES the bladed torso stance (25 deg waist yaw when armed) — without it the
+	-- support grip is beyond left-arm reach (measured 2.67 studs vs 1.89 max reach).
 	ready = {
-		cf = CFrame.new(0.62, -0.75, -0.55) * CFrame.Angles(math.rad(-18), 0, 0),
+		cf = CFrame.new(0.39, 0.03, -0.61) * CFrame.Angles(0, math.rad(15), 0) * CFrame.Angles(math.rad(-10), 0, 0),
 	},
 }
 

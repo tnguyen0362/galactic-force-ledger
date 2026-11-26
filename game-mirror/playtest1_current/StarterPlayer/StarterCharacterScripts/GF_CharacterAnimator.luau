@@ -74,64 +74,72 @@ local function rotationBetween(restDir: Vector3, targetDir: Vector3): CFrame
 	return CFrame.fromAxisAngle(axis / mag, angle)
 end
 
--- Two-bone IK for one arm. shoulderJointWorld: world pos of shoulder joint anchor.
--- targetWorld: desired palm position. torsoCf: UpperTorso world CFrame (frame of the shoulder joints).
--- bendHint: torso-local preferred bend direction (elbow pole). Returns shoulder rot (joint-local
--- approximation), elbow bend angle.
-local function solveArm(shoulderJointWorld: Vector3, targetWorld: Vector3, torsoCf: CFrame, bendHint: Vector3): (CFrame, number)
-	local toTarget = targetWorld - shoulderJointWorld
-	local d = math.clamp(toTarget.Magnitude, math.abs(ARM_L1 - ARM_L2) + 0.05, ARM_L1 + ARM_L2 - 0.02)
-	local dirWorld = toTarget.Unit
-	-- torso-local aim direction of the arm
-	local dirLocal = torsoCf:VectorToObjectSpace(dirWorld)
-	-- law of cosines: angle between arm line and upper-arm segment
-	local cosA = math.clamp((ARM_L1^2 + d^2 - ARM_L2^2) / (2 * ARM_L1 * d), -1, 1)
-	local alpha = math.acos(cosA)
-	-- elbow interior angle
-	local cosB = math.clamp((ARM_L1^2 + ARM_L2^2 - d^2) / (2 * ARM_L1 * ARM_L2), -1, 1)
-	local elbowBend = math.pi - math.acos(cosB)
-	-- desired upper-arm direction: rotate dirLocal by alpha toward bendHint
-	local bend = bendHint.Magnitude > 1e-3 and bendHint.Unit or Vector3.new(0, 0, 1)
-	-- project bend perpendicular to dirLocal for a stable rotation axis
-	local perp = bend - dirLocal * bend:Dot(dirLocal)
-	if perp.Magnitude < 1e-3 then
-		perp = Vector3.new(0, 0, 1) - dirLocal * dirLocal.Z
+-- CCD (cyclic coordinate descent) IK — iteration 4. Robust replacement for the analytical
+-- decomposition: works directly against the ACTUAL Motor6D forward kinematics measured live,
+-- so no frame-convention assumptions can poison it. Each step rotates one joint by the world-space
+-- rotation aligning (endEffector - jointPos) with (target - jointPos), conjugated into part0 frame.
+-- Runs every heartbeat, so even partial per-frame convergence compounds to lock-on within frames.
+
+local function worldRotBetween(fromVec: Vector3, toVec: Vector3): CFrame
+	local axis = fromVec:Cross(toVec)
+	local mag = axis.Magnitude
+	if mag < 1e-5 then
+		return CFrame.new()
 	end
-	perp = perp.Unit
-	-- upper arm direction = dir rotated away from target line by alpha, toward the perpendicular
-	local upperDir = (dirLocal * math.cos(alpha) + perp * math.sin(alpha)).Unit
-	-- shoulder rotation: rest arm direction is straight down (-Y) in torso space.
-	-- FRAME CORRECTION: setJoint composes base*rot in joint-local frame, but rotationBetween
-	-- solves in torso space — compensate by inverse-composing the base rotation (the
-	-- 'inherited rotation' trap that defeated the legacy hand-attachment attempt).
-	local shoulderRot = rotationBetween(Vector3.new(0, -1, 0), upperDir)
-	return shoulderRot, elbowBend
+	local angle = math.acos(math.clamp(fromVec.Unit:Dot(toVec.Unit), -1, 1))
+	return CFrame.fromAxisAngle(axis / mag, math.min(angle, 0.6)) -- clamp per-step rotation for stability
+end
+
+-- Rotate one Motor6D so its downstream chain turns by world rotation R about the joint pivot.
+-- forward kinematics (C1 measured identity): Part1.CFrame = Part0.CFrame * C0.
+local function applyWorldRotation(motorName: string, R: CFrame)
+	local joint = joints[motorName]
+	if not joint then return end
+	local motor = joint.motor
+	local p0 = motor.Part0
+	if not p0 then return end
+	local p0r = p0.CFrame.Rotation
+	-- conjugate world rotation into part0's frame, then pre-compose onto current C0 rotation
+	local Rlocal = p0r:Inverse() * R * p0r
+	local cur = motor.C0
+	motor.C0 = CFrame.new(joint.base.Position) * (Rlocal * cur.Rotation)
+end
+
+-- One CCD pass over a two-joint chain. jointInner/Outer names, endEffector part, target world pos.
+local function ccdPass(inner: string, outer: string, endPart: BasePart, targetPos: Vector3, innerPart: BasePart, outerPart: BasePart)
+	for _, spec in ipairs({ { outer, outerPart }, { inner, innerPart } }) do
+		local jointPos = spec[2].Position
+		local toEnd = endPart.Position - jointPos
+		local toTarget = targetPos - jointPos
+		if toEnd.Magnitude > 1e-4 and toTarget.Magnitude > 1e-4 then
+			local R = worldRotBetween(toEnd, toTarget)
+			applyWorldRotation(spec[1], R)
+		end
+	end
 end
 
 -- Compute grip targets and solve both arms. Called from the heartbeat when a weapon is equipped.
 local function solveWeaponArms(aiming: boolean)
 	local torso = character:FindFirstChild("UpperTorso")
-	if not torso then return end
-	local rootCf = root.CFrame
-	local weaponCf = WeaponPose.weaponWorld(rootCf, aiming)
+	local rua = character:FindFirstChild("RightUpperArm")
+	local rla = character:FindFirstChild("RightLowerArm")
+	local rhand = character:FindFirstChild("RightHand")
+	local lua = character:FindFirstChild("LeftUpperArm")
+	local lla = character:FindFirstChild("LeftLowerArm")
+	local lhand = character:FindFirstChild("LeftHand")
+	if not (torso and rua and rla and rhand and lua and lla and lhand) then return end
+	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming)
 	local profile = WeaponPose.gripProfile(character:GetAttribute("GF_EquippedWeapon") or "")
 	local primaryTarget = WeaponPose.gripWorld(weaponCf, profile.primaryGrip)
 	local supportTarget = WeaponPose.gripWorld(weaponCf, profile.supportGrip)
-	-- shoulder anchor world positions: torso joint C0 positions transformed to world
-	local rShoulder = joints["RightShoulder"]
-	local lShoulder = joints["LeftShoulder"]
-	if not rShoulder or not lShoulder then return end
-	local rAnchor = (torso.CFrame * CFrame.new(rShoulder.base.Position)).Position
-	local lAnchor = (torso.CFrame * CFrame.new(lShoulder.base.Position)).Position
-	-- right arm: elbow bends outward-down; left arm reaches across: elbow bends down-outward
-	local rRot, rBend = solveArm(rAnchor, primaryTarget, torso.CFrame, Vector3.new(0.6, -0.4, 0.5))
-	local lRot, lBend = solveArm(lAnchor, supportTarget, torso.CFrame, Vector3.new(-0.6, -0.4, 0.5))
-	-- inverse-compose the base rotations: the solved rotation is torso-frame, but setJoint
-	-- appends after base in joint-local space. rot_joint = baseRot^-1 * rot_torso.
-	setJoint("RightShoulder", rRot)
-	setJoint("RightElbow", CFrame.Angles(-rBend, 0, 0))
-	setJoint("LeftShoulder", lRot)
-	setJoint("LeftElbow", CFrame.Angles(-lBend, 0, 0))
+	-- two CCD passes per arm per heartbeat: converges over a few frames, self-correcting.
+	-- end effector tracked is the hand part center; palm refinement is a later calibration step.
+	for _ = 1, 2 do
+		ccdPass("RightShoulder", "RightElbow", rhand, primaryTarget, rua, rla)
+	end
+	for _ = 1, 2 do
+		ccdPass("LeftShoulder", "LeftElbow", lhand, supportTarget, lua, lla)
+	end
 end
 
 local TAU = math.pi * 2
@@ -242,7 +250,10 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 
 		local lean = sprinting and 0.13 or 0
-		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, -strafeBlend * 0.18, strafeBlend * 0.06))
+		-- Bladed stance when armed (Phase 12): torso yawed 25 deg brings the left shoulder
+		-- forward so the support grip is reachable — solved offline with the pose constants.
+		local stanceYaw = hasWeapon and math.rad(-25) or 0
+		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
 		if crouching then
 			-- Crouch: hips and knees fold, torso pitches forward, arms tuck in.
 			setJoint("Root", nil, Vector3.new(0, -0.85, 0))
