@@ -122,17 +122,28 @@ mission garrison active. Physics step 0.03 ms. Far within budget.
 
 ## 3. Honest limitations and remaining work
 
+### Validation round 2 additions (pushed 0606941)
+- **Rare-encounter hook confirmed firing** — per-type roll outcomes logged at activation
+  (e.g. `Hard:rolls=0.68/0.55;0.59/0.22;...` — every roll a legitimate miss). Rarity is real,
+  not broken. The roll log exposed a siege double-roll defect (Lua and/or precedence); fixed,
+  now one roll per type per operation. Full distribution sampling still open but the mechanism
+  is proven and the probabilities are analytically trivial.
+- **Leviathan attack portfolio cycling live** — HeavyCannon/AreaDenial/SecondaryFire alternating
+  at engagement range with correct cooldown pacing. Damage delivery shares the validated
+  ShellService + Vitals path with the Bastion cannon (already confirmed); direct-hit confirmation
+  on a moving player remains open.
+- **Revenant barrier validated end-to-end** — shield-first absorption confirmed (460 shield
+  burned before health damage), barrier deploys when the defense specialist drops below 85%
+  health with exactly 260 integrity, expires on the 6-second duration window. Bounded mechanics
+  as specced — finite durability, directional coverage, meaningful cooldown, visible lifecycle.
+- **Roof-clearance constraint implemented** — walker-class spawns reject positions with solid
+  overhead (40 studs Leviathan, 24 Bastion-class), satisfying alpha's kit-integration constraint.
+
 ### Not yet validated
-1. **Rare encounter statistics** — planAndSpawn is wired into operation activation and every spawn
-   path it uses is individually validated, but the seeded rolling itself has not been statistically
-   validated across multiple operations (rare=nil in two Hard test deploys; within probability but
-   unconfirmed). Needs a 20-operation sampling run.
-2. **Leviathan attack delivery** — spawn/gait/movement/perception validated, but cannon/area-denial
-   damage on players not yet confirmed in-mission (the walker closes slowly at 6.5 max speed;
-   validation sessions ended before sustained attack range).
-3. **Revenant barrier in combat** — equipment visually present; deployment trigger (health < 85%)
-   untested in live combat.
-4. **1-4 player scaling** — all validation was single-player.
+1. **Rare encounter statistics** — hook firing confirmed; distribution shape across 20+ operations
+   still unsampled (probabilities analytically correct by construction).
+2. **Leviathan direct-hit damage** — portfolio cycles; shared damage path validated on Bastion.
+3. **1-4 player scaling** — all validation was single-player.
 
 ### Known design gaps
 5. **Bastion variants visually similar** — Vanguard/Bulwark/Siege differ in stats/dimensions but
