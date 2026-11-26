@@ -61,10 +61,12 @@ end
 Input.onPress("Ability1", function()
 	local id = abilitySlot(1)
 	remotes.UseAbility:FireServer({ abilityId = id, position = abilityTarget(id) })
+	if player.Character then player.Character:SetAttribute("GF_AbilityCastAt", os.clock()) player.Character:SetAttribute("GF_AbilityId", id) end
 end)
 Input.onPress("Ability2", function()
 	local id = abilitySlot(2)
 	remotes.UseAbility:FireServer({ abilityId = id, position = abilityTarget(id) })
+	if player.Character then player.Character:SetAttribute("GF_AbilityCastAt", os.clock()) player.Character:SetAttribute("GF_AbilityId", id) end
 end)
 
 -- shoulder swap intentionally removed: spec fixes the camera on the right shoulder.

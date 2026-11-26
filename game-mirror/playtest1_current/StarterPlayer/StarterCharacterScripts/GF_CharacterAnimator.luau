@@ -303,6 +303,29 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 
+	-- ability cast: airstrike raises the designator arm skyward; dome projects both arms out.
+	local castAt = character:GetAttribute("GF_AbilityCastAt")
+	local castT = castAt and (os.clock() - castAt) or 99
+	if castT < 0.7 then
+		local f = castT / 0.7
+		local pulse = math.sin(math.min(f * 1.4, 1) * math.pi)
+		local abil = character:GetAttribute("GF_AbilityId") or ""
+		if abil == "Airstrike" then
+			setJoint("RightShoulder", CFrame.Angles(-2.9 * pulse, 0, math.rad(-10) * pulse))
+			setJoint("RightElbow", CFrame.Angles(-0.2 * pulse, 0, 0))
+			setJoint("Waist", CFrame.Angles(-0.12 * pulse, 0.15 * pulse, 0))
+			setJoint("Neck", CFrame.Angles(-0.35 * pulse, 0, 0))
+		else
+			-- dome / generic project: both arms thrust forward-out
+			setJoint("RightShoulder", CFrame.Angles(-1.5 * pulse, -0.2 * pulse, math.rad(-14) * pulse))
+			setJoint("LeftShoulder", CFrame.Angles(-1.5 * pulse, 0.2 * pulse, math.rad(14) * pulse))
+			setJoint("RightElbow", CFrame.Angles(-0.3 * pulse, 0, 0))
+			setJoint("LeftElbow", CFrame.Angles(-0.3 * pulse, 0, 0))
+			setJoint("Waist", CFrame.Angles(0.1 * pulse, 0, 0))
+		end
+		return
+	end
+
 	-- traversal: vault (low obstacle hop) and climb (ledge pull-up) — attribute edge-driven.
 	-- vault: legs tuck forward, torso pitches over the obstacle. climb: arms reach high, legs draw up.
 	local vaultAt = character:GetAttribute("GF_VaultAt")
