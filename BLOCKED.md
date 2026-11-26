@@ -77,3 +77,6 @@ added in v260 is the first half of the fix (the HUD does not yet render it).
 
 ## Phase 15 — Blender asset upload (claude, 2026-11-26) — OPEN
 Open Cloud upload of the Blender-generated vegetation GLBs is refused: `C:\Users\tnguy\gf-art-build\blender\out` is not in the approved upload directories. Owner action: Assistant Settings -> MCP Permissions -> add that directory. No workaround attempted; no assets created.
+
+### Phase 15 — Blender asset upload — RESOLVED 2026-11-26
+Owner added the upload directory in MCP Permissions. All 31 vegetation GLBs uploaded (Approved). IDs in `tools/art/vegetation/asset_manifest.csv`. Remaining blocker: Studio Edit window (beta's test matrix holds Play mode) to insert/verify/deploy.

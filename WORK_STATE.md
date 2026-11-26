@@ -3337,3 +3337,8 @@ NEXT: (1) get kit patch through C1 with beta; (2) author palette/material librar
 - generate_mesh demoted to non-critical (owner direction: prefer Blender, avoid Roblox AI generation).
 - BLOCKED: first upload refused - C:\Users\tnguy\gf-art-build\blender\out is not an approved upload directory (Assistant Settings -> MCP Permissions). Owner must add it. No upload attempted otherwise; zero assets created this stage.
 - Studio is Play mode running beta's matrix; insertion into the place (Veg_* into ServerStorage.GF.Art) needs an Edit window after upload.
+
+## Phase 15 — Stage 1c (claude, 2026-11-26)
+- 31/31 Blender vegetation GLBs uploaded to owner's account, all moderation Approved (manifest: tools/art/vegetation/asset_manifest.csv; generator: tools/art/vegetation/gen_veg.py).
+- NOT yet verified in engine: import scale (expected ~3.57x too small at 1 m = 1 stud), texture application, anchoring/orientation. Next: Studio Edit window, insert via InsertService:LoadAsset, normalize, name Veg_<Biome>_<Role>_<Letter> under ServerStorage.GF.Art, deploy Phase 15 scripts, biome captures.
+- Studio currently in Play (beta matrix). No claim held.
