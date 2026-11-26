@@ -1,4 +1,15 @@
 {
-  "_raw": "Client datamodel is not available in Edit mode",
-  "copied_artifacts": {}
+  "status": "completed",
+  "warnings": [],
+  "recording_id": "wob-20428000172",
+  "artifacts": {
+    "manifest": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\49AD19EB-9B75-452D-9C1E-27DD74FAAD2E\\manifest.json",
+    "frame_times": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\49AD19EB-9B75-452D-9C1E-27DD74FAAD2E\\pts.json",
+    "video": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\49AD19EB-9B75-452D-9C1E-27DD74FAAD2E\\wob-20428000172.mp4"
+  },
+  "copied_artifacts": {
+    "manifest": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\battlefield_full_p2_sweep_manifest.json",
+    "frame_times": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\battlefield_full_p2_sweep_frame_times.json",
+    "video": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\battlefield_full_p2_sweep_video.mp4"
+  }
 }

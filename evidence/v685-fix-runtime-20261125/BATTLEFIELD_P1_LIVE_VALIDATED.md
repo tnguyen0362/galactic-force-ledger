@@ -85,3 +85,38 @@ LZ/extraction terrain pads flattened by plan nodes inside TerrainService build.
 4. Cover object placement from plan cover data.
 5. Per-mission regeneration with archetype variety + seed rotation.
 6. Canyon-floor route preference, route-length tuning with real movement constants.
+
+
+## P2 COMPLETE — all integration systems validated live (2026-11-26, commits through a959b22)
+
+| System | Validation |
+|---|---|
+| Physical installations | 7-9 built per boot, zero failures across archetypes |
+| Dormant encounter zones | 12-14 registered/boot; activations fired at exact installation positions as player approached (canyon playtest: 8 activation events incl. primary objective garrison) |
+| Extraction node | GF_ExtractionLZ published ground-resolved; ship + pressure waves consume it |
+| Cover objects | 240 physical rocks/wrecks/forms per boot |
+| Deployment | player lands exactly at generated LZ (position match verified twice) |
+| Mission anchors | separation 683-878 studs across boots (legacy: 240) |
+| Perf | gen 0.5-2.5s, terrain write ~3.9s, total inside loading screen |
+
+Evidence videos (evidence/v684-ai-conformance-runtime-20261125/raw/):
+- battlefield_aerial_p1_video.mp4 — first aerial of generated highland valley
+- battlefield_installations_p2_video.mp4 — open plains with 9 installations
+- battlefield_full_p2_sweep_video.mp4 — 13MB cinematic LZ->objective route sweep over
+  industrial wasteland with installations + cover
+
+Harnesses: bf_zone_test.py, bf_playtest.py, bf_activation_v2.py (console-draining,
+reliable), bf_sweep_video.py. Harness lessons: MCP datamodel probes are unreliable
+during play — validate via console prints + incremental draining; always wait for
+clean Edit state before deploy (stop_play transitions lag).
+
+## Remaining (human-required or polish)
+
+1. HUMAN PLAYTEST: pacing feel, traversal enjoyment, combat encounter quality —
+   automated systems all validated; feel requires a human. Recommend flag-on playtest.
+2. Patrol movement AI (zones activate as static encounters currently — patrols don't march yet)
+3. Reinforcement region consumption (zones exported, not yet used by call-in logic)
+4. Canyon-floor route preference; route-length tuning with final locomotion constants
+   (30deg validation slope vs alpha's 45deg design target — currently stricter=safe)
+5. EnemyService debugAttr nil-call bug — alpha owns fix, ships in their next batch
+6. Flag-on-by-default decision + per-deployment regeneration (mission reentrancy audit)
