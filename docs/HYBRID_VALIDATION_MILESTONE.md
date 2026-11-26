@@ -91,3 +91,15 @@ before controlled deformation. All deployed to place.
   regenerations (replication overload) — irrelevant in production (once per boot)
 - Environment.apply("mission") works standalone for evidence lighting without
   the deploy flow
+
+## CAVEAT RESOLUTION (2026-11-26, owner-requested)
+1. Material banding FIXED: slope/elevation material gates now perturbed by two-scale
+   noise (240-stud wander + 61-stud detail). Verified same-vantage before/after on the
+   fv4 steep face (hv4_fv4 vs hv5_fv4_bandfix): contour stripes gone. Residual stepping
+   on near-vertical faces is inherent 4-stud voxel geometry, not material assignment.
+2. Memory investigated: Studio process memory cannot isolate terrain cost. Verified:
+   flat memory across regeneration, zero growth trend over successive generations.
+   Adaptive shell depth implemented regardless — flat ground fills 2-3 voxels vs 8,
+   cutting voxel volume (and thus client replication payload) substantially on gentle
+   terrain while cliffs keep full depth. Surface probes bit-identical post-change.
+   True low-end client memory requires on-device testing (open item).
