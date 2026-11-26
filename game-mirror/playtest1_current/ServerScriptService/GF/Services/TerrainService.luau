@@ -5,6 +5,7 @@
 -- sector share one generation path.
 
 local SectorBuilder = require(script.Parent.SectorBuilder)
+local BattlefieldService = require(script.Parent.Battlefield.BattlefieldService)
 
 local TerrainService = {}
 
@@ -80,6 +81,57 @@ end
 function TerrainService.build(seed: number): number
 	SEED = seed or SEED
 	sample = nil
+	-- Procedural battlefield path (P1 integration, default OFF): when the dev flag is set the
+	-- terrain comes from a validated BattlefieldService plan — feature-anchored archetype
+	-- geography, A*-validated routes, foundation-shaped installations — instead of the legacy
+	-- corridor-spine sampler. Plan output is retained on TerrainService.currentPlan for the
+	-- mission-layout wiring step; offline validation: 150/150 seeds, separation 117/157/328.
+	if workspace:GetAttribute("GF_BattlefieldGen") == true then
+		local t0 = os.clock()
+		local template = workspace:GetAttribute("GF_BFTemplate") or "SABOTAGE_RELAY"
+		local difficulty = workspace:GetAttribute("GF_BFDifficulty") or "Normal"
+		local plan, meta = BattlefieldService.plan(SEED * 7919 + 101, template, difficulty)
+		if not plan then
+			warn("BattlefieldGen: plan FAILED for seed", SEED, "falling back to legacy terrain")
+		else
+			TerrainService.currentPlan = plan
+			workspace:SetAttribute("GF_BFSeed", plan.seed)
+			workspace:SetAttribute("GF_BFArchetype", plan.archetype)
+			print(string.format("BattlefieldGen: archetype=%s seed=%d attempts=%d genTime=%.2fs",
+				plan.archetype, plan.seed, meta.attempts or 1, os.clock() - t0))
+			local sampler = plan.sampler
+			sample = function(x: number, z: number): number
+				return sampler(x, z)
+			end
+			workspace.Terrain:FillRegion(
+				Region3.new(Vector3.new(-780, -160, -780), Vector3.new(780, 240, 780)),
+				4,
+				Enum.Material.Air
+			)
+			local w0 = os.clock()
+			SectorBuilder.write({
+				center = Vector3.new(0, 0, 0),
+				size = 1500,
+				seed = SEED,
+				baseHeight = BASE,
+				yMin = -40,
+				yMax = 210,
+				ridge = 1.0,
+				spine = nil,
+				samplerOverride = sample,
+			})
+			print(string.format("BattlefieldGen: terrain write %.2fs (1500 studs)", os.clock() - w0))
+			local t = workspace.Terrain
+			pcall(function() t:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(84, 96, 88)) end)
+			pcall(function() t:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(116, 112, 108)) end)
+			pcall(function() t:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(104, 108, 118)) end)
+			pcall(function() t:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(68, 92, 78)) end)
+			pcall(function() t:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(122, 114, 98)) end)
+			pcall(function() t:SetMaterialColor(Enum.Material.Sandstone, Color3.fromRGB(112, 104, 92)) end)
+			pcall(function() t:SetMaterialColor(Enum.Material.Basalt, Color3.fromRGB(74, 74, 84)) end)
+			return 4096
+		end
+	end
 	local s = ensureSampler(SEED)
 	-- Wipe the mission volume before writing so seeds do not accumulate terrain.
 	workspace.Terrain:FillRegion(

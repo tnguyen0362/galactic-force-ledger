@@ -36,6 +36,7 @@ Remotes.Names = {
 	"SetLoadout",
 	"FireWeapon",
 	"ReloadWeapon",
+	"ReloadCancelled",
 	"EquipWeapon",
 	"UseAbility",
 	"AbilityConfirmed",

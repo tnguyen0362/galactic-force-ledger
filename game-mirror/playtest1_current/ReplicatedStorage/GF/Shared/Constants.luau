@@ -3,20 +3,81 @@
 local Constants = {}
 
 Constants.Movement = {
+	-- speeds (movement/camera refinement spec table; class modifiers apply downstream)
 	WalkSpeed = 17,
 	SprintSpeed = 24,
-	-- Spec states this as a RATIO: ADS is 0.8x walk. 0.8 * WalkSpeed 17.5 = 14 exactly, so the
-	-- literal 13 implemented 0.74x instead. Kept as a literal because Constants cannot reference
-	-- its own sibling field during table construction.
-	AdsSpeed = 14,
-	JumpPower = 50,
-	RollSpeed = 30,
-	CrouchSpeed = 8,
+	AdsSpeed = 12.8,
+	BackwardSpeed = 12,
+	DownedSpeed = 4,
+	-- jump: Power 45 = ~5.2 studs with default gravity, inside the spec's 5-6 stud band
+	JumpPower = 45,
+	-- roll (server-authoritative)
 	RollDuration = 0.55,
-	RollDistance = 13,
+	RollDistance = 12,
 	RollCharges = 2,
 	RollRecharge = 5,
+	RollRecovery = 0.08,
+	RollSpeed = 26,
+	CrouchSpeed = 8, -- legacy, unused; crouch is a spec exclusion
+	-- acceleration model: alpha = 1 - exp(-dt/tau); braking faster than acceleration
+	AccelTau = 0.09,
+	DecelTau = 0.055,
+	MinStartSpeed = 0.35,
+	-- automatic sprint hysteresis band
+	SprintEnterMagnitude = 0.85,
+	SprintEnterDot = 0.65,
+	SprintExitMagnitude = 0.5,
+	SprintExitDot = 0.45,
+	-- orientation: shortest-path yaw smoothing with a rate cap
+	TurnTauLocomotion = 0.09,
+	TurnTauCombat = 0.06,
+	MaxTurnRate = math.rad(720),
+	-- vault / climb envelope
+	VaultForward = 4.5,
+	VaultMinHeight = 0.8,
+	VaultMaxHeight = 4,
+	ClimbMaxHeight = 7,
+	VaultLandingDepth = 3,
+	-- aim sensitivity scale while ADS (multiplies the user setting)
+	AimSensitivityScale = 0.8,
 }
+
+Constants.Camera = {
+	Explore = { Distance = 9.0, RightOffset = 2.0, PivotHeight = 2.2, FOV = 70 },
+	Sprint = { Distance = 10.0, RightOffset = 1.7, PivotHeight = 2.2, FOV = 76 },
+	Aim = { Distance = 5.5, RightOffset = 2.1, PivotHeight = 2.3, FOV = 58 },
+	Dodge = { Distance = 9.5, RightOffset = 1.8, PivotHeight = 2.0, FOV = 73 },
+	Downed = { Distance = 7.5, RightOffset = 1.8, PivotHeight = 1.0, FOV = 68 },
+	PitchMin = math.rad(-75),
+	PitchMax = math.rad(75),
+	MouseSensitivity = 0.0006,
+	TouchSensitivity = 0.0042,
+	StickDeadzone = 0.14,
+	StickGamma = 1.5,
+	StickLookSpeed = 2.6,
+	TauEnterAim = 0.06,
+	TauExitAim = 0.075,
+	TauEnterSprint = 0.085,
+	TauExitSprint = 0.055,
+	TauDodge = 0.07,
+	TauDowned = 0.12,
+	OcclusionRadius = 0.35,
+	OcclusionMargin = 0.25,
+	OcclusionMinDistance = 1.2,
+	OcclusionInTau = 0.03,
+	OcclusionOutTau = 0.35,
+	BobAmplitude = 0.045,
+	RecoilRecoveryTau = 0.09,
+	LandingDipAngle = math.rad(4.5),
+	LandingRecoveryTau = 0.14,
+	ShakeAmplitude = 0.035,
+	AimAssistConeDegrees = 5,
+	AimAssistRange = 120,
+	AimAssistTau = 0.14,
+	AimAssistStrength = 0.5,
+	AimAssistFriction = 0.45,
+}
+
 
 Constants.Vitals = {
 	ShieldMax = 100,

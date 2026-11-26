@@ -102,6 +102,49 @@ local function muzzlePosition(): Vector3?
 	return pos
 end
 
+-- Weapon ergonomics (Helldivers-lite): the visual/actual aim direction converges toward the
+-- camera's intended direction with a per-category time constant. Small taus only — feedback,
+-- never disconnection. The reticle's hollow ring renders this direction; hitscan uses it.
+local aimDir: Vector3? = nil
+local ERGONOMICS_TAU = {
+	pistol = 0.025, smg = 0.030, rifle = 0.045, shotgun = 0.055,
+	marksman = 0.065, lmg = 0.075, launcher = 0.090,
+}
+
+local function ergonomicsTau(weapon)
+	local cat = tostring(weapon and weapon.category or "rifle"):lower()
+	return ERGONOMICS_TAU[cat] or 0.045
+end
+
+local function updateAimDir(dt)
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+	local target = camera.CFrame.LookVector
+	if not aimDir then
+		aimDir = target
+		return
+	end
+	local weapon = Weapons.get(state.weaponId)
+	local tau = ergonomicsTau(weapon)
+	local cur = (aimDir :: Vector3)
+	local alpha = 1 - math.exp(-(dt or 0) / math.max(tau, 1e-3))
+	aimDir = (cur + (target - cur) * alpha).Unit
+end
+
+function Weapon.getAimDir(): Vector3
+	local camera = workspace.CurrentCamera
+	return aimDir or (camera and camera.CFrame.LookVector) or Vector3.zAxis
+end
+
+-- firing disrupts convergence slightly; heavier weapons worse (moving + shooting penalty lives
+-- in the reticle spread, this is the physical side)
+local function disruptAim(weapon)
+	if not aimDir then return end
+	local kick = 0.012 * (tonumber(weapon and weapon.recoil) or 1)
+	local jitter = Vector3.new((math.random() - 0.5) * kick, math.random() * kick * 0.7, (math.random() - 0.5) * kick)
+	aimDir = ((aimDir :: Vector3) + jitter).Unit
+end
+
 local function tryFire()
 	if state.reloading then
 		return
@@ -123,7 +166,7 @@ local function tryFire()
 		return
 	end
 	local camera = workspace.CurrentCamera
-	local look = camera and camera.CFrame.LookVector or head.CFrame.LookVector
+	local look = Weapon.getAimDir()
 	-- Hitscan follows the rendered reticle. A parallel ray from the head missed the crosshair horizontally
 	-- because the camera is deliberately offset over the right shoulder; use the camera ray for truth and
 	-- keep the muzzle purely as the visual emitter. Camera collision already keeps this origin out of walls.
@@ -133,7 +176,29 @@ local function tryFire()
 	state.lastSent = now
 	state.ammo = math.max(0, state.ammo - 1)
 
-	pcall(function() require(script.Parent.CameraCtl).shake(0.035 * (tonumber(weapon.recoil) or 1)) end)
+	pcall(function()
+		require(script.Parent.CameraCtl).shake(0.018 * (tonumber(weapon.recoil) or 1))
+	end)
+	disruptAim(weapon)
+	-- Muzzle obstruction validation: the camera can see around cover the muzzle can't shoot
+	-- through. Test the segment the bullet would really travel; a block before the camera-ray
+	-- hit means the shot is invalid and never leaves.
+	local muzzlePos = muzzlePosition()
+	if muzzlePos then
+		local muzzleParams = RaycastParams.new()
+		muzzleParams.FilterType = Enum.RaycastFilterType.Exclude
+		muzzleParams.FilterDescendantsInstances = { character }
+		local toCamHit = (origin + look * 1e-3) - muzzlePos
+		-- cast toward where the camera ray will travel; obstruction within the first stretch blocks
+		local probe = workspace:Raycast(muzzlePos, look * math.max(4, toCamHit.Magnitude), muzzleParams)
+		if probe and probe.Instance and not probe.Instance:IsDescendantOf(character) then
+			local preHit = workspace:Raycast(origin, look * weapon.range, muzzleParams)
+			if preHit and (probe.Position - origin).Magnitude < (preHit.Position - origin).Magnitude then
+				return -- muzzle is behind cover the camera sees over: deny the shot entirely
+			end
+		end
+	end
+
 	remotes.FireWeapon:FireServer({
 		weaponId = state.weaponId,
 		shotId = state.shotId,
@@ -388,7 +453,8 @@ function Weapon.init()
 		end
 	end)
 
-	RunService.RenderStepped:Connect(function()
+	RunService.RenderStepped:Connect(function(dt)
+	updateAimDir(dt)
 		if state.firing then
 			tryFire()
 		end

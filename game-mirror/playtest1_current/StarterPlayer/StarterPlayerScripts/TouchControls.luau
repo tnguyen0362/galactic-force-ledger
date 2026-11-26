@@ -59,15 +59,14 @@ fire.InputEnded:Connect(function()
 	VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
 end)
 
--- camera drag on the right half of the screen
+-- camera drag on the right half of the screen: routed through the authoritative camera
+-- controller instead of writing CFrame directly (one camera authority, per the movement/camera
+-- refinement). Delta sign convention preserved from the original direct-write implementation.
+local CameraController = require(script.Parent.CameraController)
 UserInputService.TouchMoved:Connect(function(touch, processed)
 	if processed then return end
 	local pos = touch.Position
 	if pos.X > workspace.CurrentCamera.ViewportSize.X * 0.45 then
-		local camera = workspace.CurrentCamera
-		if camera then
-			local delta = touch.Delta
-			camera.CFrame = camera.CFrame * CFrame.Angles(0, -delta.X * 0.005, 0) * CFrame.Angles(-delta.Y * 0.005, 0, 0)
-		end
+		CameraController.feedTouchLook(Vector2.new(touch.Delta.X, touch.Delta.Y) * 5.5)
 	end
 end)

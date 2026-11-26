@@ -57,6 +57,9 @@ local moveBlend = 0
 local strafeBlend = 0
 local lastPos = root.Position
 
+local wasRolling = false
+local rollEdgeClock = 0
+
 local function lerp(a: number, b: number, t: number): number
 	return a + (b - a) * t
 end
@@ -89,10 +92,34 @@ RunService.Heartbeat:Connect(function(dt)
 
 	local crouching = character:GetAttribute("Crouching") == true
 	local rolling = character:GetAttribute("Rolling") == true
+	local prevRolling = wasRolling
 	local sprinting = character:GetAttribute("Sprinting") == true
 	if rolling then
-		-- Roll: tuck hard and pitch the whole body forward. A dash with a walk cycle read as a slide.
-		setJoint("Root", CFrame.Angles(1.15, 0, 0), Vector3.new(0, -0.55, 0))
+		-- TFD-style combat roll: the tucked body performs exactly one full rotation over the
+		-- roll window, flip axis perpendicular to travel in the character's local frame —
+		-- forward rolls pitch forward, backward rolls backward, laterals barrel sideways.
+		-- visual-only (Root joint pose); the physics capsule is never rotated.
+		if not wasRolling then
+			rollEdgeClock = os.clock()
+		end
+		wasRolling = true  -- the early return below skips the bottom-of-loop update
+		local rollFrac = math.clamp((os.clock() - rollEdgeClock) / 0.55, 0, 1)
+		local eased = rollFrac * rollFrac * (3 - 2 * rollFrac)
+		local angle = eased * math.pi * 2
+		local rollDirWorld = Vector3.new(
+			character:GetAttribute("GFRollDirX") or 0, 0,
+			character:GetAttribute("GFRollDirZ") or 0)
+		if rollDirWorld.Magnitude < 0.1 then
+			rollDirWorld = root.CFrame.LookVector
+		end
+		-- travel direction in character-local space: X = pitch rate, Z = barrel rate
+		local pivot = character:GetPivot()
+		local ld = pivot:VectorToObjectSpace(rollDirWorld.Unit)
+		local pitchRate = ld.Z  -- forward travel (ld.Z=-1) yields negative X angle = forward flip
+		local barrelRate = -ld.X
+		setJoint("Root",
+			CFrame.Angles(pitchRate * angle, 0, barrelRate * angle),
+			Vector3.new(0, -0.55 - math.sin(rollFrac * math.pi) * 0.25, 0))
 		setJoint("LeftHip", CFrame.Angles(1.25, 0, 0))
 		setJoint("RightHip", CFrame.Angles(1.05, 0, 0))
 		setJoint("LeftKnee", CFrame.Angles(-2.1, 0, 0))
@@ -157,6 +184,7 @@ RunService.Heartbeat:Connect(function(dt)
 		setJoint("RightElbow", CFrame.Angles(-0.5, 0, 0))
 		setJoint("Waist", CFrame.Angles(-0.08, 0, 0))
 	end
+	wasRolling = rolling
 
 end)
 

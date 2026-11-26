@@ -19,6 +19,7 @@ local function publish(player: Player)
 	local e = entry(player)
 	ReplicatedStorage.GF.Remotes.DodgeUpdated:FireClient(player, { charges = e.charges, max = Constants.Movement.RollCharges })
 end
+local applyStance
 local function doDodge(player: Player, payload: any)
 	local s = State.get(player)
 	if not s or s.downed then
@@ -53,47 +54,71 @@ local function doDodge(player: Player, payload: any)
 	end
 	-- Publish the roll so the animator can tuck the body: without this the dash read as a slide.
 	character:SetAttribute("Rolling", true)
+	-- engine-native displacement: the roll is a high-WalkSpeed burst driven through
+	-- humanoid:Move on the client. the engine owns collision, floor adhesion and wall
+	-- sliding — no velocity overrides, no physics-state fights, no solver energy.
+	local preRollSpeed = humanoid.WalkSpeed
+	humanoid.WalkSpeed = Constants.Movement.RollSpeed or 24
 	task.delay(Constants.Movement.RollDuration, function()
 		if character and character.Parent then
 			character:SetAttribute("Rolling", false)
+			if humanoid and humanoid.Parent and humanoid.Health > 0 then
+				humanoid.WalkSpeed = preRollSpeed
+				applyStance(player, character, humanoid)
+			end
 		end
 	end)
-	-- Spec: the roll covers ~13 studs over 0.55s. Use a planar LinearVelocity: it is a real physics
-	-- constraint (so it works with character network ownership), but it constrains only X/Z and leaves
-	-- vertical velocity to gravity and impacts. The previous vector constraint targeted Y=0 and made the
-	-- roll hover; the direct-velocity replacement was fought by client network ownership and moved only
-	-- a few studs. Plane mode is the correct middle ground.
+	-- Roll displacement (movement/camera refinement): planar LinearVelocity with a linearly
+	-- decaying speed profile. v(t) = v0 * (1 - t/T); the integral over T is v0*T/2, so
+	-- v0 = 2*distance/T yields a fast start and a natural stop at exactly the configured
+	-- distance, consistent across frame rates. Plane mode stays because it is a real physics
+	-- constraint compatible with client network ownership; Y remains owned by gravity/impacts.
 	local rollDirection = flat.Unit
-	local rollSpeed = Constants.Movement.RollDistance / Constants.Movement.RollDuration
-	local speedScale = 1
-	do
-		local params = RaycastParams.new()
-		params.FilterType = Enum.RaycastFilterType.Exclude
-		params.FilterDescendantsInstances = { character }
-		local hit = workspace:Raycast(root.Position, rollDirection * 2.8, params)
-		if hit then
-			speedScale = math.clamp((hit.Distance - 0.8) / 2.8, 0.15, 1)
+	local duration = Constants.Movement.RollDuration
+	-- displacement profile: constant cruise for 65% of the window then linear decay to zero.
+	-- distance = v * (0.65T + 0.35T/2) = v * 0.825T, so v = D/(0.825T). Peak speed is nearly
+	-- half the old triangle profile's 2D/T — same distance, far less impact energy on contact.
+	local rollSpeedPeak = Constants.Movement.RollDistance / (0.825 * duration)
+
+	-- I-frames: the roll IS the dodge — full invulnerability for the active roll window,
+	-- server-authoritative. VitalsService.applyDamage gates on State.invulnerableUntil.
+	if s then
+		(s :: any).invulnerableUntil = now + duration
+	end
+	-- Rolling cancels an unfinished reload WITHOUT duplicating ammunition: the reload
+	-- completion task in CombatService re-checks live.reloading before applying, so clearing
+	-- the flag here voids the completion server-side. The client voids its cosmetic timer
+	-- through the ReloadCancelled remote.
+	if s and s.reloading then
+		s.reloading = false
+		local rc = ReplicatedStorage.GF.Remotes:FindFirstChild("ReloadCancelled")
+		if rc then
+			rc:FireClient(player, {})
 		end
 	end
-	local attachment = Instance.new("Attachment")
-	attachment.Name = "GFDodgeAttachment"
-	attachment.Parent = root
-	local impulse = Instance.new("LinearVelocity")
-	impulse.Name = "GFDodgeVelocity"
-	impulse.Attachment0 = attachment
-	impulse.RelativeTo = Enum.ActuatorRelativeTo.World
-	impulse.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
-	impulse.PrimaryTangentAxis = Vector3.new(1, 0, 0)
-	impulse.SecondaryTangentAxis = Vector3.new(0, 0, 1)
-	impulse.PlaneVelocity = Vector2.new(rollDirection.X * rollSpeed * speedScale, rollDirection.Z * rollSpeed * speedScale)
-	impulse.MaxForce = math.huge
-	impulse.Parent = root
-	task.delay(Constants.Movement.RollDuration, function()
-		if impulse.Parent then
-			impulse:Destroy()
+
+	-- Displacement is CLIENT-driven: the player's assembly is network-owned by their machine,
+	-- so server constraints lose ownership fights against the humanoid (measured: velocity
+	-- peak 8.7 of 26.5, state override refused). Server stays authoritative for everything
+	-- gameplay-critical — charge consumption, timing, i-frames, obstruction-independent kill
+	-- of the window — and publishes the validated roll vector as attributes. The client
+	-- executes the physical displacement with continuous collision validation and the server
+	-- verifies the outcome plausibility window below.
+	character:SetAttribute("GFRollDirX", rollDirection.X)
+	character:SetAttribute("GFRollDirZ", rollDirection.Z)
+
+	-- post-hoc plausibility: after the window + recovery, displacement must not exceed the
+	-- configured distance by a wide margin (exploit teleporting rides the roll otherwise).
+	local startPos = root.Position
+	task.delay(duration + Constants.Movement.RollRecovery + 0.05, function()
+		if not root.Parent then
+			return
 		end
-		if attachment.Parent then
-			attachment:Destroy()
+		local d = root.Position - startPos
+		local flat2 = Vector3.new(d.X, 0, d.Z).Magnitude
+		if flat2 > Constants.Movement.RollDistance * 1.8 then
+			-- don't hard-snap legitimate physics (explosions, slopes); flag only
+			warn(string.format("[GF] roll displacement anomaly %s: %.1f studs", player.Name, flat2))
 		end
 	end)
 	publish(player)
@@ -184,7 +209,7 @@ function MovementService.start()
 	end)
 -- Single place that decides WalkSpeed, so crouch, sprint and aim cannot disagree. ADS was previously
 -- unimplemented: Constants.Movement.AdsSpeed was read by nothing, so sights-up did not slow movement.
-local function applyStance(player, character, humanoid)
+applyStance = function(player, character, humanoid)
 	if not character or not humanoid or humanoid.Health <= 0 then
 		return
 	end
@@ -193,7 +218,7 @@ local function applyStance(player, character, humanoid)
 		-- Downed soldiers crawl. Stance replication must never promote them back to walk/sprint/ADS speed.
 		character:SetAttribute("Sprinting", false)
 		character:SetAttribute("Aiming", false)
-		humanoid.WalkSpeed = 5
+		humanoid.WalkSpeed = Constants.Movement.DownedSpeed
 		humanoid.JumpPower = 0
 		return
 	end

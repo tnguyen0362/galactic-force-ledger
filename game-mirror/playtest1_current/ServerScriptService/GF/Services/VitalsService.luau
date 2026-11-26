@@ -63,6 +63,11 @@ function VitalsService.reset(player: Player)
 	s.downed = false
 	s.downedAt = nil
 	ReplicatedStorage.GF.Remotes.DownedChanged:FireClient(player, false)
+	-- persistent character attribute mirror (movement/camera refinement): the client movement
+	-- state machine polls this; the remote alone is a one-shot event respawns can miss.
+	if player.Character then
+		player.Character:SetAttribute("Downed", false)
+	end
 	local humanoid = humanoidOf(player)
 	if humanoid then
 		humanoid.Health = humanoid.MaxHealth
@@ -89,6 +94,12 @@ function VitalsService.applyDamage(player: Player, amount: number, _source: stri
 	end
 	local s = State.get(player)
 	if not s or s.downed or amount <= 0 then
+		return 0
+	end
+	-- Roll i-frames (movement/camera refinement): full invulnerability during the active roll
+	-- window. MovementService sets State.invulnerableUntil server-side when the roll begins;
+	-- the window is authoritative here, never client-claimed.
+	if (s :: any).invulnerableUntil and os.clock() < (s :: any).invulnerableUntil then
 		return 0
 	end
 	-- Damage attribution behind a switch: it was the only way to name the landing-zone attacker, but it must
@@ -206,6 +217,11 @@ function VitalsService.downPlayer(player: Player)
 		end
 	end
 	ReplicatedStorage.GF.Remotes.DownedChanged:FireClient(player, true)
+	-- persistent character attribute mirror (movement/camera refinement): the client movement
+	-- state machine polls this; the remote alone is a one-shot event respawns can miss.
+	if player.Character then
+		player.Character:SetAttribute("Downed", true)
+	end
 	VitalsService.publish(player)
 end
 
@@ -224,6 +240,11 @@ function VitalsService.revive(player: Player)
 	end
 	restorePreDownedCollision(player.Character)
 	ReplicatedStorage.GF.Remotes.DownedChanged:FireClient(player, false)
+	-- persistent character attribute mirror (movement/camera refinement): the client movement
+	-- state machine polls this; the remote alone is a one-shot event respawns can miss.
+	if player.Character then
+		player.Character:SetAttribute("Downed", false)
+	end
 	VitalsService.publish(player)
 end
 
