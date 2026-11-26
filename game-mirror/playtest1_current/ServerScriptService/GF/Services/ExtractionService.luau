@@ -32,6 +32,7 @@ local departing = false
 local aboard: { [Player]: boolean } = {}
 local extracted: { [Player]: boolean } = {}
 local squadPending = false
+local HARD_DEADLINE = 240 -- seconds after landing before the ship must leave regardless
 local SQUAD_WARNING = 2
 local CABIN_HALF = 8
 local CABIN_HEIGHT = 14
@@ -66,7 +67,10 @@ end
 function ExtractionService.eligible(): { Player }
 	local out = {}
 	for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
-		if not extracted[player] and stationZone(player) == "Mission" then
+		-- participant-scoped (audit P1: one roster everywhere) — a connected player who never
+		-- deployed must not block squad extraction or count toward its bonus.
+		if player:GetAttribute("GF_MissionParticipant") == true
+			and not extracted[player] and stationZone(player) == "Mission" then
 			out[#out + 1] = player
 		end
 	end
@@ -285,26 +289,6 @@ local function allEligibleAboard(): (boolean, number, number)
 	return #list > 0 and count == #list, count, #list
 end
 
-local function extractIndividual(player: Player)
-	extracted[player] = true
-	aboard[player] = nil
-	player:SetAttribute("GF_Aboard", false)
-	local mission = State.getMission()
-	local difficulty = (mission and mission.difficulty) or "Normal"
-	workspace:SetAttribute("GF_LastIndividualExtract", player.Name)
-	pcall(function()
-		require(script.Parent.RewardLedgerService).appendEvent("extraction_individual", difficulty, "extraction:" .. player.Name)
-	end)
-	RewardsService.grant(player, difficulty, true, objectiveDoneNow(), false)
-	pcall(function()
-		require(script.Parent.StationService).returnToStation(player)
-	end)
-	-- returnToStation clears the global mission flag; it stays on while anyone is still deployed.
-	if #ExtractionService.eligible() > 0 then
-		workspace:SetAttribute("GF_InMission", true)
-	end
-end
-
 function ExtractionService.board(player: Player)
 	if completing or squadPending or not landed or not dropship then
 		return
@@ -344,13 +328,10 @@ function ExtractionService.board(player: Player)
 		end)
 		return
 	end
-	workspace:SetAttribute("GF_ExtractSplit", string.format("%d/%d", count, total))
-	extractIndividual(player)
-	if #ExtractionService.eligible() == 0 then
-		completing = true
-		ExtractionService.playDeparture()
-		ExtractionService.finish(objectiveDoneNow(), false)
-	end
+	-- boarding HOLDS (audit target contract item 10): no instant individual extraction, no
+	-- early payout. The first boarder waits for the squad; the ship leaves when everyone is
+	-- aboard or the boarding deadline expires. Settlement happens once, at final close.
+	workspace:SetAttribute("GF_ExtractSplit", string.format("%d/%d aboard", count, total))
 end
 
 -- The departure cinematic. Server-driven: the ship is tweened through a climb-and-bank path while the
@@ -428,7 +409,7 @@ function ExtractionService.finish(success: boolean, squadBonus: boolean?)
 		EnemyService.clearAll()
 	end)
 	-- Every soldier still in the mission when it closes returns to the station. An individually
-	-- extracted player has already gone home in extractIndividual.
+	-- committed players ride the ship home; everyone still in the mission zone returns here.
 	pcall(function()
 		local station = require(script.Parent.StationService)
 		for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
@@ -496,6 +477,18 @@ function ExtractionService.finish(success: boolean, squadBonus: boolean?)
 	else
 		workspace:SetAttribute("GF_MissionCacheResult", string.format("skipped success=%s objective=%s", tostring(success), tostring(payoutObjective)))
 	end
+	-- joinedLate suppresses only the current operation's full payout (audit P1 item 9) —
+	-- cleared at mission close so the next operation pays normally.
+	pcall(function()
+		for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+			local ps = State.get(p)
+			if ps and ps.joinedLate then
+				ps.joinedLate = false
+			end
+			-- participant roster is per-operation: cleared here so the next deployment rebuilds it
+			p:SetAttribute("GF_MissionParticipant", nil)
+		end
+	end)
 	SquadService.reset()
 	table.clear(aboard)
 	table.clear(extracted)
@@ -544,7 +537,31 @@ end
 				end
 				if deadline and os.clock() >= deadline and not called and not completing then
 					ExtractionService.emergency()
-				elseif emergency and landed and landedAt and not completing then
+				elseif landed and landedAt and not completing and not emergency then
+					-- hard deadline enforcement (was dead code): the ship must leave regardless.
+					-- aboard complement departs now; nobody aboard means the operation failed.
+					if os.clock() - landedAt > HARD_DEADLINE then
+						completing = true
+						local aboardCount = 0
+						for _ in pairs(aboard) do aboardCount += 1 end
+						if aboardCount > 0 then
+							local ev = remote("MissionEvent")
+							if ev then
+								ev:FireAllClients({ text = "Boarding deadline reached — dropship departing.", kind = "info" })
+							end
+							ExtractionService.playDeparture()
+							ExtractionService.finish(objectiveDoneNow(), false)
+						else
+							local ev = remote("MissionEvent")
+							if ev then
+								ev:FireAllClients({ text = "Dropship waited too long. Extraction window closed.", kind = "fail" })
+							end
+							ExtractionService.finish(false)
+						end
+						completing = false
+					end
+				end
+				if emergency and landed and landedAt and not completing then
 					-- nobody boarded before the grace window closed
 					if os.clock() - landedAt > emergencyGrace() then
 						completing = true
@@ -572,7 +589,10 @@ local function liveSquad()
 	local out = {}
 	for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
 		local state = State.get(player)
-		if player.Character and not (state and state.downed) then
+		-- vote population is living mission participants only (audit target contract item 5):
+		-- spectators and station crew never gate the squad's extraction decision.
+		if player:GetAttribute("GF_MissionParticipant") == true
+			and player.Character and not (state and state.downed) then
 			out[#out + 1] = player
 		end
 	end
@@ -750,7 +770,6 @@ end
 -- S09-004/007 extraction conformance: on primary completion the nearest validated zone reveals
 -- immediately — no mandatory walk before the call. After landing the ship stays available until
 -- the hard deadline; there is no 30s boarding countdown pressuring the squad.
-local HARD_DEADLINE = 240 -- seconds after landing before the ship must leave regardless
 
 function ExtractionService.revealNearestZone()
 	local zones = workspace:FindFirstChild("ExtractionZones")
