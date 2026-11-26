@@ -7,6 +7,7 @@ local Caches = require(ReplicatedStorage.GF.Shared.Configs.Caches)
 local Augments = require(ReplicatedStorage.GF.Shared.Configs.Augments)
 local AugmentService = require(script.Parent.AugmentService)
 local Enemies = require(ReplicatedStorage.GF.Shared.Configs.Enemies)
+local RewardSources = require(ReplicatedStorage.GF.Shared.Configs.RewardSources)
 
 local CacheService = {}
 
@@ -488,11 +489,14 @@ function CacheService.enemyDropWeights(enemyId: string, difficulty: string?): { 
 		return nil
 	end
 	local scale = DROP_SCALE[tostring(difficulty or "Normal")] or 1
+	-- §16 division identity: prestigious divisions improve the rarity mix of their cache contents
+	-- (Revenant 1.5x non-Common, provisional) — distinct from the drop-chance multiplier.
+	local improve = RewardSources.rarityImprovement(enemyId)
 	local scaled, total = {}, 0
 	for rarity, weight in pairs(base) do
 		local w = tonumber(weight) or 0
 		if rarity ~= "Common" then
-			w = w * scale
+			w = w * scale * improve
 		end
 		scaled[rarity] = w
 		total += w
@@ -528,18 +532,10 @@ function CacheService.scaledWeights(tierId: string, difficulty: string?, boss: b
 end
 
 function CacheService.chanceFor(def: any): number
-	local tier = Caches.get(missionTier())
-	local chance = tier and tier.enemyChance or { infantry = 0.01, heavy = 0.04, commander = 0.07 }
-	if def and def.tier == "Boss" then
-		return 1
-	end
-	if def and def.id == "Officer" then
-		return chance.commander or 0.07
-	end
-	if def and def.tier == "Elite" then
-		return chance.heavy or 0.04
-	end
-	return chance.infantry or 0.01
+	-- §17 registry resolution: class-based per-mission-tier probabilities with division
+	-- identity multipliers (Spectre 1.5x, Revenant 2.0x — provisional, Stage 10 calibrates).
+	local enemyId = def and def.id or nil
+	return RewardSources.cacheChanceFor(enemyId, def, missionTier())
 end
 
 function CacheService.onEnemyKilled(model: Model, killer: Player?)

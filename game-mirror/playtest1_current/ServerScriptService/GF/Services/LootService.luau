@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 
 local SquadService = require(script.Parent.SquadService)
 local Enemies = require(ReplicatedStorage.GF.Shared.Configs.Enemies)
+local RewardSources = require(ReplicatedStorage.GF.Shared.Configs.RewardSources)
 
 local LootService = {}
 local MAX_ACTIVE = 40
@@ -70,20 +71,43 @@ local function spawnPickup(kind: string, position: Vector3, amount: number): Bas
 	return part
 end
 
+local function rollDistribution(dist: any): number
+	-- §19 Bernoulli events and fixed quantities, resolved from the reward source registry.
+	if type(dist) ~= "table" then
+		return 0
+	end
+	if dist.kind == "fixed" then
+		return math.max(0, math.floor(tonumber(dist.amount) or 0))
+	end
+	if dist.kind == "bernoulli" then
+		if math.random() < (tonumber(dist.p) or 0) then
+			return math.max(0, math.floor(tonumber(dist.amount) or 0))
+		end
+	end
+	return 0
+end
+
 local function dropFrom(defId: string, position: Vector3)
 	local def = Enemies.get(defId)
 	if not def then
 		return
 	end
-	local scrap = tonumber(def.lootScrap) or 0
+	local source = RewardSources.forEnemy(defId, def)
+	local dist = source and source.ResourceQuantityDistributions or nil
+	if not dist then
+		return
+	end
+	local scrap = rollDistribution(dist.scrap)
 	if scrap > 0 then
 		spawnPickup("scrap", position, scrap)
 	end
-	if math.random() < (tonumber(def.lootEnergyChance) or 0) then
-		spawnPickup("energyCells", position + Vector3.new(1.4, 0, 0.6), 1)
+	local cells = rollDistribution(dist.energyCells)
+	if cells > 0 then
+		spawnPickup("energyCells", position + Vector3.new(1.4, 0, 0.6), cells)
 	end
-	if math.random() < (tonumber(def.lootTechChance) or 0) then
-		spawnPickup("militaryTechnology", position + Vector3.new(-1.4, 0, 0.6), 1)
+	local tech = rollDistribution(dist.militaryTechnology)
+	if tech > 0 then
+		spawnPickup("militaryTechnology", position + Vector3.new(-1.4, 0, 0.6), tech)
 	end
 end
 
@@ -222,6 +246,150 @@ local function watch(model: Model)
 	end)
 end
 
+-- ---------------------------------------------------------------------------
+-- INSTALLATION LOOT (economy spec §16, Stage 3): installations reward composition matching
+-- their purpose. Zero-touch integration: existing decorative crate props inside MissionSite
+-- models are converted into lootable containers — positions come from the site layouts that
+-- already exist, no edits to MissionSites. If crate naming changes upstream the conversion
+-- simply finds nothing and degrades without errors. Visual refinement of the containers
+-- themselves is Stage 8 territory; for now a warm glow marks them as interactive.
+-- ---------------------------------------------------------------------------
+local CONTAINER_COLLECT_RADIUS = 8
+local lootedContainers: { [BasePart]: boolean } = {}
+local convertedSites: { [Model]: boolean } = {}
+local activeContainers: { { part: BasePart, siteType: string } } = {}
+
+local function convertSiteCrates(siteModel: Model)
+	if convertedSites[siteModel] then
+		return
+	end
+	convertedSites[siteModel] = true
+	local siteType = siteModel:GetAttribute("SiteType")
+	if type(siteType) ~= "string" then
+		return
+	end
+	local source = RewardSources.forInstallation(siteType)
+	if not source or (source._cratesPerSite or 0) <= 0 then
+		return
+	end
+	-- collect decorative crate parts: layout names end in CrateX<level> (SupplyCrateA1, StrongholdCrateB2...)
+	local crates = {}
+	for _, desc in siteModel:GetDescendants() do
+		if desc:IsA("BasePart") and string.match(desc.Name, "Crate%l?%d+$") then
+			table.insert(crates, desc)
+		end
+	end
+	table.sort(crates, function(a, b) return a.Name < b.Name end)
+	local converted = 0
+	for _, crate in crates do
+		if converted >= source._cratesPerSite then
+			break
+		end
+		-- only convert ground-level crates (level suffix 1) so every container is reachable
+		if not string.match(crate.Name, "1$") then
+			continue
+		end
+		converted += 1
+		crate:SetAttribute("GFLootContainer", true)
+		crate:SetAttribute("SiteType", siteType)
+		local lamp = Instance.new("PointLight")
+		lamp.Color = Color3.fromRGB(255, 200, 110)
+		lamp.Brightness = 1.4
+		lamp.Range = 12
+		lamp.Parent = crate
+		table.insert(activeContainers, { part = crate, siteType = siteType })
+	end
+	if converted > 0 then
+		workspace:SetAttribute("GF_InstallationLoot", string.format("%s:%d", siteType, converted))
+	end
+end
+
+local function scanSites()
+	for _, child in workspace:GetChildren() do
+		if child:IsA("Model") and string.match(child.Name, "^MissionSite_") then
+			convertSiteCrates(child)
+		end
+	end
+end
+
+local function collectContainer(index: number, player: Player)
+	local container = activeContainers[index]
+	if not container or lootedContainers[container.part] then
+		return
+	end
+	lootedContainers[container.part] = true
+	table.remove(activeContainers, index)
+	local source = RewardSources.forInstallation(container.siteType)
+	if not source then
+		return
+	end
+	-- composition rolls feed the shared squad pool exactly like enemy salvage (spec §15)
+	local dist = source.ResourceQuantityDistributions
+	local yields = {}
+	for resource, d in pairs(dist) do
+		local amount = rollDistribution(d)
+		if amount > 0 then
+			yields[resource] = amount
+		end
+	end
+	for resource, amount in pairs(yields) do
+		SquadService.add(resource, amount)
+	end
+	-- cache opportunity per container (§16 installation cache composition)
+	local cacheGranted = false
+	if math.random() < (source.CacheProbability or 0) then
+		local ok, CacheService = pcall(function()
+			return require(script.Parent.CacheService)
+		end)
+		if ok and CacheService then
+			local tier = "Common"
+			pcall(function()
+				local mission = require(script.Parent.State).getMission()
+				local diff = mission and mission.difficulty or "Normal"
+				tier = ({ Easy = "Common", Normal = "Rare", Hard = "Epic", Extreme = "Legendary" })[diff] or "Rare"
+			end)
+			cacheGranted = CacheService.grantToInventory(player, tier, container.siteType) == true
+		end
+	end
+	-- visual feedback: the container dims and its lamp dies — opened, not vanished
+	local lamp = container.part:FindFirstChildOfClass("PointLight")
+	if lamp then
+		lamp.Brightness = 0
+	end
+	container.part.Color = Color3.fromRGB(70, 64, 56)
+	local parts = {}
+	for resource, amount in pairs(yields) do
+		table.insert(parts, resource .. " x" .. amount)
+	end
+	if cacheGranted then
+		table.insert(parts, "cache")
+	end
+	workspace:SetAttribute("GF_ContainerLooted", string.format("%s:%s", container.siteType, table.concat(parts, ",")))
+	local fx = ReplicatedStorage.GF.Remotes:FindFirstChild("LootCollected")
+	if fx then
+		fx:FireClient(player, "container:" .. container.siteType, 1, container.part.Position)
+	end
+end
+
+local function containerTick()
+	for i = #activeContainers, 1, -1 do
+		local container = activeContainers[i]
+		if not container.part.Parent then
+			table.remove(activeContainers, i)
+		else
+			local pos = container.part.Position
+			for _, player in Players:GetPlayers() do
+				local character = player.Character
+				local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if root and (root.Position - pos).Magnitude <= CONTAINER_COLLECT_RADIUS then
+					collectContainer(i, player)
+					break
+				end
+			end
+		end
+	end
+end
+
 function LootService.start()
 	local folder = workspace:FindFirstChild("ActiveActors")
 	if folder then
@@ -237,8 +405,19 @@ function LootService.start()
 		end)
 	end
 	if not heartbeat then
-		heartbeat = RunService.Heartbeat:Connect(tick)
+		heartbeat = RunService.Heartbeat:Connect(function()
+			tick()
+			containerTick()
+		end)
 	end
+	-- installations stream in with the mission; scan now and then rescan periodically
+	task.defer(scanSites)
+	task.spawn(function()
+		while true do
+			task.wait(5)
+			scanSites()
+		end
+	end)
 end
 
 function LootService.spawnPickup(kind: string, position: Vector3, amount: number)
