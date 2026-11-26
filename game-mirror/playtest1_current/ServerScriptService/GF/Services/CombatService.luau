@@ -346,16 +346,29 @@ function CombatService.damageEnemy(model: Model, amount: number, attacker: Playe
 	-- own HP pool while ALSO applying to the core exactly once (the raw above continues through the
 	-- normal path unchanged). Destroyed components disable their attack in the boss step logic.
 	if partName then
-		local compPart = model:FindFirstChild(partName)
-		local compHp = compPart and compPart:GetAttribute("ComponentHP")
-		if compPart and type(compHp) == "number" and compHp > 0 then
-			local remaining = compHp - raw
-			compPart:SetAttribute("ComponentHP", remaining)
-			if remaining <= 0 then
-				compPart:SetAttribute("ComponentDestroyed", true)
-				compPart.Color = Color3.fromRGB(30, 30, 32)
-				compPart.Material = Enum.Material.CorrodedMetal
-				workspace:SetAttribute("GF_ComponentDestroyed", tostring(compPart:GetAttribute("ComponentId")))
+		-- component-framework entities resolve through ComponentService: authoritative pools,
+		-- dependency graph, exactly-once destruction events. The legacy path must not double-burn
+		-- the same ComponentHP attributes the framework owns.
+		if model:GetAttribute("GFComponentEntity") == true then
+			local compPart = model:FindFirstChild(partName)
+			local ok, mult = pcall(function()
+				return require(script.Parent.ComponentService).resolveComponentDamage(model, compPart, raw)
+			end)
+			if ok and type(mult) == "number" then
+				raw = raw * mult
+			end
+		else
+			local compPart = model:FindFirstChild(partName)
+			local compHp = compPart and compPart:GetAttribute("ComponentHP")
+			if compPart and type(compHp) == "number" and compHp > 0 then
+				local remaining = compHp - raw
+				compPart:SetAttribute("ComponentHP", remaining)
+				if remaining <= 0 then
+					compPart:SetAttribute("ComponentDestroyed", true)
+					compPart.Color = Color3.fromRGB(30, 30, 32)
+					compPart.Material = Enum.Material.CorrodedMetal
+					workspace:SetAttribute("GF_ComponentDestroyed", tostring(compPart:GetAttribute("ComponentId")))
+				end
 			end
 		end
 	end

@@ -244,6 +244,72 @@ function ComponentService._applyHull(entity: EntityState, amount: number, _sourc
 	end
 end
 
+-- component-only resolution for integration with the caller's hull pipeline: burns component
+-- pools, fires destruction events exactly once, applies NO hull damage. Returns the multiplier
+-- the hit applies to damage continuing through the normal hull path (damageMultiplier * eta for
+-- a component hit, protected-redirect arithmetic, 1 for a plain hull hit).
+function ComponentService.resolveComponentDamage(model: Model, hitPart: BasePart?, rawDamage: number): number
+	local entity = entities[model]
+	if not entity or entity.dead then return 1 end
+	if not hitPart then return 1 end
+	local componentId = entity.partIndex[hitPart]
+	if not componentId then return 1 end
+	local def = entity.components[componentId]
+	-- protected component: the protector intercepts — hit applies to the protector at reduced
+	-- effectiveness, hull transfer follows the protector's eta. Never invulnerable: the protector
+	-- is itself always damageable.
+	if def.protectedBy then
+		local protector = entity.components[def.protectedBy]
+		if protector and not protector.destroyed then
+			ComponentService._damageComponent(entity, def.protectedBy, rawDamage * 0.5)
+			return protector.eta
+		end
+	end
+	if def.destroyed then
+		return 0.6 -- pass-through at reduced rate: the destroyed shell no longer protects
+	end
+	local effective = rawDamage * def.damageMultiplier
+	ComponentService._damageComponent(entity, componentId, effective)
+	return def.damageMultiplier * def.eta
+end
+
+-- explosion budget allocation variant: same contract as resolveComponentDamage — component pools
+-- burn here, the hull-path multiplier returns to the caller. overlappedParts are the hitboxes in
+-- the blast radius for THIS entity only.
+function ComponentService.resolveExplosionDamage(model: Model, rawDamage: number, overlappedParts: { BasePart }): number
+	local entity = entities[model]
+	if not entity or entity.dead then return 1 end
+	local affected: { string } = {}
+	local seen = {}
+	for _, part in overlappedParts do
+		local id = entity.partIndex[part]
+		if id and not seen[id] then
+			local def = entity.components[id]
+			if def and not def.destroyed then
+				local shielded = false
+				if def.protectedBy then
+					local prot = entity.components[def.protectedBy]
+					shielded = prot ~= nil and not prot.destroyed
+				end
+				if not shielded then
+					seen[id] = true
+					table.insert(affected, id)
+				end
+			end
+		end
+	end
+	if #affected == 0 then return 1 end
+	local componentBudget = rawDamage * 0.6
+	local perComponent = componentBudget / #affected
+	local hullMult = 0.4 -- remainder transfers directly
+	for _, id in affected do
+		local def = entity.components[id]
+		ComponentService._damageComponent(entity, id, perComponent * def.damageMultiplier)
+		hullMult += (perComponent * def.eta * 0.5) / rawDamage
+	end
+	return hullMult
+end
+
 -- explosion allocation (spec section 61): one explosion = one damage budget, split across the
 -- components it legitimately overlaps, weighted by exposure. Never full entity damage per component.
 function ComponentService.resolveExplosion(model: Model, rawDamage: number, overlappedParts: { BasePart }, source: string?): number
