@@ -359,6 +359,12 @@ RunService.Heartbeat:Connect(function(dt)
 			if state then
 				local ok, err = pcall(poseRig, model, state, dt)
 				if not ok then
+					-- surface the failure once per model instead of dying silently —
+					-- silent untrack-and-recreate loops cost us a diagnosis cycle already
+					if not state.errReported then
+						warn(string.format("[EnemyAnimClient] poseRig error on %s: %s", model.Name, tostring(err)))
+						state.errReported = true
+					end
 					tracked[model] = nil
 				end
 			end
