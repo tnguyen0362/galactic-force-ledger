@@ -482,7 +482,7 @@ RunService.Heartbeat:Connect(function(dt)
 		local lean = sprinting and 0.13 or 0
 		-- Bladed stance when armed (Phase 12): torso yawed 25 deg brings the left shoulder
 		-- forward so the support grip is reachable — solved offline with the pose constants.
-		local stanceYaw = hasWeapon and math.rad(-25) or 0
+		local stanceYaw = hasWeapon and (aiming and math.rad(-12) or math.rad(-25)) or 0
 		if aiming then
 			local cam2 = workspace.CurrentCamera
 			if cam2 then
