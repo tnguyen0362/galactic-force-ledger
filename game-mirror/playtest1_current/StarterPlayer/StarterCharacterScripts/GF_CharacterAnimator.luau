@@ -138,8 +138,12 @@ local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: bo
 	end
 	-- two CCD passes per arm per heartbeat: converges over a few frames, self-correcting.
 	-- end effector tracked is the hand part center; palm refinement is a later calibration step.
-	for _ = 1, 2 do
-		ccdPass("RightShoulder", "RightElbow", rhand, primaryTarget, rua, rla)
+	local throwAt2 = character:GetAttribute("GF_GrenadeThrowAt")
+	local throwActive = throwAt2 and (os.clock() - throwAt2) < 0.55
+	if not throwActive then
+		for _ = 1, 2 do
+			ccdPass("RightShoulder", "RightElbow", rhand, primaryTarget, rua, rla)
+		end
 	end
 	if profile.twoHanded ~= false then
 		for _ = 1, 2 do
@@ -160,6 +164,9 @@ local strafeBlend = 0
 local lastPos = root.Position
 
 local wasRolling = false
+local lastHealth = nil
+local flinchClock = nil
+local flinchMag = 0
 local rollEdgeClock = 0
 
 local function lerp(a: number, b: number, t: number): number
@@ -233,6 +240,44 @@ RunService.Heartbeat:Connect(function(dt)
 		setJoint("Waist", CFrame.Angles(0.35, 0, 0))
 		return
 	end
+	-- GATE C lifecycle layer: downed / grenade / damage-flinch / revival.
+	-- Priority: downed overrides everything; grenade throw and flinch overlay the base pose.
+	local downed = character:GetAttribute("GFDowned") == true
+	if downed then
+		-- collapsed kneel: hips folded deep, torso slumped, head down, arms limp at sides
+		setJoint("Root", nil, Vector3.new(0, -1.35, 0))
+		setJoint("LeftHip", CFrame.Angles(1.9, 0, 0))
+		setJoint("RightHip", CFrame.Angles(0.35, 0, 0))
+		setJoint("LeftKnee", CFrame.Angles(-2.2, 0, 0))
+		setJoint("RightKnee", CFrame.Angles(-1.9, 0, 0))
+		setJoint("LeftAnkle", CFrame.Angles(0.6, 0, 0))
+		setJoint("RightAnkle", CFrame.Angles(0.6, 0, 0))
+		local slump = math.sin(elapsed * 2.2) * 0.03  -- shallow breathing while downed
+		setJoint("Waist", CFrame.Angles(0.55 + slump, 0.12, 0))
+		setJoint("Neck", CFrame.Angles(0.5, 0, 0))
+		setJoint("LeftShoulder", CFrame.Angles(0.25, 0, math.rad(10)))
+		setJoint("RightShoulder", CFrame.Angles(0.3, 0, math.rad(-10)))
+		setJoint("LeftElbow", CFrame.Angles(-0.25, 0, 0))
+		setJoint("RightElbow", CFrame.Angles(-0.25, 0, 0))
+		return
+	end
+
+	-- damage flinch: health drops trigger a brief torso twitch, decaying over 0.35s
+	local hp = humanoid.Health
+	if hp < (lastHealth or hp) - 0.5 then
+		flinchClock = os.clock()
+		flinchMag = math.min(1, ((lastHealth or hp) - hp) / 25)
+	end
+	lastHealth = hp
+	local flinchT = os.clock() - (flinchClock or 0)
+	local flinch = flinchT < 0.35 and (1 - flinchT / 0.35) * (flinchMag or 0.5) or 0
+
+	-- grenade throw: edge attribute carries the throw timestamp; right arm sweeps overhead
+	local throwAt = character:GetAttribute("GF_GrenadeThrowAt")
+	local throwT = throwAt and (os.clock() - throwAt) or 99
+	local throwing = throwT < 0.55
+
+	character:SetAttribute("GF_DbgAnim", string.format("downed=%s grounded=%s tick=%d", tostring(downed), tostring(grounded), elapsed % 1000))
 	if grounded then
 		-- Legs: hip swing + knee bend on the trailing leg.
 		setJoint("LeftHip", CFrame.Angles(swing * 0.62, 0, 0))
@@ -275,6 +320,17 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 		end
 		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
+		if flinch > 0 then
+			setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean + flinch * 0.28, (stanceYaw or 0) - strafeBlend * 0.18 + flinch * 0.15, strafeBlend * 0.06))
+			setJoint("Neck", CFrame.Angles(-math.rad(2) * moveBlend - flinch * 0.2, 0, 0))
+		end
+		if throwing then
+			-- overhead throw sweep: arm cocks back then whips forward over the window
+			local f = throwT / 0.55
+			local armAngle = f < 0.4 and lerp(-0.5, 1.6, f / 0.4) or lerp(1.6, -2.2, (f - 0.4) / 0.6)
+			setJoint("RightShoulder", CFrame.Angles(armAngle, 0, math.rad(-15)))
+			setJoint("RightElbow", CFrame.Angles(f < 0.4 and -1.8 or -0.3, 0, 0))
+		end
 		if crouching then
 			-- Crouch: hips and knees fold, torso pitches forward, arms tuck in.
 			setJoint("Root", nil, Vector3.new(0, -0.85, 0))

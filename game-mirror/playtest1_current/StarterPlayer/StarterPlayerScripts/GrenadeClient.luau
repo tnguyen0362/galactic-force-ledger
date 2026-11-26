@@ -56,6 +56,7 @@ local function send(kind: string)
 	lastThrow = now
 	local point = clampedAim()
 	throwRemote:FireServer({ kind = kind, aim = point })
+	if player.Character then player.Character:SetAttribute("GF_GrenadeThrowAt", os.clock()) end
 end
 
 -- S03-005/S04-054: tap = quick throw at the aim point; hold = trajectory preview arc with the throw
