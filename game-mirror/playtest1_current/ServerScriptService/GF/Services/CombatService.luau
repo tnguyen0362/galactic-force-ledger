@@ -680,9 +680,16 @@ function CombatService.fire(player: Player, payload: any)
 			end
 			right = right.Unit
 			local up = right:Cross(unit).Unit
-			local jitterYaw = math.rad((math.random() * 2 - 1) * spreadAngle)
-			local jitterPitch = math.rad((math.random() * 2 - 1) * spreadAngle)
-			unit = (unit + right * math.tan(jitterYaw) + up * math.tan(jitterPitch)).Unit
+			-- circular cone distribution: independent uniform yaw/pitch made a SQUARE — corners
+			-- overshot the intended cone by up to 1.41x and accuracy felt wrong diagonally.
+			-- sqrt scaling gives uniform area density across the disc, matching how real cone
+			-- dispersion is modeled; for these angles tan(x) approximates x closely enough that
+			-- the tangent-plane disc and the true spherical cap are indistinguishable.
+			local angularRadius = math.rad(spreadAngle) * math.sqrt(math.random())
+			local phi = math.random() * math.pi * 2
+			unit = (unit
+				+ right * math.tan(angularRadius) * math.cos(phi)
+				+ up * math.tan(angularRadius) * math.sin(phi)).Unit
 		end
 		workspace:SetAttribute("GF_LastSpread", string.format("%.3f:bloom=%.2f:recoilCut=%.2f", spreadAngle, s.spreadBloom, recoilCut))
 	else
@@ -721,8 +728,11 @@ function CombatService.fire(player: Player, payload: any)
 			-- pellets missed a torso at 33+ studs.
 			local angle = (isAiming and (tonumber(weapon.adsSpread) or tonumber(weapon.spreadBase) or 1))
 				or (tonumber(weapon.spreadBase) or 1)
-			local yaw = math.rad((math.random() * 2 - 1) * angle)
-			local pitch = math.rad((math.random() * 2 - 1) * angle)
+			-- circular disc, not square jitter — same correction as the bullet path above.
+			local pelletRadius = math.rad(angle) * math.sqrt(math.random())
+			local pelletPhi = math.random() * math.pi * 2
+			local yaw = pelletRadius * math.cos(pelletPhi)
+			local pitch = pelletRadius * math.sin(pelletPhi)
 			pelletDir = (unit + rightAxis * math.tan(yaw) + upAxis * math.tan(pitch)).Unit
 		end
 		local result = workspace:Raycast(origin, pelletDir * maxRange, raycastParams(character))

@@ -7,6 +7,7 @@
 local SectorBuilder = require(script.Parent.SectorBuilder)
 local BattlefieldService = require(script.Parent.Battlefield.BattlefieldService)
 local InstallationBuilder = require(script.Parent.Battlefield.InstallationBuilder)
+local CoverBuilder = require(script.Parent.Battlefield.CoverBuilder)
 
 local TerrainService = {}
 
@@ -151,6 +152,15 @@ function TerrainService.build(seed: number): number
 			local ex = plan.nodes.extraction
 			local exY = TerrainService.groundSurface(ex.x, ex.z)
 			workspace:SetAttribute("GF_ExtractionLZ", Vector3.new(ex.x, exY, ex.z))
+			-- physical cover: rocks/wrecks/forms at the generator's context-biased positions
+			if plan.cover then
+				local oldCover = workspace:FindFirstChild("BFCover")
+				if oldCover then oldCover:Destroy() end
+				local nCover = CoverBuilder.buildAll(plan.cover, function(x, z)
+					return TerrainService.groundSurface(x, z)
+				end, workspace, 240)
+				print(string.format("BattlefieldGen: cover objects built=%d", nCover))
+			end
 			local t = workspace.Terrain
 			pcall(function() t:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(84, 96, 88)) end)
 			pcall(function() t:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(116, 112, 108)) end)

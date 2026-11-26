@@ -10,6 +10,7 @@ local Enemies = require(ReplicatedStorage.GF.Shared.Configs.Enemies)
 local Difficulties = require(ReplicatedStorage.GF.Shared.Configs.Difficulties)
 local State = require(ServerScriptService.GF.Services.State)
 local VitalsService = require(ServerScriptService.GF.Services.VitalsService)
+local debugAttr -- forward declaration: used by closures throughout the module, defined near the bottom
 local ArtService = require(ServerScriptService.GF.Services.ArtService)
 
 local EnemyService = {}
@@ -1178,7 +1179,7 @@ local CALL_TIME = 2
 local CALL_RANGE = 70
 
 
-local function debugAttr(key: string, value: any)
+debugAttr = function(key: string, value: any)
 	if workspace:GetAttribute("GF_DebugEnemy") == true then
 		workspace:SetAttribute(key, value)
 	end

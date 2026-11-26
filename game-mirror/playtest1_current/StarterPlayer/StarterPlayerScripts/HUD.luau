@@ -9,6 +9,7 @@ local COLOR_BLIND_SAFE = true
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local Debris = game:GetService("Debris")
+local RunService = game:GetService("RunService")
 
 local Input = require(script.Parent.Input)
 
@@ -169,8 +170,10 @@ function HUD.init()
 	ammoLabel = newLabel(ammoBox, "28 / 28", UDim2.fromOffset(200, 40), UDim2.fromOffset(0, 18), 34)
 	ammoLabel.TextXAlignment = Enum.TextXAlignment.Right
 
-	-- crosshair: a 6px dot reads as a speck on a 1100px shot. Reticle = centre dot + four ticks
-	-- pushed out 11px, so the aim point stays readable against the black deck and against the sky.
+	-- Helldivers-inspired compact military reticle (owner spec section 6): tiny central dot,
+	-- small hollow circle, two short horizontal lines outside the circle. No vertical ticks, no
+	-- oversized crosshair envelope. Lines track weapon dispersion dynamically — the geometry is
+	-- driven per-frame by the reticle updater further down; construction here is static only.
 	crosshair = newFrame(gui, {
 		Name = "Crosshair",
 		Size = UDim2.fromOffset(64, 64),
@@ -179,44 +182,41 @@ function HUD.init()
 		BackgroundColor3 = INK,
 	})
 	do
+		-- central dot: 2px logical at the 1920x1080 reference (spec: 1.5-2px)
 		local dot = newFrame(crosshair, {
 			Name = "Dot",
-			Size = UDim2.fromOffset(3, 3),
-			Position = UDim2.fromOffset(30.5, 30.5),
+			Size = UDim2.fromOffset(2, 2),
+			Position = UDim2.fromOffset(31, 31),
 			BackgroundColor3 = INK,
 			BackgroundTransparency = 0,
 		})
 		local dc = Instance.new("UICorner"); dc.CornerRadius = UDim.new(0.5, 0); dc.Parent = dot
-		local ticks = {
-			{ 31, 0, 2, 10 },
-			{ 31, 54, 2, 10 },
-			{ 0, 31, 10, 2 },
-			{ 54, 31, 10, 2 },
-		}
-		for i, t in ipairs(ticks) do
+		-- two horizontal lines only, 5x1.5 logical px (spec: 4-6 long, 1-1.5 thick). Positions are
+		-- driven per-frame — construction parks them at the zero-bloom aimed spacing.
+		for _, side in ipairs({ "L", "R" }) do
 			local tick = newFrame(crosshair, {
-				Name = "Tick" .. i,
-				Size = UDim2.fromOffset(t[3], t[4]),
-				Position = UDim2.fromOffset(t[1], t[2]),
+				Name = "Tick" .. side,
+				Size = UDim2.fromOffset(5, 1.5),
+				Position = UDim2.fromOffset(side == "L" and 18 or 41, 31.25),
 				BackgroundColor3 = INK,
-				BackgroundTransparency = 0.2,
+				BackgroundTransparency = 0.1,
 			})
 			local tc = Instance.new("UICorner"); tc.CornerRadius = UDim.new(0, 1); tc.Parent = tick
 		end
-		-- S03-039: hollow circle reticle with spread feedback — the ring expands with the weapon's
-		-- current bloom so players read accuracy without a number; horizontal lines stay short.
+		-- hollow circle: 10px logical diameter (spec: 8-12), ~1px stroke, fixed size — the moving
+		-- lines carry the accuracy readout, the circle stays a stable precision reference.
 		local ring = Instance.new("Frame")
 		ring.Name = "ReticleRing"
-		ring.Size = UDim2.fromOffset(26, 26)
-		ring.Position = UDim2.fromOffset(19, 19)
+		ring.Size = UDim2.fromOffset(10, 10)
+		ring.Position = UDim2.fromOffset(27, 27)
 		ring.BackgroundTransparency = 1
 		ring.Parent = crosshair
 		local rc = Instance.new("UICorner"); rc.CornerRadius = UDim.new(1, 0); rc.Parent = ring
 		local stroke = Instance.new("UIStroke")
 		stroke.Name = "RingStroke"
 		stroke.Color = INK
-		stroke.Thickness = 1.5
-		stroke.Transparency = 0.25
+		stroke.Thickness = 1
+		stroke.Transparency = 0.15
 		stroke.Parent = ring
 	end
 
@@ -247,16 +247,29 @@ function HUD.init()
 	bossLabel.Text = ""
 	bossLabel.Parent = bossBar
 
+	-- hitmarker: an X of two rotated bars. The old implementation relied on frame borders over a
+	-- fully transparent background — borders do not render that way, so hit confirmation was
+	-- literally invisible. Bars are real geometry: always visible, color-coded per hit type.
 	hitMarker = newFrame(gui, {
 		Name = "HitMarker",
 		Size = UDim2.fromOffset(22, 22),
 		Position = UDim2.new(0.5, -11, 0.5, -11),
-		BackgroundColor3 = Color3.fromRGB(255, 255, 255),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
+		Visible = false,
 	})
-	local hmc = Instance.new("UICorner"); hmc.CornerRadius = UDim.new(0.5, 0); hmc.Parent = hitMarker
-	hitMarker.BorderColor3 = Color3.fromRGB(255, 240, 200)
+	for _, rot in ipairs({ 45, -45 }) do
+		local bar = newFrame(hitMarker, {
+			Name = "Bar" .. tostring(rot),
+			Size = UDim2.fromOffset(14, 2),
+			Position = UDim2.new(0.5, -7, 0.5, -1),
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BackgroundTransparency = 0,
+			BorderSizePixel = 0,
+		})
+		bar.Rotation = rot
+		local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 1); bc.Parent = bar
+	end
 
 	killLabel = newLabel(gui, "", UDim2.fromOffset(240, 26), UDim2.new(0.5, -120, 0.5, 30), 16)
 	killLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -465,16 +478,7 @@ function HUD.init()
 					end
 				end
 			end
-			-- spread feedback: hollow ring scales with live weapon bloom so accuracy reads visually
-			do
-				local ring = crosshair and crosshair:FindFirstChild("ReticleRing")
-				if ring then
-					local bloom = player:GetAttribute("SpreadBloom") or 0
-					local scale = 26 + math.clamp(bloom * 18, 0, 30)
-					ring.Size = UDim2.fromOffset(scale, scale)
-					ring.Position = UDim2.fromOffset(32 - scale / 2, 32 - scale / 2)
-				end
-			end
+
 			local now = os.clock()
 			for id, endsAt in cooldownEnds do
 				local label = abilityLabels[id]
@@ -530,21 +534,32 @@ function HUD.setAmmo(ammo: number, magazine: number, reserve: number?)
 end
 
 function HUD.setWeapon(weaponId: string)
+	HUD._weaponId = weaponId
 	if weaponLabel then
-		weaponLabel.Text = weaponId
+		local Weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
+		local def = Weapons.get(weaponId)
+		weaponLabel.Text = (def and def.displayName) or weaponId
 	end
 end
 
 function HUD.showHitMarker(weak: boolean, killed: boolean)
 	if not hitMarker then return end
-	hitMarker.BorderColor3 = killed and Color3.fromRGB(255, 120, 100) or (weak and Color3.fromRGB(255, 220, 140) or Color3.fromRGB(255, 255, 255))
-	hitMarker.BackgroundTransparency = 1
-	hitMarker.Size = UDim2.fromOffset(weak and 30 or 22, weak and 30 or 22)
-	hitMarker.Position = UDim2.new(0.5, -(weak and 15 or 11), 0.5, -(weak and 15 or 11))
-	hitMarker.BorderSizePixel = 2
-	task.delay(0.09, function()
+	local color = killed and Color3.fromRGB(255, 110, 90)
+		or (weak and Color3.fromRGB(255, 214, 130) or Color3.fromRGB(255, 255, 255))
+	local size = weak and 30 or 22
+	hitMarker.Size = UDim2.fromOffset(size, size)
+	hitMarker.Position = UDim2.new(0.5, -size / 2, 0.5, -size / 2)
+	for _, bar in hitMarker:GetChildren() do
+		if bar:IsA("Frame") then
+			bar.BackgroundColor3 = color
+			bar.Size = UDim2.fromOffset(math.floor(size * 0.64), killed and 3 or 2)
+			bar.Position = UDim2.new(0.5, -math.floor(size * 0.64) / 2, 0.5, killed and -1.5 or -1)
+		end
+	end
+	hitMarker.Visible = true
+	task.delay(0.12, function()
 		if hitMarker then
-			hitMarker.BorderSizePixel = 0
+			hitMarker.Visible = false
 		end
 	end)
 end
@@ -622,6 +637,86 @@ function HUD.setPrompt(text: string)
 	if promptLabel then
 		promptLabel.Text = text
 	end
+end
+
+
+-- ---------------------------------------------------------------------------
+-- Reticle spread updater (spec section 6): per-frame, viewport-scaled, truthful to weapon state.
+-- The horizontal lines track effective dispersion — base hip/aimed cone + bloom + movement —
+-- with continuous client-side decay prediction between authoritative server updates. The ring
+-- stays fixed as a precision reference; the center dot is never smoothed, never offset.
+do
+	local Weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
+	local lastBloom = 0
+	local bloomAt = os.clock()
+	local displayHalfGap = 9
+
+	-- mirror the server's post-shot bloom value and timestamp it locally; prediction decays from
+	-- there. Server recovery rate is 2.6 deg/s (CombatService) — keep in sync when tuning.
+	player:GetAttributeChangedSignal("SpreadBloom"):Connect(function()
+		lastBloom = tonumber(player:GetAttribute("SpreadBloom")) or 0
+		bloomAt = os.clock()
+	end)
+
+	RunService.RenderStepped:Connect(function(dt)
+		if not crosshair or not crosshair.Parent then
+			return
+		end
+		local camera = workspace.CurrentCamera
+		if not camera then
+			return
+		end
+		local weapon = Weapons.get(HUD._weaponId or "")
+		local aiming = workspace:GetAttribute("GF_PlayerAiming") == true
+		local base = 1
+		if weapon then
+			base = aiming and (tonumber(weapon.adsSpread) or tonumber(weapon.spreadBase) or 1)
+				or (tonumber(weapon.spreadBase) or 1)
+		end
+		-- movement penalty mirrors the server's +1.5deg over 2 studs/s
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local moving = root and root.AssemblyLinearVelocity.Magnitude > 2
+		-- continuous bloom prediction: decay the last server value rather than waiting for the
+		-- next accepted shot — the old display stayed expanded indefinitely between shots.
+		local bloom = math.max(0, lastBloom - (os.clock() - bloomAt) * 2.6)
+		local alpha = base + bloom + (moving and 1.5 or 0)
+		-- compact monotonic accuracy representation (spec section 6): log response, not the raw
+		-- physical cone — alphaRef/alphaMax calibrate the display range, not ballistic truth.
+		local alphaRef, alphaMax = 0.5, 7
+		local x = math.clamp(math.log(1 + alpha / alphaRef) / math.log(1 + alphaMax / alphaRef), 0, 1)
+		-- inner-edge distance of the lines: 9px tight (aimed, no bloom) to 21px wide (hip, full)
+		local gapTarget = 9 + (21 - 9) * x
+		-- expansion reacts immediately, recovery lightly damped (spec: tau 0.04-0.08s)
+		local tau = gapTarget > displayHalfGap and 0.02 or 0.06
+		displayHalfGap = gapTarget + (displayHalfGap - gapTarget) * math.exp(-dt / tau)
+		-- viewport scaling: reference 1920x1080, clamped so the reticle survives mobile and 4k
+		local vp = camera.ViewportSize
+		local scale = math.clamp(math.min(vp.X / 1920, vp.Y / 1080), 0.7, 1.6)
+		local halfGap = displayHalfGap * scale
+		local lineLen = 5 * scale
+		local thick = math.max(1, 1.5 * scale)
+		local tickL = crosshair:FindFirstChild("TickL")
+		local tickR = crosshair:FindFirstChild("TickR")
+		if tickL and tickR then
+			tickL.Size = UDim2.fromOffset(lineLen, thick)
+			tickR.Size = UDim2.fromOffset(lineLen, thick)
+			tickL.Position = UDim2.fromOffset(32 - halfGap - lineLen, 32 - thick / 2)
+			tickR.Position = UDim2.fromOffset(32 + halfGap, 32 - thick / 2)
+		end
+		local ring = crosshair:FindFirstChild("ReticleRing")
+		if ring then
+			local d = 10 * scale
+			ring.Size = UDim2.fromOffset(d, d)
+			ring.Position = UDim2.fromOffset(32 - d / 2, 32 - d / 2)
+		end
+		local dot = crosshair:FindFirstChild("Dot")
+		if dot then
+			local d = math.max(1.5, 2 * scale)
+			dot.Size = UDim2.fromOffset(d, d)
+			dot.Position = UDim2.fromOffset(32 - d / 2, 32 - d / 2)
+		end
+	end)
 end
 
 return HUD

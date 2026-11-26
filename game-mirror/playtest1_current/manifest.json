@@ -971,5 +971,12 @@
   "file": "ServerScriptService/GF/Services/Battlefield/InstallationBuilder.luau",
   "lines": 164,
   "chars": 7817
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.CoverBuilder",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/CoverBuilder.luau",
+  "lines": 98,
+  "chars": 4173
  }
 ]
