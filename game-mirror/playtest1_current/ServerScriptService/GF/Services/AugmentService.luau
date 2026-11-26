@@ -12,6 +12,8 @@ local KEYS = {
 	"recoil", "adsSpeed", "reloadSpeed", "magazine", "shieldDamage", "healthDamage",
 	"weakPoint", "followUpSpeed", "swapSpeed", "adsRecovery", "movingAccuracy",
 	"sentryAmmo", "cooldown", "blastRadius", "armorDamage", "range", "supportDamage", "sentryHP",
+	-- registry v2 additions: without these, add() silently dropped the newly wired stats at resolution
+	"fireRate", "spreadHip", "spreadAds", "reserveAmmo", "projectileVelocity", "componentDamage",
 }
 
 local REROLL_COST = { Common = 25, Rare = 50, Epic = 100, Legendary = 200 }

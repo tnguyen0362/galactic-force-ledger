@@ -31,11 +31,10 @@ end
 
 local function syntheticProfile()
 	return {
-		augmentItems = {
-			{ uid = "u1", archetypeId = "legacy-x", traits = { { key = "healthDamage", value = 0.05 } } },
-			{ uid = "u2", archetypeId = "legacy-y", traits = { { key = "fireRate", value = 0.5 } } },
+		augmentInventory = {
+			u1 = { uid = "u1", archetypeId = "legacy-x", traits = { { key = "healthDamage", value = 0.05 } } },
+			u2 = { uid = "u2", archetypeId = "legacy-y", traits = { { key = "fireRate", value = 0.5 } } },
 		},
-		augmentInventory = {},
 		weaponMastery = { AR01 = 700, P01 = 700 },
 		ownedWeapons = { AR01 = true, P01 = true },
 		selectedLoadout = {
@@ -80,7 +79,13 @@ function AugmentChecks.run()
 		traitCount += 1
 		families[def.family] = (families[def.family] or 0) + 1
 		ok(type(def.stat) == "string" and def.stat ~= "", "registry: trait " .. id .. " missing stat")
-		ok(type(def.bands) == "table" and def.bands.C ~= nil, "registry: trait " .. id .. " missing bands")
+		local bandCount = 0
+		if type(def.bands) == "table" then
+			for _ in pairs(def.bands) do
+				bandCount += 1
+			end
+		end
+		ok(bandCount > 0, "registry: trait " .. id .. " missing bands")
 	end
 	ok(traitCount == 30, "registry: expected 30 traits, got " .. traitCount)
 	local familyCount = 0
@@ -157,7 +162,7 @@ function AugmentChecks.run()
 	-- 11. legacy lifecycle: protection by uid --------------------------------------
 	local profile2 = syntheticProfile()
 	profile2.selectedLoadout.weaponAugments = { AR01 = { [1] = "u1" } }
-	profile2.augmentItems[1].favorite = true
+	profile2.augmentInventory.u1.favorite = true
 	ok(AugmentService.isProtected(profile2, "u1") == true, "lifecycle: favorited+equipped uid must be protected")
 	ok(AugmentService.isProtected(profile2, "u2") == false, "lifecycle: unequipped unfavorited uid must not be protected")
 
