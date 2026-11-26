@@ -17,7 +17,16 @@ local MAX_ORIGIN_OFFSET = 10.5
 local MASTERY_XP = {
 	Rifleman = 10, Scout = 10, Marksman = 10,
 	Heavy = 20, Officer = 35,
-	BastionWalker = 100, HighMarshalVeyr = 250,
+	-- G-15 (economy audit): division elites and the tank previously fell through to the 10xp
+	-- Rifleman fallback despite elite/vehicle encounter investment. Mapped to class-appropriate
+	-- values: Spectre elite 20 (heavy-class), Spectre/Revenant leaders 35 (officer-class),
+	-- Revenant elite 25 (prestige division, slightly above heavy), tank 50 (vehicle).
+	SpectreAssault = 20, SpectreWeapons = 20, SpectrePrecision = 20, SpectreSupport = 20,
+	SpectreLeader = 35,
+	RevenantAssault = 25, RevenantWeapons = 25, RevenantPrecision = 25, RevenantDefense = 25,
+	RevenantLeader = 35,
+	BastionTank = 50,
+	BastionWalker = 100, HighMarshalVeyr = 250, BastionSiege = 100, LeviathanWalker = 250,
 }
 local MAX_RANGE_SLACK = 1.15
 local debugFolder: Folder
