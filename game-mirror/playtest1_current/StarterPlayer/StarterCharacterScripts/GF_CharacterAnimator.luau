@@ -178,6 +178,7 @@ local wasRolling = false
 local lastHealth = nil
 local lastWeaponId = nil
 local deathClock = nil
+local perfPublishClock = nil
 local switchClock = nil
 local wasDowned = false
 local reviveClock = nil
@@ -190,6 +191,7 @@ local function lerp(a: number, b: number, t: number): number
 end
 
 RunService.Heartbeat:Connect(function(dt)
+	local perfT0 = os.clock()
 	character:SetAttribute("GF_AnimatorTick", (character:GetAttribute("GF_AnimatorTick") or 0) + 1)
 	if not root.Parent then return end
 	if humanoid.Health <= 0 then
@@ -478,6 +480,11 @@ RunService.Heartbeat:Connect(function(dt)
 		setJoint("Waist", CFrame.Angles(-0.08, 0, 0))
 	end
 	wasRolling = rolling
+	-- Gate H perf instrumentation: heartbeat cost published ~1Hz for the performance harness
+	if os.clock() - (perfPublishClock or 0) > 1 then
+		perfPublishClock = os.clock()
+		character:SetAttribute("GF_AnimPerfMs", (os.clock() - perfT0) * 1000)
+	end
 
 end)
 
