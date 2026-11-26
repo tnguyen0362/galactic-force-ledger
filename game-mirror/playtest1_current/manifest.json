@@ -964,5 +964,12 @@
   "file": "ServerScriptService/GF/Services/Battlefield/Topology.luau",
   "lines": 296,
   "chars": 10283
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.InstallationBuilder",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/InstallationBuilder.luau",
+  "lines": 164,
+  "chars": 7817
  }
 ]
