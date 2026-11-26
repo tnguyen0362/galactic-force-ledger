@@ -251,15 +251,22 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	local aimYawTarget, aimPitchTarget = 0, 0
 	local targetPos = nil
 	local myPos = pos
-	local bestD = 70
-	for _, plr in Players:GetPlayers() do
-		local char = plr.Character
-		local hrp = char and char:FindFirstChild("HumanoidRootPart")
-		if hrp then
-			local d = (hrp.Position - myPos).Magnitude
-			if d < bestD then
-				bestD = d
-				targetPos = hrp.Position
+	-- spec sec.71: aim at the ACTUAL legitimate target when the server replicates it;
+	-- nearest-player remains only the fallback for unreplicated edge cases
+	local legit = model:GetAttribute("GFLegitTarget")
+	if legit then
+		targetPos = legit
+	else
+		local bestD = 70
+		for _, plr in Players:GetPlayers() do
+			local char = plr.Character
+			local hrp = char and char:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				local d = (hrp.Position - myPos).Magnitude
+				if d < bestD then
+					bestD = d
+					targetPos = hrp.Position
+				end
 			end
 		end
 	end

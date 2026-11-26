@@ -1043,6 +1043,17 @@ local function tickActor(model: Model, actor: any, dt: number)
 	end
 
 	actor.target = target
+	-- spec sec.71: the enemy must VISUALLY aim at its actual legitimate target — replicate the
+	-- target position so the client animator orients correctly instead of nearest-player proxy
+	do
+		local tp = nil
+		if target then
+			local tchar = target.Character or (target.Parent and target.Parent:IsA("Model") and target.Parent)
+			local troot = tchar and tchar:FindFirstChild("HumanoidRootPart")
+			if troot then tp = troot.Position end
+		end
+		model:SetAttribute("GFLegitTarget", tp)
+	end
 
 	if not target then
 		tickAcquisition(actor, false, dt)
