@@ -305,6 +305,25 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 
+	-- revive channel: kneeling over the downed ally, hands working — progress attribute
+	-- is already replicated server-side by DownedService (GFReviveProgress 0..1).
+	local reviveProgress = character:GetAttribute("GFReviveProgress")
+	if reviveProgress then
+		local work = math.sin(elapsed * 5) * 0.12  -- hands working rhythm
+		setJoint("Root", nil, Vector3.new(0, -1.1, 0))
+		setJoint("LeftHip", CFrame.Angles(1.7, 0, 0))
+		setJoint("RightHip", CFrame.Angles(0.3, 0, 0))
+		setJoint("LeftKnee", CFrame.Angles(-2.1, 0, 0))
+		setJoint("RightKnee", CFrame.Angles(-1.7, 0, 0))
+		setJoint("Waist", CFrame.Angles(0.45, 0, 0))
+		setJoint("Neck", CFrame.Angles(0.35, 0, 0))
+		setJoint("LeftShoulder", CFrame.Angles(-0.7 - work, 0.2, math.rad(8)))
+		setJoint("RightShoulder", CFrame.Angles(-0.75 + work, -0.2, math.rad(-8)))
+		setJoint("LeftElbow", CFrame.Angles(-0.9 - work, 0, 0))
+		setJoint("RightElbow", CFrame.Angles(-0.85 + work, 0, 0))
+		return
+	end
+
 	-- ability cast: airstrike raises the designator arm skyward; dome projects both arms out.
 	local castAt = character:GetAttribute("GF_AbilityCastAt")
 	local castT = castAt and (os.clock() - castAt) or 99
