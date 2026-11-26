@@ -178,7 +178,30 @@ function ArmoryService.state(player: Player)
 		pendingReroll = profile.pendingReroll,
 		scrap = (profile.salvage and tonumber(profile.salvage.scrap)) or 0,
 		augmentCatalog = catalogRows,
-		slotted = profile.selectedLoadout.weaponAugments or {},
+		-- AUGMENT-V2 transitional shape: sockets are stored per-weapon (weaponAugments[weaponId][slot])
+		-- post-migration, but the current client UI reads a flat slot index for the selected weapon.
+		-- `slotted` stays flat for the primary weapon so the existing UI keeps working unchanged;
+		-- `slottedByWeapon` carries the full nested truth for the Stage-9 UI rebuild.
+		slotted = (function()
+			local wa = profile.selectedLoadout.weaponAugments
+			if type(wa) ~= "table" then
+				return {}
+			end
+			local primary = tostring(profile.selectedLoadout.primary or "AR01")
+			local perWeapon = wa[primary]
+			if type(perWeapon) == "table" then
+				return perWeapon
+			end
+			-- pre-migration legacy shape: numeric keys at top level
+			local legacy = {}
+			for key, value in pairs(wa) do
+				if type(key) == "number" then
+					legacy[key] = value
+				end
+			end
+			return legacy
+		end)(),
+		slottedByWeapon = profile.selectedLoadout.weaponAugments or {},
 	}
 end
 

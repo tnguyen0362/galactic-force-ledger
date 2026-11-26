@@ -235,8 +235,14 @@ function AugmentService.forProfile(profile)
 	end
 	local slots = loadout.weaponAugments
 	if type(slots) == "table" then
-		for _, ref in pairs(slots) do
-			applyItem(out, AugmentService.findItem(profile, ref))
+		for key, entry in pairs(slots) do
+			if type(entry) == "table" then
+				for _, ref in pairs(entry) do
+					applyItem(out, AugmentService.findItem(profile, ref))
+				end
+			elseif type(entry) == "string" then
+				applyItem(out, AugmentService.findItem(profile, entry))
+			end
 		end
 	end
 	if type(loadout.abilityAugment) == "string" then
@@ -264,8 +270,14 @@ function AugmentService.forProfile(profile)
 	end
 	out.slotsUsed = 0
 	if type(slots) == "table" then
-		for _ in pairs(slots) do
-			out.slotsUsed += 1
+		for _, entry in pairs(slots) do
+			if type(entry) == "table" then
+				for _ in pairs(entry) do
+					out.slotsUsed += 1
+				end
+			elseif type(entry) == "string" then
+				out.slotsUsed += 1
+			end
 		end
 	end
 	return out
@@ -363,6 +375,91 @@ function AugmentService.slotTable(profile)
 	return loadout.weaponAugments
 end
 
+-- AUGMENT-V2 socket migration (D-4): legacy shape weaponAugments[slot] becomes
+-- weaponAugments[weaponId][slot]. Lazy migration: numeric keys are rehomed under the loadout
+-- primary on first access, so existing saves keep working with zero data loss.
+function AugmentService.migrateSockets(profile)
+	local slots = AugmentService.slotTable(profile)
+	if not slots then
+		return nil
+	end
+	local legacyNumeric = false
+	for key in pairs(slots) do
+		if type(key) == "number" then
+			legacyNumeric = true
+			break
+		end
+	end
+	if legacyNumeric then
+		local loadout = profile.selectedLoadout or {}
+		local primary = tostring(loadout.primary or "AR01")
+		slots[primary] = slots[primary] or {}
+		for key, ref in pairs(slots) do
+			if type(key) == "number" then
+				if slots[primary][key] == nil then
+					slots[primary][key] = ref
+				end
+				slots[key] = nil
+			end
+		end
+		workspace:SetAttribute("GF_AugmentSocketsMigrated", primary)
+	end
+	return slots
+end
+
+-- per-weapon socket sub-table (never creates inventory-side effects beyond migration)
+function AugmentService.weaponSlots(profile, weaponId)
+	local slots = AugmentService.migrateSockets(profile)
+	if not slots or type(weaponId) ~= "string" or weaponId == "" then
+		return nil
+	end
+	return slots[weaponId]
+end
+
+-- resolution for ONE weapon: aggregates only that weapon's socketed traits.
+-- This is the canonical combat consumption entry point post-migration.
+function AugmentService.forPlayerWeapon(profile, weaponId)
+	local out = empty()
+	if type(profile) ~= "table" then
+		return out
+	end
+	local wslots = AugmentService.weaponSlots(profile, weaponId)
+	if type(wslots) == "table" then
+		for _, ref in pairs(wslots) do
+			applyItem(out, AugmentService.findItem(profile, ref))
+		end
+	end
+	local loadout = profile.selectedLoadout
+	if loadout and type(loadout.abilityAugment) == "string" then
+		applyItem(out, AugmentService.findItem(profile, loadout.abilityAugment))
+	end
+	local CLAMP = {
+		blastRadius = 0.25, cooldown = 0.20, magazine = 0.35, reloadSpeed = 0.25,
+		healthDamage = 0.15, weakPoint = 0.20, shieldDamage = 0.30, armorDamage = 0.30,
+		adsSpeed = 0.25, recoil = 0.35, movingAccuracy = 0.35, range = 0.30, supportDamage = 0.15, sentryHP = 0.30,
+	}
+	local SIGNED = { recoil = true, adsSpeed = true, movingAccuracy = true }
+	for key, cap in pairs(CLAMP) do
+		local v = out[key]
+		if type(v) == "number" then
+			if SIGNED[key] then
+				out[key] = math.clamp(v, -cap, cap)
+			elseif key == "range" or key == "supportDamage" or key == "sentryHP" then
+				out[key] = math.clamp(v, -0.35, cap)
+			else
+				out[key] = math.clamp(v, 0, cap)
+			end
+		end
+	end
+	out.slotsUsed = 0
+	if type(wslots) == "table" then
+		for _ in pairs(wslots) do
+			out.slotsUsed += 1
+		end
+	end
+	return out
+end
+
 function AugmentService.isPending(profile, uid)
 	local pending = type(profile) == "table" and profile.pendingReroll or nil
 	return type(pending) == "table" and pending.uid == uid
@@ -386,8 +483,14 @@ function AugmentService.isProtected(profile, uid)
 		if loadout.abilityAugment == item.uid or loadout.abilityAugment == item.archetypeId then
 			return true
 		end
-		for _, ref in pairs(loadout.weaponAugments or {}) do
-			if ref == item.uid or ref == item.archetypeId then
+		for key, entry in pairs(loadout.weaponAugments or {}) do
+			if type(entry) == "table" then
+				for _, ref in pairs(entry) do
+					if ref == item.uid or ref == item.archetypeId then
+						return true
+					end
+				end
+			elseif entry == item.uid or entry == item.archetypeId then
 				return true
 			end
 		end
@@ -437,16 +540,24 @@ function AugmentService.equipAugment(profile, weaponId, slot, augmentRef)
 			end
 		end
 	end
-	local slots = AugmentService.slotTable(profile)
+	local slots = AugmentService.migrateSockets(profile)
 	if not slots then
 		return false, "no loadout"
 	end
-	for existingSlot, ref in pairs(slots) do
-		if existingSlot ~= slot and ref == item.uid then
-			return false, "copy already equipped in another active socket"
+	local existingPerWeapon = slots[weaponId]
+	if type(existingPerWeapon) == "table" then
+		for existingSlot, ref in pairs(existingPerWeapon) do
+			if existingSlot ~= slot and ref == item.uid then
+				return false, "copy already equipped in another active socket"
+			end
 		end
 	end
-	slots[slot] = item.uid
+	local perWeapon = slots[weaponId]
+	if type(perWeapon) ~= "table" then
+		perWeapon = {}
+		slots[weaponId] = perWeapon
+	end
+	perWeapon[slot] = item.uid
 	return true, nil
 end
 
@@ -454,36 +565,43 @@ function AugmentService.sanitiseLoadout(profile)
 	if type(profile) ~= "table" then
 		return 0
 	end
-	local slots = AugmentService.slotTable(profile)
+	local slots = AugmentService.migrateSockets(profile)
 	if not slots then
 		return 0
 	end
 	local loadout = profile.selectedLoadout or {}
 	local weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
-	local primary = weapons.get(loadout.primary or "AR01")
 	local cleared = 0
-	for slot, ref in pairs(slots) do
-		local item = AugmentService.findItem(profile, ref)
-		if item then
-			-- Canonicalize legacy archetype references into per-item UIDs.
-			if ref ~= item.uid then
-				slots[slot] = item.uid
-			end
-			local def = Augments.get(item.archetypeId)
-			local fits = true
-			if def then
-				if def.applies == "Ability" then
-					fits = false
-				elseif def.applies == "Category" and type(def.category) == "string" then
-					fits = (primary and primary.category == def.category) or false
+	for weaponKey, entry in pairs(slots) do
+		if type(entry) == "table" then
+			local weaponDef = weapons.get(weaponKey)
+			for slot, ref in pairs(entry) do
+				local item = AugmentService.findItem(profile, ref)
+				if item then
+					if ref ~= item.uid then
+						entry[slot] = item.uid
+					end
+					local def = Augments.get(item.archetypeId)
+					local fits = true
+					if def then
+						if def.applies == "Ability" then
+							fits = false
+						elseif def.applies == "Category" and type(def.category) == "string" then
+							fits = (weaponDef and weaponDef.category == def.category) or false
+						end
+					end
+					if not fits then
+						entry[slot] = nil
+						cleared += 1
+					end
+				else
+					entry[slot] = nil
+					cleared += 1
 				end
 			end
-			if not fits then
-				slots[slot] = nil
-				cleared += 1
-			end
-		else
-			slots[slot] = nil
+		elseif type(entry) == "string" then
+			-- legacy flat entry outside migration reach: drop it, migration rehomes numeric keys only
+			slots[weaponKey] = nil
 			cleared += 1
 		end
 	end
@@ -510,12 +628,24 @@ function AugmentService.sanitiseLoadout(profile)
 	return cleared
 end
 
-function AugmentService.unequipAugment(profile, slot)
-	local slots = AugmentService.slotTable(profile)
+function AugmentService.unequipAugment(profile, slot, weaponId)
+	local slots = AugmentService.migrateSockets(profile)
 	if not slots then
 		return false
 	end
-	slots[slot] = nil
+	if type(weaponId) == "string" and weaponId ~= "" then
+		local perWeapon = slots[weaponId]
+		if type(perWeapon) == "table" then
+			perWeapon[slot] = nil
+		end
+		return true
+	end
+	-- backward compatibility: no weaponId clears the slot index across every weapon
+	for key, perWeapon in pairs(slots) do
+		if type(perWeapon) == "table" then
+			perWeapon[slot] = nil
+		end
+	end
 	return true
 end
 
