@@ -83,3 +83,4 @@ Owner added the upload directory in MCP Permissions. All 31 vegetation GLBs uplo
 
 ## 2026-11-26 claude: kit upload dir not approved
 Open Cloud upload of 16 kit GLBs refused: C:\Users\tnguy\gf-art-build\blender\out_kit not in approved upload directories. Owner action: add it in Assistant Settings -> MCP Permissions. Not worked around.
+(2026-11-26 later) RESOLVED: owner approved out_kit; 16 kit assets uploaded.
