@@ -440,7 +440,9 @@ function HUD.init()
 						local maxHp = workspace:GetAttribute("BossMaxHealth") or 3600
 						local damaged = hp < maxHp
 						local near = false
-						local bossModel = workspace:FindFirstChild("BastionWalker") or workspace:FindFirstChild("HighMarshalVeyr")
+						local actorsFolder = workspace:FindFirstChild("ActiveActors")
+						local bossModel = (actorsFolder and (actorsFolder:FindFirstChild("BastionWalker") or actorsFolder:FindFirstChild("HighMarshalVeyr")))
+							or workspace:FindFirstChild("BastionWalker") or workspace:FindFirstChild("HighMarshalVeyr")
 						local bossPart = bossModel and ((bossModel :: Model).PrimaryPart or bossModel:FindFirstChildWhichIsA("BasePart", true))
 						local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 						if bossPart and root then

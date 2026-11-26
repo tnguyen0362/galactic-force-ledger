@@ -1298,7 +1298,8 @@ function EnemyService.clearAll()
 	end
 	actors = {}
 	for _, bossName in ipairs({ "BastionWalker", "HighMarshalVeyr" }) do
-		local boss = workspace:FindFirstChild(bossName)
+		local actors = workspace:FindFirstChild("ActiveActors")
+		local boss = (actors and actors:FindFirstChild(bossName)) or workspace:FindFirstChild(bossName)
 		if boss then
 			boss:Destroy()
 			workspace:SetAttribute("GF_BossCleared", bossName)

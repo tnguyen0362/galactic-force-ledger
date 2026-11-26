@@ -96,7 +96,20 @@ function Bastion.build(position)
 	model:SetAttribute("Phase", 1)
 	model:SetAttribute("Stagger", 0)
 	model:SetAttribute("WeakDamage", 0)
-	model.Parent = workspace
+	-- E1: bosses must be ordinary damage targets. Without GFEnemy + ActiveActors parenting the
+	-- hitscan resolver and every explosion/ability scanner were blind to the boss entirely.
+	model:SetAttribute("GFEnemy", true)
+	model:SetAttribute("EnemyId", "BastionWalker")
+	model:SetAttribute("Tier", "Boss")
+	do
+		local folder = workspace:FindFirstChild("ActiveActors")
+		if not folder then
+			folder = Instance.new("Folder")
+			folder.Name = "ActiveActors"
+			folder.Parent = workspace
+		end
+		model.Parent = folder
+	end
 	return model, legs
 end
 local function groundAt(pos)

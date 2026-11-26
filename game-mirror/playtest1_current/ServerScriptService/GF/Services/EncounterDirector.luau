@@ -416,6 +416,87 @@ function EncounterDirector.spawnPosts(center: Vector3, count: number): number
 end
 
 local refillRunning = false
+-- Battlefield dormant-zone system (GF_BattlefieldGen): generated garrisons/patrols register
+-- as dormant regions, activating only when players close within activation radius.
+local dormantZones: { any } = {}
+local zoneWatcherStarted = false
+
+function EncounterDirector.registerBattlefieldZones(plan: any): number
+	dormantZones = {}
+	if not plan or not plan.zones then
+		return 0
+	end
+	for _, z in plan.zones do
+		if z.kind == "garrison" then
+			table.insert(dormantZones, {
+				x = z.x, z = z.z,
+				activationRadius = z.activationRadius or 220,
+				size = math.min(z.size or 3, 4),
+				radius = z.radius or 20,
+				kind = "garrison",
+				done = false,
+			})
+		elseif z.kind == "patrol_route" and z.ax then
+			table.insert(dormantZones, {
+				x = (z.ax + z.bx) * 0.5, z = (z.az + z.bz) * 0.5,
+				activationRadius = 190,
+				size = 2,
+				radius = 16,
+				kind = "patrol",
+				done = false,
+			})
+		end
+	end
+	return #dormantZones
+end
+
+local function zoneWatcher()
+	if zoneWatcherStarted then
+		return
+	end
+	zoneWatcherStarted = true
+	task.spawn(function()
+		while task.wait(4) do
+			if workspace:GetAttribute("GF_InMission") ~= true then
+				continue
+			end
+			if #dormantZones == 0 then
+				continue
+			end
+			local lz = workspace:GetAttribute("GF_LZ")
+			local players = game:GetService("Players"):GetPlayers()
+			for _, z in dormantZones do
+				if z.done then
+					continue
+				end
+				if typeof(lz) == "Vector3" then
+					local dlz = (Vector3.new(z.x, 0, z.z) - Vector3.new(lz.X, 0, lz.Z)).Magnitude
+					if dlz < 150 then
+						z.done = true
+						continue
+					end
+				end
+				for _, plr in players do
+					local char = plr.Character
+					local root = char and char:FindFirstChild("HumanoidRootPart")
+					if not root then
+						continue
+					end
+					local d = (Vector3.new(z.x, 0, z.z) - Vector3.new(root.Position.X, 0, root.Position.Z)).Magnitude
+					if d <= z.activationRadius then
+						z.done = true
+						local center = Vector3.new(z.x, root.Position.Y, z.z)
+						task.defer(function()
+							EncounterDirector.spawnAround(center, z.radius, z.size)
+						end)
+						break
+					end
+				end
+			end
+		end
+	end)
+end
+
 function EncounterDirector.beginMission(): ()
 	spawnedThisMission = 0
 	tokens = TOKEN_BURST_CAP
@@ -441,6 +522,15 @@ function EncounterDirector.beginMission(): ()
 	local center = relay and relay.PrimaryPart and relay.PrimaryPart.Position
 	if center then
 		EncounterDirector.spawnPosts(center, 2)
+		do
+			local bfOk, bfTerrain = pcall(require, script.Parent.TerrainService)
+			local plan = bfOk and bfTerrain.currentPlan or nil
+			if workspace:GetAttribute("GF_BattlefieldGen") == true and plan then
+				local n = EncounterDirector.registerBattlefieldZones(plan)
+				zoneWatcher()
+				print(string.format("[GF] battlefield zones registered=%d (dormant)", n))
+			end
+		end
 		EnemyService.resetCalls()
 		workspace:SetAttribute("GF_Reinforcements", 0)
 		workspace:SetAttribute("GF_CallCompletedBy", "")
@@ -485,7 +575,7 @@ function EncounterDirector.startExtractionPressure(): ()
 	workspace:SetAttribute("GF_ExtractionCalled", true)
 	task.spawn(function()
 		while task.wait(EXTRACTION_WAVE_INTERVAL) do
-			local lz = workspace:GetAttribute("GF_LZ")
+			local lz = workspace:GetAttribute("GF_ExtractionLZ") or workspace:GetAttribute("GF_LZ")
 			if typeof(lz) ~= "Vector3" then
 				break
 			end

@@ -83,7 +83,19 @@ function Veyr.build(position)
 	model:SetAttribute("Dead", false)
 	model:SetAttribute("Boss", true)
 	model:SetAttribute("Phase", 1)
-	model.Parent = workspace
+	-- E1: see BastionWalker — boss identity normalization for the shared damage pipeline.
+	model:SetAttribute("GFEnemy", true)
+	model:SetAttribute("EnemyId", "HighMarshalVeyr")
+	model:SetAttribute("Tier", "Boss")
+	do
+		local folder = workspace:FindFirstChild("ActiveActors")
+		if not folder then
+			folder = Instance.new("Folder")
+			folder.Name = "ActiveActors"
+			folder.Parent = workspace
+		end
+		model.Parent = folder
+	end
 	return model, rifle
 end
 local function alivePlayers()

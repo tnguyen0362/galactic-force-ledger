@@ -6,6 +6,7 @@
 
 local SectorBuilder = require(script.Parent.SectorBuilder)
 local BattlefieldService = require(script.Parent.Battlefield.BattlefieldService)
+local InstallationBuilder = require(script.Parent.Battlefield.InstallationBuilder)
 
 local TerrainService = {}
 
@@ -130,6 +131,26 @@ function TerrainService.build(seed: number): number
 				samplerOverride = sample,
 			})
 			print(string.format("BattlefieldGen: terrain write %.2fs (1500 studs)", os.clock() - w0))
+			-- Physical installations: build template structures at every planned site.
+			-- groundY comes from live terrain raycasts (terrain already written above).
+			local oldDressed = workspace:FindFirstChild("BFInstallations")
+			if oldDressed then oldDressed:Destroy() end
+			local instRoot = Instance.new("Folder")
+			instRoot.Name = "BFInstallations"
+			instRoot.Parent = workspace
+			local built, failed = 0, 0
+			for _, inst in plan.installations do
+				local ok = pcall(function()
+					InstallationBuilder.build(inst, function(x, z) return TerrainService.groundSurface(x, z) end, instRoot)
+				end)
+				if ok then built += 1 else failed += 1 end
+			end
+			print(string.format("BattlefieldGen: installations built=%d failed=%d", built, failed))
+			-- extraction ship lands at the generated extraction node, not the insertion LZ —
+			-- the brief's no-forced-backtracking requirement. Consumers fall back to GF_LZ.
+			local ex = plan.nodes.extraction
+			local exY = TerrainService.groundSurface(ex.x, ex.z)
+			workspace:SetAttribute("GF_ExtractionLZ", Vector3.new(ex.x, exY, ex.z))
 			local t = workspace.Terrain
 			pcall(function() t:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(84, 96, 88)) end)
 			pcall(function() t:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(116, 112, 108)) end)

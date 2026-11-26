@@ -540,49 +540,70 @@ function CombatService.fire(player: Player, payload: any)
 	if not weapon then
 		return reject("unknown-weapon")
 	end
+	-- A5: the client predicts ammunition locally when it sends a shot. Every rejection past this
+	-- point therefore strands one phantom round client-side unless the server corrects it. Send
+	-- authoritative ammunition state with each rejection; the client snaps to server truth.
+	local function rejectFire(reason: string)
+		reject(reason)
+		local AugmentService = require(script.Parent.AugmentService)
+		local capacity = AugmentService.magazine(weapon, AugmentService.forPlayer(player))
+		ReplicatedStorage.GF.Remotes.AmmoUpdated:FireClient(player, {
+			ammo = s.ammo or 0,
+			magazine = capacity,
+			reserve = s.reserve or 0,
+		})
+	end
 	local shotId = tonumber(payload.shotId)
-	if not shotId or shotId <= s.lastShotId then
+	if not shotId or shotId ~= shotId or math.abs(shotId) == math.huge or shotId <= s.lastShotId then
 		return reject("stale-shot-id:" .. tostring(shotId) .. "<=" .. tostring(s.lastShotId))
 	end
 	CombatService.ensureReserve(s, weapon)
 	local t = now()
 	local minInterval = (60 / weapon.rpm) * 0.9
 	if t - s.lastShotAt < minInterval then
-		return reject("rate-limited")
+		return rejectFire("rate-limited")
 	end
 	if s.reloading then
 		if t < s.reloadDone then
-			return reject("reloading")
+			return rejectFire("reloading")
 		end
+		-- Complete through the same conserved path as the scheduled commit: transfer is bounded
+		-- by magazine room AND reserve, and reserve is consumed. The old branch refilled the full
+		-- augmented magazine for free, which duplicated ammunition whenever a shot landed in the
+		-- window between reloadDone and the delayed commit task.
 		s.reloading = false
-	local augs = require(script.Parent.AugmentService).forPlayer(player)
-	local effectiveMagazine = require(script.Parent.AugmentService).magazine(weapon, augs)
-	s.ammo = effectiveMagazine
+		local augs = require(script.Parent.AugmentService).forPlayer(player)
+		local capacity = require(script.Parent.AugmentService).magazine(weapon, augs)
+		local n = CombatService.reloadPlan(s.ammo, capacity, s.reserve or 0)
+		if n > 0 then
+			s.ammo += n
+			s.reserve = math.max(0, (s.reserve or 0) - n)
+		end
 	end
 	if s.ammo <= 0 then
-		return reject("no-ammo")
+		return rejectFire("no-ammo")
 	end
 	local origin = payload.origin
 	local direction = payload.direction
 	if typeof(origin) ~= "Vector3" or typeof(direction) ~= "Vector3" then
-		return reject("bad-vector")
+		return rejectFire("bad-vector")
 	end
 	-- typeof() accepts NaN-bearing vectors and NaN comparisons are false, so neither the zero-direction
 	-- nor the origin-distance check below can catch non-finite input. S14-016/S14-022.
 	local NetGuard = require(script.Parent.NetGuard)
 	if not NetGuard.finiteVector3(origin) or not NetGuard.finiteVector3(direction) then
 		NetGuard.noteReject("fire", "non-finite-vector")
-		return reject("non-finite-vector")
+		return rejectFire("non-finite-vector")
 	end
 	if direction.Magnitude < 0.5 then
-		return reject("zero-direction")
+		return rejectFire("zero-direction")
 	end
 	local root = character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not root then
-		return reject("no-root")
+		return rejectFire("no-root")
 	end
 	if (origin - root.Position).Magnitude > MAX_ORIGIN_OFFSET then
-		return reject("origin-too-far")
+		return rejectFire("origin-too-far")
 	end
 	s.lastShotId = shotId
 	s.lastShotAt = t
@@ -738,7 +759,7 @@ function CombatService.fire(player: Player, payload: any)
 			-- A corpse must not produce hitmarkers. Measured: four shots fired at an already-dead target still sent
 			-- DamageFeedback with damage=18, killed=false, while health correctly stayed at 0.
 			if enemyModel:GetAttribute("Dead") == true then
-				return
+				continue
 			end
 			local distance = (hitPosition - origin).Magnitude
 			local falloffStart = effectiveFalloffStart
@@ -861,11 +882,12 @@ function CombatService.start()
 		if not weapon or s.reloading then
 			return
 		end
-		if s.ammo >= weapon.magazine then
+		local reloadCapacity = require(script.Parent.AugmentService).magazine(weapon, require(script.Parent.AugmentService).forPlayer(player))
+		if s.ammo >= reloadCapacity then
 			return
 		end
 		CombatService.ensureReserve(s, weapon)
-		if CombatService.reloadPlan(s.ammo, weapon.magazine, s.reserve or 0) <= 0 then
+		if CombatService.reloadPlan(s.ammo, reloadCapacity, s.reserve or 0) <= 0 then
 			return
 		end
 		s.reloading = true
@@ -880,14 +902,14 @@ function CombatService.start()
 			if live.reloading and now() >= live.reloadDone then
 				live.reloading = false
 				-- S04-025: add only what the reserve can supply, and consume it.
-			local n = CombatService.reloadPlan(live.ammo, weapon.magazine, live.reserve or 0)
+			local n = CombatService.reloadPlan(live.ammo, reloadCapacity, live.reserve or 0)
 			if n > 0 then
 				live.ammo = live.ammo + n
 				live.reserve = math.max(0, (live.reserve or 0) - n)
 			end
 				ReplicatedStorage.GF.Remotes.AmmoUpdated:FireClient(player, {
 					ammo = live.ammo,
-					magazine = weapon.magazine,
+					magazine = reloadCapacity,
 					reserve = live.reserve or 0,
 				})
 			end

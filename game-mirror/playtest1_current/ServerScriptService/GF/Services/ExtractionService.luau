@@ -209,7 +209,7 @@ function ExtractionService.emergency()
 	if workspace:GetAttribute("GF_InMission") ~= true then
 		return false
 	end
-	local lz = workspace:GetAttribute("GF_LZ")
+	local lz = workspace:GetAttribute("GF_ExtractionLZ") or workspace:GetAttribute("GF_LZ")
 	if typeof(lz) ~= "Vector3" then
 		local players = game:GetService("Players"):GetPlayers()
 		for _, p in ipairs(players) do
@@ -251,7 +251,7 @@ function ExtractionService.call(player: Player)
 	end
 
 	local origin = root.Position
-	local published = workspace:GetAttribute("GF_LZ")
+	local published = workspace:GetAttribute("GF_ExtractionLZ") or workspace:GetAttribute("GF_LZ")
 	if typeof(published) == "Vector3" then
 		lzPosition = published
 	else
