@@ -315,21 +315,25 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	wasDowned = downed
 	if downed then
-		-- collapsed kneel: hips folded deep, torso slumped, head down, arms limp at sides
+		-- collapsed kneel: hips folded deep, torso slumped, head down. when the player crawls
+		-- (server caps speed), limbs drag in an alternating reach-pull cycle (spec sec.60)
+		local crawling = moveBlend > 0.08
+		local reach = crawling and math.sin(phase) or 0
+		local reachOpp = crawling and math.sin(phase + math.pi) or 0
 		setJoint("Root", nil, Vector3.new(0, -1.35, 0))
-		setJoint("LeftHip", CFrame.Angles(1.9, 0, 0))
-		setJoint("RightHip", CFrame.Angles(0.35, 0, 0))
-		setJoint("LeftKnee", CFrame.Angles(-2.2, 0, 0))
-		setJoint("RightKnee", CFrame.Angles(-1.9, 0, 0))
+		setJoint("LeftHip", CFrame.Angles(1.9 + reachOpp * 0.25, 0, 0))
+		setJoint("RightHip", CFrame.Angles(0.35 + reach * 0.25, 0, 0))
+		setJoint("LeftKnee", CFrame.Angles(-2.2 - math.max(0, reachOpp) * 0.3, 0, 0))
+		setJoint("RightKnee", CFrame.Angles(-1.9 - math.max(0, reach) * 0.3, 0, 0))
 		setJoint("LeftAnkle", CFrame.Angles(0.6, 0, 0))
 		setJoint("RightAnkle", CFrame.Angles(0.6, 0, 0))
 		local slump = math.sin(elapsed * 2.2) * 0.03  -- shallow breathing while downed
-		setJoint("Waist", CFrame.Angles(0.55 + slump, 0.12, 0))
-		setJoint("Neck", CFrame.Angles(0.5, 0, 0))
-		setJoint("LeftShoulder", CFrame.Angles(0.25, 0, math.rad(10)))
-		setJoint("RightShoulder", CFrame.Angles(0.3, 0, math.rad(-10)))
-		setJoint("LeftElbow", CFrame.Angles(-0.25, 0, 0))
-		setJoint("RightElbow", CFrame.Angles(-0.25, 0, 0))
+		setJoint("Waist", CFrame.Angles(0.55 + slump + (crawling and math.sin(phase * 2) * 0.04 or 0), 0.12, 0))
+		setJoint("Neck", CFrame.Angles(0.5 - (crawling and 0.25 or 0), 0, 0))  -- head lifts slightly to see while crawling
+		setJoint("LeftShoulder", CFrame.Angles(0.25 + reach * 0.5, 0, math.rad(10)))
+		setJoint("RightShoulder", CFrame.Angles(0.3 + reachOpp * 0.5, 0, math.rad(-10)))
+		setJoint("LeftElbow", CFrame.Angles(-0.25 - math.max(0, reach) * 0.45, 0, 0))
+		setJoint("RightElbow", CFrame.Angles(-0.25 - math.max(0, reachOpp) * 0.45, 0, 0))
 		return
 	end
 
