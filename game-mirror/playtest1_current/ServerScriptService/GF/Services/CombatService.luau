@@ -1171,7 +1171,14 @@ function CombatService.start()
 			return
 		end
 		s.reloading = true
-		if player.Character then player.Character:SetAttribute("GF_Reloading", true) end
+		if player.Character then
+			player.Character:SetAttribute("GF_Reloading", true)
+			-- duration sync (spec sec.5): the presentation phases scale to the ACTUAL effective
+			-- reload time including augments/class passives — stamped server-side, one clock base
+			local reloadDur = s.reloadDone - now()
+			player.Character:SetAttribute("GF_ReloadStartAt", os.clock())
+			player.Character:SetAttribute("GF_ReloadEndAt", os.clock() + reloadDur)
+		end
 		s.reloadCount = (s.reloadCount or 0) + 1
 		s.reloadDone = now() + ((require(script.Parent.AugmentService).reloadTime(weapon, require(script.Parent.AugmentService).forPlayerWeapon(player, s.weaponId))) * require(script.Parent.ClassService).reloadFactor(player))
 		note("Reloading", player.Name)

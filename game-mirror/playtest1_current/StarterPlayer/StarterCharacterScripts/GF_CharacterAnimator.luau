@@ -145,7 +145,18 @@ local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: bo
 	local primaryTarget = WeaponPose.gripWorld(weaponCf, profile.primaryGrip)
 	local supportTarget = WeaponPose.gripWorld(weaponCf, profile.supportGrip)
 	if reloading and profile.magazineGrip then
-		supportTarget = WeaponPose.gripWorld(weaponCf, profile.magazineGrip)
+		-- phase-synchronized to actual reload duration: hand reaches the magazine in the first
+		-- 25%, works through the middle, releases back toward the grip at 80% so the return
+		-- completes as the reload does — instead of snapping back when the flag clears
+		local startAt = character:GetAttribute("GF_ReloadStartAt")
+		local endAt = character:GetAttribute("GF_ReloadEndAt")
+		local frac = 0.5
+		if startAt and endAt and endAt > startAt then
+			frac = math.clamp((os.clock() - startAt) / (endAt - startAt), 0, 1)
+		end
+		if frac < 0.8 then
+			supportTarget = WeaponPose.gripWorld(weaponCf, profile.magazineGrip)
+		end
 	end
 	-- two CCD passes per arm per heartbeat: converges over a few frames, self-correcting.
 	-- end effector tracked is the hand part center; palm refinement is a later calibration step.
