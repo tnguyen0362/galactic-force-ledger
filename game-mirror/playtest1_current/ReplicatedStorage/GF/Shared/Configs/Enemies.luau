@@ -140,6 +140,31 @@ Enemies.List = {
 		behavior = "GuardCover", weakPointMultiplier = 1.5, hitProb = 0.55,
 		burst = { count = 3, interval = 0.15 },
 	},
+	-- ══ Component-framework vehicle/boss loot entries (spec section 60). These enemies are
+	-- driven by their own controllers (BastionTank/LeviathanWalker services), not EnemyService —
+	-- the entries exist so rewards resolve by EnemyId. Boss tier bypasses the mission drop cap;
+	-- encounter-tier kills pay meaningful operation-relevant loot.
+	{
+		id = "BastionTank", displayName = "Bastion Heavy Vehicle", telegraph = 1.6,
+		tier = "Vehicle",
+		health = 1400, shield = 0, damage = 52, attackRange = 190, attackCooldown = 7,
+		speed = 14, sightRange = 260, lootScrap = 8, lootEnergyChance = 1.0, lootTechChance = 0.5,
+		behavior = "VehicleController", weakPointMultiplier = 2.0,
+	},
+	{
+		id = "BastionSiege", displayName = "Bastion Siege Variant", telegraph = 1.6,
+		tier = "Boss",
+		health = 1900, shield = 0, damage = 62, attackRange = 220, attackCooldown = 6,
+		speed = 9, sightRange = 280, lootScrap = 14, lootEnergyChance = 1.0, lootTechChance = 0.8,
+		behavior = "VehicleController", weakPointMultiplier = 2.0,
+	},
+	{
+		id = "LeviathanWalker", displayName = "Leviathan Siege Walker", telegraph = 1.8,
+		tier = "Boss",
+		health = 26000, shield = 0, damage = 68, attackRange = 240, attackCooldown = 9,
+		speed = 6.5, sightRange = 300, lootScrap = 30, lootEnergyChance = 1.0, lootTechChance = 1.0,
+		behavior = "VehicleController", weakPointMultiplier = 2.2,
+	},
 	{
 		id = "BastionWalker", displayName = "Bastion Walker", telegraph = 0.55,
 		tier = "Boss",

@@ -512,7 +512,10 @@ function CacheService.chanceFor(def: any): number
 end
 
 function CacheService.onEnemyKilled(model: Model, killer: Player?)
-	local def = model and Enemies.ById and Enemies.ById[model.Name] or nil
+	-- EnemyId attribute first: component-framework entities name their models descriptively but
+	-- carry the canonical id as an attribute. model.Name remains the fallback for EnemyService actors.
+	local enemyKey = model and (model:GetAttribute("EnemyId") or model.Name) or nil
+	local def = enemyKey and Enemies.ById and Enemies.ById[enemyKey] or nil
 	if not def then
 		return false
 	end

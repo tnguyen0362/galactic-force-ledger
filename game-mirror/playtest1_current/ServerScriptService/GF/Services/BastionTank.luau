@@ -118,7 +118,8 @@ function BastionTank.build(position: Vector3, variant: string?): (Model, any)
 	end
 
 	model:SetAttribute("GFEnemy", true)
-	model:SetAttribute("EnemyId", "BastionTank")
+	local enemyKey = (variant == "Siege") and "BastionSiege" or "BastionTank"
+	model:SetAttribute("EnemyId", enemyKey)
 	model:SetAttribute("Tier", "Vehicle")
 	model:SetAttribute("Variant", variant or "Standard")
 	model:SetAttribute("Dead", false)
