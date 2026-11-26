@@ -318,12 +318,15 @@ do
 		aimRemote.Name = "AimStateNotify"
 		aimRemote.Parent = remotes
 	end
-	aimRemote.OnServerEvent:Connect(function(player, pitch)
+	aimRemote.OnServerEvent:Connect(function(player, pitch, yaw)
 		if not require(script.Parent.NetGuard).allow(player, "aimstate") then return end
 		if type(pitch) ~= "number" or pitch ~= pitch or math.abs(pitch) > 1.6 then return end
 		local character = player.Character
 		if character then
 			character:SetAttribute("GF_AimPitch", pitch)
+			if type(yaw) == "number" and yaw == yaw then
+				character:SetAttribute("GF_CamYaw", yaw)
+			end
 		end
 	end)
 end

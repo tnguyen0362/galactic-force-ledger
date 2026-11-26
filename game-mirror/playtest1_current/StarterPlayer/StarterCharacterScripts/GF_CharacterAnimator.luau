@@ -555,7 +555,22 @@ RunService.Heartbeat:Connect(function(dt)
 			-- torso carries ~30% of aim pitch (spec sec.45) — from the replicated uplink
 			lean = lean - (character:GetAttribute("GF_AimPitch") or 0) * 0.3
 		end
-		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
+		-- spec sec.46: stationary torso twist — when the player is not moving, the upper body
+		-- tracks camera yaw within anatomical limits (~45deg either way, hysteresis-free simple
+		-- clamp; root reorientation is owned client-side by PlayerController when moving/aiming)
+		local twistYaw = 0
+		if moveBlend < 0.1 then
+			local camYawR = character:GetAttribute("GF_CamYaw")
+			if camYawR then
+				local rootLook = root.CFrame.LookVector
+				local rootYaw = math.atan2(-rootLook.X, -rootLook.Z)
+				local dy = camYawR - rootYaw
+				while dy > math.pi do dy = dy - 2 * math.pi end
+				while dy < -math.pi do dy = dy + 2 * math.pi end
+				twistYaw = math.clamp(dy, -0.78, 0.78) * 0.7  -- torso carries 70% within +-45deg
+			end
+		end
+		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18 + twistYaw, strafeBlend * 0.06))
 		if flinch > 0 then
 			-- directional component: twist away from the hit bearing; explosives also displace
 			local dirYaw = math.sin(flinchDir or 0) * flinch * 0.3

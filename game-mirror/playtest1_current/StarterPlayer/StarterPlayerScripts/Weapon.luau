@@ -408,15 +408,19 @@ local function updateViewmodel(dt: number?)
 	-- max ~8Hz, only on meaningful change.
 	do
 		local cam3 = workspace.CurrentCamera
-		if cam3 and viewmodelAimLerp > 0.5 then
+		if cam3 then
 			local pitchNow = math.asin(math.clamp(cam3.CFrame.LookVector.Y, -1, 1))
+			local yawNow = math.atan2(-cam3.CFrame.LookVector.X, -cam3.CFrame.LookVector.Z)
 			local lastP = state.lastUplinkPitch or 99
+			local lastY = state.lastUplinkYaw or 99
 			local nowC = os.clock()
-			if math.abs(pitchNow - lastP) > 0.03 and nowC - (state.lastUplinkAt or 0) > 0.12 then
+			local dirty = math.abs(pitchNow - lastP) > 0.03 or math.abs(yawNow - lastY) > 0.05
+			if dirty and nowC - (state.lastUplinkAt or 0) > 0.12 then
 				state.lastUplinkPitch = pitchNow
+				state.lastUplinkYaw = yawNow
 				state.lastUplinkAt = nowC
 				local rem = remotes:FindFirstChild("AimStateNotify")
-				if rem then rem:FireServer(pitchNow) end
+				if rem then rem:FireServer(pitchNow, yawNow) end
 			end
 		end
 	end
