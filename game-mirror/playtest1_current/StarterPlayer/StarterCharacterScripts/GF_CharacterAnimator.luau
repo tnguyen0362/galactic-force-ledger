@@ -50,6 +50,85 @@ local function setJoint(name: string, rot: CFrame?, offset: Vector3?)
 	joint.motor.C0 = c0
 end
 
+-- === PHASE 12: arm inverse kinematics for weapon contact (spec §33-35) ===
+-- The weapon pose leads (WeaponPose module, shared with the client viewmodel); arms solve onto
+-- the grip points. Two-bone analytical IK: shoulder anchor + measured segment lengths.
+local WeaponPose = require(game:GetService("ReplicatedStorage"):WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("WeaponPose"))
+
+-- joint-to-joint spacing measured from live rig C0s: elbow sits -1.19 down the upper arm,
+-- wrist -0.68 down the lower arm; palm center extends ~0.45 past the wrist joint.
+local ARM_L1 = 1.19
+local ARM_L2 = 0.68 + 0.45
+
+-- Solve rotation that takes restDir to targetDir (both unit vectors, torso-local).
+local function rotationBetween(restDir: Vector3, targetDir: Vector3): CFrame
+	local axis = restDir:Cross(targetDir)
+	local mag = axis.Magnitude
+	if mag < 1e-4 then
+		if restDir:Dot(targetDir) > 0 then
+			return CFrame.new()
+		end
+		return CFrame.Angles(math.pi, 0, 0) -- opposite: flip 180 around X (rare degenerate)
+	end
+	local angle = math.acos(math.clamp(restDir:Dot(targetDir), -1, 1))
+	return CFrame.fromAxisAngle(axis / mag, angle)
+end
+
+-- Two-bone IK for one arm. shoulderJointWorld: world pos of shoulder joint anchor.
+-- targetWorld: desired palm position. torsoCf: UpperTorso world CFrame (frame of the shoulder joints).
+-- bendHint: torso-local preferred bend direction (elbow pole). Returns shoulder rot (joint-local
+-- approximation), elbow bend angle.
+local function solveArm(shoulderJointWorld: Vector3, targetWorld: Vector3, torsoCf: CFrame, bendHint: Vector3): (CFrame, number)
+	local toTarget = targetWorld - shoulderJointWorld
+	local d = math.clamp(toTarget.Magnitude, math.abs(ARM_L1 - ARM_L2) + 0.05, ARM_L1 + ARM_L2 - 0.02)
+	local dirWorld = toTarget.Unit
+	-- torso-local aim direction of the arm
+	local dirLocal = torsoCf:VectorToObjectSpace(dirWorld)
+	-- law of cosines: angle between arm line and upper-arm segment
+	local cosA = math.clamp((ARM_L1^2 + d^2 - ARM_L2^2) / (2 * ARM_L1 * d), -1, 1)
+	local alpha = math.acos(cosA)
+	-- elbow interior angle
+	local cosB = math.clamp((ARM_L1^2 + ARM_L2^2 - d^2) / (2 * ARM_L1 * ARM_L2), -1, 1)
+	local elbowBend = math.pi - math.acos(cosB)
+	-- desired upper-arm direction: rotate dirLocal by alpha toward bendHint
+	local bend = bendHint.Magnitude > 1e-3 and bendHint.Unit or Vector3.new(0, 0, 1)
+	-- project bend perpendicular to dirLocal for a stable rotation axis
+	local perp = bend - dirLocal * bend:Dot(dirLocal)
+	if perp.Magnitude < 1e-3 then
+		perp = Vector3.new(0, 0, 1) - dirLocal * dirLocal.Z
+	end
+	perp = perp.Unit
+	-- upper arm direction = dir rotated away from target line by alpha, toward the perpendicular
+	local upperDir = (dirLocal * math.cos(alpha) + perp * math.sin(alpha)).Unit
+	-- shoulder rotation: rest arm direction is straight down (-Y) in torso space
+	local shoulderRot = rotationBetween(Vector3.new(0, -1, 0), upperDir)
+	return shoulderRot, elbowBend
+end
+
+-- Compute grip targets and solve both arms. Called from the heartbeat when a weapon is equipped.
+local function solveWeaponArms(aiming: boolean)
+	local torso = character:FindFirstChild("UpperTorso")
+	if not torso then return end
+	local rootCf = root.CFrame
+	local weaponCf = WeaponPose.weaponWorld(rootCf, aiming)
+	local profile = WeaponPose.gripProfile(character:GetAttribute("GF_EquippedWeapon") or "")
+	local primaryTarget = WeaponPose.gripWorld(weaponCf, profile.primaryGrip)
+	local supportTarget = WeaponPose.gripWorld(weaponCf, profile.supportGrip)
+	-- shoulder anchor world positions: torso joint C0 positions transformed to world
+	local rShoulder = joints["RightShoulder"]
+	local lShoulder = joints["LeftShoulder"]
+	if not rShoulder or not lShoulder then return end
+	local rAnchor = (torso.CFrame * CFrame.new(rShoulder.base.Position)).Position
+	local lAnchor = (torso.CFrame * CFrame.new(lShoulder.base.Position)).Position
+	-- right arm: elbow bends outward-down; left arm reaches across: elbow bends down-outward
+	local rRot, rBend = solveArm(rAnchor, primaryTarget, torso.CFrame, Vector3.new(0.6, -0.4, 0.5))
+	local lRot, lBend = solveArm(lAnchor, supportTarget, torso.CFrame, Vector3.new(-0.6, -0.4, 0.5))
+	setJoint("RightShoulder", rRot)
+	setJoint("RightElbow", CFrame.Angles(-rBend, 0, 0))
+	setJoint("LeftShoulder", lRot)
+	setJoint("LeftElbow", CFrame.Angles(-lBend, 0, 0))
+end
+
 local TAU = math.pi * 2
 local phase = 0
 local elapsed = 0
@@ -140,7 +219,12 @@ RunService.Heartbeat:Connect(function(dt)
 		setJoint("LeftAnkle", CFrame.Angles(-swing * 0.22, 0, 0))
 		setJoint("RightAnkle", CFrame.Angles(swing * 0.22, 0, 0))
 
-		if aiming then
+		local hasWeapon = character:GetAttribute("GF_EquippedWeapon") ~= nil
+		if hasWeapon then
+			-- Phase 12: weapon leads, arms solve onto grip points via two-bone IK.
+			-- Replaces both the old free-swing and the static aim pose whenever armed.
+			solveWeaponArms(aiming)
+		elseif aiming then
 			setJoint("RightShoulder", CFrame.Angles(-1.35, 0, math.rad(-8)))
 			setJoint("RightElbow", CFrame.Angles(-0.35, 0, 0))
 			setJoint("LeftShoulder", CFrame.Angles(-1.15, 0, math.rad(26)))
