@@ -603,12 +603,20 @@ local originalInteract = OperationService.interact
 
 -- ============ activation ============
 
+local lastActivationAt = 0
+
 function OperationService.activate(def: OperationDefinition): boolean
 	local valid, err = OperationService.validateGraph(def.objectives)
 	if not valid then
 		warn("OperationService: invalid graph:", err)
 		return false
 	end
+	-- deploy fan-out can fire twice for one click; regeneration is seeded-identical but the
+	-- garrison spawns and site rebuilds are not free. Debounce rapid reactivation.
+	if current and os.clock() - lastActivationAt < 5 then
+		return true
+	end
+	lastActivationAt = os.clock()
 	current = def
 	processedEvents = {}
 	rng = Random.new(def.operationSeed * 17 + 3)
