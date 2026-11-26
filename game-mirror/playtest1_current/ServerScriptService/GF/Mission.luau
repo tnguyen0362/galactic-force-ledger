@@ -95,6 +95,11 @@ TerrainService.registerFlat(Vector3.new(-78, 0, -152), 44)
 TerrainService.registerFlat(Vector3.new(38, 0, 26), 34)
 -- S07-006: multiple map seeds per biome — the seed rotates per mission instance instead of the fixed
 -- 1234 every deploy. Seeds are published so clients/probes can verify rotation across missions.
+-- Phase 15: biome is chosen BEFORE terrain/vegetation build so ecology and palette can follow it.
+local biomes = { "Forest", "Arid", "Tundra", "Industrial" } -- Phase 15: four approved biomes (Volcanic retired)
+local biomeIdx = ((workspace:GetAttribute("GF_MissionCount") or 0)) % #biomes + 1
+local biome = biomes[biomeIdx]
+workspace:SetAttribute("GF_Biome", biome)
 local missionSeed = math.floor(os.clock() * 1000) % 100000 + math.random(1, 9999)
 workspace:SetAttribute("GF_MapSeed", missionSeed)
 local columns = TerrainService.build(missionSeed)
@@ -108,10 +113,6 @@ WildlifeService.start()
 local WeatherService = require(Services.WeatherService)
 WeatherService.start()
 -- S07-004: biome selection per mission — rotates across the four launch biome kits.
-local biomes = { "Forest", "Arid", "Tundra", "Industrial" } -- Phase 15: four approved biomes (Volcanic retired)
-local biomeIdx = ((workspace:GetAttribute("GF_MissionCount") or 0)) % #biomes + 1
-local biome = biomes[biomeIdx]
-workspace:SetAttribute("GF_Biome", biome)
 WeatherService.setBiome(biome)
 -- S07-012: auto sliding doors at the outpost entries — valid collisions open and closed.
 local DoorService = require(Services.DoorService)
