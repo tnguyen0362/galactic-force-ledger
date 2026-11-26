@@ -51,6 +51,29 @@ function EncounterTestHarness.start()
 		end)
 		Workspace:SetAttribute("GF_TestDamageDone", ok and (partName or "hull") or ("ERR:" .. tostring(err)))
 	end)
+	-- targeted damage: GF_TestDamageEx = "modelName,partName,amount" — finds the first actor with
+	-- that exact model name and applies the real weapon damage path. Needed for elite members,
+	-- which are never lastEntity (squads spawn as formations).
+	Workspace:GetAttributeChangedSignal("GF_TestDamageEx"):Connect(function()
+		local spec = Workspace:GetAttribute("GF_TestDamageEx")
+		if type(spec) ~= "string" or spec == "" then return end
+		Workspace:SetAttribute("GF_TestDamageEx", "")
+		local modelName, partName, amount = spec:match("([^,]+),([^,]+),([%d%.]+)")
+		if not (modelName and partName and amount) then return end
+		local folder = Workspace:FindFirstChild("ActiveActors")
+		if not folder then return end
+		for _, m in folder:GetChildren() do
+			if m.Name == modelName then
+				local ok, err = pcall(function()
+					local CombatService = require(script.Parent.CombatService)
+					CombatService.damageEnemy(m, tonumber(amount), nil, partName, 1, nil)
+				end)
+				Workspace:SetAttribute("GF_TestDamageDone", ok and modelName or ("ERR:" .. tostring(err)))
+				return
+			end
+		end
+		Workspace:SetAttribute("GF_TestDamageError", "model not found: " .. modelName)
+	end)
 	Workspace:GetAttributeChangedSignal("GF_TestSpawn"):Connect(function()
 		local directive = Workspace:GetAttribute("GF_TestSpawn")
 		if type(directive) ~= "string" or directive == "" then return end

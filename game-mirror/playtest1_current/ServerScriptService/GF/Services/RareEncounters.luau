@@ -38,11 +38,27 @@ local function groundProbe(pos: Vector3, ignore: { Instance }?): Vector3?
 	return nil
 end
 
+-- overhead clearance probe (alpha's kit-integration constraint): walker-class machines are 20-36
+-- studs tall and kit buildings have 9.5-11 stud roofs. A spawn under cover clips hard. Reject any
+-- position with solid geometry overhead within the clearance height.
+local function overheadClear(pos: Vector3, clearance: number): boolean
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = {}
+	local hit = Workspace:Raycast(pos + Vector3.new(0, 2, 0), Vector3.new(0, clearance, 0), params)
+	return hit == nil
+end
+
 -- main entry: called by OperationService after garrison generation. def = operation definition,
 -- rng = operation-seeded stream (deterministic per operation seed).
 function RareEncounters.planAndSpawn(def: any, rng: Random, Services: any)
 	local rates = RATES[def.difficulty] or RATES.Normal
-	local roll = function(p: number) return rng:NextNumber() < p end
+	local rollLog = {}
+	local roll = function(p: number)
+		local v = rng:NextNumber()
+		table.insert(rollLog, string.format("%.2f/%.2f", v, p))
+		return v < p
+	end
 	local circ = def.circumstance or "standard"
 	-- fortified/entrenched circumstances raise armored likelihood modestly; night assault thins it
 	local armorBias = (circ == "fortified" or circ == "entrenched") and 1.25 or (circ == "night_assault" and 0.8 or 1)
@@ -84,15 +100,18 @@ function RareEncounters.planAndSpawn(def: any, rng: Random, Services: any)
 		local a = rng:NextNumber() * math.pi * 2
 		local pos = stronghold.position + Vector3.new(math.cos(a) * 70, 6, math.sin(a) * 70)
 		local ground = groundProbe(pos)
-		if ground then
+		if ground and overheadClear(ground, 24) then
 			local variant = rng:NextNumber() < 0.7 and "Standard" or (rng:NextNumber() < 0.5 and "Vanguard" or "Bulwark")
 			local model = Services.BastionTank.spawn(ground + Vector3.new(0, 4, 0), variant)
 			if model then table.insert(spawned, { kind = "Bastion", variant = variant, position = ground }) end
 		end
 	end
 
-	-- Bastion Siege: rare escalation — a siege-configured vehicle at the hardened stronghold
-	if roll(rates.siege * armorBias) and circ == "fortified" or (roll(rates.siege) and circ ~= "night_assault") then
+	-- Bastion Siege: rare escalation — a siege-configured vehicle at the hardened stronghold.
+	-- Single roll, then circumstance gate: and/or precedence previously double-rolled the budget.
+	local siegeRoll = roll(rates.siege * armorBias)
+	local siegeAllowed = (circ == "fortified") or (circ ~= "night_assault")
+	if siegeRoll and siegeAllowed then
 		if Services.BastionTank then
 			local pos = stronghold.position + Vector3.new(rng:NextInteger(-24, 24), 6, rng:NextInteger(-24, 24))
 			local ground = groundProbe(pos)
@@ -116,7 +135,8 @@ function RareEncounters.planAndSpawn(def: any, rng: Random, Services: any)
 				stronghold.position.Z - dz * 0.35
 			)
 			local ground = groundProbe(pos)
-			if ground then
+			-- 40-stud overhead clearance: the walker is 36 tall, kit roofs are 9.5-11 — margin both ways
+			if ground and overheadClear(ground, 40) then
 				local model = Services.LeviathanWalker.spawn(ground + Vector3.new(0, 3, 0))
 				if model then
 					table.insert(spawned, { kind = "Leviathan", position = ground })
@@ -133,6 +153,8 @@ function RareEncounters.planAndSpawn(def: any, rng: Random, Services: any)
 		end
 	end
 
+	-- hook heartbeat: decisive evidence the rolling ran, with per-type roll outcomes
+	Workspace:SetAttribute("GF_RareRolled", string.format("%s:rolls=%s", def.difficulty or "?", table.concat(rollLog, ";")))
 	-- legible generation: the operation record carries what the seed produced (spec section 54)
 	if #spawned > 0 then
 		local summary = {}
