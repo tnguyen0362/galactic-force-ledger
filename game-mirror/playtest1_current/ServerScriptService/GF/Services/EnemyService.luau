@@ -97,8 +97,10 @@ local function generatePatrolLoop(home: Vector3): { Vector3 }
 	for i = 1, count do
 		local angle = baseAngle + (i / count) * math.pi * 2
 		local candidate = home + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
-		-- ground snap: probe down through vegetation-free space; waypoints sit on real terrain
-		local probe = workspace:Raycast(candidate + Vector3.new(0, 30, 0), Vector3.new(0, -80, 0), patrolParams)
+		-- ground snap: probe down through vegetation-free space; waypoints sit on real terrain.
+		-- deep probe: baked terrain relief spans hundreds of studs (Teton 24-1156), so a shallow
+		-- probe silently drops every downhill waypoint and the loop collapses empty.
+		local probe = workspace:Raycast(candidate + Vector3.new(0, 120, 0), Vector3.new(0, -500, 0), patrolParams)
 		if probe then
 			wps[#wps + 1] = Vector3.new(candidate.X, probe.Position.Y, candidate.Z)
 		end

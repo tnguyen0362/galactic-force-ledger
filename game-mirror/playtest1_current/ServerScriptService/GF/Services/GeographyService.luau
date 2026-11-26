@@ -26,6 +26,10 @@ local FOUNDATIONS = {
 	{ id = "fv4", chunks = 36, n = 1250, base = 24.0, quant = 0.25, rawlen = 1563852 },
 	{ id = "fv5", chunks = 36, n = 1250, base = 24.0, quant = 0.25, rawlen = 1563852 },
 	{ id = "fv6", chunks = 36, n = 1250, base = 24.0, quant = 0.25, rawlen = 1563750 },
+	-- cascades volcanic province (mt rainier region): steeper, younger landforms
+	{ id = "fv7", chunks = 36, n = 1250, base = 24.0, quant = 0.25, rawlen = 1563750 },
+	{ id = "fv8", chunks = 36, n = 1250, base = 24.0, quant = 0.25, rawlen = 1563750 },
+	{ id = "fv9", chunks = 36, n = 1250, base = 24.0, quant = 0.25, rawlen = 1563750 },
 }
 
 export type GeoSpec = {
