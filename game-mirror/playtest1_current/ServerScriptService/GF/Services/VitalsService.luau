@@ -165,6 +165,26 @@ function VitalsService.applyDamage(player: Player, amount: number, _source: stri
 			ReplicatedStorage.GF.Remotes.ShieldBroken:FireClient(player)
 		end
 	end
+	-- Phase 12 damage-reaction channels (spec sec.6): layered cosmetic reactions differentiated
+	-- by damage class — the animator reads these stamps. explosive sources hit harder.
+	do
+		local character = player.Character
+		if character then
+			local kind = "health"
+			if applied > 0 and remaining <= 0 then
+				kind = "shield"
+			end
+			if applied > 0 and s.shield <= 0 then
+				kind = "shieldbreak"
+			end
+			if _source and (tostring(_source):find("xplos") or tostring(_source):find("renade") or tostring(_source):find("Mortar") or tostring(_source):find("blast") or tostring(_source):find("Frag")) then
+				kind = "explosive"
+			end
+			character:SetAttribute("GF_DmgAt", os.clock())
+			character:SetAttribute("GF_DmgKind", kind)
+			character:SetAttribute("GF_DmgAmount", amount)
+		end
+	end
 	-- S04-058 directional damage: tell the victim which direction the hit came from so the HUD can
 	-- arc the indicator. sourcePos is the attacker's position when the caller knows it.
 	if sourcePos then
@@ -182,6 +202,7 @@ function VitalsService.applyDamage(player: Player, amount: number, _source: stri
 				if r then
 					r:FireClient(player, { angle = angle, amount = amount })
 				end
+				character:SetAttribute("GF_DmgAngle", angle)
 			end
 		end
 	end

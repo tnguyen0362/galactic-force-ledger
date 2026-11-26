@@ -182,6 +182,9 @@ local lastPos = root.Position
 
 local wasRolling = false
 local lastHealth = nil
+local lastDmgAt = nil
+local flinchKind = nil
+local flinchDir = 0
 local lastWeaponId = nil
 local deathClock = nil
 local perfPublishClock = nil
@@ -406,15 +409,26 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 
-	-- damage flinch: health drops trigger a brief torso twitch, decaying over 0.35s
-	local hp = humanoid.Health
-	if hp < (lastHealth or hp) - 0.5 then
+	-- differentiated damage reactions (spec sec.6): shield hits are minimal, shield break
+	-- is a controlled upper-body jolt, health hits are directional, explosives are substantial.
+	-- cosmetic only — never interrupts aim/fire/reload/movement/ability per spec.
+	local dmgAt = character:GetAttribute("GF_DmgAt")
+	if dmgAt and dmgAt ~= lastDmgAt then
+		lastDmgAt = dmgAt
 		flinchClock = os.clock()
-		flinchMag = math.min(1, ((lastHealth or hp) - hp) / 25)
+		local kind = character:GetAttribute("GF_DmgKind") or "health"
+		local amt = character:GetAttribute("GF_DmgAmount") or 10
+		flinchKind = kind
+		flinchDir = math.rad(character:GetAttribute("GF_DmgAngle") or 0)
+		local baseMag = math.min(1, amt / 30)
+		flinchMag = kind == "shield" and baseMag * 0.25
+			or kind == "shieldbreak" and math.max(0.5, baseMag * 0.8)
+			or kind == "explosive" and math.min(1.6, baseMag * 1.5)
+			or baseMag
 	end
-	lastHealth = hp
 	local flinchT = os.clock() - (flinchClock or 0)
-	local flinch = flinchT < 0.35 and (1 - flinchT / 0.35) * (flinchMag or 0.5) or 0
+	local flinchWindow = flinchKind == "explosive" and 0.55 or 0.35
+	local flinch = flinchT < flinchWindow and (1 - flinchT / flinchWindow) * (flinchMag or 0) or 0
 
 	-- grenade throw: edge attribute carries the throw timestamp; right arm sweeps overhead
 	local throwAt = character:GetAttribute("GF_GrenadeThrowAt")
@@ -466,8 +480,16 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
 		if flinch > 0 then
-			setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean + flinch * 0.28, (stanceYaw or 0) - strafeBlend * 0.18 + flinch * 0.15, strafeBlend * 0.06))
-			setJoint("Neck", CFrame.Angles(-math.rad(2) * moveBlend - flinch * 0.2, 0, 0))
+			-- directional component: twist away from the hit bearing; explosives also displace
+			local dirYaw = math.sin(flinchDir or 0) * flinch * 0.3
+			local explosiveDrop = flinchKind == "explosive" and flinch * 0.35 or 0
+			setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean + flinch * 0.28, (stanceYaw or 0) - strafeBlend * 0.18 + flinch * 0.15 + dirYaw, strafeBlend * 0.06))
+			setJoint("Neck", CFrame.Angles(-math.rad(2) * moveBlend - flinch * 0.2, dirYaw * 0.5, 0))
+			if explosiveDrop > 0 then
+				setJoint("Root", nil, Vector3.new(0, -explosiveDrop, 0))
+				setJoint("LeftKnee", CFrame.Angles(-0.05 - explosiveDrop * 0.8, 0, 0))
+				setJoint("RightKnee", CFrame.Angles(-0.05 - explosiveDrop * 0.8, 0, 0))
+			end
 		end
 		if throwing then
 			-- overhead throw sweep: arm cocks back then whips forward over the window
