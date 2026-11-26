@@ -48,3 +48,12 @@ Coordinate mission/nav interfaces with alpha.
 2. Build runtime reconstruction benchmark (play-mode WriteVoxels timing + memory)
 3. Implement GeographicalGeneration layer (seed -> crop+orientation+deformation)
 4. Validation captures per the milestone
+
+## IN-FLIGHT STATE (end of thread, resume here)
+- foundation_v2..v6 heightfields PREPROCESSED in gf-geo (foundation_vN_heightfield.npy),
+  relief 1140-1468 studs each. Crops from scan_candidates.npy rows: v2=r1260c1680,
+  v3=r1050c1680, v4=r210c1785, v5=r420c1785, v6=r840c1785 (verify against scan_candidates order).
+- export_modules.py was run with --batch but output may have overwritten out_full/out_half
+  repeatedly — VERIFY: re-export per-foundation into separate dirs (out_v2..out_v6) before deploy.
+- NEXT: per-foundation export -> deploy data modules -> runtime reconstruction benchmark ->
+  GeographicalGeneration layer -> 5-layout validation milestone captures.
