@@ -167,7 +167,16 @@ local function tryFire()
 	state.ammo = math.max(0, state.ammo - 1)
 
 	pcall(function()
-		require(script.Parent.CameraCtl).shake(0.018 * (tonumber(weapon.recoil) or 1))
+		-- coherent recoil kick, not noise: the camera climbs by a small readable impulse per shot
+		-- and recovers passively (CameraController additive decay — it never fights player input,
+		-- never hides dispersion inside the aim math). Owner calibration: restrained, not a fight —
+		-- 0.004 rad base x recoil scalar puts the AR at ~0.23deg/shot, launchers ~0.6-0.75deg single
+		-- kicks. Horizontal gets a small random fraction for life — visible kick, not hidden jitter.
+		local ctl = require(script.Parent.CameraCtl)
+		local r = tonumber(weapon.recoil) or 1
+		local vertical = 0.004 * r
+		local horizontal = vertical * (math.random() - 0.5) * 0.4
+		ctl.recoil(vertical, horizontal)
 	end)
 
 	remotes.FireWeapon:FireServer({

@@ -23,11 +23,38 @@ local function aimPoint(): Vector3?
 	return unitRay.Origin + unitRay.Direction * 120
 end
 
+-- ---------------------------------------------------------------------------
+-- SHARED THROW MODEL — client preview and server runtime must be the same math.
+-- The server (GrenadeRuntime) lands the bomb exactly at the clamped aim point along a two-phase
+-- arc: rise to an apex at midpoint+height then descend to target. Height = max(3, dist*0.18).
+-- Aim distance clamps at 70 studs both sides; the server used to REJECT beyond it, leaving the
+-- player silently grenade-less — now both sides clamp so the preview never promises a rejection.
+local THROW_CAP = 70
+local function clampedAim(): Vector3?
+	local point = aimPoint()
+	if not point then return nil end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then return point end
+	local delta = point - root.Position
+	if delta.Magnitude > THROW_CAP then
+		return root.Position + delta.Unit * THROW_CAP
+	end
+	return point
+end
+-- quadratic-bezier through start/apex/end — matches the server's rise-then-fall tween pair closely
+-- enough that every preview dot sits within a fraction of a stud of the real flight path.
+local function arcPosition(startPos: Vector3, target: Vector3, alpha: number): Vector3
+	local apex = (startPos + target) * 0.5 + Vector3.new(0, math.max(3, (target - startPos).Magnitude * 0.18), 0)
+	local inv = 1 - alpha
+	return inv * inv * startPos + 2 * inv * alpha * apex + alpha * alpha * target
+end
+
 local function send(kind: string)
 	local now = os.clock()
 	if now - lastThrow < 0.8 then return end
 	lastThrow = now
-	local point = aimPoint()
+	local point = clampedAim()
 	throwRemote:FireServer({ kind = kind, aim = point })
 end
 
@@ -40,28 +67,40 @@ local function clearPreview(kind: string)
 		for _, d in ipairs(c.dots) do
 			if d.Parent then d:Destroy() end
 		end
+		if c.marker and c.marker.Parent then c.marker:Destroy() end
 	end
 	charging[kind] = nil
 end
 local function updatePreview(kind: string)
 	local c = charging[kind]
 	if not c then return end
-	local hold = os.clock() - c.startAt
-	-- charge scales the throw distance: quick tap lands inside 35-50, a full hold reaches the 70 cap
-	local frac = math.clamp(hold / 1.2, 0, 1)
-	local dist = 35 + frac * 35
-	local camera = workspace.CurrentCamera
-	if not camera then return end
-	local unitRay = camera:ViewportPointToRay(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
-	local origin = unitRay.Origin + unitRay.Direction * 2
-	-- rebuild the arc dots along a simple ballistic preview
+	local target = clampedAim()
+	if not target then return end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	-- the bomb spawns 2 studs ahead of the chest — preview from the same origin the server uses
+	local startPos = root.Position + root.CFrame.LookVector * 2
 	for i, d in ipairs(c.dots) do
 		local alpha = i / #c.dots
-		local flat = unitRay.Direction * Vector3.new(1, 0, 1)
-		local forward = flat.Magnitude > 0.1 and flat.Unit or Vector3.new(0, 0, -1)
-		local pos = origin + forward * (dist * alpha) + Vector3.new(0, 6 * alpha * (1 - alpha) * 2 - 2 * alpha * alpha, 0)
-		d.CFrame = CFrame.new(pos)
+		d.CFrame = CFrame.new(arcPosition(startPos, target, alpha))
 	end
+	-- landing marker: a flat ring exactly where the blast will center — no guessing
+	if not c.marker then
+		local m = Instance.new("Part")
+		m.Shape = Enum.PartType.Cylinder
+		m.Size = Vector3.new(0.15, 7, 7)
+		m.Orientation = Vector3.new(0, 0, 90)
+		m.Material = Enum.Material.Neon
+		m.Color = kind == "EMP" and Color3.fromRGB(120, 208, 255) or Color3.fromRGB(255, 200, 120)
+		m.Transparency = 0.55
+		m.Anchored = true
+		m.CanCollide = false
+		m.CanQuery = false
+		m.Parent = workspace
+		c.marker = m
+	end
+	c.marker.CFrame = CFrame.new(target + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.rad(90))
 end
 local function startCharge(kind: string)
 	clearPreview(kind)

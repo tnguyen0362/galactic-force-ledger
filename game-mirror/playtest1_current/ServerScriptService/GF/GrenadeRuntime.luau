@@ -240,11 +240,14 @@ local function toss(plr, payload)
 		end
 	end
 	local target = (typeof(aim) == "Vector3") and aim or (root.Position + root.CFrame.LookVector * 40)
-	-- D2: the spec caps precision targeting at 70 studs. Before this check any finite Vector3 was
-	-- accepted verbatim — cross-map grenades on demand.
-	if (target - root.Position).Magnitude > 70 * 1.15 then
-		note("LastReject", "out of range")
-		return
+	-- D2: the spec caps precision targeting at 70 studs. Any finite Vector3 used to be accepted
+	-- verbatim (cross-map grenades), then a hard reject left players silently grenade-less when the
+	-- client aimed past the cap. The client preview now clamps to 70 — the server mirrors the clamp
+	-- exactly so preview and truth are the same point, while exploit-aim beyond the cap simply
+	-- lands at the cap boundary instead of being a freebie rejection-or-crossmap binary.
+	local aimDelta = target - root.Position
+	if aimDelta.Magnitude > 70 then
+		target = root.Position + aimDelta.Unit * 70
 	end
 	local dir = (target - root.Position).Unit
 	plr:SetAttribute("GrenadeCharges", chargesOf(plr) - 1)

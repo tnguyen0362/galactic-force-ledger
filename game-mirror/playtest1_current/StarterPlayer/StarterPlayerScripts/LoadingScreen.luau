@@ -14,6 +14,7 @@ gui.DisplayOrder = 100
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
+frame.Name = "Root"
 frame.Size = UDim2.fromScale(1, 1)
 frame.BackgroundColor3 = Color3.fromRGB(14, 16, 22)
 frame.BorderSizePixel = 0
@@ -122,9 +123,41 @@ task.spawn(function()
 	end
 end)
 
--- initial presentation: brief display while first content loads
+-- initial presentation: hold until planetary terrain generation completes server-side.
+-- GF_TerrainReady flips true at the end of TerrainService.build — covers the multi-second
+-- battlefield write instead of letting players watch voxel tiles pop in. Terrain replication
+-- to the client trails the server write slightly, so a short grace follows the ready signal.
 frame.Visible = true
+status.Text = "SURVEYING PLANETARY SURFACE"
+print(string.format("GFLOAD shown clock=%.2f readyAttr=%s", os.clock(), tostring(workspace:GetAttribute("GF_TerrainReady"))))
+local initialDone = false
+local function finishInitial()
+	if initialDone then
+		return
+	end
+	initialDone = true
+	task.wait(1.2) -- replication grace for the last terrain tiles
+	if workspace:GetAttribute("GF_Teleporting") ~= true then
+		frame.Visible = false
+	end
+	print(string.format("GFLOAD hidden clock=%.2f", os.clock()))
+end
 task.spawn(function()
+	local elapsed = 0
+	while elapsed < 30 do -- hard cap: never trap the player on the screen
+		if workspace:GetAttribute("GF_TerrainReady") == true then
+			-- flavor: battlefield mode names the geological theater while it finishes
+			local arch = workspace:GetAttribute("GF_BFArchetype")
+			if arch then
+				status.Text = "PLANETARY SURVEY COMPLETE"
+			end
+			finishInitial()
+			return
+		end
+		task.wait(0.25)
+		elapsed += 0.25
+	end
+	-- fallback: server never signaled (legacy flows) — don't hold the player hostage
 	task.wait(0.8)
 	if workspace:GetAttribute("GF_Teleporting") ~= true then
 		frame.Visible = false

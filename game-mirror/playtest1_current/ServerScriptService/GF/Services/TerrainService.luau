@@ -83,6 +83,7 @@ end
 function TerrainService.build(seed: number): number
 	SEED = seed or SEED
 	sample = nil
+	workspace:SetAttribute("GF_TerrainReady", false)
 	-- Procedural battlefield path (P1 integration, default OFF): when the dev flag is set the
 	-- terrain comes from a validated BattlefieldService plan — feature-anchored archetype
 	-- geography, A*-validated routes, foundation-shaped installations — instead of the legacy
@@ -169,6 +170,7 @@ function TerrainService.build(seed: number): number
 			pcall(function() t:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(122, 114, 98)) end)
 			pcall(function() t:SetMaterialColor(Enum.Material.Sandstone, Color3.fromRGB(112, 104, 92)) end)
 			pcall(function() t:SetMaterialColor(Enum.Material.Basalt, Color3.fromRGB(74, 74, 84)) end)
+			workspace:SetAttribute("GF_TerrainReady", true)
 			return 4096
 		end
 	end
@@ -198,6 +200,7 @@ function TerrainService.build(seed: number): number
 	pcall(function() t:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(122, 114, 98)) end)
 	pcall(function() t:SetMaterialColor(Enum.Material.Sandstone, Color3.fromRGB(112, 104, 92)) end)
 	pcall(function() t:SetMaterialColor(Enum.Material.Basalt, Color3.fromRGB(74, 74, 84)) end)
+	workspace:SetAttribute("GF_TerrainReady", true)
 	return 4096
 end
 

@@ -967,7 +967,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 						local hum = char:FindFirstChildOfClass("Humanoid")
 						if hum and hum.Health > 0 then
 							workspace:SetAttribute("GF_SweepHits", (workspace:GetAttribute("GF_SweepHits") or 0) + 1)
-							VitalsService.applyDamage(plr, 24 * (tonumber(model:GetAttribute("DamageMultiplier")) or 1), "OfficerSweep", sweepOrigin)
+							VitalsService.applyDamage(plr, 24 * (tonumber(model:GetAttribute("DamageMultiplier")) or 1), "OfficerSweep", sweepOrigin, model)
 						end
 					end
 				end
@@ -1040,7 +1040,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position)
 					debugAttr("GF_LastShotPos", liveRoot.Position)
 					local dmgMult = tonumber(model:GetAttribute("DamageMultiplier")) or 1
-					VitalsService.applyDamage(target, def.damage * dmgMult, def.id, liveRoot.Position)
+					VitalsService.applyDamage(target, def.damage * dmgMult, def.id, liveRoot.Position, model)
 					debugAttr("GF_LastAttackAttempt", "hit")
 					debugAttr("GF_EnemyHits", (workspace:GetAttribute("GF_EnemyHits") or 0) + 1)
 				else

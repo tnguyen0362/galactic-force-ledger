@@ -77,7 +77,7 @@ function VitalsService.reset(player: Player)
 end
 
 -- Returns the damage actually applied to vitals.
-function VitalsService.applyDamage(player: Player, amount: number, _source: string?, sourcePos: Vector3?): number
+function VitalsService.applyDamage(player: Player, amount: number, _source: string?, sourcePos: Vector3?, attacker: Model?): number
 	if player:GetAttribute("GF_Aboard") == true then
 		return 0
 	end
@@ -101,6 +101,20 @@ function VitalsService.applyDamage(player: Player, amount: number, _source: stri
 	-- the window is authoritative here, never client-claimed.
 	if (s :: any).invulnerableUntil and os.clock() < (s :: any).invulnerableUntil then
 		return 0
+	end
+	-- Reflective Barrier: enemy fire is intercepted and half of it returned to the attacker.
+	-- This is the single choke point every enemy attack crosses, so the interception cannot be
+	-- bypassed by attack type. The barrier query is lazy-required: VitalsService loads early in
+	-- the service graph and AbilityService depends on half a dozen things above it.
+	do
+		local ok, AbilityService = pcall(function()
+			return require(script.Parent.AbilityService)
+		end)
+		if ok and AbilityService.barrierFor and AbilityService.barrierFor(player) then
+			AbilityService.consumeReflection(player, attacker, amount)
+			workspace:SetAttribute("GF_BarrierIntercepted_" .. player.UserId, (workspace:GetAttribute("GF_BarrierIntercepted_" .. player.UserId) or 0) + 1)
+			return 0
+		end
 	end
 	-- Damage attribution behind a switch: it was the only way to name the landing-zone attacker, but it must
 	-- not spam a live server's log.

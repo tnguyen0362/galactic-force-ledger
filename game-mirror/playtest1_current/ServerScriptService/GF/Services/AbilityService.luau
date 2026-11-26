@@ -185,6 +185,10 @@ local function airstrike(player: Player, s: any, position: Vector3)
 	-- one id per cast so the 12%-of-boss-HP cap accumulates across all five blast steps of THIS cast
 	airstrikeCastCounter += 1
 	local castId = "airstrike" .. tostring(player.UserId) .. ":" .. tostring(airstrikeCastCounter)
+	-- spec: no more than 280 total per target across the 3 impacts of one cast. Without this a
+	-- stationary target at the strike center eats all three impacts for 420 — 50% over budget.
+	local PER_TARGET_CAP = 280
+	local hitTotals: { [Model]: number } = {}
 	local ability = Abilities.get("Airstrike")
 	if not ability then
 		return
@@ -394,7 +398,12 @@ local function airstrike(player: Player, s: any, position: Vector3)
 				for _, enemy in enemiesInRadius(blastPoint, 11 * supportRadiusScale) do
 					local armor = enemy:GetAttribute("Tier")
 					local mult = (armor == "Elite" or armor == "Boss") and 0.5 or 1
-					abilityDamageEnemy(castId, enemy, ability.damage * mult * supportDamageScale, player, blastPoint)
+					local room = PER_TARGET_CAP - (hitTotals[enemy] or 0)
+					if room > 0 then
+						local amount = math.min(ability.damage * mult * supportDamageScale, room)
+						hitTotals[enemy] = (hitTotals[enemy] or 0) + amount
+						abilityDamageEnemy(castId, enemy, amount, player, blastPoint)
+					end
 				end
 			end)
 		end
@@ -488,7 +497,7 @@ end
 -- Sentry: a deployable that only fires at enemies it can actually see. The requirement is explicit
 -- that it must not shoot through rocks, so every candidate is line-of-sight tested from the barrel
 -- and the sentry publishes its target/blocked counts for verification.
-local SENTRY_TICK = 0.4
+local SENTRY_TICK = 0.2 -- spec: 300 RPM = 5 shots/sec (was 150 RPM)
 local function sentry(player: Player, s: any, position: Vector3)
 	local ability = Abilities.get("Sentry")
 	if not ability then
@@ -568,7 +577,9 @@ local function sentry(player: Player, s: any, position: Vector3)
 	model:SetAttribute("GFSentryBlocked", 0)
 	beginCooldown(player, s, ability)
 	ReplicatedStorage.GF.Remotes.AbilityStateChanged:FireClient(player, { abilityId = ability.id, duration = ability.cooldown })
-	local radius = ability.range or 70
+	-- spec acquisition radius is 65 (ability.radius) — ability.range is the 90-stud placement
+	-- reach. The sentry used to scan 38% wider than designed because the two fields were conflated.
+	local radius = ability.radius or 65
 	local expires = os.clock() + (ability.duration or 25)
 	local Combat = require(ServerScriptService.GF.Services.CombatService)
 	task.spawn(function()
@@ -651,7 +662,7 @@ end
 -- Orbital strike: a telegraphed column from orbit. Everything runs on the server so it works without
 -- any client handler: telegraph ring, a descending beam, a heavy shockwave and a deep boom, then
 -- damage with falloff. Attributes record what happened for verification.
-local ORBITAL_DELAY = 1.8
+local ORBITAL_DELAY = 5.0 -- spec: 5s telegraph before the strike lands (was 1.8 — unreactable)
 local function orbital(player: Player, s: any, position: Vector3)
 	local ability = Abilities.get("OrbitalStrike")
 	if not ability then return end
@@ -923,6 +934,10 @@ local function cast(player: Player, payload: any)
 			sentry(player, s, position)
 		elseif abilityId == "OrbitalStrike" then
 			orbital(player, s, position)
+		elseif abilityId == "OrbitalLance" then
+			orbitalLance(player, s, position)
+		elseif abilityId == "ReflectiveBarrier" then
+			reflectiveBarrier(player, s, position)
 		end
 		local live = State.get(player)
 		if live and live.castInFlight then
@@ -930,6 +945,140 @@ local function cast(player: Player, payload: any)
 		end
 	end)
 end
+-- Orbital Lance (spec): 4s telegraph, then a narrow sustained beam — 3 pulses over 3 seconds,
+-- 140 damage each in radius 6 (420 total if a target eats all three). Unlike the strike's single
+-- wide hammer blow, the lance is precise area denial: thin column, long burn, no falloff mercy.
+local function orbitalLance(player: Player, s: any, position: Vector3)
+	local ability = Abilities.get("OrbitalLance")
+	if not ability then return end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	if (position - root.Position).Magnitude > (ability.range or 90) then
+		reportReject(player, "out of range")
+		return
+	end
+	local supportDamageScale, supportRadiusScale = supportStats(player)
+	local radius = (ability.radius or 6) * supportRadiusScale
+	beginCooldown(player, s, ability)
+	ReplicatedStorage.GF.Remotes.AbilityStateChanged:FireClient(player, { abilityId = ability.id, duration = ability.cooldown })
+	-- 4s telegraph: thin targeting ring + rising tone, distinct from the strike's wide ring
+	shockRing(position, Color3.fromRGB(140, 200, 255), radius * 0.8, 14)
+	boom(position, 0.2, 0.6)
+	local castId = "lance" .. tostring(player.UserId) .. ":" .. tostring(os.clock())
+	task.delay(4.0, function()
+		if cancelForEmergency(player, "OrbitalLance") then return end
+		-- sustained beam column for the full 3s burn
+		local beam = Instance.new("Part")
+		beam.Name = "OrbitalLanceBeam"
+		beam.Shape = Enum.PartType.Cylinder
+		beam.Size = Vector3.new(220, radius * 1.2, radius * 1.2)
+		beam.CFrame = CFrame.new(position + Vector3.new(0, 110, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		beam.Anchored = true
+		beam.CanCollide = false
+		beam.CanQuery = false
+		beam.Material = Enum.Material.Neon
+		beam.Color = Color3.fromRGB(150, 210, 255)
+		beam.Transparency = 0.1
+		beam.Parent = workspace
+		for pulse = 1, 3 do
+			task.delay((pulse - 1) * 1.0, function()
+				if not beam.Parent then return end
+				-- pulse flash: beam brightens and widens momentarily each second
+				beam.Transparency = 0
+				beam.Size = Vector3.new(220, radius * 2, radius * 2)
+				TweenService:Create(beam, TweenInfo.new(0.5), { Transparency = 0.25, Size = Vector3.new(220, radius * 1.2, radius * 1.2) }):Play()
+				boom(position, 0.35, 0.5 + pulse * 0.1)
+				ReplicatedStorage.GF.Remotes.AbilityImpact:FireAllClients("OrbitalLance", position)
+				local pulseDamage = (ability.damage / 3) * supportDamageScale
+				require(ServerScriptService.GF.Services.CombatService).damageAlliesInRadius(position, radius * supportRadiusScale, pulseDamage * 0.5, player)
+				for _, enemy in enemiesInRadius(position, radius * supportRadiusScale) do
+					abilityDamageEnemy(castId, enemy, pulseDamage, player, position)
+				end
+			end)
+		end
+		task.delay(3.2, function() if beam.Parent then beam:Destroy() end end)
+	end)
+end
+
+-- Reflective Barrier (spec): 7s bubble around the caster. Enemy fire is intercepted and reflected
+-- back at the attacker at half damage, up to 8 reflections. The interception itself lives in
+-- VitalsService.applyDamage — the single choke point all enemy damage crosses — querying the
+-- registry below. Reflections exhausted or duration ended: the barrier drops visually either way.
+local activeBarriers: { [Player]: { model: BasePart, expiresAt: number, reflections: number } } = {}
+local function reflectiveBarrier(player: Player, s: any, position: Vector3)
+	local ability = Abilities.get("ReflectiveBarrier")
+	if not ability then return end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	beginCooldown(player, s, ability)
+	ReplicatedStorage.GF.Remotes.AbilityStateChanged:FireClient(player, { abilityId = ability.id, duration = ability.cooldown })
+	if activeBarriers[player] and activeBarriers[player].model.Parent then
+		activeBarriers[player].model:Destroy()
+	end
+	local bubble = Instance.new("Part")
+	bubble.Name = "ReflectiveBarrier"
+	bubble.Shape = Enum.PartType.Ball
+	local radius = ability.radius or 10
+	bubble.Size = Vector3.new(radius * 2, radius * 2, radius * 2)
+	bubble.Anchored = true
+	bubble.CanCollide = false
+	bubble.CanQuery = false
+	bubble.CanTouch = false
+	bubble.Material = Enum.Material.ForceField
+	bubble.Color = Color3.fromRGB(140, 220, 255)
+	bubble.Transparency = 0.55
+	bubble.CFrame = CFrame.new(root.Position)
+	bubble.Parent = workspace
+	activeBarriers[player] = { model = bubble, expiresAt = os.clock() + (ability.duration or 7), reflections = 0 }
+	workspace:SetAttribute("GF_BarrierActive_" .. player.UserId, true)
+	local started = os.clock()
+	task.spawn(function()
+		while bubble.Parent and os.clock() < activeBarriers[player].expiresAt do
+			-- the barrier travels with the caster — it is a personal shield, not a placed dome
+			local liveRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if liveRoot then
+				bubble.CFrame = CFrame.new(liveRoot.Position)
+			end
+			task.wait(0.1)
+		end
+		if bubble.Parent then bubble:Destroy() end
+		workspace:SetAttribute("GF_BarrierActive_" .. player.UserId, false)
+		if activeBarriers[player] and activeBarriers[player].model == bubble then
+			activeBarriers[player] = nil
+		end
+		workspace:SetAttribute("GF_BarrierLife_" .. player.UserId, os.clock() - started)
+	end)
+end
+
+-- VitalsService calls through this: returns the barrier entry when interception should happen.
+function AbilityService.barrierFor(player: Player)
+	local b = activeBarriers[player]
+	if b and b.model.Parent and os.clock() < b.expiresAt and b.reflections < 8 then
+		return b
+	end
+	return nil
+end
+-- a reflection consumed: count it, flash the bubble, damage the attacker at half strength.
+function AbilityService.consumeReflection(player: Player, attacker: Model?, amount: number)
+	local b = activeBarriers[player]
+	if not b then return end
+	b.reflections += 1
+	b.model.Color = Color3.fromRGB(255, 255, 255)
+	task.delay(0.12, function()
+		if b.model.Parent then b.model.Color = Color3.fromRGB(140, 220, 255) end
+	end)
+	ReplicatedStorage.GF.Remotes.AbilityImpact:FireAllClients("Reflect", b.model.Position)
+	if attacker and attacker.Parent then
+		local ok = pcall(function()
+			require(ServerScriptService.GF.Services.CombatService).damageEnemy(attacker, amount * 0.5, player)
+		end)
+		workspace:SetAttribute("GF_BarrierReflectDmg_" .. player.UserId, amount * 0.5)
+	end
+	workspace:SetAttribute("GF_BarrierReflections_" .. player.UserId, b.reflections)
+end
+
 function AbilityService.start()
 	if AbilityService._connected then
 		return
