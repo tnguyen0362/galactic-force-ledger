@@ -100,6 +100,8 @@ BiomeLook.LOOKS = {
 	},
 } :: { [string]: Look }
 
+BiomeLook.RAYS = { Forest = 0.12, Tundra = 0.08, Arid = 0.18, Industrial = 0.1, Volcanic = 0.1 } :: { [string]: number }
+
 function BiomeLook.current(): string
 	local b = workspace:GetAttribute("GF_Biome")
 	return (typeof(b) == "string" and BiomeLook.LOOKS[b]) and b or "Forest"
@@ -143,6 +145,16 @@ function BiomeLook.apply(biome: string?): Look
 	if bloom then
 		bloom.Intensity = l.bloomIntensity
 	end
+
+	-- god rays through the haze: the low sun shafts are a big part of the war-zone read
+	local rays = Lighting:FindFirstChildOfClass("SunRaysEffect")
+	if not rays then
+		rays = Instance.new("SunRaysEffect")
+		rays.Name = "GFSunRays"
+		rays.Parent = Lighting
+	end
+	rays.Intensity = BiomeLook.RAYS[name] or 0.08
+	rays.Spread = 0.9
 
 	local terrain = workspace:FindFirstChildOfClass("Terrain")
 	if terrain then
