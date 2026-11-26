@@ -550,7 +550,9 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 		if not opOk then warn("OperationService deploy integration failed:", opErr) end
 		local opLZ = workspace:GetAttribute("GF_OperationLZ")
 		if typeof(opLZ) == "Vector3" then
-			spawnTarget = Vector3.new(opLZ.X, 0, opLZ.Z)
+			-- preserve elevation: mountain-valley deployment zones carry real terrain Y and
+			-- groundPoint's elevation-aware origin depends on it
+			spawnTarget = Vector3.new(opLZ.X, opLZ.Y, opLZ.Z)
 		end
 	end
 	local spawnPoint = groundPoint(spawnTarget)
