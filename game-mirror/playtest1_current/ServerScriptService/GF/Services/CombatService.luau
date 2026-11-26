@@ -9,6 +9,7 @@ local Constants = require(ReplicatedStorage.GF.Shared.Constants)
 local Weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
 local State = require(ServerScriptService.GF.Services.State)
 local VitalsService = require(ServerScriptService.GF.Services.VitalsService)
+local Telemetry = require(ServerScriptService.GF.Services.GFTelemetry)
 local ProfileService = require(ServerScriptService.GF.Services.ProfileService)
 local CombatService = {}
 local MAX_ORIGIN_OFFSET = 10.5
@@ -720,6 +721,14 @@ function CombatService.fire(player: Player, payload: any)
 	s.ammo -= 1
 	counters.accepted += 1
 	note("Accepted", counters.accepted)
+	if Telemetry.enabled() then
+		Telemetry.emit("shot_fired", {
+			weaponId = weaponId,
+			shooterType = "player",
+			ads = character:GetAttribute("Aiming") == true,
+			ammoAfter = s.ammo,
+		})
+	end
 	-- Hearing model (S06-008): a fired shot alerts hostiles within range of the muzzle.
 	-- Shooter identity passed through for player-keyed auditory memory (spec section 18):
 	-- optional parameter, behavior unchanged for positional-only callers.
@@ -896,6 +905,28 @@ function CombatService.fire(player: Player, payload: any)
 			local mult = CombatService.weakMultiplier(partName, result and result.Instance)
 			local damage = damagePerPellet * falloff * mult
 			local killed = CombatService.damageEnemy(enemyModel, damage, player, partName, mult, weapon)
+			if Telemetry.enabled() then
+				Telemetry.emit("hit_registered", {
+					weaponId = weapon.id,
+					zone = partName,
+					distance = math.floor(distance * 100 + 0.5) / 100,
+					falloffApplied = math.floor(falloff * 1000 + 0.5) / 1000,
+					damageAfterFalloff = math.floor(damage * 100 + 0.5) / 100,
+					weakMult = mult,
+					pelletsTotal = pellets,
+					targetEnemyId = enemyModel.Name,
+					targetArchetype = enemyModel:GetAttribute("EnemyId"),
+					killed = killed,
+				})
+				if killed then
+					Telemetry.emit("enemy_killed", {
+						enemyId = enemyModel.Name,
+						archetype = enemyModel:GetAttribute("EnemyId"),
+						zone = partName,
+						weaponId = weapon.id,
+					})
+				end
+			end
 			counters.hits += 1
 			note("Hits", counters.hits)
 			note("LastDamage", damage)

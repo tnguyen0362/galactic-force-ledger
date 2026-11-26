@@ -221,7 +221,15 @@ verbs.drain = function()
 	local events = drain:Invoke(2000)
 	local rows = {}
 	for _, ev in ipairs(events) do
-		if ev.eventType == "enemy_attack_hit" or ev.eventType == "enemy_attack_miss" then
+		if ev.eventType == "shot_fired" or ev.eventType == "hit_registered" or ev.eventType == "enemy_killed" then
+			local row = ev.eventType:upper()
+			for _, k in ipairs({"weaponId", "zone", "distance", "falloffApplied", "damageAfterFalloff", "weakMult", "targetArchetype", "killed", "ads", "ammoAfter", "archetype"}) do
+				if ev[k] ~= nil then
+					row = row .. ";" .. k .. "=" .. tostring(ev[k])
+				end
+			end
+			table.insert(rows, row)
+		elseif ev.eventType == "enemy_attack_hit" or ev.eventType == "enemy_attack_miss" then
 			table.insert(rows, string.format("%s;d=%.1f;sig=%.2f;sf=%.2f;sa=%.2f;sm=%.2f;so=%.2f;ss=%.2f;err=%.2f;q=%.2f;vel=%.1f;tv=%.1f;roll=%s;blk=%s",
 				ev.eventType == "enemy_attack_hit" and "HIT" or "MISS",
 				ev.distance or -1, ev.sigmaFinal or -1, ev.sigmaFloor or -1, ev.sigmaAcquisition or -1,
