@@ -3085,3 +3085,6 @@ that is solved, mission art cannot be reviewed visually at all — only measured
 
 **Consequence for the ledger.** Violet flora is recorded as *measured at construction*, explicitly **not** as seen. `PLANT_PALETTE_V1` is
 closed in `ASSET_DEBT.csv` for the code fix, with the missing frame called out as the outstanding item rather than quietly dropped.
+
+## 2026-11-27 Phase 15 biome captures (claude) — PROVISIONAL
+In-engine captures of Forest/Tundra/Arid/Industrial with the Blender vegetation set. Vegetation reads as stylized, palette-consistent and biome-distinct; sky and ground materials are the weakest elements. Industrial capture predates the brightness retune. Owner review gate pending.

@@ -78,10 +78,10 @@ BiomeLook.LOOKS = {
 	},
 	-- Industrial wasteland: low heavy smog, desaturated slate and rust, harder contrast.
 	Industrial = {
-		clock = 17.4, brightness = 1.6,
-		ambient = c(108, 106, 106), outdoor = c(130, 124, 118), envDiffuse = 0.55, exposure = 0,
-		fogStart = 120, fogEnd = 3600, fogColor = c(150, 142, 134),
-		atmoDensity = 0.42, atmoHaze = 3.0, atmoColor = c(142, 138, 132), atmoDecay = c(190, 150, 110),
+		clock = 15.6, brightness = 2.1,
+		ambient = c(126, 124, 124), outdoor = c(146, 140, 134), envDiffuse = 0.58, exposure = 0.2,
+		fogStart = 150, fogEnd = 3800, fogColor = c(158, 150, 142),
+		atmoDensity = 0.34, atmoHaze = 2.0, atmoColor = c(142, 138, 132), atmoDecay = c(190, 150, 110),
 		gradeTint = c(240, 232, 224), gradeSat = -0.18, gradeContrast = 0.10, bloomIntensity = 0.2,
 		terrain = {
 			Ground = c(92, 88, 84), Slate = c(66, 68, 70), Basalt = c(58, 58, 60), Rock = c(104, 98, 92),
