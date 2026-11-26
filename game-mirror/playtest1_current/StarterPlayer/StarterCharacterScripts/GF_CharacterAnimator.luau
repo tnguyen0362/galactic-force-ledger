@@ -571,6 +571,16 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 		end
 		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18 + twistYaw, strafeBlend * 0.06))
+		-- spec sec.48: controlled upper-body firing response — a small bounded impulse per shot,
+		-- never a full-body restart, coherent at high fire rates, decaying with no accumulation
+		local shotAt3 = character:GetAttribute("GF_LastShotAt")
+		if shotAt3 then
+			local sdt = os.clock() - shotAt3
+			if sdt >= 0 and sdt < 0.12 then
+				local rb = (1 - sdt / 0.12) ^ 2 * 0.028
+				setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean + rb, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
+			end
+		end
 		if flinch > 0 then
 			-- directional component: twist away from the hit bearing; explosives also displace
 			local dirYaw = math.sin(flinchDir or 0) * flinch * 0.3
