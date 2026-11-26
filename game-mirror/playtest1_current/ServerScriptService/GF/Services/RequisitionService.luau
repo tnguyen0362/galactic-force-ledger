@@ -281,6 +281,23 @@ end
 
 -- Buy one catalog row against a profile. `grantCache` is injected by the Player-facing wrapper so the
 -- same transaction can be proved against a synthetic profile without touching the real inventory.
+-- Uniform economic journaling (spec §96-98): effects here already have specialized idempotency;
+-- this records them into the authoritative transaction journal for evidence and versioning.
+local function journalTxn(profile, txn)
+	local plr = profile and game:GetService("Players"):GetPlayerByUserId(tonumber(profile.userId) or -1)
+	if not plr then
+		return
+	end
+	local ok, svc = pcall(function()
+		return require(script.Parent.EconomyTransactionService)
+	end)
+	if ok and svc then
+		pcall(function()
+			svc.record(plr, txn)
+		end)
+	end
+end
+
 function RequisitionService.buyProfile(profile: any, reqId: string, key: string, grantCache): (boolean, string?)
 	local req = Requisitions.get(reqId)
 	if type(profile) ~= "table" or not req then
@@ -363,6 +380,26 @@ function RequisitionService.buyProfile(profile: any, reqId: string, key: string,
 		profile.purchasedEntries[onceKey] = oldOnce
 		return false, failure
 	end
+	-- journal key: once-entries dedupe inherently; repeatable entries use the monotonic
+	-- post-purchase spend total so every purchase instance journals distinctly and exactly once.
+	local outputs = {}
+	if entry.kind == "resource" then
+		for resource, amount in pairs(entry.grant or {}) do
+			outputs[resource] = (outputs[resource] or 0) + (tonumber(amount) or 0)
+		end
+	elseif entry.kind == "cache" then
+		outputs["cache:" .. tostring(entry.tier)] = 1
+	elseif entry.kind then
+		outputs[tostring(entry.kind) .. ":" .. tostring(entry.id)] = 1
+	end
+	journalTxn(profile, {
+		id = string.format("req:%s:%s:%d", reqId, entry.key, profile.requisitionSpend[reqId] or 0),
+		type = "requisition_purchase",
+		sourceId = reqId,
+		inputs = { credits = cost },
+		outputs = outputs,
+		note = string.format("entry=%s tier=%d once=%s", entry.key, entryTier, tostring(entry.once == true)),
+	})
 	return true
 end
 

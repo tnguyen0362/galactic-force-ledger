@@ -165,6 +165,25 @@ function MonetizationService.processReceipt(player: Player, receiptInfo: any, op
 		test = test,
 	}
 	ProfileService.recordTransaction(player, "receipt:" .. tostring(receipt.purchaseId))
+	-- uniform economic journal (spec §96-98): the receipt id is the natural idempotency key,
+	-- matching the processedReceipts dedup above — a retried receipt can never double-journal.
+	do
+		local ok, svc = pcall(function()
+			return require(script.Parent.EconomyTransactionService)
+		end)
+		if ok and svc then
+			pcall(function()
+				svc.record(player, {
+					id = "receipt:" .. tostring(receipt.purchaseId),
+					type = "premium_grant",
+					sourceId = product.id,
+					inputs = {},
+					outputs = { ["entitlement:" .. tostring(product.entitlement)] = 1 },
+					note = string.format("requisition=%s test=%s", tostring(product.grantRequisition), tostring(test)),
+				})
+			end)
+		end
+	end
 	ProfileService.markDirty(player)
 	ProfileService.saveWithRetry(player)
 	workspace:SetAttribute("GF_MonetizationReceipt", string.format("%s:%s:%s", player.Name, product.id, test and "test" or "live"))

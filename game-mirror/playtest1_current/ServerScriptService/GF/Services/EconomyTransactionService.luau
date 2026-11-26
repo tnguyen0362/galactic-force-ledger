@@ -173,6 +173,65 @@ function EconomyTransactionService.apply(player: Player, txn: Transaction, mutat
 	return true, "applied", nil
 end
 
+-- Record an economic effect that already applied through a flow with its OWN specialized
+-- idempotency (two-phase offers, input consumption, receipt dedup). record() adds the uniform
+-- journal evidence — schema, revision, economic version — without re-applying anything.
+-- naturalKey should identify the operation instance inherently: consumed input uids, cache
+-- instance uids, receipt ids, resulting capacity levels. When nil, a nonce is generated and
+-- the entry is journaled without dedup value (honest evidence, no false idempotency claim).
+-- Returns true when journaled, false+"duplicate" when this exact operation was already recorded.
+function EconomyTransactionService.record(player: Player, txn: Transaction): (boolean, string?)
+	local normalized, err = validate(txn)
+	if not normalized then
+		return false, err
+	end
+	local profile = ProfileService.get(player)
+	if not profile then
+		return false, "no profile"
+	end
+	local journalId = normalized.id
+	local set = idSetOf(profile)
+	if set[journalId] ~= nil then
+		workspace:SetAttribute("GF_TxnRecordDuplicate", journalId)
+		return false, "duplicate"
+	end
+	local expectedRevision = tonumber(profile.revision) or 0
+	profile.revision = expectedRevision + 1
+	local journal = journalOf(profile)
+	local seq = #journal + 1
+	table.insert(journal, {
+		TransactionId = journalId,
+		PlayerId = player.UserId,
+		TransactionType = normalized.type,
+		SourceId = normalized.sourceId,
+		Inputs = normalized.inputs,
+		Outputs = normalized.outputs,
+		ExpectedProfileRevision = expectedRevision,
+		CreatedAt = os.time(),
+		SettlementStatus = "settled",
+		EconomicVersion = EconomyRegistry.VERSION,
+		Note = normalized.note,
+	})
+	while #journal > JOURNAL_CAP do
+		table.remove(journal, 1)
+	end
+	set[journalId] = seq
+	local count = 0
+	for _ in pairs(set) do
+		count += 1
+	end
+	if count > IDEMPOTENCY_CAP then
+		local threshold = seq - IDEMPOTENCY_CAP
+		for id, s in pairs(set) do
+			if tonumber(s) and s <= threshold then
+				set[id] = nil
+			end
+		end
+	end
+	ProfileService.markDirty(player)
+	return true, nil
+end
+
 -- Inspect recent journal entries (diagnostics + future migration evidence).
 function EconomyTransactionService.journal(player: Player): { any }
 	local profile = ProfileService.get(player)

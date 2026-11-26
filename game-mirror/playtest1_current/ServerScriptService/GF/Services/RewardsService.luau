@@ -165,6 +165,32 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 		-- before the success debrief is ever shown.
 		local persisted = ProfileService.saveWithRetry(player)
 		print("[GF] profile persisted=" .. tostring(persisted))
+		-- uniform economic journal (spec §96-98): settle:<missionKey> matches the settledMissions
+		-- idempotency key exactly, so a blocked duplicate payout can never double-journal either.
+		if type(missionKey) == "string" then
+			local ok, svc = pcall(function()
+				return require(script.Parent.EconomyTransactionService)
+			end)
+			if ok and svc then
+				pcall(function()
+					svc.record(player, {
+						id = "settle:" .. missionKey,
+						type = "mission_settlement",
+						sourceId = "mission:" .. tostring(difficulty),
+						inputs = {},
+						outputs = {
+							credits = payload.credits or 0,
+							xp = payload.xp or 0,
+							scrap = (payload.salvage and payload.salvage.scrap) or 0,
+							energyCells = (payload.salvage and payload.salvage.energyCells) or 0,
+							militaryTechnology = (payload.salvage and payload.salvage.militaryTechnology) or 0,
+							warCredits = (success and objectiveComplete) and (({ Easy = 5, Normal = 10, Hard = 15, Extreme = 25 })[difficulty] or 0) or 0,
+						},
+						note = string.format("success=%s objective=%s squadBonus=%s killXp=%s", tostring(success), tostring(objectiveComplete), tostring(squadBonus == true), tostring(payload.killXp)),
+					})
+				end)
+			end
+		end
 	end
 	-- Boss research travels with the debrief so a blueprint drop is announced where the player is already
 	-- looking. It is cleared after reporting so a later ordinary mission cannot repeat old news.

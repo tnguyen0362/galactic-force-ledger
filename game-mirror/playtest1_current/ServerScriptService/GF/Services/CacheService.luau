@@ -73,6 +73,23 @@ end
 
 -- Inventory. A cache used to roll the instant it was awarded, so a player never saw one and could not
 -- choose when to open it. Awards now stack per tier; opening is an explicit action.
+-- Uniform economic journaling (spec §96-98): effects here already have specialized idempotency;
+-- this records them into the authoritative transaction journal for evidence and versioning.
+local function journalTxn(profile, txn)
+	local plr = profile and game:GetService("Players"):GetPlayerByUserId(tonumber(profile.userId) or -1)
+	if not plr then
+		return
+	end
+	local ok, svc = pcall(function()
+		return require(script.Parent.EconomyTransactionService)
+	end)
+	if ok and svc then
+		pcall(function()
+			svc.record(plr, txn)
+		end)
+	end
+end
+
 function CacheService.grantToInventory(player: Player, tierId: string, sourceId: string?): boolean
 	local profile = profileOf(player)
 	local tier = Caches.get(tierId)
@@ -242,6 +259,20 @@ function CacheService.openFromInventory(player: Player, tierId: string, category
 	if #results > 0 then
 		journal.status = "completed"
 		journal.completedAt = os.time()
+		journalTxn(profile, {
+			id = "cache:" .. tostring(instanceUid),
+			type = "cache_open",
+			sourceId = journal.source or "inventory",
+			inputs = { ["cache:" .. tier.id] = 1 },
+			outputs = { augmentItems = #results },
+			note = string.format("tier=%s items=%s", tier.id, table.concat((function()
+				local names = {}
+				for _, it in ipairs(results) do
+					table.insert(names, tostring(it.id))
+				end
+				return names
+			end)(), ",")),
+		})
 		ProfileService.markDirty(player)
 		ProfileService.save(player)
 	end

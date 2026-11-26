@@ -347,6 +347,14 @@ function AugmentService.expandCapacity(profile)
 	profile.salvage.energyCells = salvage.energyCells - cost.energyCells
 	profile.salvage.militaryTechnology = salvage.militaryTechnology - cost.militaryTechnology
 	profile.augmentCapacity = math.min(AugmentService.CAPACITY_MAX, current + AugmentService.CAPACITY_STEP)
+	journalTxn(profile, {
+		id = "capacity:" .. tostring(profile.augmentCapacity),
+		type = "capacity_expansion",
+		sourceId = "augment",
+		inputs = { credits = cost.credits, energyCells = cost.energyCells, militaryTechnology = cost.militaryTechnology },
+		outputs = { augmentCapacity = AugmentService.CAPACITY_STEP },
+		note = "capacity now " .. tostring(profile.augmentCapacity),
+	})
 	workspace:SetAttribute("GF_AugmentCapacityExpanded", tostring(profile.augmentCapacity))
 	return true, tostring(profile.augmentCapacity)
 end
@@ -662,6 +670,23 @@ function AugmentService.setFavorite(profile, uid, favorite)
 	return true, item.favorite
 end
 
+-- Uniform economic journaling (spec §96-98): effects here already have specialized idempotency;
+-- this records them into the authoritative transaction journal for evidence and versioning.
+local function journalTxn(profile, txn)
+	local plr = profile and game:GetService("Players"):GetPlayerByUserId(tonumber(profile.userId) or -1)
+	if not plr then
+		return
+	end
+	local ok, svc = pcall(function()
+		return require(script.Parent.EconomyTransactionService)
+	end)
+	if ok and svc then
+		pcall(function()
+			svc.record(plr, txn)
+		end)
+	end
+end
+
 local function scrap(profile)
 	profile.salvage = profile.salvage or { scrap = 0, energyCells = 0, militaryTechnology = 0 }
 	profile.salvage.scrap = tonumber(profile.salvage.scrap) or 0
@@ -717,6 +742,14 @@ function AugmentService.reroll(profile, uid, lockIndex)
 		traits = copyTraits(proposed),
 		createdAt = os.time(),
 	}
+	journalTxn(profile, {
+		id = string.format("reroll:%s:%d", item.uid, profile.pendingReroll.createdAt or 0),
+		type = "reroll",
+		sourceId = "augment",
+		inputs = { scrap = cost },
+		outputs = {},
+		note = string.format("uid=%s rarity=%s locked=%s", item.uid, rarity, tostring(lockIndex)),
+	})
 	workspace:SetAttribute("GF_AugmentRerollPending", string.format("%s:%d", item.uid, cost))
 	return true, profile.pendingReroll
 end
@@ -785,6 +818,15 @@ function AugmentService.dismantle(profile, uids)
 	end
 	profile.salvage = profile.salvage or { scrap = 0, energyCells = 0, militaryTechnology = 0 }
 	profile.salvage.scrap = (tonumber(profile.salvage.scrap) or 0) + total
+	table.sort(remove)
+	journalTxn(profile, {
+		id = "dismantle:" .. table.concat(remove, "+"),
+		type = "dismantle",
+		sourceId = "augment",
+		inputs = { augmentItems = count },
+		outputs = { scrap = total },
+		note = string.format("uids=%s skipped=%d", table.concat(remove, "+"), skipped),
+	})
 	workspace:SetAttribute("GF_AugmentDismantled", string.format("%d:+%d", count, total))
 	return true, { count = count, scrap = total, skipped = skipped }
 end
@@ -867,6 +909,14 @@ function AugmentService.fuse(profile, uids)
 		end
 		return false, "fusion result could not be created"
 	end
+	journalTxn(profile, {
+		id = "fusion:" .. table.concat(uids, "+"),
+		type = "fusion",
+		sourceId = "augment",
+		inputs = { augmentItems = 3 },
+		outputs = { augmentItems = 1 },
+		note = string.format("result=%s rarity=%s", resultDef.id, tostring(resultDef.rarity)),
+	})
 	workspace:SetAttribute("GF_AugmentFused", string.format("%s:%s:%s", table.concat(uids, "+"), uid, resultDef.id))
 	return true, item
 end
