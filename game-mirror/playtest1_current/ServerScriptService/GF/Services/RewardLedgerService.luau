@@ -27,8 +27,25 @@ local EVENTS = {
 	kill_Marksman = { credits = 1, xp = 10, mastery = 10 },
 	kill_Heavy = { credits = 3, xp = 20, mastery = 20 },
 	kill_Officer = { credits = 5, xp = 35, mastery = 35 },
+	kill_SpectreAssault = { credits = 3, xp = 20, mastery = 20 },
+	kill_SpectreWeapons = { credits = 3, xp = 20, mastery = 20 },
+	kill_SpectrePrecision = { credits = 3, xp = 20, mastery = 20 },
+	kill_SpectreSupport = { credits = 3, xp = 20, mastery = 20 },
+	kill_SpectreLeader = { credits = 5, xp = 35, mastery = 35 },
+	kill_RevenantAssault = { credits = 4, xp = 25, mastery = 25 },
+	kill_RevenantWeapons = { credits = 4, xp = 25, mastery = 25 },
+	kill_RevenantPrecision = { credits = 4, xp = 25, mastery = 25 },
+	kill_RevenantDefense = { credits = 4, xp = 25, mastery = 25 },
+	kill_RevenantLeader = { credits = 5, xp = 35, mastery = 35 },
+	kill_BastionTank = { credits = 15, xp = 50, mastery = 50 },
 	kill_BastionWalker = { credits = 60, xp = 100, mastery = 100 },
+	kill_BastionSiege = { credits = 60, xp = 100, mastery = 100 },
+	kill_LeviathanWalker = { credits = 100, xp = 250, mastery = 250 },
 	kill_HighMarshalVeyr = { credits = 100, xp = 250, mastery = 250 },
+	-- non-kill reward categories: salvage pickups, cache and blueprint entitlements (spec §28)
+	salvage_pickup = { credits = 0, xp = 0, mastery = 0 },
+	cache_entitlement = { credits = 0, xp = 0, mastery = 0 },
+	blueprint_entitlement = { credits = 0, xp = 0, mastery = 0 },
 }
 local CREDIT_MULT = { Easy = 0.8, Normal = 1, Hard = 1.35, Extreme = 1.65 }
 local XP_MULT = { Easy = 1, Normal = 1.25, Hard = 1.75, Extreme = 2.5 }
@@ -189,11 +206,46 @@ function RewardLedgerService.count(): number
 	return #ledger.events
 end
 
+-- ---------------------------------------------------------------------------
+-- §28/§31 per-player extraction status and reward locking. One row per participant per mission;
+-- the lock timestamp is the authoritative moment their reward eligibility froze.
+-- ---------------------------------------------------------------------------
+local playerStatus: { [number]: { status: string, lockedAt: number?, extractedAt: number? } } = {}
+
+function RewardLedgerService.markParticipant(userId: number)
+	if not playerStatus[userId] then
+		playerStatus[userId] = { status = "participating" }
+	end
+end
+
+-- An individually extracted player locks NOW: nothing the remaining squad earns later belongs
+-- to them, and nothing they already earned is retroactively invalidated (§31).
+function RewardLedgerService.lockPlayer(userId: number, status: string)
+	playerStatus[userId] = playerStatus[userId] or {}
+	playerStatus[userId].status = status
+	playerStatus[userId].lockedAt = os.clock()
+	if status == "extracted" then
+		playerStatus[userId].extractedAt = os.clock()
+	end
+	workspace:SetAttribute("GF_LedgerLocked", string.format("%d:%s", userId, status))
+end
+
+function RewardLedgerService.statusFor(userId: number): string
+	local row = playerStatus[userId]
+	return row and row.status or "unknown"
+end
+
+function RewardLedgerService.isLocked(userId: number): boolean
+	local row = playerStatus[userId]
+	return row ~= nil and row.lockedAt ~= nil
+end
+
 function RewardLedgerService.reset()
 	ledger.missionId = nil
 	ledger.seq = 0
 	ledger.events = {}
 	ledger.claimed = {}
+	table.clear(playerStatus)
 	publish()
 end
 

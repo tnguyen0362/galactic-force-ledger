@@ -130,6 +130,15 @@ function CacheService.grantToInventory(player: Player, tierId: string, sourceId:
 	while #profile.cacheInstances > 50 do
 		table.remove(profile.cacheInstances, 1)
 	end
+	-- shadow ledger: cache entitlement events keyed by the cache instance uid (spec §28)
+	pcall(function()
+		local inst = profile.cacheInstances[#profile.cacheInstances]
+		require(script.Parent.RewardLedgerService).appendEvent(
+			"cache_entitlement", nil,
+			"cachegrant:" .. tostring(inst and inst.uid or (tier.id .. ":" .. tostring(os.clock()))),
+			player.UserId
+		)
+	end)
 	require(script.Parent.ProfileService).markDirty(player)
 	workspace:SetAttribute("GF_CacheHeld", string.format("%s:%d", tier.id, profile.caches[tier.id]))
 	workspace:SetAttribute("GF_CacheLastSource", tostring(sourceId or "manual"))

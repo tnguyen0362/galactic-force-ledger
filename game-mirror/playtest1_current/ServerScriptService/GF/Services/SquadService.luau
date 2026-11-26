@@ -71,6 +71,14 @@ function SquadService.add(kind: string, amount: number): boolean
 	if type(amount) ~= "number" or amount <= 0 or amount > 1000 then return false end
 	if salvage[kind] == nil then return false end
 	salvage[kind] += math.floor(amount)
+	-- shadow ledger: unsecured salvage accumulation events (spec §28 UnsecuredSalvage tracking)
+	pcall(function()
+		require(script.Parent.RewardLedgerService).appendEvent(
+			"salvage_pickup", nil,
+			string.format("salvage:%s:%d:%d", kind, math.floor(amount), math.floor(os.clock() * 1000)),
+			nil
+		)
+	end)
 	broadcast({ kind = kind, amount = math.floor(amount), source = "salvage" })
 	return true
 end

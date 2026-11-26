@@ -244,6 +244,16 @@ function ProfileService.grantBossReward(player: Player, bossId: string, credits:
 		granted = granted,
 		credits = credits,
 	}
+	-- shadow ledger: blueprint entitlement events (spec §28 BlueprintEntitlements)
+	pcall(function()
+		if granted then
+			require(script.Parent.RewardLedgerService).appendEvent(
+				"blueprint_entitlement", nil,
+				string.format("blueprint:%s:%s:%d", tostring(bossId), tostring(player and player.UserId or "unknown"), math.floor(os.clock() * 1000)),
+				player and player.UserId or nil
+			)
+		end
+	end)
 	return { kills = rec.kills, pity = rec.pity, blueprintUnlocked = rec.blueprintUnlocked, granted = granted, credits = credits, xp = xp }
 end
 function ProfileService.init()

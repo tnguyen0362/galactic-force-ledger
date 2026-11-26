@@ -503,6 +503,16 @@ function CombatService.damageEnemy(model: Model, amount: number, attacker: Playe
 				-- profile here would let a player bank mastery from a mission they go on to fail.
 				s.pendingMastery = s.pendingMastery or {}
 				s.pendingMastery[weaponId] = (s.pendingMastery[weaponId] or 0) + masteryXp
+				-- shadow ledger: kill reward events with stable per-kill source ids (spec §28)
+				pcall(function()
+					local plr = game:GetService("Players"):GetPlayerByUserId(tonumber(s.userId) or -1)
+					require(script.Parent.RewardLedgerService).appendEvent(
+						"kill_" .. tostring(enemyId),
+						nil,
+						string.format("kill:%s:%s:%d", tostring(enemyId), tostring(model and model:GetFullName() or "unk"), math.floor(os.clock() * 1000)),
+						plr and plr.UserId or nil
+					)
+				end)
 				workspace:SetAttribute("GF_MasteryGain", (workspace:GetAttribute("GF_MasteryGain") or 0) + masteryXp)
 				workspace:SetAttribute("GF_LastMasteryAward", tostring(enemyId) .. ":" .. tostring(masteryXp))
 			end

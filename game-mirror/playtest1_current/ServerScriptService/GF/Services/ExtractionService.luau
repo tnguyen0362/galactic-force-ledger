@@ -423,6 +423,37 @@ function ExtractionService.finish(success: boolean, squadBonus: boolean?)
 	local carriedTotal = SquadService.total()
 	print(string.format("[GF] carried salvage at finish: total=%s success=%s", tostring(carriedTotal), tostring(success)))
 	workspace:SetAttribute("GF_CarriedAtFinish", carriedTotal)
+	-- Shadow reconciliation (spec §28): the ledger is record-only, but its event stream should
+	-- account for everything the economy actually did. Publish coverage metrics each settlement:
+	-- salvage events seen vs the carried pool, kill events per participant vs mastery settled.
+	-- Divergence means either reward-generating actions escape recording or double-recording.
+	pcall(function()
+		local Ledger = require(script.Parent.RewardLedgerService)
+		local snap = Ledger.snapshot()
+		local salvageEvents, killEvents, cacheEvents, blueprintEvents = 0, 0, 0, 0
+		local killXpByPlayer = {}
+		for _, e in ipairs(snap.events) do
+			if e.eventType == "salvage_pickup" then
+				salvageEvents += 1
+			elseif e.eventType == "cache_entitlement" then
+				cacheEvents += 1
+			elseif e.eventType == "blueprint_entitlement" then
+				blueprintEvents += 1
+			elseif string.sub(tostring(e.eventType), 1, 5) == "kill_" then
+				killEvents += 1
+				if e.userId then
+					killXpByPlayer[e.userId] = (killXpByPlayer[e.userId] or 0) + (tonumber(e.mastery) or 0)
+				end
+			end
+		end
+		workspace:SetAttribute("GF_ReconcileSalvage", string.format("events=%d", salvageEvents))
+		workspace:SetAttribute("GF_ReconcileKills", string.format("events=%d caches=%d blueprints=%d", killEvents, cacheEvents, blueprintEvents))
+		local parts = {}
+		for uid, x in pairs(killXpByPlayer) do
+			table.insert(parts, uid .. "=" .. string.format("%.0f", x))
+		end
+		workspace:SetAttribute("GF_ReconcileKillXp", table.concat(parts, ","))
+	end)
 	-- A completed primary already committed its war points at ObjectiveService.complete, so
 	-- extraction must not credit the campaign a second time. Only a mission whose primary never
 	-- completed is recorded as a loss here.
@@ -465,6 +496,24 @@ function ExtractionService.finish(success: boolean, squadBonus: boolean?)
 			payoutDifficulty,
 			"extraction:" .. tostring(payoutTemplate)
 		)
+	end)
+	-- §31 reward locking: settlement is the single authoritative finalization point in this
+	-- architecture (boarding holds; there is no early individual departure to lock earlier).
+	-- Every participant locks now with the status their operation ended in.
+	pcall(function()
+		local Ledger = require(script.Parent.RewardLedgerService)
+		for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+			if p:GetAttribute("GF_MissionParticipant") == true then
+				Ledger.markParticipant(p.UserId)
+				if success and aboard[p] then
+					Ledger.lockPlayer(p.UserId, "extracted")
+				elseif success then
+					Ledger.lockPlayer(p.UserId, "mission_complete_not_aboard")
+				else
+					Ledger.lockPlayer(p.UserId, "mission_failed")
+				end
+			end
+		end
 	end)
 	RewardsService.grantAll(success, payoutDifficulty, payoutObjective, success and squadBonus == true)
 	-- Guaranteed mission cache, paid only when the primary succeeded and the squad actually extracted.
