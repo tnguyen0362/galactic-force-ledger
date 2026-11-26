@@ -976,8 +976,9 @@ function CombatService.equipWeapon(player: Player, weaponId: any)
 	s.ammo = pool.ammo
 	s.reserve = pool.reserve
 	s.spreadBloom = 0
-	s.swapUntil = now() + 0.4
 	local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
+	-- swapSpeed uses rate division consistent with the reload algebra: +35% caps at 0.4/1.35s.
+	s.swapUntil = now() + 0.4 / math.max(0.5, 1 + (tonumber(augs and augs.swapSpeed) or 0))
 	ReplicatedStorage.GF.Remotes.WeaponEquipped:FireClient(player, {
 		weaponId = weaponId,
 		ammo = s.ammo,

@@ -71,9 +71,18 @@ end
 
 function ProjectileService.launch(shooter: Player?, weapon: any, origin: Vector3, direction: Vector3)
 	local spec = MUZZLE[weapon.id or ""] or DEFAULTS
+	-- projectileVelocity augment stat: scales muzzle speed per shooter+weapon. The scaled velocity is
+	-- what gets broadcast to clients, so the visual arc stays in sync with server ballistics for free.
+	local speed = spec.speed
+	if shooter then
+		pcall(function()
+			local augs = require(script.Parent.AugmentService).forPlayerWeapon(shooter, weapon.id)
+			speed = speed * math.max(0.5, 1 + (tonumber(augs and augs.projectileVelocity) or 0))
+		end)
+	end
 	local shell: Shell = {
 		position = origin,
-		velocity = direction.Unit * spec.speed,
+		velocity = direction.Unit * speed,
 		gravity = spec.gravity,
 		age = 0,
 		lifetime = spec.lifetime,
