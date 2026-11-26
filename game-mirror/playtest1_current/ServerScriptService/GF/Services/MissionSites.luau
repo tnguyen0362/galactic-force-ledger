@@ -70,11 +70,11 @@ local function ground(x: number, z: number): number
 	return fallbackGroundY
 end
 
--- Rotate a local x/z offset exactly like a positive Roblox yaw rotation.
+-- Rotate a local x/z offset with the same yaw transform used for part CFrames, so positions
+-- and orientations stay consistent for rotated sites.
 local function rotateXZ(lx: number, lz: number, yaw: number): (number, number)
-	local c = math.cos(yaw)
-	local s = math.sin(yaw)
-	return lx * c + lz * s, -lx * s + lz * c
+	local rotated = CFrame.Angles(0, yaw, 0) * Vector3.new(lx, 0, lz)
+	return rotated.X, rotated.Z
 end
 
 local function localXZ(center: Vector3, yaw: number, lx: number, lz: number): (number, number)

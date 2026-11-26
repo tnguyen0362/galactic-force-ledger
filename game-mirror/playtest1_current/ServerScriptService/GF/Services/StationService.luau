@@ -364,6 +364,14 @@ function StationService.zoneOf(player: Player): string
 	return zone[player] or "Station"
 end
 
+-- template/difficulty gates hoisted above resetMission: the op-mode gate references
+-- VALID_TEMPLATES lexically, and Luau locals are not forward-visible.
+local TEMPLATE_RANK = { CONQUEST_THRONEFALL = 10 }
+local DIFFICULTY_RANK = { Easy = 1, Normal = 3, Hard = 6, Extreme = 14 }
+local VALID_TEMPLATES = { SABOTAGE_RELAY = true, RECOVER_TECH = true, DEFEND_BEACON = true,
+	ELIM_COMMANDER = true, ELIM_WALKER = true, ELIM_TALON = true,
+	RECOVERY_ARCHIVE = true, SABOTAGE_ARSENAL = true, DEFENSE_POWER = true, RECOVERY_CONVOY = true, DEFENSE_UPLINK = true, SABOTAGE_AEGIS = true, CONQUEST_DOMINION = true, CONQUEST_FOUNDRY = true, CONQUEST_THRONEFALL = true }
+
 function StationService.resetMission(missionDifficulty: string, template: string?)
 	template = template or "SABOTAGE_RELAY"
 	difficulty = missionDifficulty
@@ -388,7 +396,7 @@ function StationService.resetMission(missionDifficulty: string, template: string
 	-- operation mode: conquest templates are generated as multi-site operations on the real
 	-- geography; the legacy single-site objective (and its outpost) must not double-build.
 	local opMode = workspace:GetAttribute("GF_OperationMode") == true
-		and type(template) == "string" and string.sub(template, 1, 9) == "CONQUEST_"
+		and type(template) == "string" and VALID_TEMPLATES[template] == true
 	if not opMode then
 		ObjectiveService.setup(RELAY, template)
 	else
@@ -502,11 +510,6 @@ end
 
 -- Difficulty gates and honest failure reporting. The deploy button used to show a 4s fake spinner and
 -- re-enable itself whatever happened, so a refused launch looked identical to a slow one.
-local TEMPLATE_RANK = { CONQUEST_THRONEFALL = 10 }
-local DIFFICULTY_RANK = { Easy = 1, Normal = 3, Hard = 6, Extreme = 14 }
-local VALID_TEMPLATES = { SABOTAGE_RELAY = true, RECOVER_TECH = true, DEFEND_BEACON = true,
-	ELIM_COMMANDER = true, ELIM_WALKER = true, ELIM_TALON = true,
-	RECOVERY_ARCHIVE = true, SABOTAGE_ARSENAL = true, DEFENSE_POWER = true, RECOVERY_CONVOY = true, DEFENSE_UPLINK = true, SABOTAGE_AEGIS = true, CONQUEST_DOMINION = true, CONQUEST_FOUNDRY = true, CONQUEST_THRONEFALL = true }
 
 function StationService.deploy(player: Player, missionDifficulty: string?, template: string?): (boolean, string?)
 	local mission = State.getMission()
@@ -565,7 +568,7 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 	-- template is a conquest variant, the authoritative operation layer generates the mission
 	-- layout on the real geography — deployment region, objective sites, extraction — and the
 	-- player deploys at the operation deployment region (~1km separation from primary).
-	if workspace:GetAttribute("GF_OperationMode") == true and template and string.sub(template, 1, 9) == "CONQUEST_" then
+	if workspace:GetAttribute("GF_OperationMode") == true and template and VALID_TEMPLATES[template] == true then
 		local opOk, opErr = pcall(function()
 			local OperationService = require(script.Parent.OperationService)
 			local seed = math.floor(os.clock() * 1000) % 90000 + 1000

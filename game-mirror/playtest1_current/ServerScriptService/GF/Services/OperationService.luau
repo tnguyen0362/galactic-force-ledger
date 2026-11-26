@@ -791,6 +791,45 @@ function OperationService.activate(def: OperationDefinition): boolean
 	return true
 end
 
+-- template metadata: family/variant names per template id for the manifest
+local TEMPLATE_META: { [string]: { family: string, variant: string } } = {
+	SABOTAGE_RELAY = { family = "Sabotage", variant = "Relay" },
+	SABOTAGE_ARSENAL = { family = "Sabotage", variant = "Arsenal" },
+	SABOTAGE_AEGIS = { family = "Sabotage", variant = "Aegis" },
+	RECOVER_TECH = { family = "Recovery", variant = "Tech" },
+	RECOVERY_ARCHIVE = { family = "Recovery", variant = "Archive" },
+	RECOVERY_CONVOY = { family = "Recovery", variant = "Convoy" },
+	DEFEND_BEACON = { family = "Defense", variant = "Beacon" },
+	DEFENSE_POWER = { family = "Defense", variant = "Power" },
+	DEFENSE_UPLINK = { family = "Defense", variant = "Uplink" },
+	ELIM_COMMANDER = { family = "Elimination", variant = "Commander" },
+	ELIM_WALKER = { family = "Elimination", variant = "Walker" },
+	ELIM_TALON = { family = "Elimination", variant = "Talon" },
+	CONQUEST_DOMINION = { family = "Conquest", variant = "Stronghold" },
+	CONQUEST_FOUNDRY = { family = "Conquest", variant = "Foundry" },
+	CONQUEST_THRONEFALL = { family = "Conquest", variant = "Thronefall" },
+}
+
+-- primary-objective designation per template: terminus node where one exists; for parallel
+-- families the multi-primary completion rule (all required complete) governs instead.
+local PRIMARY_BY_TEMPLATE: { [string]: string } = {
+	SABOTAGE_RELAY = "destroy_relay",
+	SABOTAGE_ARSENAL = "destroy_arsenal",
+	SABOTAGE_AEGIS = "destroy_aegis",
+	RECOVER_TECH = "recover_tech",
+	RECOVERY_ARCHIVE = "recover_archive",
+	RECOVERY_CONVOY = "recover_crate_beta",
+	DEFEND_BEACON = "hold_beacon",
+	DEFENSE_POWER = "defend_power",
+	DEFENSE_UPLINK = "defend_uplink",
+	ELIM_COMMANDER = "eliminate_commander",
+	ELIM_WALKER = "eliminate_walker",
+	ELIM_TALON = "eliminate_talon_gamma",
+	CONQUEST_DOMINION = "capture_stronghold",
+	CONQUEST_FOUNDRY = "capture_foundry_beta",
+	CONQUEST_THRONEFALL = "eliminate_marshal",
+}
+
 function OperationService.generate(seed: number, variant: string, difficulty: string): OperationDefinition?
 	local GeographyService = require(script.Parent.GeographyService)
 	local analysis = GeographyService.analysis
@@ -799,7 +838,46 @@ function OperationService.generate(seed: number, variant: string, difficulty: st
 		return nil
 	end
 	local geographyId = tostring(Workspace:GetAttribute("GF_GeoFoundation") or "unknown")
-	return generateConquestStronghold(seed, difficulty, analysis, geographyId)
+	-- reference operation: the validated Conquest-Stronghold generator
+	if variant == "CONQUEST_DOMINION" or variant == nil then
+		return generateConquestStronghold(seed, difficulty, analysis, geographyId)
+	end
+	-- expansion families: shared skeleton, per-template DAG shape
+	local meta = TEMPLATE_META[variant]
+	if not meta then
+		warn("OperationService: unknown template", variant)
+		return nil
+	end
+	local Families = require(script.Parent.OperationFamilies)
+	local gen = Families[variant]
+	if not gen then
+		warn("OperationService: no generator for", variant)
+		return nil
+	end
+	-- one source of truth for the spatial skeleton: the families module owns frame
+	-- construction; OperationService builds it and hands it to the family generator.
+	local fr = Families.frame(seed, analysis)
+	if not fr or not fr.extraction then
+		warn("OperationService: frame generation failed for", variant)
+		return nil
+	end
+	local objectives = gen(seed, fr)
+	if not objectives then return nil end
+	return {
+		operationId = string.format("OP-%d", seed),
+		operationSeed = seed,
+		generatorVersion = GENERATOR_VERSION,
+		geographyId = geographyId,
+		missionFamily = meta.family,
+		missionVariant = meta.variant,
+		difficulty = difficulty,
+		deploymentRegion = fr.deploy,
+		primaryObjective = PRIMARY_BY_TEMPLATE[variant] or objectives[1].id,
+		objectives = objectives,
+		extractionRegion = fr.extraction,
+		missionTimeLimit = 1500,
+		circumstance = "standard",
+	}
 end
 
 -- compose the player-facing objective picture: nearest available objective as the marker,

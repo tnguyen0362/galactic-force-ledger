@@ -8,7 +8,8 @@
 local OperationFamilies = {}
 
 -- shared skeleton: given analysis + seed, produce the spatial frame every family builds on.
-local function frame(seed: number, analysis: any)
+-- exported: OperationService's dispatch builds the frame, then calls the family generator.
+function OperationFamilies.frame(seed: number, analysis: any)
 	local TerrainAnalysis = require(script.Parent.TerrainAnalysis)
 	local stream = Random.new(seed * 31337 + 7)
 	local edge = stream:NextInteger(1, 4)

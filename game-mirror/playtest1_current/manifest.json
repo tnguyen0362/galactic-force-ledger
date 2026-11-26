@@ -3610,5 +3610,12 @@
   "file": "StarterPlayer/StarterPlayerScripts/Weapon.luau",
   "lines": 512,
   "chars": 18905
+ },
+ {
+  "path": "ServerScriptService.GF.Services.OperationFamilies",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/OperationFamilies.luau",
+  "lines": 381,
+  "chars": 14100
  }
 ]
