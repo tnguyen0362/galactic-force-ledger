@@ -318,6 +318,20 @@ do
 		aimRemote.Name = "AimStateNotify"
 		aimRemote.Parent = remotes
 	end
+	-- grenade charge state uplink: the precision-hold arm pose needs server-side knowledge
+	local nadeRemote = remotes:FindFirstChild("GrenadeChargeNotify")
+	if not nadeRemote then
+		nadeRemote = Instance.new("RemoteEvent")
+		nadeRemote.Name = "GrenadeChargeNotify"
+		nadeRemote.Parent = remotes
+	end
+	nadeRemote.OnServerEvent:Connect(function(player, charging)
+		if not require(script.Parent.NetGuard).allow(player, "nadecharge") then return end
+		local character = player.Character
+		if character then
+			character:SetAttribute("GF_GrenadeCharging", charging == true)
+		end
+	end)
 	aimRemote.OnServerEvent:Connect(function(player, pitch, yaw)
 		if not require(script.Parent.NetGuard).allow(player, "aimstate") then return end
 		if type(pitch) ~= "number" or pitch ~= pitch or math.abs(pitch) > 1.6 then return end

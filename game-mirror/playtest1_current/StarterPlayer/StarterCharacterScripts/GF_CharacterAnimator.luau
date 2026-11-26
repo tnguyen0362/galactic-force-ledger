@@ -511,7 +511,7 @@ RunService.Heartbeat:Connect(function(dt)
 		if rhand2 then
 			prop.CFrame = rhand2.CFrame * CFrame.new(0, -0.2, -0.1)
 		end
-	elseif prop then
+	elseif prop and character:GetAttribute("GF_GrenadeCharging") ~= true then
 		prop:Destroy()
 	end
 
@@ -602,6 +602,31 @@ RunService.Heartbeat:Connect(function(dt)
 			waistPitch = waistPitch + 0.28
 		end
 		setJoint("Waist", CFrame.Angles(waistPitch, waistYaw, waistRoll))
+		-- precision-hold (spec sec.57): while the player holds the aim, the right arm stays
+		-- cocked back with the grenade — distinct from the quick-throw sweep on release
+		if character:GetAttribute("GF_GrenadeCharging") == true and not throwing then
+			setJoint("RightShoulder", CFrame.Angles(1.5, 0, math.rad(-18)))
+			setJoint("RightElbow", CFrame.Angles(-1.9, 0, 0))
+			-- grenade prop rides the cocked hand too
+			local prop2 = character:FindFirstChild("GF_GrenadeProp")
+			if not prop2 then
+				prop2 = Instance.new("Part")
+				prop2.Name = "GF_GrenadeProp"
+				prop2.Shape = Enum.PartType.Ball
+				prop2.Size = Vector3.new(0.35, 0.35, 0.35)
+				prop2.Color = Color3.fromRGB(52, 58, 54)
+				prop2.Material = Enum.Material.Metal
+				prop2.CanCollide = false
+				prop2.CanQuery = false
+				prop2.CanTouch = false
+				prop2.Anchored = true
+				prop2.Parent = character
+			end
+			local rhand4 = character:FindFirstChild("RightHand")
+			if rhand4 then
+				prop2.CFrame = rhand4.CFrame * CFrame.new(0, -0.2, -0.1)
+			end
+		end
 		if throwing then
 			-- overhead throw sweep: arm cocks back then whips forward over the window
 			local f = throwT / 0.55

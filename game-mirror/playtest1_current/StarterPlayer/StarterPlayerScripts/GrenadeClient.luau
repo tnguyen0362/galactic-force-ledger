@@ -69,6 +69,12 @@ local function clearPreview(kind: string)
 		end
 		if c.marker and c.marker.Parent then c.marker:Destroy() end
 	end
+	if charging[kind] then
+		local rem = game:GetService("ReplicatedStorage"):FindFirstChild("GF")
+		rem = rem and rem:FindFirstChild("Remotes")
+		local ch = rem and rem:FindFirstChild("GrenadeChargeNotify")
+		if ch then ch:FireServer(false) end
+	end
 	charging[kind] = nil
 end
 local function updatePreview(kind: string)
@@ -118,6 +124,11 @@ local function startCharge(kind: string)
 		dots[i] = dot
 	end
 	charging[kind] = { startAt = os.clock(), dots = dots }
+	-- uplink charge state for the server animator's precision-hold pose (spec sec.57)
+	local rem = game:GetService("ReplicatedStorage"):FindFirstChild("GF")
+	rem = rem and rem:FindFirstChild("Remotes")
+	local ch = rem and rem:FindFirstChild("GrenadeChargeNotify")
+	if ch then ch:FireServer(true) end
 end
 
 UserInputService.InputBegan:Connect(function(input, processed)
