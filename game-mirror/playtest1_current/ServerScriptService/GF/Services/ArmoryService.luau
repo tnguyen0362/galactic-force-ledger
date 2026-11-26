@@ -11,6 +11,7 @@ local Weapons = require(GF.Shared.Configs.Weapons)
 local Classes = require(GF.Shared.Configs.Classes)
 local ProfileService = require(ServerScriptService.GF.Services.ProfileService)
 local RequisitionService = require(ServerScriptService.GF.Services.RequisitionService)
+local EconomyTransactionService = require(ServerScriptService.GF.Services.EconomyTransactionService)
 
 local ArmoryService = {}
 local PRIMARY = { Rifle = true, Shotgun = true, Marksman = true, LMG = true, Energy = true }
@@ -232,10 +233,28 @@ function ArmoryService.buy(player: Player, id: string)
 	if reqTierLocked then return fail(player, string.format("requires Siege Division tier %d", reqTier)) end
 	if profile.rank < row.unlockRank then return fail(player, string.format("requires rank %d", row.unlockRank)) end
 	if profile.credits < row.cost then return fail(player, string.format("needs %d credits", row.cost)) end
-	profile.credits -= row.cost
-	profile.ownedWeapons[id] = true
-	RequisitionService.recordSharedPurchase(profile, "weapon", id, row.cost)
-	ProfileService.markDirty(player)
+	local applied, txnResult, txnErr = EconomyTransactionService.apply(player, {
+		id = "purchase:weapon:" .. id,
+		type = "purchase",
+		sourceId = "armory",
+		inputs = { credits = row.cost },
+		outputs = { ["weapon:" .. id] = 1 },
+	}, function(p)
+		-- re-validate inside the mutation: the debit and the ownership grant are one transaction
+		if (p.credits or 0) < row.cost then
+			return false, "insufficient credits at apply time"
+		end
+		if p.ownedWeapons[id] then
+			return false, "already owned at apply time"
+		end
+		p.credits -= row.cost
+		p.ownedWeapons[id] = true
+		RequisitionService.recordSharedPurchase(p, "weapon", id, row.cost)
+		return true
+	end)
+	if not applied then
+		return fail(player, "transaction " .. txnResult .. ": " .. tostring(txnErr))
+	end
 	push(player, { ok = true, action = "buy", id = id, state = ArmoryService.state(player) })
 end
 
