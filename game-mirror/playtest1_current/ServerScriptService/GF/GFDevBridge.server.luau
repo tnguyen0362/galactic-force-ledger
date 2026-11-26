@@ -203,6 +203,21 @@ verbs.platform = function(posStr: string, sizeStr: string?)
 	p.Color = Color3.fromRGB(120, 120, 120)
 	p.Material = Enum.Material.Concrete
 	p.Parent = workspace
+	-- cover wall for intermittent-exposure validation: the cover_intermittent policy strafes
+	-- behind/past this wall so LOS actually interrupts (v3 gap-uncertainty mechanics testing)
+	local oldWall = workspace:FindFirstChild("E001CoverWall")
+	if oldWall then
+		oldWall:Destroy()
+	end
+	local w = Instance.new("Part")
+	w.Name = "E001CoverWall"
+	w.Size = Vector3.new(16, 14, 2)
+	-- offset toward +z (enemy spawn direction): player strafing along x passes behind it
+	w.Position = pos + Vector3.new(0, 6, 12)
+	w.Anchored = true
+	w.Color = Color3.fromRGB(90, 90, 110)
+	w.Material = Enum.Material.Concrete
+	w.Parent = workspace
 	return "platform built"
 end
 
@@ -272,10 +287,16 @@ task.spawn(function()
 			workspace:SetAttribute("GF_DevCmd", "")
 			local args = string.split(cmd, "|")
 			local verb = table.remove(args, 1)
+			-- sequence correlation: commands may carry "SEQ<n>" as first arg — echo it in the
+			-- result so clients can match responses to their own command despite transport lag
+			local seq = ""
+			if args[1] and string.match(args[1], "^SEQ%d+$") then
+				seq = table.remove(args, 1) .. "|"
+			end
 			local fn = verb and verbs[verb]
 			if fn then
 				local ok, res = pcall(fn, table.unpack(args))
-				workspace:SetAttribute("GF_DevResult", ok and ("OK|" .. tostring(res)) or ("ERR|" .. tostring(res):sub(1, 250)))
+				workspace:SetAttribute("GF_DevResult", seq .. (ok and ("OK|" .. tostring(res)) or ("ERR|" .. tostring(res):sub(1, 250))))
 			else
 				workspace:SetAttribute("GF_DevResult", "BADVERB|" .. tostring(verb))
 			end
