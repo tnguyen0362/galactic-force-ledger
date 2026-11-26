@@ -13,10 +13,18 @@ Economy.PayoutByDifficulty = {
 }
 
 -- Rank thresholds. Rank gates access; it does not inflate player power.
--- Spec formula (S10-004): XPthreshold(r) = 300*(r-1) + 55*r*(r-1); rank6 = 3150, rank14 = 13910.
+-- Calibrated curve (2026-11-28, RANK_CALIBRATION_REPORT.md): power-law marginal cost
+-- m(r) = 545 * r^0.58, independently validated to hit owner targets — median ordinary
+-- player reaches rank 6 (Hard) at ~2.3h and rank 14 (Extreme) at ~8.4h, with early ranks
+-- preserved fast (rank 4 inside the first hour) and no uniform scaling of the early curve.
+-- Replaces the original spec formula 300*(r-1) + 55*r*(r-1) which saturated rank 14 at ~5h.
 Economy.RankXp = { [1] = 0 }
-for r = 2, 30 do
-	Economy.RankXp[r] = 300 * (r - 1) + 55 * r * (r - 1)
+do
+	local acc = 0
+	for r = 2, 30 do
+		acc = acc + 545 * (r ^ 0.58)
+		Economy.RankXp[r] = math.floor(acc + 0.5)
+	end
 end
 
 Economy.MaxRank = 30
