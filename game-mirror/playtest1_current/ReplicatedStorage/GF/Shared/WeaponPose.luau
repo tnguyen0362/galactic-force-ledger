@@ -94,8 +94,18 @@ function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?
 		cf = cf * CFrame.new(0, -0.45 * switchBlend, 0.2 * switchBlend) * CFrame.Angles(math.rad(-40) * switchBlend, 0, 0)
 	end
 	if reloading and not aiming then
-		-- reload presentation: weapon rolls inward and down so the support hand can work the magazine
-		cf = cf * CFrame.Angles(math.rad(-28), math.rad(10), math.rad(-15))
+		-- reload presentation: weapon rolls inward and down so the support hand can work the magazine.
+		-- spec sec.49: weight class shapes the motion — heavy weapons drop lower and tilt harder
+		-- (managing mass), compact/pistol stay high and tight (fast manipulation).
+		local heavy = weaponId and (weaponId:find("LMG") or weaponId:find("GL") or weaponId:find("RL"))
+		local compact = weaponId and (weaponId:find("P0") or weaponId:find("SMG"))
+		if heavy then
+			cf = cf * CFrame.new(0, -0.22, 0.08) * CFrame.Angles(math.rad(-40), math.rad(14), math.rad(-20))
+		elseif compact then
+			cf = cf * CFrame.new(0, -0.05, 0) * CFrame.Angles(math.rad(-18), math.rad(7), math.rad(-10))
+		else
+			cf = cf * CFrame.Angles(math.rad(-28), math.rad(10), math.rad(-15))
+		end
 	end
 	if aiming and aimPitch then
 		-- weapon follows vertical aim exactly (authoritative); the torso carries ~30%

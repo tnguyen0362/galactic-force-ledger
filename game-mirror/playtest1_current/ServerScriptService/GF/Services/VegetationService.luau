@@ -245,8 +245,20 @@ function VegetationService.plant(opts: VegOpts?): Folder
 		return h < 0.55 and 1 or (h < 0.8 and 2 or 3)
 	end
 
-	for cx = 0, n - 1 do
-		for cz = 0, n - 1 do
+	-- visit cells in a seeded shuffled order so the per-role budgets spread over the WHOLE map
+	-- (a linear scan exhausted every budget in the first strip and left the rest of the map bare)
+	local order: { number } = table.create(n * n)
+	for i = 0, n * n - 1 do order[i + 1] = i end
+	local rng = Random.new(seed + 977)
+	for i = #order, 2, -1 do
+		local j = rng:NextInteger(1, i)
+		order[i], order[j] = order[j], order[i]
+	end
+
+	for oi = 1, #order do
+		do
+			local cx = order[oi] // n
+			local cz = order[oi] % n
 			local bx = center.X - half + (cx + 0.5) * cell
 			local bz = center.Z - half + (cz + 0.5) * cell
 			local x = bx + (hash01(bx, bz, 31) - 0.5) * cell * 0.8
@@ -335,7 +347,7 @@ function VegetationService.plant(opts: VegOpts?): Folder
 				end
 			end
 		end
-		if cx % 20 == 0 then task.wait() end
+		if oi % 400 == 0 then task.wait() end
 	end
 
 	workspace:SetAttribute("GF_VegCounts", string.format("c%d m%d s%d g%d r%d", counts.Canopy, counts.Mid, counts.Scrub, counts.Ground, counts.Rock))
