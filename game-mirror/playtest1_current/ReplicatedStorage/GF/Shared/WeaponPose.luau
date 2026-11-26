@@ -70,7 +70,7 @@ end
 -- Compute the weapon world transform.
 -- rootCf: HumanoidRootPart world CFrame. aiming: posture selector.
 -- aimYaw/aimPitch: optional torso-independent aim angles (rad) for upper-body aim decomposition.
-function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?, reloading: boolean?, switchBlend: number?): CFrame
+function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?, reloading: boolean?, switchBlend: number?, lastShotAt: number?): CFrame
 	local pose = POSES.ready
 	if aiming then
 		pose = POSES.aim
@@ -90,6 +90,15 @@ function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?
 		-- weapon follows vertical aim exactly (authoritative); the torso carries ~30%
 		-- of the pitch via the waist joint so the arms absorb only the remainder.
 		cf = cf * CFrame.Angles(aimPitch, 0, 0)
+	end
+	if lastShotAt then
+		-- weapon-body recoil: snappy back-up impulse, fast decay — reads as a mechanical
+		-- kick, not a drift. Shared transform means the IK hands ride the weapon through it.
+		local dt = os.clock() - lastShotAt
+		if dt >= 0 and dt < 0.09 then
+			local k = (1 - dt / 0.09) ^ 2
+			cf = cf * CFrame.new(0, 0.05 * k, 0.14 * k) * CFrame.Angles(0.09 * k, 0, 0)
+		end
 	end
 	return cf
 end

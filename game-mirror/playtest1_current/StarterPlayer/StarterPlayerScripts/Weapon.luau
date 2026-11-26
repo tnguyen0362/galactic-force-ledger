@@ -185,6 +185,7 @@ local function tryFire()
 		local vertical = 0.004 * r
 		local horizontal = vertical * (math.random() - 0.5) * 0.4
 		ctl.recoil(vertical, horizontal)
+		state.lastShotAt = os.clock()
 	end)
 
 	remotes.FireWeapon:FireServer({
@@ -379,7 +380,7 @@ local function updateViewmodel(dt: number?)
 	local cam = workspace.CurrentCamera
 	local aimPitch = cam and math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1)) or 0
 	local sprinting = char:GetAttribute("Sprinting") == true
-	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5, nil, aimPitch, sprinting, nil, state.switchBlend or 0))
+	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5, nil, aimPitch, sprinting, nil, state.switchBlend or 0, state.lastShotAt))
 	char:SetAttribute("GF_WeaponGrip", viewmodel.PrimaryPart.Position)
 	char:SetAttribute("GF_ViewmodelAimLerp", viewmodelAimLerp)
 	-- spec sec.5: the magazine physically detaches, travels with the support hand, returns.
@@ -464,7 +465,7 @@ local function updateRemoteViewmodels()
 		if vm and root then
 			-- shared transform with the server IK — remote players' weapons stay in their hands
 			local WeaponPose = require(game:GetService("ReplicatedStorage"):WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("WeaponPose"))
-			vm:PivotTo(WeaponPose.weaponWorld(root.CFrame, char:GetAttribute("Aiming") == true, nil, nil, char:GetAttribute("Sprinting") == true, char:GetAttribute("GF_Reloading") == true))
+			vm:PivotTo(WeaponPose.weaponWorld(root.CFrame, char:GetAttribute("Aiming") == true, nil, nil, char:GetAttribute("Sprinting") == true, char:GetAttribute("GF_Reloading") == true, nil, char:GetAttribute("GF_LastShotAt")))
 		end
 	end
 	-- cleanup for characters that left

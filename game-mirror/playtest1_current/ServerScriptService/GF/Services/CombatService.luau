@@ -717,6 +717,7 @@ function CombatService.fire(player: Player, payload: any)
 		end
 	end
 	s.lastShotId = shotId
+		if player.Character then player.Character:SetAttribute("GF_LastShotAt", os.clock()) end
 	s.lastShotAt = t
 	s.ammo -= 1
 	counters.accepted += 1
