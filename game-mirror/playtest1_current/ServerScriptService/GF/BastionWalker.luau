@@ -506,8 +506,6 @@ local function step(state, dt)
 		root.CFrame = CFrame.new(Vector3.new(next.X, gy + 11.5, next.Z)) * (root.CFrame - root.CFrame.Position)
 		state.walkPhase = (state.walkPhase or 0) + dt * 5
 		for _, leg in ipairs(state.legs) do
-			local swing = math.sin(state.walkPhase + leg.phase) * 0.55
-			local lift = math.abs(math.cos(state.walkPhase + leg.phase)) * 0.9
 			local swing = math.sin(state.walkPhase + leg.phase) * 0.7
 			local lift = math.abs(math.cos(state.walkPhase + leg.phase)) * 0.75
 			local ox = leg.thigh:GetAttribute("ox")
