@@ -137,8 +137,14 @@ local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: bo
 	for _ = 1, 2 do
 		ccdPass("RightShoulder", "RightElbow", rhand, primaryTarget, rua, rla)
 	end
-	for _ = 1, 2 do
-		ccdPass("LeftShoulder", "LeftElbow", lhand, supportTarget, lua, lla)
+	if profile.twoHanded ~= false then
+		for _ = 1, 2 do
+			ccdPass("LeftShoulder", "LeftElbow", lhand, supportTarget, lua, lla)
+		end
+	else
+		-- one-handed sidearm: left arm returns to natural swing
+		setJoint("LeftShoulder", CFrame.Angles(0, 0, math.rad(3)))
+		setJoint("LeftElbow", CFrame.Angles(-0.18, 0, 0))
 	end
 end
 

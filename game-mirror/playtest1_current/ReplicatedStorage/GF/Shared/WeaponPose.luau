@@ -16,12 +16,29 @@ export type GripProfile = {
 	primaryGrip: Vector3,
 	supportGrip: Vector3,
 	length: number,
+	twoHanded: boolean?,
 }
 
 local DEFAULTS: GripProfile = {
 	primaryGrip = Vector3.new(0, -0.1, 0.1),
 	supportGrip = Vector3.new(0, -0.12, -0.55),
 	length = 1.0,
+	twoHanded = true,
+}
+
+-- Per-weapon grip geometry measured from the WeaponVisuals part layouts (Gate B).
+-- primaryGrip = the swept polymer pistol-grip part; supportGrip = handguard/forend/pump,
+-- clamped to the reach envelope validated by the offline study (<=0.65 forward of primary).
+-- P01 is a sidearm: one-handed, left arm stays free (twoHanded = false).
+local PROFILES: { [string]: GripProfile } = {
+	AR01 = { primaryGrip = Vector3.new(0, -0.16, 0.12), supportGrip = Vector3.new(0, -0.08, -0.5), length = 1.6, twoHanded = true },
+	SMG03 = { primaryGrip = Vector3.new(0, -0.14, 0.05), supportGrip = Vector3.new(0, -0.1, -0.35), length = 0.95, twoHanded = true },
+	LMG12 = { primaryGrip = Vector3.new(0, -0.18, 0.05), supportGrip = Vector3.new(0, -0.14, -0.6), length = 1.8, twoHanded = true },
+	SG04 = { primaryGrip = Vector3.new(0, -0.15, 0.12), supportGrip = Vector3.new(0, -0.06, -0.45), length = 1.25, twoHanded = true },
+	MR07 = { primaryGrip = Vector3.new(0, -0.14, 0.08), supportGrip = Vector3.new(0, -0.06, -0.5), length = 2.0, twoHanded = true },
+	GL22 = { primaryGrip = Vector3.new(0, -0.16, 0.15), supportGrip = Vector3.new(0, -0.1, -0.45), length = 1.0, twoHanded = true },
+	RL09 = { primaryGrip = Vector3.new(0, -0.18, 0.12), supportGrip = Vector3.new(0, -0.08, -0.5), length = 1.9, twoHanded = true },
+	P01 = { primaryGrip = Vector3.new(0, -0.14, 0.08), supportGrip = Vector3.new(0, 0, 0), length = 0.5, twoHanded = false },
 }
 
 -- Posture offsets in ROOT space (character-local, -Z forward). Refined from the legacy
@@ -46,8 +63,7 @@ local POSES = {
 }
 
 function WeaponPose.gripProfile(weaponId: string): GripProfile
-	-- v1: shared geometry; Gate B measures per-weapon from actual models
-	return DEFAULTS
+	return PROFILES[weaponId] or DEFAULTS
 end
 
 -- Compute the weapon world transform.
