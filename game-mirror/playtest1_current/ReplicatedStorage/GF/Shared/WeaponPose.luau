@@ -29,7 +29,7 @@ local DEFAULTS: GripProfile = {
 local POSES = {
 	-- combat aim: raised version of the ready hold (refined further in aim decomposition)
 	aim = {
-		cf = CFrame.new(0.38, 0.12, -0.58) * CFrame.Angles(0, math.rad(15), 0),
+		cf = CFrame.new(0.27, 0.40, -0.55) * CFrame.Angles(0, math.rad(15), 0),
 	},
 	-- sprint: weapon tucked low and inward, muzzle down — one-hand carry illusion,
 	-- both grips still technically reachable but arms mostly relax (CCD handles it)
