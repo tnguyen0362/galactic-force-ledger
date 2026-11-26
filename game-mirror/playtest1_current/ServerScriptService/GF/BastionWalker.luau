@@ -300,6 +300,8 @@ local function startStomp(state)
 	local pos = state.root.Position
 	marker(pos, 13, 1.1, Color3.fromRGB(255, 176, 64))
 	state.busyUntil = os.clock() + 1.9
+	-- telegraph pose: the walker rears its front legs for the windup second, then slams
+	state.stompPoseUntil = os.clock() + 1.0
 	task.delay(1.0, function()
 		if state.dead then return end
 		explode(Vector3.new(pos.X, pos.Y + 1, pos.Z), 10, Color3.fromRGB(255, 176, 64))
@@ -471,6 +473,7 @@ local function step(state, dt)
 	end
 	if dist > 26 and dist < 120 and not inLandingZone and now >= state.nextMortar then
 		table.insert(ready, { id = "Mortar", weight = 2.5, fire = function()
+			state.mortarPoseUntil = os.clock() + 1.6
 			state.nextMortar = now + ((phase == 3 and 5 or 7.5)) / (state.aggressionMult or 1)
 			startMortar(state)
 		end })
@@ -508,6 +511,13 @@ local function step(state, dt)
 		for _, leg in ipairs(state.legs) do
 			local swing = math.sin(state.walkPhase + leg.phase) * 0.7
 			local lift = math.abs(math.cos(state.walkPhase + leg.phase)) * 0.75
+			-- attack telegraph poses layer over the stride cycle
+			if os.clock() < (state.stompPoseUntil or 0) and leg.phase < 1.6 then
+				lift = lift + 2.6  -- front legs rear high before the slam
+			end
+			if os.clock() < (state.mortarPoseUntil or 0) then
+				lift = lift * 0.3  -- legs plant firm for the mortar launch
+			end
 			local ox = leg.thigh:GetAttribute("ox")
 			local oz = leg.thigh:GetAttribute("oz")
 			leg.thigh.CFrame = root.CFrame * CFrame.new(ox, -1.6, oz + swing)
