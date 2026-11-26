@@ -12,6 +12,7 @@ local State = require(ServerScriptService.GF.Services.State)
 local VitalsService = require(ServerScriptService.GF.Services.VitalsService)
 local debugAttr -- forward declaration: used by closures throughout the module, defined near the bottom
 local ArtService = require(ServerScriptService.GF.Services.ArtService)
+local Telemetry = require(ServerScriptService.GF.Services.GFTelemetry)
 local NPCLocomotion = require(ServerScriptService.GF.Services.NPCLocomotion)
 
 -- config ids map onto the spec's five archetypes: Scout is the Vanguard implementation,
@@ -1526,6 +1527,31 @@ local function tickActor(model: Model, actor: any, dt: number)
 				local errMag = actor.aimErr.Magnitude
 				local blocked = not lineOfSight(root.Position, liveRoot.Position, { model, liveCharacter })
 				local isHit = (not blocked) and errMag < HIT_RADIUS
+				if Telemetry.enabled() then
+					local sigFloor = (SIGMA_FLOOR[diff] or SIGMA_FLOOR.Normal) * rangeScale
+					local sigAcq = SIGMA_INITIAL * ((1 - q) ^ 1.5) * rangeScale
+					local sigMotion = omega * dist * 0.7
+					local sigObs = obsUncertainty * 0.18
+					local sigSupp = (actor.suppression or 0) * 2.2
+					Telemetry.emit(isHit and "enemy_attack_hit" or "enemy_attack_miss", {
+						enemyId = model.Name,
+						archetype = def.id,
+						difficulty = diff,
+						distance = math.floor(dist * 100 + 0.5) / 100,
+						sigmaFinal = sigma,
+						sigmaFloor = sigFloor,
+						sigmaAcquisition = sigAcq,
+						sigmaMotion = sigMotion,
+						sigmaObsUnc = sigObs,
+						sigmaSuppression = sigSupp,
+						aimErrorMag = math.floor(errMag * 1000 + 0.5) / 1000,
+						acquisitionQ = math.floor(q * 1000 + 0.5) / 1000,
+						blocked = blocked,
+						rolling = rolling,
+						targetVelocityMag = math.floor(relVel.Magnitude * 100 + 0.5) / 100,
+						targetTransverseSpeed = math.floor((omega * dist) * 100 + 0.5) / 100,
+					})
+				end
 				if isHit then
 					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position)
 					debugAttr("GF_LastShotPos", liveRoot.Position)
