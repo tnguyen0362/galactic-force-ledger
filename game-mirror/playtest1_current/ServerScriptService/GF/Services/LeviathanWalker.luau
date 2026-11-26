@@ -15,6 +15,7 @@ local ComponentService = require(script.Parent.ComponentService)
 local VehicleLocomotion = require(script.Parent.VehicleLocomotion)
 local AttackScheduler = require(script.Parent.AttackScheduler)
 local Vitals = require(script.Parent.VitalsService)
+local ShellService = require(script.Parent.ShellService)
 
 local LeviathanWalker = {}
 
@@ -196,23 +197,9 @@ local function fireHeavyCannon(state: any, ctx: any)
 	telegraphRing(aim, 15, 1.1, Color3.fromRGB(255, 110, 70))
 	task.delay(1.1, function()
 		if state.dead then return end
-		local shell = Instance.new("Part")
-		shell.Shape = Enum.PartType.Ball
-		shell.Size = Vector3.new(2.6, 2.6, 2.6)
-		shell.Color = ENERGY
-		shell.Material = Enum.Material.Neon
-		shell.CanCollide = false
-		shell.CanQuery = false
-		shell.CFrame = CFrame.new(origin)
-		shell.Parent = fxFolder()
-		local dir = aim - origin
-		local speed = 110
-		shell.AssemblyLinearVelocity = dir.Unit * speed
-		local detonated = false
-		local function detonate(at: Vector3)
-			if detonated then return end
-			detonated = true
-			if shell.Parent then shell:Destroy() end
+		ShellService.fireShell(origin, aim, {
+			size = 2.6, speed = 110, ignoreList = { state.model },
+		}, function(at: Vector3, hit: Instance?)
 			telegraphRing(at, 17, 0.6, Color3.fromRGB(255, 150, 80))
 			for _, pl in Players:GetPlayers() do
 				local ch = pl.Character
@@ -225,15 +212,6 @@ local function fireHeavyCannon(state: any, ctx: any)
 					end
 				end
 			end
-		end
-		shell.Touched:Connect(function(hit)
-			if hit:IsDescendantOf(state.model) then return end
-			if hit.CanCollide or Players:GetPlayerFromCharacter(hit.Parent) then
-				detonate(shell.Position)
-			end
-		end)
-		task.delay(dir.Magnitude / speed + 0.4, function()
-			detonate(shell.Parent and shell.Position or aim)
 		end)
 	end)
 end

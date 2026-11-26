@@ -15,6 +15,7 @@ local ComponentService = require(script.Parent.ComponentService)
 local VehicleLocomotion = require(script.Parent.VehicleLocomotion)
 local AttackScheduler = require(script.Parent.AttackScheduler)
 local Vitals = require(script.Parent.VitalsService)
+local ShellService = require(script.Parent.ShellService)
 
 local BastionTank = {}
 
@@ -196,31 +197,20 @@ end
 
 -- heavy cannon: projectile with readable travel — damage at legitimate impact, never before (spec 35)
 local function fireHeavyCannon(state: any, ctx: any)
+	Workspace:SetAttribute("GF_FireCannon", (Workspace:GetAttribute("GF_FireCannon") or 0) + 1)
 	local target = ctx.target
-	if not target or not target.root then return end
+	if not target or not target.root then
+		Workspace:SetAttribute("GF_FireCannonAbort", "no target")
+		return
+	end
 	local muzzle = state.model:FindFirstChild("MainCannon")
 	if not muzzle then return end
 	local origin = muzzle.CFrame * Vector3.new(0, 0, -muzzle.Size.Z / 2)
 	local aimPoint = target.root.Position
-	-- projectile: visible shell, arc-free direct flight, impact detonation
-	local shell = Instance.new("Part")
-	shell.Shape = Enum.PartType.Ball
-	shell.Size = Vector3.new(1.6, 1.6, 1.6)
-	shell.Color = ENERGY
-	shell.Material = Enum.Material.Neon
-	shell.CanCollide = false
-	shell.Anchored = false
-	shell.CanQuery = false
-	shell.CFrame = CFrame.new(origin)
-	shell.Parent = fxFolder()
-	local dir = (aimPoint - origin)
-	local speed = 130
-	shell.AssemblyLinearVelocity = dir.Unit * speed
-	local detonated = false
-	local function detonate(at: Vector3)
-		if detonated then return end
-		detonated = true
-		if shell.Parent then shell:Destroy() end
+	-- deterministic stepped flight: readable travel, exact impact, no physics interference
+	ShellService.fireShell(origin, aimPoint, {
+		size = 1.6, speed = 130, ignoreList = { state.model },
+	}, function(at: Vector3, hit: Instance?)
 		telegraphRing(at, 13, 0.5, Color3.fromRGB(255, 140, 80))
 		for _, pl in Players:GetPlayers() do
 			local ch = pl.Character
@@ -230,21 +220,11 @@ local function fireHeavyCannon(state: any, ctx: any)
 				local d = (root.Position - at).Magnitude
 				if d <= 13 then
 					local falloff = 1 - (d / 13) * 0.5
-					Vitals.applyDamage(pl, math.floor(52 * falloff), "BastionCannon")
+					local dealt = Vitals.applyDamage(pl, math.floor(52 * falloff), "BastionCannon")
+					Workspace:SetAttribute("GF_CannonDamage", (Workspace:GetAttribute("GF_CannonDamage") or 0) + dealt)
 				end
 			end
 		end
-	end
-	shell.Touched:Connect(function(hit)
-		if hit:IsDescendantOf(state.model) then return end
-		local pl = Players:GetPlayerFromCharacter(hit.Parent)
-		if pl or hit.CanCollide then
-			detonate(shell.Position)
-		end
-	end)
-	-- fused regardless: detonate at aim point expiry
-	task.delay(dir.Magnitude / speed + 0.35, function()
-		detonate(shell.Parent and shell.Position or aimPoint)
 	end)
 end
 
@@ -268,7 +248,8 @@ local function fireSecondary(state: any, ctx: any)
 			local blocked = Workspace:Raycast(origin, dir, params)
 			-- dispersion: the secondary is pressure, not precision
 			if not blocked and math.random() < 0.55 then
-				Vitals.applyDamage(t.player, 9, "BastionSecondary")
+				local dealt = Vitals.applyDamage(t.player, 9, "BastionSecondary")
+				Workspace:SetAttribute("GF_SecondaryDamage", (Workspace:GetAttribute("GF_SecondaryDamage") or 0) + dealt)
 			end
 		end
 	end)
