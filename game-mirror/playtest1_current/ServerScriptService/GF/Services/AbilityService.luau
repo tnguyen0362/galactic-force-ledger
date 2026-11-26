@@ -1107,10 +1107,6 @@ function AbilityService.start()
 	end
 	AbilityService._connected = true
 	ReplicatedStorage.GF.Remotes.UseAbility.OnServerEvent:Connect(function(player, payload)
-		if player.Character and payload and payload.abilityId then
-			player.Character:SetAttribute("GF_AbilityCastAt", os.clock())
-			player.Character:SetAttribute("GF_AbilityId", tostring(payload.abilityId))
-		end
 		if not require(script.Parent.NetGuard).allowPayload(player, "ability", payload) then
 			return
 		end
@@ -1123,6 +1119,10 @@ function AbilityService.start()
 		local ok, err = pcall(cast, player, payload)
 		if not ok then
 			warn("[GF] CastAbility error: " .. tostring(err))
+		elseif player.Character and payload and payload.abilityId then
+			-- stamp only validated casts — a cooldown rejection must not play the pose
+			player.Character:SetAttribute("GF_AbilityCastAt", os.clock())
+			player.Character:SetAttribute("GF_AbilityId", tostring(payload.abilityId))
 		end
 	end)
 	local dbg = workspace:FindFirstChild("GFDebug")
