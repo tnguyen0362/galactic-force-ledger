@@ -12,6 +12,22 @@ local State = require(ServerScriptService.GF.Services.State)
 local VitalsService = require(ServerScriptService.GF.Services.VitalsService)
 local debugAttr -- forward declaration: used by closures throughout the module, defined near the bottom
 local ArtService = require(ServerScriptService.GF.Services.ArtService)
+local NPCLocomotion = require(ServerScriptService.GF.Services.NPCLocomotion)
+
+-- config ids map onto the spec's five archetypes: Scout is the Vanguard implementation,
+-- Officer is the Commander implementation (S06-archetype reconciliation, audit 2026-11-26).
+local ARCHETYPE = {
+	Rifleman = "Rifleman",
+	Scout = "Vanguard",
+	Marksman = "Marksman",
+	Heavy = "Heavy",
+	Officer = "Commander",
+	BastionWalker = "Heavy",
+	HighMarshalVeyr = "Commander",
+}
+local function locoProfile(def: any)
+	return NPCLocomotion.profileFor(ARCHETYPE[def.id] or "Default")
+end
 
 local EnemyService = {}
 
@@ -256,6 +272,8 @@ function EnemyService.spawn(enemyId: string, position: Vector3): Model?
 	model:SetAttribute("DamageMultiplier", mods.damage)
 	model:SetAttribute("CadenceRate", mods.cadence)
 	model:SetAttribute("Difficulty", tostring(workspace:GetAttribute("GF_OperationDifficulty") or "Normal"))
+	model:SetAttribute("SpawnSeed", math.random() * 997)
+	local scaleNum = def.tier == "Boss" and 2.2 or (def.tier == "Elite" and 1.25 or 1)
 	actors[model] = {
 		def = def,
 		home = position,
@@ -269,6 +287,8 @@ function EnemyService.spawn(enemyId: string, position: Vector3): Model?
 		repositionDir = nil :: Vector3?,
 		shotsSinceMove = 0,
 		deadAt = 0,
+		groundOffset = 3.1 * scaleNum,
+		locomotion = NPCLocomotion.newState(model.PrimaryPart and (model.PrimaryPart :: BasePart).Position or position, 0),
 	}
 	return model
 end
@@ -626,12 +646,13 @@ local function tickActor(model: Model, actor: any, dt: number)
 			local sentryPos = (sentry.PrimaryPart :: BasePart).Position
 			local flatToSentry = (sentryPos - origin) * Vector3.new(1, 0, 1)
 			if flatToSentry.Magnitude > 0.1 then
-				root.CFrame = CFrame.lookAt(origin, origin + flatToSentry.Unit, Vector3.yAxis)
+				actor.locomotion.aimYaw = NPCLocomotion.yawOf(flatToSentry)
 			end
 			if sentryDist > def.attackRange then
-				root.CFrame = root.CFrame + flatToSentry.Unit * math.min(def.speed * dt, sentryDist - def.attackRange * 0.85)
+				NPCLocomotion.moveTo(actor.locomotion, sentryPos, "combat", def.attackRange * 0.85)
 				return
 			end
+			NPCLocomotion.stop(actor.locomotion)
 			local now = os.clock()
 			if now >= actor.nextAttack and EnemyService.claimFireSlot(model) then
 				actor.nextAttack = now + def.attackCooldown + (tonumber(def.recovery) or 0)
@@ -682,14 +703,19 @@ local function tickActor(model: Model, actor: any, dt: number)
 			local sightHit = workspace:Raycast(origin, toStructure, sightParams)
 			local structureVisible = sightHit ~= nil and (sightHit.Instance == structure or sightHit.Instance:IsDescendantOf(holder))
 			if toStructure.Magnitude <= def.attackRange and structureVisible then
+				NPCLocomotion.stop(actor.locomotion) -- structure in range: plant and fire
 				if math.random() < 0.25 and os.clock() >= actor.nextAttack and EnemyService.claimFireSlot(model) then
 					actor.nextAttack = os.clock() + def.attackCooldown
+					-- windUp was previously undefined in this scope: any Marksman/Heavy reaching this
+					-- branch errored out of tickActor and was permanently dropped from the actor table.
+					local windUp = tonumber(def.chargeTime) or tonumber(def.telegraph) or 0.55
 					ReplicatedStorage.GF.Remotes.EnemyTelegraph:FireAllClients(model, windUp)
-	if def.chargeTime then
-		model:SetAttribute("ChargingUntil", os.clock() + windUp)
-		workspace:SetAttribute("GF_LastCharge", model.Name .. ":" .. tostring(windUp))
-	end
+					if def.chargeTime then
+						model:SetAttribute("ChargingUntil", os.clock() + windUp)
+						workspace:SetAttribute("GF_LastCharge", model.Name .. ":" .. tostring(windUp))
+					end
 					task.delay(windUp, function()
+						EnemyService.releaseFireSlot(model)
 						if model:GetAttribute("Dead") then
 							return
 						end
@@ -700,7 +726,6 @@ local function tickActor(model: Model, actor: any, dt: number)
 							debugAttr("GF_StructureShots", (workspace:GetAttribute("GF_StructureShots") or 0) + 1)
 						end
 					end)
-					EnemyService.releaseFireSlot(model)
 					return
 				end
 			end
@@ -743,8 +768,8 @@ local function tickActor(model: Model, actor: any, dt: number)
 						end)
 					end
 				end
-				local step = def.speed * dt
-				root.CFrame = root.CFrame + flatSeen.Unit * math.min(step, flatSeen.Magnitude)
+				actor.locomotion.aimYaw = nil -- face the direction of travel while investigating
+				NPCLocomotion.moveTo(actor.locomotion, actor.lastSeenPos, "relocate", 2.5)
 			else
 				-- Search: small deterministic wander around the last known position while confidence decays.
 				model:SetAttribute("GFState", "Search")
@@ -754,10 +779,11 @@ local function tickActor(model: Model, actor: any, dt: number)
 					actor.nextSearchStep = nowClock + 0.9
 				end
 				if actor.searchDir then
-					local step = def.speed * 0.45 * dt
-					local candidate = root.Position + actor.searchDir * step
+					local probeDist = 4
+					local candidate = root.Position + actor.searchDir * probeDist
 					if (Vector3.new(candidate.X, 0, candidate.Z) - Vector3.new(actor.lastSeenPos.X, 0, actor.lastSeenPos.Z)).Magnitude <= SEARCH_RADIUS then
-						root.CFrame = root.CFrame + actor.searchDir * step
+						actor.locomotion.aimYaw = nil
+						NPCLocomotion.moveTo(actor.locomotion, candidate, "walk", 0.8)
 					else
 						actor.searchDir = -actor.searchDir
 					end
@@ -766,46 +792,48 @@ local function tickActor(model: Model, actor: any, dt: number)
 			return
 		end
 		-- Return: confidence expired; drift home, then Guard idle.
+		-- stale memory is consumed the moment the actor gives up: reaching this branch means any
+		-- lastSeenPos is below the confidence threshold (a fresh one would have taken the
+		-- investigate branch above). Clearing here lets hearGunfire write new positions again.
+		actor.lastSeenPos = nil
+		actor.lastSeenAt = nil
 		local toHome = actor.home - origin
 		if toHome.Magnitude > 4 then
 			model:SetAttribute("GFState", "Return")
-			local step = def.speed * 0.5 * dt
-			root.CFrame = root.CFrame + toHome.Unit * math.min(step, toHome.Magnitude)
+			actor.locomotion.aimYaw = nil
+			NPCLocomotion.moveTo(actor.locomotion, actor.home, "walk", 3)
 		else
 			model:SetAttribute("GFState", "Guard")
+			actor.locomotion.aimYaw = nil
+			NPCLocomotion.stop(actor.locomotion)
 		end
 		return
 	end
-	-- S06-019 stuck detection: track positional progress. If the actor wanted to move but covered
-	-- <0.5 studs over 2s it is stuck — recalculate by clearing its cover claim and picking a fresh
-	-- approach offset. If still stuck after 6s, retreat toward home (a safe reachable node) instead
-	-- of grinding against geometry forever. No visible teleporting: retreat is walked.
+	-- stuck detection (spec section 15): intent-aware via the locomotion controller — locoStuck
+	-- only engages when desired movement is significant but actual progress is not. A stationary
+	-- shooter holding a fire position is never "stuck". Recovery follows the spec sequence:
+	-- local correction (drop the cover claim) first, persistent failure retreats home — walked,
+	-- never teleported.
 	do
 		local nowC = os.clock()
-		if actor.lastPos then
-			local moved = (Vector3.new(root.Position.X, 0, root.Position.Z) - Vector3.new(actor.lastPos.X, 0, actor.lastPos.Z)).Magnitude
-			if moved < 0.05 then
-				actor.stuckSince = actor.stuckSince or nowC
-			else
-				actor.stuckSince = nil
-				actor.stuckLevel = 0
-			end
+		if actor.locoStuck then
+			actor.stuckSince = actor.stuckSince or nowC
+		else
+			actor.stuckSince = nil
 		end
-		actor.lastPos = root.Position
 		if actor.stuckSince then
 			local stuckFor = nowC - actor.stuckSince
 			if stuckFor > 6 then
-				-- retreat: walk home, clear all engagement memory — the fight is abandoned
 				actor.coverPos = nil
 				actor.target = nil
 				actor.engagementStarted = false
 				actor.confidence = 0
 				actor.stuckSince = nil
+				NPCLocomotion.stop(actor.locomotion)
 				model:SetAttribute("GFState", "Return")
 				workspace:SetAttribute("GF_StuckRetreats", (workspace:GetAttribute("GF_StuckRetreats") or 0) + 1)
 				return
 			elseif stuckFor > 2 then
-				-- recalc: drop the current cover claim so the next tick picks a fresh node
 				actor.coverPos = nil
 				workspace:SetAttribute("GF_StuckRecalcs", (workspace:GetAttribute("GF_StuckRecalcs") or 0) + 1)
 			end
@@ -895,7 +923,14 @@ local function tickActor(model: Model, actor: any, dt: number)
 			local toCover = (actor.coverPos - origin) * Vector3.new(1, 0, 1)
 			if toCover.Magnitude > 1.5 then
 				model:SetAttribute("GFState", "TakeCover")
-				root.CFrame = root.CFrame + toCover.Unit * math.min(def.speed * dt, toCover.Magnitude)
+				-- face the threat while relocating: upper body tracks the target, legs do the walking
+				local targetCharacter2 = target and target.Character
+				local targetRoot2 = targetCharacter2 and targetCharacter2:FindFirstChild("HumanoidRootPart")
+				if targetRoot2 then
+					local toT = (targetRoot2 :: BasePart).Position - origin
+					actor.locomotion.aimYaw = NPCLocomotion.yawOf(toT)
+				end
+				NPCLocomotion.moveTo(actor.locomotion, actor.coverPos, "combat", 1.5)
 				return
 			end
 		end
@@ -904,14 +939,16 @@ local function tickActor(model: Model, actor: any, dt: number)
 	if distance < 0.1 then
 		return
 	end
-	root.CFrame = CFrame.lookAt(origin, origin + flat.Unit, Vector3.yAxis)
+	-- facing is owned by the locomotion controller: bounded damped turning toward the target
+	-- rather than the old instantaneous lookAt snap.
+	actor.locomotion.aimYaw = NPCLocomotion.yawOf(flat)
 
 	local now = os.clock()
 
 	if actor.telegraphUntil > now then
-		if actor.telegraphTarget == target and distance <= def.attackRange * 1.25 then
-			-- hold the shot; player can break LOS or dodge out during the windup
-		end
+		-- hold the shot; player can break LOS or dodge out during the windup. The actor plants
+		-- but keeps tracking with upper-body aim so the telegraph reads as a winding weapon.
+		NPCLocomotion.stop(actor.locomotion)
 		return
 	end
 
@@ -919,30 +956,35 @@ local function tickActor(model: Model, actor: any, dt: number)
 	-- stationary turret. Cover-type hostiles now slide laterally after a couple of shots and hold for a moment,
 	-- which breaks the sight picture. No pathfinding: a fixed-direction strafe on the ground plane.
 	if now < (actor.repositionUntil or 0) and actor.repositionDir then
+		-- lateral repositioning: convert the fixed-duration slide into a single locomotion intent.
+		-- the destination is projected ahead along the slide direction; arrival braking eases the
+		-- stop instead of the old hard cut-off. upper body keeps the target in aim.
 		local dir = actor.repositionDir :: Vector3
-		local slide = dir * (def.speed * 0.55 * dt)
-		local groundParams = RaycastParams.new()
-		groundParams.FilterType = Enum.RaycastFilterType.Exclude
-		groundParams.FilterDescendantsInstances = { model }
-		local ahead = root.Position + slide + Vector3.new(0, 12, 0)
-		local hit = workspace:Raycast(ahead, Vector3.new(0, -40, 0), groundParams)
-		root.CFrame = CFrame.lookAt(hit and Vector3.new(ahead.X, hit.Position.Y + root.Size.Y / 2, ahead.Z) or (root.Position + slide), targetRoot.Position, Vector3.yAxis)
+		if not actor.repositionGoal then
+			local slideTime = math.max(0.2, (actor.repositionUntil or 0) - now)
+			actor.repositionGoal = root.Position + dir * (def.speed * 0.55 * slideTime)
+		end
+		actor.locomotion.aimYaw = NPCLocomotion.yawOf(flat)
+		NPCLocomotion.moveTo(actor.locomotion, actor.repositionGoal, "combat", 0.8)
 		return
 	end
-
+	actor.repositionGoal = nil
 	if distance > def.attackRange then
-		local step = def.speed * dt
-		-- flank arc: a flanking hostile blends a perpendicular swing into its approach while still
-		-- outside 1.6x attack range, then closes directly once the arc has it on the target's side.
-		local approachDir = flat.Unit
+		-- approach through the locomotion controller with arrival braking at the engagement
+		-- standoff. flanking fast movers first swing through a perpendicular arc waypoint, then
+		-- close directly once the arc has them on the target's flank.
 		if actor.flankSide and distance > def.attackRange * 1.6 then
 			local perp = Vector3.new(-flat.Unit.Z, 0, flat.Unit.X) * actor.flankSide
-			approachDir = (flat.Unit * 0.55 + perp * 0.85).Unit
+			local arcPoint = origin + (flat.Unit * 0.55 + perp * 0.85).Unit * math.min(distance * 0.6, 24)
+			NPCLocomotion.moveTo(actor.locomotion, arcPoint, "combat", 2.5)
+		else
+			local targetPos = (targetRoot :: BasePart).Position
+			NPCLocomotion.moveTo(actor.locomotion, targetPos, "combat", def.attackRange * 0.85)
 		end
-		local move = approachDir * math.min(step, distance - def.attackRange * 0.85)
-		root.CFrame = root.CFrame + move
 		return
 	end
+	-- in range: hold position and fire. movement intents stop; facing continues via aimYaw.
+	NPCLocomotion.stop(actor.locomotion)
 
 	-- S11 officer energy sweep: the signature crowd-control attack — a clearly telegraphed radial
 	-- burst that punishes clustered squads. Long windup (1.6s) with a published attribute clients
@@ -991,21 +1033,27 @@ local function tickActor(model: Model, actor: any, dt: number)
 		ReplicatedStorage.GF.Remotes.EnemyTelegraph:FireAllClients(model, windUp)
 		task.delay(windUp, function()
 		debugAttr("GF_LastAttackAttempt", "entry")
+			-- the fire slot must release on EVERY exit path: early returns previously leaked it,
+			-- and since slots cap at 2 globally, two leaked slots silenced all hostile fire for 3s.
 			if model:GetAttribute("Dead") then
+				EnemyService.releaseFireSlot(model)
 				return
 			end
 			local stillTarget = target.Character
 			local stillRoot = stillTarget and stillTarget:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if not stillRoot then
+				EnemyService.releaseFireSlot(model)
 				return
 			end
 			if not lineOfSight(root.Position, stillRoot.Position, { model, stillTarget }) then
+				debugAttr("GF_LastAttackAttempt", "los-fail")
+				EnemyService.releaseFireSlot(model)
 				return
-			debugAttr("GF_LastAttackAttempt", "los-fail")
 			end
 			debugAttr("GF_LastAttackAttempt", "los-pass")
 			local d = (stillRoot.Position - root.Position).Magnitude
 			if d > def.attackRange * 1.35 then
+				EnemyService.releaseFireSlot(model)
 				return
 			end
 			-- Burst fire: the authored patterns are 8x3, 6x4, 32x1, 38x1 and 12x2.
@@ -1256,6 +1304,64 @@ end
 
 function EnemyService.start()
 	EnemyService.startCalls()
+	-- Locomotion loop (spec section 8/11): movement integration is decoupled from the decision
+	-- tick. Position/velocity/facing update every frame through NPCLocomotion — the 5Hz tactical
+	-- layer only submits intents (moveTo/followPath/stop/aimYaw). One writer owns each root.
+	local frameCount = 0
+	RunService.Heartbeat:Connect(function(dt)
+		if dt > 0.1 then
+			dt = 0.1
+		end
+		frameCount += 1
+		-- neighbor positions for separation, refreshed every 3rd frame to bound the O(n^2) pass
+		if frameCount % 3 == 1 then
+			local positions = {}
+			for model, actor in pairs(actors) do
+				local root = model.PrimaryPart
+				if model.Parent and root and not model:GetAttribute("Dead") then
+					positions[model] = root.Position
+				end
+			end
+			for model, actor in pairs(actors) do
+				local myPos = positions[model]
+				if not myPos then
+					continue
+				end
+				local near = {}
+				for other, otherPos in pairs(positions) do
+					if other ~= model then
+						local d = (otherPos - myPos).Magnitude
+						if d < 9 then
+							near[#near + 1] = { position = otherPos, radius = 1.6 }
+						end
+					end
+				end
+				actor.locoNeighbors = near
+			end
+		end
+		for model, actor in pairs(actors) do
+			local root = model.PrimaryPart
+			if not model.Parent or not root or not actor.locomotion then
+				continue
+			end
+			if model:GetAttribute("Dead") then
+				continue -- death presentation owns the root once the actor is dead
+			end
+			if EnemyService.isStunned(model) then
+				continue -- EMP freeze: intents are stateful, so stepping here would keep moving
+			end
+			local stuck = NPCLocomotion.step(
+				actor.locomotion,
+				locoProfile(actor.def),
+				root,
+				dt,
+				actor.locoNeighbors or {},
+				{ model },
+				actor.groundOffset or 3.1
+			)
+			actor.locoStuck = stuck
+		end
+	end)
 	local accumulator = 0
 	RunService.Heartbeat:Connect(function(dt)
 		accumulator += dt
@@ -1273,13 +1379,13 @@ function EnemyService.start()
 		end
 		workspace:SetAttribute("GF_EnemiesEngaged", engaged)
 		workspace:SetAttribute("GF_EnemiesTracked", withTarget)
-		local budget = 0
-		local maxThinking = 14
+		-- scheduler: every actor thinks every tick. The old 14-actor hard break starved actors
+		-- deterministically (no rotation). Cost is bounded by the population cap; tick duration
+		-- is published so Stage 10 simulation tiering works from measurement rather than guesses.
+		local tickStart = os.clock()
+		local ticked = 0
 		for model, actor in actors do
-			if budget >= maxThinking then
-				break
-			end
-			budget += 1
+			ticked += 1
 			local ok, err = pcall(tickActor, model, actor, step)
 			if not ok then
 				warn("[GF] enemy tick error: " .. tostring(err))
@@ -1288,6 +1394,8 @@ function EnemyService.start()
 				model:SetAttribute("GFState", resolveSpecState(model, actor))
 			end
 		end
+		workspace:SetAttribute("GF_AITickMs", math.floor((os.clock() - tickStart) * 1000 * 100) / 100)
+		workspace:SetAttribute("GF_AITicked", ticked)
 	end)
 end
 

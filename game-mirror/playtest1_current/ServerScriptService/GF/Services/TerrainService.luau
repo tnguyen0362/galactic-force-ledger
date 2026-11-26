@@ -9,6 +9,7 @@ local BattlefieldService = require(script.Parent.Battlefield.BattlefieldService)
 local InstallationBuilder = require(script.Parent.Battlefield.InstallationBuilder)
 local CoverBuilder = require(script.Parent.Battlefield.CoverBuilder)
 local ScatterBuilder = require(script.Parent.Battlefield.ScatterBuilder)
+local VegetationService = require(script.Parent:WaitForChild("VegetationService"))
 
 local TerrainService = {}
 
@@ -91,6 +92,15 @@ function TerrainService.build(seed: number): number
 	-- small regions later; the foundation itself is static.
 	if workspace:GetAttribute("GF_BakedTerrain") == true then
 		TerrainService.currentPlan = nil
+		-- environment-conditioned vegetation over the baked foundation (spec section 14):
+		-- forest regions, treeline ecology, slope rejection — frame-sliced at boot.
+		task.spawn(function()
+			local ok, err = pcall(function()
+				local VegetationService = require(script.Parent.VegetationService)
+				VegetationService.plant({ seed = SEED * 3 + 11, extent = 4900 })
+			end)
+			if not ok then warn("VegetationService failed:", err) end
+		end)
 		workspace:SetAttribute("GF_TerrainReady", true)
 		print("BakedTerrain: foundation present, runtime terrain generation skipped")
 		return 0
