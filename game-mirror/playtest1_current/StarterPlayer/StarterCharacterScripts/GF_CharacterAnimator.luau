@@ -129,7 +129,18 @@ local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: bo
 	local lhand = character:FindFirstChild("LeftHand")
 	if not (torso and rua and rla and rhand and lua and lla and lhand) then return end
 	local reloading = character:GetAttribute("GF_Reloading") == true
-	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming, nil, aimPitch, sprinting, reloading)
+	local wid = character:GetAttribute("GF_EquippedWeapon")
+	if wid ~= lastWeaponId then
+		lastWeaponId = wid
+		switchClock = os.clock()
+	end
+	local switchT = switchClock and (os.clock() - switchClock) or 99
+	-- blend dips down then back up across the 0.55s window: 0->1->0 triangle
+	local switchBlend = 0
+	if switchT < 0.55 then
+		switchBlend = switchT < 0.27 and (switchT / 0.27) or (1 - (switchT - 0.27) / 0.28)
+	end
+	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming, nil, aimPitch, sprinting, reloading, switchBlend)
 	local profile = WeaponPose.gripProfile(character:GetAttribute("GF_EquippedWeapon") or "")
 	local primaryTarget = WeaponPose.gripWorld(weaponCf, profile.primaryGrip)
 	local supportTarget = WeaponPose.gripWorld(weaponCf, profile.supportGrip)
@@ -165,6 +176,10 @@ local lastPos = root.Position
 
 local wasRolling = false
 local lastHealth = nil
+local lastWeaponId = nil
+local switchClock = nil
+local wasDowned = false
+local reviveClock = nil
 local flinchClock = nil
 local flinchMag = 0
 local rollEdgeClock = 0
@@ -243,6 +258,10 @@ RunService.Heartbeat:Connect(function(dt)
 	-- GATE C lifecycle layer: downed / grenade / damage-flinch / revival.
 	-- Priority: downed overrides everything; grenade throw and flinch overlay the base pose.
 	local downed = character:GetAttribute("GFDowned") == true
+	if wasDowned and not downed then
+		reviveClock = os.clock()
+	end
+	wasDowned = downed
 	if downed then
 		-- collapsed kneel: hips folded deep, torso slumped, head down, arms limp at sides
 		setJoint("Root", nil, Vector3.new(0, -1.35, 0))
@@ -259,6 +278,24 @@ RunService.Heartbeat:Connect(function(dt)
 		setJoint("RightShoulder", CFrame.Angles(0.3, 0, math.rad(-10)))
 		setJoint("LeftElbow", CFrame.Angles(-0.25, 0, 0))
 		setJoint("RightElbow", CFrame.Angles(-0.25, 0, 0))
+		return
+	end
+
+	-- revival rise: after downed clears, blend up from the kneel over 1.1s
+	local reviveT = reviveClock and (os.clock() - reviveClock) or 99
+	if reviveT < 1.1 then
+		local k = 1 - reviveT / 1.1  -- 1 at start, 0 when risen
+		setJoint("Root", nil, Vector3.new(0, -1.35 * k, 0))
+		setJoint("LeftHip", CFrame.Angles(1.9 * k, 0, 0))
+		setJoint("RightHip", CFrame.Angles(0.35 * k, 0, 0))
+		setJoint("LeftKnee", CFrame.Angles(-2.2 * k, 0, 0))
+		setJoint("RightKnee", CFrame.Angles(-1.9 * k, 0, 0))
+		setJoint("Waist", CFrame.Angles(0.55 * k, 0.12 * k, 0))
+		setJoint("Neck", CFrame.Angles(0.5 * k, 0, 0))
+		-- arms push up off the ground during the first half, then recover
+		local push = math.max(0, k * 2 - 1)
+		setJoint("LeftShoulder", CFrame.Angles(-0.9 * push + 0.25 * k, 0, math.rad(10)))
+		setJoint("RightShoulder", CFrame.Angles(-0.9 * push + 0.3 * k, 0, math.rad(-10)))
 		return
 	end
 

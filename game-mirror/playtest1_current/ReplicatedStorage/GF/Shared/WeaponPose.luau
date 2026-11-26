@@ -70,7 +70,7 @@ end
 -- Compute the weapon world transform.
 -- rootCf: HumanoidRootPart world CFrame. aiming: posture selector.
 -- aimYaw/aimPitch: optional torso-independent aim angles (rad) for upper-body aim decomposition.
-function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?, reloading: boolean?): CFrame
+function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?, reloading: boolean?, switchBlend: number?): CFrame
 	local pose = POSES.ready
 	if aiming then
 		pose = POSES.aim
@@ -78,6 +78,10 @@ function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?
 		pose = POSES.sprint
 	end
 	local cf = rootCf * pose.cf
+	if switchBlend and switchBlend > 0 then
+		-- weapon switch: dip down/in as the swap progresses (0 = raised, 1 = fully lowered)
+		cf = cf * CFrame.new(0, -0.45 * switchBlend, 0.2 * switchBlend) * CFrame.Angles(math.rad(-40) * switchBlend, 0, 0)
+	end
 	if reloading and not aiming then
 		-- reload presentation: weapon rolls inward and down so the support hand can work the magazine
 		cf = cf * CFrame.Angles(math.rad(-28), math.rad(10), math.rad(-15))
