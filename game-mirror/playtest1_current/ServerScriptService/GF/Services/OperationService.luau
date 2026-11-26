@@ -442,19 +442,44 @@ function OperationService.activate(def: OperationDefinition): boolean
 	Workspace:SetAttribute("GF_OperationLZ", def.deploymentRegion)
 	Workspace:SetAttribute("GF_OperationId", def.operationId)
 
-	if Services.EncounterDirector then
+	-- garrisons: scripted mission-critical spawns direct through EnemyService (audit posture:
+	-- the director's spawnAround validity rules require 65-140 studs from players — impossible
+	-- for sites a kilometer from deployment). Proximity clustering forms squads automatically.
+	-- Composition scales with difficulty; elites only at the stronghold.
+	if Services.EnemyService then
+		local diff = def.difficulty
 		for _, node in def.objectives do
 			if node.optional then continue end
-			local count = node.siteType == "stronghold" and 5 or 3
+			local comp: { string }
+			if node.siteType == "stronghold" then
+				comp = { "Rifleman", "Rifleman", "Scout", "Marksman" }
+				if diff == "Hard" or diff == "Extreme" then
+					table.insert(comp, "Heavy")
+					table.insert(comp, "Officer")
+				elseif diff == "Normal" then
+					table.insert(comp, "Officer")
+				end
+			else
+				comp = { "Rifleman", "Rifleman" }
+				if diff ~= "Easy" then table.insert(comp, "Scout") end
+			end
+			local idx = 0
 			task.delay(2, function()
 				pcall(function()
-					Services.EncounterDirector.spawnAround(node.position + Vector3.new(0, 4, 0), 24, count)
+					for _, enemyId in comp do
+						idx += 1
+						local a = (idx / #comp) * math.pi * 2
+						local r = 14 + (idx % 3) * 6
+						local pos = node.position + Vector3.new(math.cos(a) * r, 4, math.sin(a) * r)
+						Services.EnemyService.spawn(enemyId, pos)
+					end
 				end)
 			end)
 		end
 	end
 
 	OperationService.publishState()
+	OperationService.publishProgress()
 	print(string.format("OperationService: %s activated — %d objectives",
 		def.operationId, #def.objectives))
 	return true
@@ -471,6 +496,76 @@ function OperationService.generate(seed: number, variant: string, difficulty: st
 	return generateConquestStronghold(seed, difficulty, analysis, geographyId)
 end
 
+-- compose the player-facing objective picture: nearest available objective as the marker,
+-- hint text covering all active work. Shaped exactly like the legacy payload so the existing
+-- HUD renders operations without client changes.
+function OperationService.publishProgress(player: Player?)
+	if not current then return end
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local remotes = ReplicatedStorage:FindFirstChild("GF") and ReplicatedStorage.GF:FindFirstChild("Remotes")
+	local remote = remotes and remotes:FindFirstChild("ObjectiveProgress")
+	if not remote then return end
+
+	local available: { ObjectiveNode } = {}
+	local completedCount = 0
+	local totalRequired = 0
+	for _, n in current.objectives do
+		if n.state == "Completed" then completedCount += 1 end
+		if not n.optional then totalRequired += 1 end
+		if n.state == "Available" or n.state == "Active" then
+			table.insert(available, n)
+		end
+	end
+	-- progress: fraction of required objectives complete
+	local progress = totalRequired > 0 and (completedCount / totalRequired) or 0
+	-- hint: enumerate available work, or direct to extraction when primary done
+	local hint
+	local primary = nil
+	for _, n in current.objectives do
+		if n.id == current.primaryObjective then primary = n end
+	end
+	if primary and primary.state == "Completed" then
+		hint = "Primary complete — proceed to extraction"
+	elseif #available > 0 then
+		local labels = {}
+		for _, n in available do table.insert(labels, n.label) end
+		hint = table.concat(labels, "  |  ")
+	else
+		-- everything remaining is locked: point at the prereq chain
+		for _, n in current.objectives do
+			if n.state == "Locked" then
+				hint = n.label .. " (locked — complete prerequisites)"
+				break
+			end
+		end
+	end
+	-- marker: first available required objective, else the primary position
+	local marker = nil
+	for _, n in current.objectives do
+		if (n.state == "Available" or n.state == "Active") and not n.optional then
+			marker = { position = n.position, label = n.state == "Active" and "OBJECTIVE" or "TARGET" }
+			break
+		end
+	end
+	if not marker and primary and primary.state ~= "Completed" then
+		marker = { position = primary.position, label = "OBJECTIVE" }
+	elseif not marker and primary then
+		marker = { position = current.extractionRegion, label = "EXTRACT" }
+	end
+	local payload = {
+		progress = progress,
+		complete = primary and primary.state == "Completed" or false,
+		template = current.missionFamily .. " — " .. current.missionVariant,
+		hint = hint,
+		marker = marker,
+	}
+	if player then
+		remote:FireClient(player, payload)
+	else
+		remote:FireAllClients(payload)
+	end
+end
+
 function OperationService.publishState()
 	if not current then return end
 	local parts = {}
@@ -478,6 +573,7 @@ function OperationService.publishState()
 		table.insert(parts, string.format("%s:%s", n.id, n.state))
 	end
 	Workspace:SetAttribute("GF_OperationState", table.concat(parts, ";"))
+	OperationService.publishProgress()
 end
 
 function OperationService.current(): OperationDefinition?
@@ -521,6 +617,7 @@ function OperationService.start()
 		OperationService.bind({
 			EncounterDirector = require(script.Parent.EncounterDirector),
 			ObjectiveService = require(script.Parent.ObjectiveService),
+			EnemyService = require(script.Parent.EnemyService),
 		})
 	end)
 end

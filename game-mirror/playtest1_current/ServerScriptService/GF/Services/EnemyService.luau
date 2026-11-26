@@ -1500,13 +1500,16 @@ local function tickActor(model: Model, actor: any, dt: number)
 					omega = (relPos:Cross(relVel)).Magnitude / math.max(relPos.Magnitude ^ 2, 1)
 				end
 				local q = actor.acquisition or 0
+				local sigma
 				local mem = actor.perception and actor.perception.memory[target]
 				local obsUncertainty = mem and (mem.uncertainty + (os.clock() - mem.observedAt) * 1.1) or 6
-				local sigma = (SIGMA_FLOOR[diff] or SIGMA_FLOOR.Normal) * rangeScale
+				sigma = (SIGMA_FLOOR[diff] or SIGMA_FLOOR.Normal) * rangeScale
 					+ SIGMA_INITIAL * ((1 - q) ^ 1.5) * rangeScale
 					+ omega * dist * 0.7 -- motion tracking error grows with angular velocity and range
 					+ obsUncertainty * 0.18
 					+ (actor.suppression or 0) * 2.2 -- suppressed shooters shake
+				-- calibration hook: swept during difficulty tuning, 1.0 in production
+				sigma = sigma * (tonumber(workspace:GetAttribute("GF_SigmaScale")) or 1)
 				-- rolling targets are genuinely harder: evasive motion multiplies the motion term
 				if rolling then
 					sigma = sigma * 1.9
