@@ -35,13 +35,16 @@ local function buildAR01()
 		P("Box", 0.02, 0.13, 0.5, 0.08, 0.01, -0.3, CERAMIC, 0, 0, 0, SMOOTH),
 		P("Box", 0.11, 0.14, 0.6, 0, 0, -0.92, NAVY, 0, 0, 0, METAL, "Handguard"),
 		P("Box", 0.12, 0.03, 0.4, 0, 0.08, -0.92, GRAPHITE),
-		P("Cylinder", 0.05, 0.5, 0.05, 0, 0.01, -1.42, STEEL, 90, 0, 0, METAL),
-		P("Cylinder", 0.07, 0.14, 0.07, 0, 0.01, -1.66, GRAPHITE, 90, 0, 0, METAL, "Muzzle"),
+		-- barrel chain: continuous overlap so nothing reads detached —
+		-- handguard ends at -1.22, barrel spans -1.2..-1.62, brake caps the tip
+		P("Cylinder", 0.05, 0.48, 0.05, 0, 0.01, -1.4, STEEL, 90, 0, 0, METAL),
+		P("Cylinder", 0.065, 0.16, 0.065, 0, 0.01, -1.62, GRAPHITE, 90, 0, 0, METAL, "Muzzle"),
 		P("Box", 0.06, 0.09, 0.22, 0, 0.22, -0.3, NAVY, 0, 0, 0, METAL),
 		P("Box", 0.045, 0.05, 0.02, 0, 0.22, -0.4, CYAN, 0, 0, 0, NEON),
-		P("Box", 0.09, 0.26, 0.11, 0, -0.2, 0.08, POLYMER, 18, 0, 0, SMOOTH),
-		P("Box", 0.09, 0.2, 0.13, 0, -0.21, -0.32, GRAPHITE, 8, 0, 0, METAL, "CosmeticMagazine"),
-		P("Box", 0.08, 0.14, 0.12, 0, -0.38, -0.3, GRAPHITE, 20, 0, 0, METAL),
+		-- grip swept further back, magazine further forward — clear separation
+		P("Box", 0.09, 0.26, 0.11, 0, -0.2, 0.12, POLYMER, 18, 0, 0, SMOOTH),
+		P("Box", 0.09, 0.2, 0.13, 0, -0.21, -0.38, GRAPHITE, 8, 0, 0, METAL, "CosmeticMagazine"),
+		P("Box", 0.08, 0.14, 0.12, 0, -0.38, -0.35, GRAPHITE, 20, 0, 0, METAL),
 		P("Box", 0.1, 0.15, 0.45, 0, -0.02, 0.42, NAVY, 0, 0, 0, METAL),
 		P("Box", 0.09, 0.18, 0.06, 0, -0.03, 0.66, CERAMIC, 0, 0, 0, SMOOTH),
 		P("Box", 0.02, 0.02, 0.2, -0.075, 0.08, -0.15, CYAN, 0, 0, 0, NEON),
