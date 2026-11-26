@@ -382,6 +382,30 @@ local function updateViewmodel(dt: number?)
 	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5, nil, aimPitch, sprinting, nil, state.switchBlend or 0))
 	char:SetAttribute("GF_WeaponGrip", viewmodel.PrimaryPart.Position)
 	char:SetAttribute("GF_ViewmodelAimLerp", viewmodelAimLerp)
+	-- spec sec.5: the magazine physically detaches, travels with the support hand, returns.
+	-- the viewmodel pivot re-applies each frame relative part offsets, so the home must be
+	-- captured once and explicitly restored outside the travel window.
+	local mag = viewmodel:FindFirstChild("CosmeticMagazine", true)
+	local lhand = char:FindFirstChild("LeftHand")
+	if mag and mag:IsA("BasePart") and viewmodel.PrimaryPart then
+		if not state.magHome then
+			state.magHome = viewmodel.PrimaryPart.CFrame:Inverse() * mag.CFrame
+		end
+		local travelling = false
+		if state.reloading then
+			local startAt = char:GetAttribute("GF_ReloadStartAt")
+			local endAt = char:GetAttribute("GF_ReloadEndAt")
+			if startAt and endAt and endAt > startAt then
+				local frac = math.clamp((os.clock() - startAt) / (endAt - startAt), 0, 1)
+				travelling = frac > 0.15 and frac < 0.8 and lhand ~= nil
+			end
+		end
+		if travelling then
+			mag.CFrame = lhand.CFrame * CFrame.new(0, -0.15, 0) * CFrame.Angles(0.3, 0, 0)
+		elseif state.magHome then
+			mag.CFrame = viewmodel.PrimaryPart.CFrame * state.magHome
+		end
+	end
 end
 
 function Weapon.equip(weaponId: string)
@@ -393,6 +417,7 @@ function Weapon.equip(weaponId: string)
 	-- old local refill-to-full fabricated a fresh magazine on every swap.
 	state.weaponId = weaponId
 	state.switchClock = os.clock()
+	state.magHome = nil
 	state.reloading = false
 	remotes.EquipWeapon:FireServer({ weaponId = weaponId })
 	buildViewmodel(weapon)
@@ -437,7 +462,9 @@ local function updateRemoteViewmodels()
 		local vm = remoteViewmodels[char]
 		local root = char:FindFirstChild("HumanoidRootPart")
 		if vm and root then
-			vm:PivotTo(root.CFrame * CFrame.new(VIEWMODEL_HIP))
+			-- shared transform with the server IK — remote players' weapons stay in their hands
+			local WeaponPose = require(game:GetService("ReplicatedStorage"):WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("WeaponPose"))
+			vm:PivotTo(WeaponPose.weaponWorld(root.CFrame, char:GetAttribute("Aiming") == true, nil, nil, char:GetAttribute("Sprinting") == true, char:GetAttribute("GF_Reloading") == true))
 		end
 	end
 	-- cleanup for characters that left
