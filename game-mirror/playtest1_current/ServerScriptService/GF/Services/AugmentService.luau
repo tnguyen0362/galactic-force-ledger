@@ -418,7 +418,7 @@ end
 
 -- resolution for ONE weapon: aggregates only that weapon's socketed traits.
 -- This is the canonical combat consumption entry point post-migration.
-function AugmentService.forPlayerWeapon(profile, weaponId)
+function AugmentService.forProfileWeapon(profile, weaponId)
 	local out = empty()
 	if type(profile) ~= "table" then
 		return out
@@ -873,6 +873,11 @@ function AugmentService.forPlayer(player)
 	-- defined earlier in this module is now the only one. Dead weight-table/category-prototype
 	-- code removed; zero external references existed (audit-verified 2026-11-27).
 	return AugmentService.forProfile(ProfileService.get(player))
+end
+
+-- player-facing per-weapon resolution: the canonical combat consumption entry post-migration.
+function AugmentService.forPlayerWeapon(player, weaponId)
+	return AugmentService.forProfileWeapon(ProfileService.get(player), weaponId)
 end
 
 function AugmentService.magazine(weapon, augs)

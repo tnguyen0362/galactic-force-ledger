@@ -177,7 +177,9 @@ function CombatService.detonate(centre: Vector3, weapon: any, player: Player?): 
 	if player then
 		local blastBonus = 0
 		pcall(function()
-			local augs = require(script.Parent.AugmentService).forPlayer(player)
+			local wid = type(weapon) == "table" and weapon.id or nil
+			local augs = wid and require(script.Parent.AugmentService).forPlayerWeapon(player, wid)
+				or require(script.Parent.AugmentService).forPlayer(player)
 			blastBonus = tonumber(augs and augs.blastRadius) or 0
 		end)
 		radius = radius * math.clamp(1 + blastBonus, 0.4, 1.25)
@@ -328,7 +330,12 @@ function CombatService.damageEnemy(model: Model, amount: number, attacker: Playe
 		end)
 	end
 	local health = model:GetAttribute("Health")
-	local augs = attacker and require(script.Parent.AugmentService).forPlayer(attacker) or nil
+	local augs = nil
+	if attacker then
+		local wid = type(weapon) == "table" and weapon.id or nil
+		augs = wid and require(script.Parent.AugmentService).forPlayerWeapon(attacker, wid)
+			or require(script.Parent.AugmentService).forPlayer(attacker)
+	end
 	if type(health) ~= "number" or health <= 0 then
 		return false
 	end
@@ -594,7 +601,7 @@ function CombatService.fire(player: Player, payload: any)
 	local function rejectFire(reason: string)
 		reject(reason)
 		local AugmentService = require(script.Parent.AugmentService)
-		local capacity = AugmentService.magazine(weapon, AugmentService.forPlayer(player))
+		local capacity = AugmentService.magazine(weapon, AugmentService.forPlayerWeapon(player, weaponId))
 		ReplicatedStorage.GF.Remotes.AmmoUpdated:FireClient(player, {
 			ammo = s.ammo or 0,
 			magazine = capacity,
@@ -623,7 +630,7 @@ function CombatService.fire(player: Player, payload: any)
 		-- augmented magazine for free, which duplicated ammunition whenever a shot landed in the
 		-- window between reloadDone and the delayed commit task.
 		s.reloading = false
-		local augs = require(script.Parent.AugmentService).forPlayer(player)
+		local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 		local capacity = require(script.Parent.AugmentService).magazine(weapon, augs)
 		local n = CombatService.reloadPlan(s.ammo, capacity, s.reserve or 0)
 		if n > 0 then
@@ -707,7 +714,7 @@ function CombatService.fire(player: Player, payload: any)
 		local sincePrev = math.max(0, t - (s.spreadAt or t))
 		local followUp = 0
 		pcall(function()
-			local a = require(script.Parent.AugmentService).forPlayer(player)
+			local a = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 			followUp = tonumber(a and a.followUpSpeed) or 0
 		end)
 		-- followUpSpeed is negative when it helps (TargetDiscipline/PrecisionChamber -0.15), so the
@@ -718,7 +725,7 @@ function CombatService.fire(player: Player, payload: any)
 		local base = tonumber(aiming and (weapon.adsSpread or weapon.spreadBase) or weapon.spreadBase) or 0
 		local recoilCut = 0
 		pcall(function()
-			local augs = require(script.Parent.AugmentService).forPlayer(player)
+			local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 			recoilCut = tonumber(augs and augs.recoil) or 0
 		end)
 		-- Recoil values are negative in the data and mean "less dispersion", so the multiplier is 1 + cut.
@@ -729,7 +736,7 @@ function CombatService.fire(player: Player, payload: any)
 		if root.AssemblyLinearVelocity.Magnitude > 2 then
 			local moveBonus = 0
 			pcall(function()
-				local augs2 = require(script.Parent.AugmentService).forPlayer(player)
+				local augs2 = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 				moveBonus = tonumber(augs2 and augs2.movingAccuracy) or 0
 			end)
 			spreadAngle = spreadAngle + 1.5 * math.max(0.2, 1 - moveBonus)
@@ -740,7 +747,7 @@ function CombatService.fire(player: Player, payload: any)
 		if aiming then
 			local adsRecovery = 0
 			pcall(function()
-				local a = require(script.Parent.AugmentService).forPlayer(player)
+				local a = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 				adsRecovery = tonumber(a and a.adsRecovery) or 0
 			end)
 			perShot = perShot * math.max(0.2, 1 - adsRecovery)
@@ -777,7 +784,7 @@ function CombatService.fire(player: Player, payload: any)
 	end
 	local rangeBonus = 0
 	pcall(function()
-		local augs = require(script.Parent.AugmentService).forPlayer(player)
+		local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 		rangeBonus = tonumber(augs and augs.range) or 0
 	end)
 	local rangeScale = math.clamp(1 + rangeBonus, 0.65, 1.30)
@@ -948,7 +955,7 @@ function CombatService.equipWeapon(player: Player, weaponId: any)
 	end
 	local pool = s.ammoPools[weaponId]
 	if not pool then
-		local augs = require(script.Parent.AugmentService).forPlayer(player)
+		local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 		pool = {
 			ammo = require(script.Parent.AugmentService).magazine(weapon, augs),
 			reserve = tonumber(weapon.reserve) or 0,
@@ -960,7 +967,7 @@ function CombatService.equipWeapon(player: Player, weaponId: any)
 	s.reserve = pool.reserve
 	s.spreadBloom = 0
 	s.swapUntil = now() + 0.4
-	local augs = require(script.Parent.AugmentService).forPlayer(player)
+	local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 	ReplicatedStorage.GF.Remotes.WeaponEquipped:FireClient(player, {
 		weaponId = weaponId,
 		ammo = s.ammo,
@@ -1017,7 +1024,7 @@ function CombatService.applyLoadout(player: Player)
 	player:SetAttribute("GF_SecondaryWeapon", secondary)
 	weapon = Weapons.get(primary) or weapon
 	s.weaponId = weapon.id
-	local loadoutAugs = require(script.Parent.AugmentService).forPlayer(player)
+	local loadoutAugs = require(script.Parent.AugmentService).forPlayerWeapon(player, primary)
 	local effectiveMagazine = require(script.Parent.AugmentService).magazine(weapon, loadoutAugs)
 	s.ammo = effectiveMagazine
 	-- S04-025: reserve is now tracked. The catalog figures (168/216/225/42/72/16/7/72) were dead data
@@ -1078,7 +1085,7 @@ function CombatService.start()
 		if not weapon or s.reloading then
 			return
 		end
-		local reloadCapacity = require(script.Parent.AugmentService).magazine(weapon, require(script.Parent.AugmentService).forPlayer(player))
+		local reloadCapacity = require(script.Parent.AugmentService).magazine(weapon, require(script.Parent.AugmentService).forPlayerWeapon(player, s.weaponId))
 		if s.ammo >= reloadCapacity then
 			return
 		end
@@ -1088,9 +1095,9 @@ function CombatService.start()
 		end
 		s.reloading = true
 		s.reloadCount = (s.reloadCount or 0) + 1
-		s.reloadDone = now() + ((require(script.Parent.AugmentService).reloadTime(weapon, require(script.Parent.AugmentService).forPlayer(player))) * require(script.Parent.ClassService).reloadFactor(player))
+		s.reloadDone = now() + ((require(script.Parent.AugmentService).reloadTime(weapon, require(script.Parent.AugmentService).forPlayerWeapon(player, s.weaponId))) * require(script.Parent.ClassService).reloadFactor(player))
 		note("Reloading", player.Name)
-		task.delay((require(script.Parent.AugmentService).reloadTime(weapon, require(script.Parent.AugmentService).forPlayer(player))) * require(script.Parent.ClassService).reloadFactor(player), function()
+		task.delay((require(script.Parent.AugmentService).reloadTime(weapon, require(script.Parent.AugmentService).forPlayerWeapon(player, s.weaponId))) * require(script.Parent.ClassService).reloadFactor(player), function()
 			local live = State.get(player)
 			if not live or live ~= s then
 				return
