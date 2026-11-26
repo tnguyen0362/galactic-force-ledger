@@ -266,13 +266,35 @@ function Weapon.reload()
 		if player.Character then player.Character:SetAttribute("GF_Reloading", true) end
 	remotes.ReloadWeapon:FireServer({})
 	Audio.play("reload_start")
-	task.delay(weapon.reloadTime, function()
-		state.reloading = false
-		if player.Character then player.Character:SetAttribute("GF_Reloading", false) end
-		state.ammo = weapon.magazine
-		Audio.play("reload")
-		HUD.setAmmo(state.ammo, state.magazine, state.reserve)
+	-- reload end is server-authoritative timing (augments/class scale it) — clear when the
+	-- server-driven attribute replicates false rather than a fixed base-duration timer.
+	-- the task.delay remains only as a generous backstop against a dropped replication.
+	local backstop = weapon.reloadTime * 1.6 + 1.5
+	task.delay(backstop, function()
+		if state.reloading then
+			state.reloading = false
+			if player.Character then player.Character:SetAttribute("GF_Reloading", false) end
+			state.ammo = weapon.magazine
+			Audio.play("reload")
+			HUD.setAmmo(state.ammo, state.magazine, state.reserve)
+		end
 	end)
+	local char0 = player.Character
+	if char0 then
+		local conn
+		conn = char0:GetAttributeChangedSignal("GF_Reloading"):Connect(function()
+			if char0:GetAttribute("GF_Reloading") == false and state.reloading then
+				state.reloading = false
+				state.ammo = weapon.magazine
+				Audio.play("reload")
+				HUD.setAmmo(state.ammo, state.magazine, state.reserve)
+				conn:Disconnect()
+			end
+		end)
+		task.delay(backstop + 1, function()
+			if conn.Connected then conn:Disconnect() end
+		end)
+	end
 end
 
 -- Viewmodel: the character carried no weapon mesh at all, so the muzzle flash hung in the air and
