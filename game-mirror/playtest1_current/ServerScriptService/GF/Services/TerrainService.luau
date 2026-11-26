@@ -90,6 +90,29 @@ function TerrainService.build(seed: number): number
 	-- place offline. Runtime writes are skipped entirely — terrain cost at boot is zero.
 	-- Localized gameplay deformations (LZ pads, installation foundations) still write
 	-- small regions later; the foundation itself is static.
+	if workspace:GetAttribute("GF_HybridGen") == true then
+		-- hybrid procedural architecture: runtime geographical generation from compressed
+		-- real-world foundations (owner directive 2026-11-25). Deterministic stream G.
+		local seed = workspace:GetAttribute("GF_GeoSeed")
+		if type(seed) ~= "number" or seed == 0 then
+			seed = math.floor(os.clock() * 1000) % 100000 + 1
+		end
+		task.spawn(function()
+			local ok, err = pcall(function()
+				local GeographyService = require(script.Parent.GeographyService)
+				local spec = GeographyService.specFromSeed(seed)
+				GeographyService.generate(spec)
+				-- vegetation composition layer follows geography (stream C inside plant)
+				local VegetationService = require(script.Parent.VegetationService)
+				VegetationService.plant({ seed = seed * 3 + 11, extent = 4900 })
+				workspace:SetAttribute("GF_TerrainReady", true)
+			end)
+			if not ok then warn("GeographyService failed:", err) end
+		end)
+		TerrainService.currentPlan = nil
+		print("HybridGen: geographical generation dispatched, seed=" .. tostring(seed))
+		return 0
+	end
 	if workspace:GetAttribute("GF_BakedTerrain") == true then
 		TerrainService.currentPlan = nil
 		-- environment-conditioned vegetation over the baked foundation (spec section 14):

@@ -28,6 +28,51 @@ local ARCHETYPE = {
 local function locoProfile(def: any)
 	return NPCLocomotion.profileFor(ARCHETYPE[def.id] or "Default")
 end
+
+-- Tactical profiles (spec sections 21/22/27): how each archetype fights. These are weights and
+-- preferences, not scripts — the same decision machinery produces visibly different behavior:
+--   preferredRange: fraction of attackRange the soldier tries to hold (gaussian center d0).
+--   minRangeFrac: below this fraction the position is actively bad (marksmen hate close fights).
+--   repositionUrgency: how readily they slide/reposition under pressure (0..1).
+--   coverCommit: how long they exploit a cover node before re-evaluating (seconds, base).
+--   flankArc: width of the flanking swing (0 = no flanking).
+--   suppressionShrug: fraction of suppression impulses ignored (heavies are hard to suppress).
+--   retreatHpFrac: below this health fraction they fall back instead of holding (0 = never).
+local TACTICAL = {
+	Rifleman = { preferredRange = 0.75, minRangeFrac = 0.15, repositionUrgency = 0.5, coverCommit = 5, flankArc = 0.85, suppressionShrug = 0.2, retreatHpFrac = 0.2 },
+	Vanguard = { preferredRange = 0.45, minRangeFrac = 0.0, repositionUrgency = 0.85, coverCommit = 2.5, flankArc = 1.3, suppressionShrug = 0.35, retreatHpFrac = 0.0 },
+	Marksman = { preferredRange = 0.9, minRangeFrac = 0.45, repositionUrgency = 0.65, coverCommit = 6, flankArc = 0.4, suppressionShrug = 0.1, retreatHpFrac = 0.35 },
+	Heavy = { preferredRange = 0.7, minRangeFrac = 0.1, repositionUrgency = 0.15, coverCommit = 8, flankArc = 0.0, suppressionShrug = 0.8, retreatHpFrac = 0.0 },
+	Commander = { preferredRange = 0.7, minRangeFrac = 0.2, repositionUrgency = 0.4, coverCommit = 6, flankArc = 0.5, suppressionShrug = 0.3, retreatHpFrac = 0.3 },
+	Default = { preferredRange = 0.75, minRangeFrac = 0.15, repositionUrgency = 0.5, coverCommit = 5, flankArc = 0.7, suppressionShrug = 0.2, retreatHpFrac = 0.2 },
+}
+local function tacticalProfile(def: any)
+	return TACTICAL[ARCHETYPE[def.id] or "Default"] or TACTICAL.Default
+end
+
+-- range quality (spec section 22): gaussian preference around the archetype's preferred distance.
+-- Asymmetric: marksmen penalize too-close far more strongly than too-far.
+local function rangeQuality(dist: number, attackRange: number, prof: any): number
+	local d0 = attackRange * prof.preferredRange
+	local sigma = attackRange * 0.25
+	local delta = dist - d0
+	if delta < 0 and dist < attackRange * prof.minRangeFrac then
+		sigma = sigma * 0.5 -- inside the minimum: penalty tightens sharply
+	end
+	return math.exp(-(delta * delta) / (2 * sigma * sigma))
+end
+
+-- suppression (spec section 23): impulse-decay state. incoming fire events add impulses;
+-- between events the pressure bleeds off exponentially. affects decisions, never the player.
+local SUPPRESS_DECAY = 0.55 -- per second exponential decay constant
+local SUPPRESS_MAX = 1.0
+local SUPPRESS_ACT = 0.55 -- above this the soldier's behavior visibly changes
+local function tickSuppression(actor: any, dt: number)
+	actor.suppression = (actor.suppression or 0) * math.exp(-SUPPRESS_DECAY * dt)
+end
+local function addSuppression(actor: any, impulse: number, prof: any)
+	actor.suppression = math.min(SUPPRESS_MAX, (actor.suppression or 0) + impulse * (1 - prof.suppressionShrug))
+end
 local NPCNavigation = require(ServerScriptService.GF.Services.NPCNavigation)
 local NPCPerception = require(ServerScriptService.GF.Services.NPCPerception)
 
@@ -733,6 +778,8 @@ local function tickActor(model: Model, actor: any, dt: number)
 	end
 	tickScoutBeacon(model, actor, def)
 	local origin = root.Position
+	tickSuppression(actor, dt)
+	local prof = tacticalProfile(def)
 	local target, targetDist = perceiveTargets(model, origin, def, actor, dt)
 	-- memory bridge: the legacy investigate/search/return FSM consumes lastSeenPos/confidence.
 	-- Derive those from the richest current memory record so the FSM runs on legitimate,
@@ -1031,7 +1078,10 @@ local function tickActor(model: Model, actor: any, dt: number)
 	-- claimed per-enemy so a squad spreads across distinct positions instead of stacking on one rock.
 	-- While relocating it keeps facing the target; once the fire slot opens it sidesteps out to shoot.
 	if flat.Magnitude > def.attackRange * 0.55 and (os.clock() < (actor.nextAttack or 0) - 0.4 or flat.Magnitude > def.attackRange) then
-		if not actor.coverPos or (actor.coverPos - origin).Magnitude < 2 or (os.clock() - (actor.coverAt or 0)) > 6 then
+		-- cover commitment (spec sections 21/23): archetype base duration, extended while suppressed —
+		-- pinned soldiers stay in cover rather than re-exposing; no rapid repetitive peeking.
+		local coverHoldTime = prof.coverCommit * ((actor.suppression or 0) >= SUPPRESS_ACT and 2.2 or 1)
+		if not actor.coverPos or (actor.coverPos - origin).Magnitude < 2 or (os.clock() - (actor.coverAt or 0)) > coverHoldTime then
 			local bestPos, bestScore = nil, -1
 			local perp = Vector3.new(-flat.Unit.Z, 0, flat.Unit.X)
 			for _, side in ipairs({ 1, -1 }) do
@@ -1121,15 +1171,28 @@ local function tickActor(model: Model, actor: any, dt: number)
 		-- approach through the locomotion controller with arrival braking at the engagement
 		-- standoff. flanking fast movers first swing through a perpendicular arc waypoint, then
 		-- close directly once the arc has them on the target's flank.
-		if actor.flankSide and distance > def.attackRange * 1.6 then
+		if actor.flankSide and prof.flankArc > 0 and distance > def.attackRange * 1.6 then
 			local perp = Vector3.new(-flat.Unit.Z, 0, flat.Unit.X) * actor.flankSide
-			local arcPoint = origin + (flat.Unit * 0.55 + perp * 0.85).Unit * math.min(distance * 0.6, 24)
+			local arcPoint = origin + (flat.Unit * 0.55 + perp * 0.85 * prof.flankArc).Unit * math.min(distance * 0.6, 24)
 			NPCLocomotion.moveTo(actor.locomotion, arcPoint, "combat", 2.5)
 		else
 			local targetPos = (targetRoot :: BasePart).Position
-			navMove(actor, model, targetPos, "combat", def.attackRange * 0.85, 3)
+			navMove(actor, model, targetPos, "combat", def.attackRange * prof.preferredRange, 3)
 		end
 		return
+	end
+	-- archetype anti-close behavior (spec section 22/27): a soldier inside its minimum comfortable
+	-- range falls back while facing the threat rather than accepting a bad fight. Marksmen feel this
+	-- most strongly; vanguards not at all. Bounded: a fallback slide, not a rout.
+	local minComfort = def.attackRange * prof.minRangeFrac
+	if distance < minComfort and not (now < (actor.repositionUntil or 0)) then
+		local away = -(flat.Unit)
+		actor.repositionDir = away + Vector3.new(-flat.Unit.Z, 0, flat.Unit.X) * 0.4 * ((math.random() < 0.5) and 1 or -1)
+		actor.repositionDir = actor.repositionDir.Unit
+		actor.repositionUntil = now + 1.2
+		actor.repositionGoal = nil
+		workspace:SetAttribute("GF_Fallbacks", (workspace:GetAttribute("GF_Fallbacks") or 0) + 1)
+		return -- next tick picks up the reposition intent below
 	end
 	-- in range: hold position and fire. movement intents stop; facing continues via aimYaw.
 	NPCLocomotion.stop(actor.locomotion)
@@ -1254,10 +1317,22 @@ local function tickActor(model: Model, actor: any, dt: number)
 			actor.shotsSinceMove = (actor.shotsSinceMove or 0) + 1
 			local wantsCover = string.find(string.lower(actor.behavior or ""), "cover") ~= nil
 				or string.find(string.lower(actor.behavior or ""), "guard") ~= nil
-			if wantsCover and actor.shotsSinceMove >= 2 then
+			-- reposition cadence (spec section 27): how many shots before sliding again scales with
+			-- archetype urgency — vanguards skate constantly, heavies plant like turrets.
+			local moveThreshold = math.max(1, math.round(3 - prof.repositionUrgency * 2.5))
+			if wantsCover and actor.shotsSinceMove >= moveThreshold then
 				local side = (math.random() < 0.5) and 1 or -1
 				local perp = Vector3.new(-(stillRoot.Position - root.Position).Unit.Z, 0, (stillRoot.Position - root.Position).Unit.X) * side
-				actor.repositionDir = perp.Unit
+				-- retreat behavior (spec section 23 morale-lite): below the archetype's retreat
+				-- threshold a wounded soldier's slides bias away from the threat — falling back
+				-- while fighting, not routing. heavies/vanguards never do (threshold 0).
+				local hum = model:FindFirstChildOfClass("Humanoid")
+				local hpFrac = hum and hum.Health / math.max(1, hum.MaxHealth) or 1
+				local retreatBias = Vector3.zero
+				if hpFrac < prof.retreatHpFrac then
+					retreatBias = -(stillRoot.Position - root.Position).Unit * 0.6
+				end
+				actor.repositionDir = (perp.Unit + retreatBias).Unit
 				actor.repositionUntil = os.clock() + 1.4
 				actor.shotsSinceMove = 0
 				workspace:SetAttribute("GF_Repositions", (workspace:GetAttribute("GF_Repositions") or 0) + 1)
@@ -1332,7 +1407,7 @@ end
 
 -- Hearing (S06-008): unsuppressed gunfire within HEARING_RANGE alerts a hostile for several seconds -
 -- alerted hostiles perceive in all directions and investigate the noise position if idle.
-function EnemyService.hearGunfire(position: Vector3)
+function EnemyService.hearGunfire(position: Vector3, player: Player?)
 	pcall(function()
 		require(script.Parent.EncounterDirector).noteGunfire()
 	end)
@@ -1342,9 +1417,16 @@ function EnemyService.hearGunfire(position: Vector3)
 			local dist = (model.PrimaryPart.Position - position).Magnitude
 			if dist <= HEARING_RANGE then
 				actor.alertedUntil = now + 8
-				if not actor.target and not actor.lastSeenPos then
-					actor.lastSeenPos = position
-					actor.lastSeenAt = now - 1 -- moderate confidence: worth investigating, decays normally
+				-- auditory perception (spec section 18): approximate source with distance-scaled
+				-- spatial error and loudness attenuation — never exact positions by sound alone.
+				if actor.perception then
+					local loudness = math.clamp(1 - dist / HEARING_RANGE, 0.15, 1)
+					NPCPerception.hearEvent(actor.perception, position, dist, loudness, player)
+				end
+				-- nearby gunfire is suppressive pressure even when it misses: rounds cracking within
+				-- a few studs of the position are what pins soldiers (spec section 23).
+				if dist <= 18 then
+					addSuppression(actor, 0.09 * (1 - dist / 18), tacticalProfile(actor.def))
 				end
 				workspace:SetAttribute("GF_AlertedCount", (workspace:GetAttribute("GF_AlertedCount") or 0) + 1)
 			end
@@ -1367,6 +1449,8 @@ function EnemyService.noteThreat(model: Model, player: Player)
 				NPCPerception.noteDamage(actor.perception, player, shooterRoot.Position)
 			end
 		end
+		-- suppression impulse (spec section 23): actually taking a hit is the strongest pressure event
+		addSuppression(actor, 0.45, tacticalProfile(actor.def))
 	end
 end
 
