@@ -80,13 +80,11 @@ function EliteOperations.spawnDivision(division: string, center: Vector3, seed: 
 			members[model] = enemyId
 			model:SetAttribute("EliteEncounter", encounterId)
 			model:SetAttribute("EliteDivision", division)
-			-- role-signaling visual equipment + division identity (spec sections 10/13)
-			for _, rdef in (division == "Revenant" and Hierarchy.RevenantRoles or Hierarchy.SpectreRoles) do
-				if rdef.id == enemyId then
-					EliteOperations.augmentVisuals(model, rdef.role, division)
-					break
-				end
-			end
+			-- role-signaling visual equipment + division identity (spec sections 10/13).
+			-- Role derives from the config id: "RevenantLeader" -> "leader" (the role tables
+			-- carry ids and capability vectors, not role strings).
+			local roleString = enemyId:gsub("^Spectre", ""):gsub("^Revenant", ""):lower()
+			EliteOperations.augmentVisuals(model, roleString, division)
 			-- accumulate capability contributions (spec section 22)
 			if division == "Revenant" then
 				for _, rdef in Hierarchy.RevenantRoles do
