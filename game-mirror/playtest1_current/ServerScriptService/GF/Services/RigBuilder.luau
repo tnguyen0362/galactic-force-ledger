@@ -173,6 +173,22 @@ function RigBuilder.build()
 	armorShell("BracerL", parts.LowerArmL, Vector3.new(0.54, 0.7, 0.54), Vector3.new(0, -0.1, 0), OBSIDIAN)
 	armorShell("BracerR", parts.LowerArmR, Vector3.new(0.54, 0.7, 0.54), Vector3.new(0, -0.1, 0), OBSIDIAN)
 
+	-- helmet shell: enclosed angular helmet over the head primitive — elongated alien profile.
+	-- layered crown + face plate so the head never reads as a bare cube.
+	armorShell("HelmetCrown", parts.Head, Vector3.new(1.1, 0.62, 1.15), Vector3.new(0, 0.28, 0.02), OBSIDIAN)
+	armorShell("HelmetFace", parts.Head, Vector3.new(1.0, 0.55, 0.35), Vector3.new(0, -0.12, -0.42), VIOLETGRAY)
+	armorShell("HelmetCrest", parts.Head, Vector3.new(0.28, 0.5, 1.2), Vector3.new(0, 0.42, 0.08), OBSIDIAN)
+	-- shoulder shells: layered pauldron plates sitting over the shoulder joints
+	armorShell("PauldronShellL", parts.UpperArmL, Vector3.new(0.72, 0.5, 0.72), Vector3.new(-0.08, 0.52, 0), OBSIDIAN)
+	armorShell("PauldronShellR", parts.UpperArmR, Vector3.new(0.72, 0.5, 0.72), Vector3.new(0.08, 0.52, 0), OBSIDIAN)
+	-- primitive energy rifle welded to the right hand: receiver + barrel + violet energy cell
+	local rifleBody = armorShell("RifleReceiver", parts.HandR, Vector3.new(0.3, 0.42, 1.5), Vector3.new(0, 0.05, -0.75), OBSIDIAN)
+	rifleBody.Material = Enum.Material.Metal
+	local barrel = armorShell("RifleBarrel", parts.HandR, Vector3.new(0.16, 0.16, 1.1), Vector3.new(0, 0.12, -1.85), VIOLETGRAY)
+	barrel.Material = Enum.Material.Metal
+	local cell = armorShell("RifleCell", parts.HandR, Vector3.new(0.2, 0.24, 0.4), Vector3.new(0, -0.18, -0.7), ENERGY)
+	cell.Material = Enum.Material.Neon
+
 	local hum = Instance.new("Humanoid")
 	hum.RigType = Enum.HumanoidRigType.R15
 	hum.Parent = rig
