@@ -614,7 +614,12 @@ function CombatService.fire(player: Player, payload: any)
 	end
 	CombatService.ensureReserve(s, weapon)
 	local t = now()
-	local minInterval = (60 / weapon.rpm) * 0.9
+	local fireRateBonus = 0
+	pcall(function()
+		local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
+		fireRateBonus = tonumber(augs and augs.fireRate) or 0
+	end)
+	local minInterval = (60 / weapon.rpm) * 0.9 / math.max(0.5, 1 + fireRateBonus)
 	if t - s.lastShotAt < minInterval then
 		return rejectFire("rate-limited")
 	end
@@ -723,6 +728,11 @@ function CombatService.fire(player: Player, payload: any)
 		s.spreadAt = t
 		local aiming = character:GetAttribute("Aiming") == true
 		local base = tonumber(aiming and (weapon.adsSpread or weapon.spreadBase) or weapon.spreadBase) or 0
+		pcall(function()
+			local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
+			local bonus = aiming and tonumber(augs and augs.spreadAds) or tonumber(augs and augs.spreadHip)
+			base = base * math.max(0.4, 1 - (tonumber(bonus) or 0))
+		end)
 		local recoilCut = 0
 		pcall(function()
 			local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
@@ -1030,6 +1040,13 @@ function CombatService.applyLoadout(player: Player)
 	-- S04-025: reserve is now tracked. The catalog figures (168/216/225/42/72/16/7/72) were dead data
 	-- that only CheckRunner read, which made ammunition effectively infinite.
 	s.reserve = tonumber(weapon.reserve) or 0
+	pcall(function()
+		local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, primary)
+		local bonus = tonumber(augs and augs.reserveAmmo) or 0
+		if bonus ~= 0 then
+			s.reserve = math.floor(s.reserve * (1 + bonus) + 0.5)
+		end
+	end)
 	s.ammoPools = {}
 	for _, id in ipairs({ primary, secondary }) do
 		local w = Weapons.get(id)

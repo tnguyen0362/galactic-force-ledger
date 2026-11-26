@@ -253,8 +253,9 @@ function AugmentService.forProfile(profile)
 		blastRadius = 0.25, cooldown = 0.20, magazine = 0.35, reloadSpeed = 0.25,
 		healthDamage = 0.15, weakPoint = 0.20, shieldDamage = 0.30, armorDamage = 0.30,
 		adsSpeed = 0.25, recoil = 0.35, movingAccuracy = 0.35, range = 0.30, supportDamage = 0.15, sentryHP = 0.30,
+		fireRate = 0.12, spreadHip = 0.25, spreadAds = 0.25, reserveAmmo = 0.35,
 	}
-	local SIGNED = { recoil = true, adsSpeed = true, movingAccuracy = true }
+	local SIGNED = { recoil = true, adsSpeed = true, movingAccuracy = true, fireRate = true, spreadHip = true, spreadAds = true, reserveAmmo = true }
 	for key, cap in pairs(CLAMP) do
 		local v = out[key]
 		if type(v) == "number" then
@@ -437,8 +438,9 @@ function AugmentService.forProfileWeapon(profile, weaponId)
 		blastRadius = 0.25, cooldown = 0.20, magazine = 0.35, reloadSpeed = 0.25,
 		healthDamage = 0.15, weakPoint = 0.20, shieldDamage = 0.30, armorDamage = 0.30,
 		adsSpeed = 0.25, recoil = 0.35, movingAccuracy = 0.35, range = 0.30, supportDamage = 0.15, sentryHP = 0.30,
+		fireRate = 0.12, spreadHip = 0.25, spreadAds = 0.25, reserveAmmo = 0.35,
 	}
-	local SIGNED = { recoil = true, adsSpeed = true, movingAccuracy = true }
+	local SIGNED = { recoil = true, adsSpeed = true, movingAccuracy = true, fireRate = true, spreadHip = true, spreadAds = true, reserveAmmo = true }
 	for key, cap in pairs(CLAMP) do
 		local v = out[key]
 		if type(v) == "number" then
