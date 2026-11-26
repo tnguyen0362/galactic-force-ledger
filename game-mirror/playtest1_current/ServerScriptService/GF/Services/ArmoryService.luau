@@ -80,6 +80,10 @@ function ArmoryService.state(player: Player)
 	end
 	workspace:SetAttribute("GF_Ability1", profile.selectedLoadout.ability1)
 	workspace:SetAttribute("GF_Ability2", profile.selectedLoadout.ability2)
+	-- per-player truth: workspace globals are shared across every client in the session, so one
+	-- player's armory visit used to overwrite the ability bindings everyone else read.
+	player:SetAttribute("GF_Ability1", profile.selectedLoadout.ability1)
+	player:SetAttribute("GF_Ability2", profile.selectedLoadout.ability2)
 	local requisitionState = RequisitionService.stateFor(player)
 	return {
 		weapons = rows,
@@ -360,6 +364,7 @@ function ArmoryService.equipAbility(player: Player, slot: any, id: string)
 	workspace:SetAttribute("GF_AbilityEquipped", string.format("%d:%s", index, def.id))
 	-- The client reads these to decide which ability a slot fires; the ids were hardcoded before.
 	workspace:SetAttribute("GF_Ability" .. index, def.id)
+	player:SetAttribute("GF_Ability" .. index, def.id)
 	ProfileService.markDirty(player)
 	pcall(function()
 		require(script.Parent.AbilityService).apply(player)

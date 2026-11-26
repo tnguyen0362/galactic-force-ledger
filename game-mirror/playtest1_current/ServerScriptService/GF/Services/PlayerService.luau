@@ -38,8 +38,10 @@ local function setupCharacter(player: Player, character: Model)
 	end
 
 	local s = State.ensure(player)
-	local weapon = Weapons.get(s.weaponId)
-	s.ammo = weapon and weapon.magazine or 28
+	-- B9: apply the persisted loadout at every spawn. Before this, s.weaponId carried the session
+	-- default (AR01) regardless of the player's armory selection, per-weapon pools never initialised,
+	-- and the loadout slot attributes never published — so weapon switching had nothing to switch to.
+	-- applyLoadout owns weapon state, pool initialisation, slot publication and the WeaponEquipped push.
 	s.reloading = false
 	s.shield = s.shieldMax
 	s.downed = false
@@ -47,12 +49,10 @@ local function setupCharacter(player: Player, character: Model)
 	s.lastShotId = 0
 	s.lastShotAt = 0
 	s.lastDamage = 0
-
-	ReplicatedStorage.GF.Remotes.WeaponEquipped:FireClient(player, {
-		weaponId = s.weaponId,
-		ammo = s.ammo,
-		magazine = weapon and weapon.magazine or 28,
-	})
+	pcall(function()
+		require(script.Parent.CombatService).applyLoadout(player)
+	end)
+	local weapon = Weapons.get(s.weaponId)
 	VitalsService.publish(player)
 	sendProfile(player)
 end

@@ -598,7 +598,11 @@ end
 
 function HUD.castAbility(action: string)
 	local fallback = action == "Ability1" and "Airstrike" or "DomeShield"
-	local published = workspace:GetAttribute(action == "Ability1" and "GF_Ability1" or "GF_Ability2")
+	local slotAttr = action == "Ability1" and "GF_Ability1" or "GF_Ability2"
+	local published = player:GetAttribute(slotAttr)
+	if type(published) ~= "string" then
+		published = workspace:GetAttribute(slotAttr)
+	end
 	local abilityId = type(published) == "string" and published or fallback
 	local character = player.Character
 	local head = character and character:FindFirstChild("Head") :: BasePart?

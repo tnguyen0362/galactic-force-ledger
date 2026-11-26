@@ -563,6 +563,9 @@ function CombatService.fire(player: Player, payload: any)
 	if t - s.lastShotAt < minInterval then
 		return rejectFire("rate-limited")
 	end
+	if s.swapUntil and t < s.swapUntil then
+		return rejectFire("swapping")
+	end
 	if s.reloading then
 		if t < s.reloadDone then
 			return rejectFire("reloading")
@@ -818,8 +821,74 @@ function CombatService.fire(player: Player, payload: any)
 	end
 	ReplicatedStorage.GF.Remotes.AmmoUpdated:FireClient(player, { ammo = s.ammo, magazine = weapon.magazine, reserve = s.reserve or 0 })
 end
-function CombatService.applyLoadout(player: Player)
+-- B2: server-authoritative weapon switching. The client has always sent EquipWeapon requests but
+-- no listener existed, so the swap was pure desync. Validates loadout membership, cancels any
+-- reload in progress, preserves per-weapon ammunition pools, and gates firing for the 0.4s swap.
+function CombatService.equipWeapon(player: Player, weaponId: any)
+	if type(weaponId) ~= "string" then
+		return
+	end
 	local s = State.get(player)
+	if not s or s.downed then
+		return
+	end
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return
+	end
+	local weapon = Weapons.get(weaponId)
+	if not weapon then
+		return
+	end
+	-- lazily resolve loadout slots for sessions that predate this build
+	if not s.loadoutPrimary then
+		CombatService.applyLoadout(player)
+	end
+	if weaponId ~= s.loadoutPrimary and weaponId ~= s.loadoutSecondary then
+		return
+	end
+	if weaponId == s.weaponId then
+		return
+	end
+	-- switching cancels an unfinished reload (commit never happens, no ammunition moves)
+	if s.reloading then
+		s.reloading = false
+		ReplicatedStorage.GF.Remotes.ReloadCancelled:FireClient(player, {})
+	end
+	-- stash the current weapon's ammunition, restore the target's
+	s.ammoPools = s.ammoPools or {}
+	if s.weaponId then
+		s.ammoPools[s.weaponId] = { ammo = s.ammo or 0, reserve = s.reserve or 0 }
+	end
+	local pool = s.ammoPools[weaponId]
+	if not pool then
+		local augs = require(script.Parent.AugmentService).forPlayer(player)
+		pool = {
+			ammo = require(script.Parent.AugmentService).magazine(weapon, augs),
+			reserve = tonumber(weapon.reserve) or 0,
+		}
+		s.ammoPools[weaponId] = pool
+	end
+	s.weaponId = weaponId
+	s.ammo = pool.ammo
+	s.reserve = pool.reserve
+	s.spreadBloom = 0
+	s.swapUntil = now() + 0.4
+	local augs = require(script.Parent.AugmentService).forPlayer(player)
+	ReplicatedStorage.GF.Remotes.WeaponEquipped:FireClient(player, {
+		weaponId = weaponId,
+		ammo = s.ammo,
+		reserve = s.reserve or 0,
+		magazine = require(script.Parent.AugmentService).magazine(weapon, augs),
+	})
+end
+
+function CombatService.applyLoadout(player: Player)
+	-- ensure, not get: spawn ordering races state creation, and a silent no-op here means the
+	-- player carries the AR01 default regardless of their armory loadout with no pools and no
+	-- slot attributes — exactly the failure this function exists to prevent.
+	local s = State.ensure and State.ensure(player) or State.get(player)
 	if not s then
 		return
 	end
@@ -841,6 +910,27 @@ function CombatService.applyLoadout(player: Player)
 	if not weapon then
 		return
 	end
+	-- B1: resolve the full loadout (primary + secondary) and publish it per-player. Per-weapon
+	-- ammunition pools mean swapping no longer refills or loses ammunition — each weapon carries
+	-- its own magazine/reserve state for the life of the mission.
+	local primary, secondary = weapon.id, "P01"
+	do
+		local armory = script.Parent:FindFirstChild("ArmoryService")
+		local sel = armory and require(armory).selection(player)
+		if type(sel) == "table" then
+			if type(sel.primary) == "string" and Weapons.get(sel.primary) then
+				primary = sel.primary
+			end
+			if type(sel.secondary) == "string" and Weapons.get(sel.secondary) then
+				secondary = sel.secondary
+			end
+		end
+	end
+	s.loadoutPrimary = primary
+	s.loadoutSecondary = secondary
+	player:SetAttribute("GF_PrimaryWeapon", primary)
+	player:SetAttribute("GF_SecondaryWeapon", secondary)
+	weapon = Weapons.get(primary) or weapon
 	s.weaponId = weapon.id
 	local loadoutAugs = require(script.Parent.AugmentService).forPlayer(player)
 	local effectiveMagazine = require(script.Parent.AugmentService).magazine(weapon, loadoutAugs)
@@ -848,8 +938,19 @@ function CombatService.applyLoadout(player: Player)
 	-- S04-025: reserve is now tracked. The catalog figures (168/216/225/42/72/16/7/72) were dead data
 	-- that only CheckRunner read, which made ammunition effectively infinite.
 	s.reserve = tonumber(weapon.reserve) or 0
+	s.ammoPools = {}
+	for _, id in ipairs({ primary, secondary }) do
+		local w = Weapons.get(id)
+		if w then
+			s.ammoPools[id] = {
+				ammo = require(script.Parent.AugmentService).magazine(w, loadoutAugs),
+				reserve = tonumber(w.reserve) or 0,
+			}
+		end
+	end
 	s.reloading = false
 	s.lastShotId = 0
+	s.swapUntil = 0
 	ReplicatedStorage.GF.Remotes.WeaponEquipped:FireClient(player, {
 		weaponId = weapon.id,
 		ammo = s.ammo,
@@ -868,6 +969,16 @@ function CombatService.start()
 		local ok, err = pcall(CombatService.fire, player, payload)
 		if not ok then
 			warn("[GF] fire error: " .. tostring(err))
+		end
+	end)
+	ReplicatedStorage.GF.Remotes.EquipWeapon.OnServerEvent:Connect(function(player, payload)
+		if not require(script.Parent.NetGuard).allow(player, "equip") then
+			return
+		end
+		local id = type(payload) == "table" and payload.weaponId or payload
+		local ok, err = pcall(CombatService.equipWeapon, player, id)
+		if not ok then
+			warn("[GF] equip error: " .. tostring(err))
 		end
 	end)
 	ReplicatedStorage.GF.Remotes.ReloadWeapon.OnServerEvent:Connect(function(player)

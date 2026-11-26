@@ -106,7 +106,7 @@ local function detonate(id, def, pos, thrower)
 		-- EMP: drains enemy shields and staggers them instead of dealing health damage, which is the
 		-- strategic difference the requirement asks for. Frag kills; EMP opens.
 		local drained, stunned = 0, 0
-		for _, enemy in ipairs(workspace.ActiveActors:GetChildren()) do
+		for _, enemy in ipairs((workspace:FindFirstChild("ActiveActors") or {GetChildren = function() return {} end}):GetChildren()) do
 			if enemy:IsA("Model") and enemy:GetAttribute("GFEnemy") == true then
 				local target = enemy:FindFirstChild("HumanoidRootPart") or enemy.PrimaryPart
 				if target and (target.Position - pos).Magnitude <= def.radius then
@@ -147,7 +147,7 @@ local function detonate(id, def, pos, thrower)
 		flash(pos, Color3.fromRGB(255, 190, 120), def.radius * 1.2, 9)
 		groundMark(pos, Color3.fromRGB(210, 140, 70), def.radius * 0.85)
 		local hits, total = 0, 0
-		for _, enemy in ipairs(workspace.ActiveActors:GetChildren()) do
+		for _, enemy in ipairs((workspace:FindFirstChild("ActiveActors") or {GetChildren = function() return {} end}):GetChildren()) do
 			if enemy:IsA("Model") and enemy:GetAttribute("GFEnemy") == true then
 				local target = enemy:FindFirstChild("HumanoidRootPart") or enemy.PrimaryPart
 				if target then
@@ -220,6 +220,15 @@ local function toss(plr, payload)
 	local char = plr.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart")
 	if not root then note("LastReject", "no character") return end
+	-- D1: character-state validation. The server previously accepted throws from downed, dead and
+	-- mid-roll characters, all of which the spec forbids.
+	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then note("LastReject", "dead") return end
+	do
+		local st = require(game:GetService("ServerScriptService").GF.Services.State).get(plr)
+		if st and st.downed then note("LastReject", "downed") return end
+	end
+	if char:GetAttribute("Rolling") == true then note("LastReject", "rolling") return end
 	local aim = type(payload) == "table" and payload.aim or nil
 	-- A NaN-bearing aim passes typeof() and then poisons every position derived from it.
 	if aim ~= nil and typeof(aim) == "Vector3" then
@@ -231,6 +240,12 @@ local function toss(plr, payload)
 		end
 	end
 	local target = (typeof(aim) == "Vector3") and aim or (root.Position + root.CFrame.LookVector * 40)
+	-- D2: the spec caps precision targeting at 70 studs. Before this check any finite Vector3 was
+	-- accepted verbatim — cross-map grenades on demand.
+	if (target - root.Position).Magnitude > 70 * 1.15 then
+		note("LastReject", "out of range")
+		return
+	end
 	local dir = (target - root.Position).Unit
 	plr:SetAttribute("GrenadeCharges", chargesOf(plr) - 1)
 	local bomb = Instance.new("Part")
@@ -238,6 +253,7 @@ local function toss(plr, payload)
 	bomb.Color = (id == "EMP") and Color3.fromRGB(120, 208, 255) or Color3.fromRGB(96, 104, 92)
 	bomb.Material = (id == "EMP") and Enum.Material.Neon or Enum.Material.Metal
 	bomb.Name = "Grenade_" .. id
+	bomb.CanQuery = false
 	bomb.CFrame = CFrame.new(root.Position + root.CFrame.LookVector * 2)
 	bomb.Parent = workspace
 	-- Deterministic lob. Physics velocity gave a landing point nobody could predict (aim z=-140,

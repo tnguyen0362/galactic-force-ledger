@@ -29,14 +29,42 @@ local function aimPoint(range: number): Vector3
 	return if hit then hit.Position else origin + dir * range
 end
 
+-- ability slots are per-player attributes (workspace globals were shared across the whole
+-- session — one player's armory visit overwrote everyone's bindings). Workspace fallback covers
+-- the transition window before ArmoryService writes the player attributes.
+local function abilitySlot(index: number): string
+	local perPlayer = player:GetAttribute("GF_Ability" .. index)
+	if type(perPlayer) == "string" then
+		return perPlayer
+	end
+	local shared = workspace:GetAttribute("GF_Ability" .. index)
+	if type(shared) == "string" then
+		return shared
+	end
+	return index == 1 and "Airstrike" or "DomeShield"
+end
+
+-- the throw target depends on the ability's configured targeting, not on which slot it sits in:
+-- Ground abilities land at the aim point, Self abilities center on the caster.
+local function abilityTarget(abilityId: string): Vector3
+	local Abilities = require(game:GetService("ReplicatedStorage").GF.Shared.Configs.Abilities)
+	local def = Abilities.get and Abilities.get(abilityId) or nil
+	if def and def.targeting == "Self" then
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			return root.Position
+		end
+	end
+	return aimPoint(220)
+end
+
 Input.onPress("Ability1", function()
-	local slot1 = workspace:GetAttribute("GF_Ability1")
-	remotes.UseAbility:FireServer({ abilityId = type(slot1) == "string" and slot1 or "Airstrike", position = aimPoint(220) })
+	local id = abilitySlot(1)
+	remotes.UseAbility:FireServer({ abilityId = id, position = abilityTarget(id) })
 end)
 Input.onPress("Ability2", function()
-	local slot2 = workspace:GetAttribute("GF_Ability2")
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	remotes.UseAbility:FireServer({ abilityId = type(slot2) == "string" and slot2 or "DomeShield", position = if root then root.Position else aimPoint(24) })
+	local id = abilitySlot(2)
+	remotes.UseAbility:FireServer({ abilityId = id, position = abilityTarget(id) })
 end)
 
 -- shoulder swap intentionally removed: spec fixes the camera on the right shoulder.

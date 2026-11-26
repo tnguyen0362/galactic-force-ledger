@@ -105,44 +105,14 @@ end
 -- Weapon ergonomics (Helldivers-lite): the visual/actual aim direction converges toward the
 -- camera's intended direction with a per-category time constant. Small taus only — feedback,
 -- never disconnection. The reticle's hollow ring renders this direction; hitscan uses it.
-local aimDir: Vector3? = nil
-local ERGONOMICS_TAU = {
-	pistol = 0.025, smg = 0.030, rifle = 0.045, shotgun = 0.055,
-	marksman = 0.065, lmg = 0.075, launcher = 0.090,
-}
-
-local function ergonomicsTau(weapon)
-	local cat = tostring(weapon and weapon.category or "rifle"):lower()
-	return ERGONOMICS_TAU[cat] or 0.045
-end
-
-local function updateAimDir(dt)
-	local camera = workspace.CurrentCamera
-	if not camera then return end
-	local target = camera.CFrame.LookVector
-	if not aimDir then
-		aimDir = target
-		return
-	end
-	local weapon = Weapons.get(state.weaponId)
-	local tau = ergonomicsTau(weapon)
-	local cur = (aimDir :: Vector3)
-	local alpha = 1 - math.exp(-(dt or 0) / math.max(tau, 1e-3))
-	aimDir = (cur + (target - cur) * alpha).Unit
-end
-
+-- F1: instant weapon tracking per owner spec. The previous ergonomics layer converged the shot
+-- direction toward the camera with a per-category time constant — at a 180deg/s turn that meant
+-- 8-16 degrees of invisible lag, and the per-shot jitter below added further hidden dispersion the
+-- reticle never showed. Exactly the "delayed weapon alignment" the spec forbids. The intended aim
+-- is the camera look direction, always, immediately.
 function Weapon.getAimDir(): Vector3
 	local camera = workspace.CurrentCamera
-	return aimDir or (camera and camera.CFrame.LookVector) or Vector3.zAxis
-end
-
--- firing disrupts convergence slightly; heavier weapons worse (moving + shooting penalty lives
--- in the reticle spread, this is the physical side)
-local function disruptAim(weapon)
-	if not aimDir then return end
-	local kick = 0.012 * (tonumber(weapon and weapon.recoil) or 1)
-	local jitter = Vector3.new((math.random() - 0.5) * kick, math.random() * kick * 0.7, (math.random() - 0.5) * kick)
-	aimDir = ((aimDir :: Vector3) + jitter).Unit
+	return (camera and camera.CFrame.LookVector) or Vector3.zAxis
 end
 
 local function tryFire()
@@ -172,17 +142,10 @@ local function tryFire()
 	-- keep the muzzle purely as the visual emitter. Camera collision already keeps this origin out of walls.
 	local origin = camera and camera.CFrame.Position or muzzleOrigin(head)
 
-	state.shotId += 1
-	state.lastSent = now
-	state.ammo = math.max(0, state.ammo - 1)
-
-	pcall(function()
-		require(script.Parent.CameraCtl).shake(0.018 * (tonumber(weapon.recoil) or 1))
-	end)
-	disruptAim(weapon)
-	-- Muzzle obstruction validation: the camera can see around cover the muzzle can't shoot
-	-- through. Test the segment the bullet would really travel; a block before the camera-ray
-	-- hit means the shot is invalid and never leaves.
+	-- Muzzle obstruction validation runs BEFORE any state mutation: a denied shot must cost
+	-- nothing. The old order consumed shotId/ammo/shake first, so obstructed shots silently ate
+	-- predicted ammunition the server never knew about. (Geometry itself is upgraded with the
+	-- server-side muzzle-to-point model in the parallax pack.)
 	local muzzlePos = muzzlePosition()
 	if muzzlePos then
 		local muzzleParams = RaycastParams.new()
@@ -198,6 +161,14 @@ local function tryFire()
 			end
 		end
 	end
+
+	state.shotId += 1
+	state.lastSent = now
+	state.ammo = math.max(0, state.ammo - 1)
+
+	pcall(function()
+		require(script.Parent.CameraCtl).shake(0.018 * (tonumber(weapon.recoil) or 1))
+	end)
 
 	remotes.FireWeapon:FireServer({
 		weaponId = state.weaponId,
@@ -355,13 +326,12 @@ function Weapon.equip(weaponId: string)
 	if not weapon then
 		return
 	end
+	-- optimistic presentation only. Ammunition is authoritative server-side per-weapon now; the
+	-- old local refill-to-full fabricated a fresh magazine on every swap.
 	state.weaponId = weaponId
-	state.ammo = weapon.magazine
-	state.magazine = weapon.magazine
 	state.reloading = false
 	remotes.EquipWeapon:FireServer({ weaponId = weaponId })
 	buildViewmodel(weapon)
-	HUD.setAmmo(state.ammo, state.magazine, state.reserve)
 end
 
 function Weapon.getState()
@@ -398,6 +368,7 @@ function Weapon.init()
 	end)
 	Input.onPress("Fire", function()
 		state.firing = true
+		state.fireEdge = true
 	end)
 	Input.onRelease("Fire", function()
 		state.firing = false
@@ -428,11 +399,19 @@ function Weapon.init()
 		if type(payload) ~= "table" then
 			return
 		end
+		local changed = type(payload.weaponId) == "string" and payload.weaponId ~= state.weaponId
 		state.weaponId = payload.weaponId or state.weaponId
 		state.ammo = payload.ammo or state.ammo
 		state.magazine = payload.magazine or state.magazine
 		if type(payload.reserve) == "number" then
 			state.reserve = payload.reserve
+		end
+		state.reloading = false
+		if changed or not viewmodel then
+			local weapon = Weapons.get(state.weaponId)
+			if weapon then
+				buildViewmodel(weapon)
+			end
 		end
 		HUD.setAmmo(state.ammo, state.magazine, state.reserve)
 		HUD.setWeapon(state.weaponId)
@@ -454,8 +433,19 @@ function Weapon.init()
 	end)
 
 	RunService.RenderStepped:Connect(function(dt)
-	updateAimDir(dt)
-		if state.firing then
+		if not state.firing then
+			return
+		end
+		-- semi-automatic weapons require discrete trigger activations: exactly one shot attempt per
+		-- press. The edge is consumed whether or not the shot clears the cadence gate, so holding
+		-- the trigger never queues additional shots.
+		local weapon = Weapons.get(state.weaponId)
+		if weapon and weapon.fireMode ~= "Auto" then
+			if state.fireEdge then
+				state.fireEdge = false
+				tryFire()
+			end
+		else
 			tryFire()
 		end
 	end)

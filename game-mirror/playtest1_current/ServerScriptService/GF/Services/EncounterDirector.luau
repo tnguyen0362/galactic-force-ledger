@@ -423,10 +423,10 @@ local zoneWatcherStarted = false
 
 function EncounterDirector.registerBattlefieldZones(plan: any): number
 	dormantZones = {}
-	if not plan or not plan.zones then
+	if not plan or not plan.encounterZones then
 		return 0
 	end
-	for _, z in plan.zones do
+	for _, z in plan.encounterZones do
 		if z.kind == "garrison" then
 			table.insert(dormantZones, {
 				x = z.x, z = z.z,
@@ -485,6 +485,8 @@ local function zoneWatcher()
 					local d = (Vector3.new(z.x, 0, z.z) - Vector3.new(root.Position.X, 0, root.Position.Z)).Magnitude
 					if d <= z.activationRadius then
 						z.done = true
+						workspace:SetAttribute("GF_BFZonesActivated", (workspace:GetAttribute("GF_BFZonesActivated") or 0) + 1)
+						print(string.format("[GF] battlefield zone activated kind=%s at %.0f,%.0f", z.kind, z.x, z.z))
 						local center = Vector3.new(z.x, root.Position.Y, z.z)
 						task.defer(function()
 							EncounterDirector.spawnAround(center, z.radius, z.size)
@@ -529,6 +531,7 @@ function EncounterDirector.beginMission(): ()
 				local n = EncounterDirector.registerBattlefieldZones(plan)
 				zoneWatcher()
 				print(string.format("[GF] battlefield zones registered=%d (dormant)", n))
+				workspace:SetAttribute("GF_BFZonesRegistered", n)
 			end
 		end
 		EnemyService.resetCalls()

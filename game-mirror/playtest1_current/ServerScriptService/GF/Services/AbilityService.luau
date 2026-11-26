@@ -791,6 +791,19 @@ local function cast(player: Player, payload: any)
 	if not ability then
 		return
 	end
+	-- C1: cast authorization. The remote used to accept any ability id from any client, so an
+	-- exploiter could cast rank-locked or unowned support on demand. The loadout is the only
+	-- legitimate source: the ability must be owned AND occupy one of the player's two slots.
+	do
+		local armory = script.Parent:FindFirstChild("ArmoryService")
+		local sel = armory and require(armory).selection(player)
+		local equipped = type(sel) == "table"
+			and (sel.ability1 == abilityId or sel.ability2 == abilityId)
+		if not equipped then
+			reject("not equipped")
+			return
+		end
+	end
 	-- rejoin restore: if this fresh state never saw the cast but the player carries a persisted
 	-- cooldown end time, the gate still applies — rejoining never resets cooldowns (S05-007).
 	local ready = s.cooldowns[abilityId]
@@ -807,6 +820,11 @@ local function cast(player: Player, payload: any)
 	end
 	local position = payload.position
 	if typeof(position) ~= "Vector3" then
+		return
+	end
+	-- typeof() passes NaN-bearing vectors; NaN comparisons then corrupt every distance check below.
+	if not require(script.Parent.NetGuard).finiteVector3(position) then
+		reject("non-finite position")
 		return
 	end
 	-- S05-004 placement validation: the target point must sit in open space — not inside solid
@@ -847,6 +865,20 @@ local function cast(player: Player, payload: any)
 	if not root then
 		return
 	end
+	-- C2a: range preflight at cast time. Implementations re-check at landing; rejecting here saves
+	-- the flare animation and gives immediate feedback for illegal throws.
+	if (position - root.Position).Magnitude > (tonumber(ability.range) or 90) * 1.15 then
+		reject("out of range")
+		return
+	end
+	-- C2b: one in-flight cast per ability per player. Cleared when the flare lands and dispatches,
+	-- or if anything errors before that.
+	s.castInFlight = s.castInFlight or {}
+	if s.castInFlight[abilityId] then
+		reject("already deploying")
+		return
+	end
+	s.castInFlight[abilityId] = true
 	local flare = Instance.new("Part")
 	flare.Name = "SignalFlare"
 	flare.Shape = Enum.PartType.Ball
@@ -891,6 +923,10 @@ local function cast(player: Player, payload: any)
 			sentry(player, s, position)
 		elseif abilityId == "OrbitalStrike" then
 			orbital(player, s, position)
+		end
+		local live = State.get(player)
+		if live and live.castInFlight then
+			live.castInFlight[abilityId] = nil
 		end
 	end)
 end
