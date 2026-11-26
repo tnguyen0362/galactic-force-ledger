@@ -116,18 +116,24 @@ pad.Transparency = 0.18
 	deck.Parent = folder
 
 	-- Authored scatter: cliffs, flora, barricades, crates, distant mountains.
+	-- The vista ring distance derives from `size`, so it MUST match the real terrain
+	-- extent: on the 1500-stud battlefield a 704-scaled ring drops massive non-collidable
+	-- mountain props at 510-650 studs — inside the playfield (the "black wall you can
+	-- walk through"). Scale the dress call to the world that actually exists.
+	local battlefieldOn = Workspace:GetAttribute("GF_BattlefieldGen") == true
+	local worldSize = battlefieldOn and 1500 or 704
 	local ok, counts = pcall(function()
 		return EnvironmentDressing.dress({
 			seed = 1234,
 			center = Vector3.new(0, 0, 0),
-			size = 704,
+			size = worldSize,
 			parent = Workspace.ActiveActors,
 			objective = Vector3.new(relayPos.X, relayY, relayPos.Z),
 		})
 	end)
 
 	-- Boundary: honest hard edge instead of invisible kill walls.
-	local radius = 330
+	local radius = battlefieldOn and 720 or 330
 	for i = 1, 24 do
 		local ang = (i / 24) * math.pi * 2
 		local x = math.cos(ang) * radius

@@ -88,27 +88,63 @@ function SectorBuilder.write(opts)
 					occ[cx] = occCol
 				end
 
-				for cz = 1, d do
-					local wz = origin.Z + (cz - 0.5) * CELL
-					for cx = 1, w do
-						local wx = origin.X + (cx - 0.5) * CELL
-						local hCell = math.floor((sample(wx, wz) - origin.Y) / CELL)
+			-- Fractional-occupancy write per spec section 29: the surface voxel carries the
+			-- sub-cell fill fraction, so smooth-terrain interpolation renders continuous slopes
+			-- instead of 4-stud stairs. Binary writes quantized every slope into terraces
+			-- (the "ridges stacked on each other" artifact) and erased all sub-4-stud detail.
+			-- Materials are slope-aware via backward differences over cached row heights (zero
+			-- extra sampler evaluations); a low-frequency material field motleys surface cover.
+			local prevRow: { number }? = nil
+			for cz = 1, d do
+				local wz = origin.Z + (cz - 0.5) * CELL
+				local row = table.create(w)
+				local prevH: number? = nil
+				for cx = 1, w do
+					local wx = origin.X + (cx - 0.5) * CELL
+					local H = sample(wx, wz)
+					row[cx] = H
+					local rel = H - origin.Y
+					if rel > 0 then
+						local dx = prevH and ((H - prevH) / CELL) or 0
+						local dz = (prevRow and (prevRow :: any)[cx]) and ((H - (prevRow :: any)[cx]) / CELL) or 0
+						local slope = math.sqrt(dx * dx + dz * dz)
+						local mnoise = math.noise(wx / 61 + 9.2, wz / 61 - 4.7, 1337)
 						local col = mats[cx]
 						local occCol = occ[cx]
-						for cy = 1, math.min(hCell, h) do
+						local topCell = math.min(math.ceil(rel / CELL), h)
+						for cy = 1, topCell do
+							local voxBottom = (cy - 1) * CELL
+							local fill = (rel - voxBottom) / CELL
 							local m
-							if cy >= hCell then
-								m = Enum.Material.Ground
-							elseif cy >= hCell - 3 then
-								m = Enum.Material.Rock
+							if fill >= 1 then
+								occCol[cy][cz] = 1
+								local depth = rel - cy * CELL
+								if depth > 14 then
+									m = Enum.Material.Slate
+								elseif depth > 2 or slope > 0.55 then
+									m = Enum.Material.Rock
+								else
+									m = Enum.Material.Ground
+								end
+							elseif fill > 0 then
+								occCol[cy][cz] = fill
+								if slope > 0.72 then
+									m = Enum.Material.Rock
+								elseif slope > 0.42 then
+									m = (mnoise > 0.05) and Enum.Material.Rock or Enum.Material.Ground
+								else
+									m = (mnoise > -0.18) and Enum.Material.Grass or Enum.Material.Ground
+								end
 							else
-								m = Enum.Material.Slate
+								break
 							end
 							col[cy][cz] = m
-							occCol[cy][cz] = 1
 						end
 					end
+					prevH = H
 				end
+				prevRow = row
+			end
 
 				Terrain:WriteVoxels(region, CELL, mats, occ)
 			end
