@@ -9,6 +9,7 @@
 -- Ridge is directional ridged crests; Feature is deliberate valleys/plateaus/excavations.
 
 local NoiseKit = require(script.Parent.NoiseKit)
+local SeedStream = require(script.Parent.SeedStream)
 
 local MacroGeography = {}
 
@@ -42,7 +43,7 @@ end
 -- Seeded wander line: a gently meandering polyline across the map used as valley/canyon axes.
 -- Deterministic in seed; waypoint count low so the curve stays readable at macro scale.
 local function wanderAxis(seed: number, extent: number, waypoints: number, meander: number, angle: number): { number }
-	local rng = Random.new(seed)
+	local rng = SeedStream.fromSeed(seed)
 	local pts = {}
 	local c, s = math.cos(angle), math.sin(angle)
 	for i = 0, waypoints do
@@ -104,11 +105,11 @@ end
 -- FORTIFIED PLATEAU: a dominant elevated bench/mesa occupying a broad region, terraced slopes,
 -- lower surrounding apron. The plateau center is seeded off-center so approaches differ per seed.
 composers.fortified_plateau = function(seed: number, def: any, extent: number)
-	local rng = Random.new(seed + 41)
+	local rng = SeedStream.fromSeed(seed + 41)
 	local pa = rng:NextNumber() * math.pi * 2
 	local pd = rng:NextNumber() * extent * 0.14
 	local cx, cz = math.cos(pa) * pd, math.sin(pa) * pd
-	local radius = extent * rng:NextNumber(0.22, 0.30)
+	local radius = extent * rng:NextNumber(0.15, 0.21)
 	local function sampler(x: number, z: number): number
 		local wx, wz = NoiseKit.warp2(x, z, def.warpScale, def.warpAmp, seed)
 		local d = math.sqrt((wx - cx) ^ 2 + (wz - cz) ^ 2)
@@ -119,6 +120,7 @@ composers.fortified_plateau = function(seed: number, def: any, extent: number)
 		local macro = bench * def.relief * 1.25
 		-- exposed slope character: directional ridges radiating outward faintly
 		local apron = NoiseKit.warpedFbm(x, z, 180, seed + 47, 2, def.warpScale, def.warpAmp) * 7
+			+ NoiseKit.fbm(x, z, 330, seed + 49, 2) * 9
 		return def.baseHeight + macro + apron + detailLayer(x, z, seed, def)
 	end
 	return sampler, { center = { cx, cz }, radius = radius, kind = "plateau" }
@@ -130,11 +132,14 @@ composers.open_plains = function(seed: number, def: any, extent: number)
 	local function sampler(x: number, z: number): number
 		local wx, wz = NoiseKit.warp2(x, z, def.warpScale, def.warpAmp, seed)
 		local rolling = NoiseKit.fbm(wx, wz, 210, seed + 53, 3) * def.relief * 1.35
+		-- broad macro sweep: 620-stud directional swells give plains deliberate long-range
+		-- structure (shallow valleys, long rises) instead of uniform short-scale undulation
+		local swell = NoiseKit.fbm(wx, wz, 620, seed + 57, 2) * def.relief * 1.15
 		-- sparse isolated ridges: ridged noise gated by a low-frequency mask so most of the
 		-- field stays open and only some bands carry elevation
 		local gate = NoiseKit.mask(wx, wz, 420, seed + 59, 0.62, 0.86)
 		local crest = NoiseKit.directionalRidged(wx, wz, 150, seed + 61, angle, def.ridgeAniso) ^ 3
-		local macro = rolling + crest * 18 * gate
+		local macro = rolling + swell + crest * 18 * gate
 		return def.baseHeight + macro + detailLayer(x, z, seed, def)
 	end
 	return sampler, { ridgeAngle = angle, kind = "plains" }
@@ -160,21 +165,21 @@ end
 -- INDUSTRIAL WASTELAND: rolling low terrain plus deliberate excavation basins at seeded sites —
 -- large negative features where extraction-era industry cut into the ground.
 composers.industrial_wasteland = function(seed: number, def: any, extent: number)
-	local rng = Random.new(seed + 71)
+	local rng = SeedStream.fromSeed(seed + 71)
 	local sites = {}
-	for _ = 1, 3 do
+	for _ = 1, 4 do
 		local a = rng:NextNumber() * math.pi * 2
 		local d = rng:NextNumber() * extent * 0.3
 		table.insert(sites, {
 			x = math.cos(a) * d,
 			z = math.sin(a) * d,
-			r = rng:NextNumber(90, 170),
+			r = rng:NextNumber(130, 240),
 			depth = rng:NextNumber(10, 20),
 		})
 	end
 	local function sampler(x: number, z: number): number
 		local wx, wz = NoiseKit.warp2(x, z, def.warpScale, def.warpAmp, seed)
-		local rolling = NoiseKit.fbm(wx, wz, 190, seed + 73, 3) * def.relief * 1.05
+		local rolling = NoiseKit.fbm(wx, wz, 380, seed + 73, 3) * def.relief * 1.05
 		local excav = 0
 		for _, s in sites do
 			local d = math.sqrt((x - s.x) ^ 2 + (z - s.z) ^ 2)
@@ -192,12 +197,27 @@ end
 -- Compose final sampler: archetype macro + terrace pass. Returns sampler and hints.
 function MacroGeography.compose(archetypeId: string, seed: number, extent: number): ((number, number) -> number, any)
 	local Archetypes = require(script.Parent.Archetypes)
-	local def = Archetypes.get(archetypeId)
+	local baseDef = Archetypes.get(archetypeId)
 	local composer = composers[archetypeId]
 	if not composer then
 		composer = composers.highland_valley
-		def = Archetypes.get("highland_valley")
+		baseDef = Archetypes.get("highland_valley")
 	end
+	-- Seeded parameter jitter: same-archetype maps must differ in macro character, not just in
+	-- object coordinates (anti-repetition brief). Each scalar generation parameter jitters within
+	-- a design-safe band around the archetype baseline; validation bands are untouched because
+	-- jitter stays well inside them. Streams derive from the same seed -> fully deterministic.
+	local def = {}
+	for k, v in baseDef do
+		def[k] = v
+	end
+	local jr = SeedStream.fromSeed(seed + 913)
+	def.relief = def.relief * (0.88 + jr:NextNumber() * 0.28)
+	def.warpAmp = def.warpAmp * (0.8 + jr:NextNumber() * 0.5)
+	def.warpScale = def.warpScale * (0.85 + jr:NextNumber() * 0.35)
+	def.terraceStrength = math.clamp(def.terraceStrength * (0.8 + jr:NextNumber() * 0.45), 0.15, 0.9)
+	def.roughHi = def.roughHi * (0.85 + jr:NextNumber() * 0.3)
+	def.ridgeAniso = def.ridgeAniso * (0.8 + jr:NextNumber() * 0.45)
 	local raw, hints = composer(seed, def, extent)
 	local function sampler(x: number, z: number): number
 		return terrace(raw(x, z), def)
