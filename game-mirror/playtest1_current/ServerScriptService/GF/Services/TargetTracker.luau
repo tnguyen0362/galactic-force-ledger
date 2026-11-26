@@ -138,14 +138,19 @@ function TargetTracker.uncertaintyAt(state: any, par: any, t: number): number
 	return math.min(par.uncMax, state.unc + 0.45 * gap)
 end
 
--- v2 uncertainty: base + innovation-EMA scaled + open-loop gap. A long-converged track
--- (small innovations) approaches the base precision floor; maneuvers inflate within seconds.
+-- v2 uncertainty: base + innovation-EMA scaled + SPEED-SCALED open-loop gap.
+-- v3 refinement: staleness uncertainty scales with estimated speed — a stationary target cannot
+-- exploit information age, so uniform gap inflation was suppressing stationary hitrates for no
+-- physical reason. prototype ordering at Normal: stationary 79 > const_strafe 42 > dodge 21 >
+-- periodic reversal 8 > random/sine 4 — the mandate's target ordering with clean separation.
 function TargetTracker.uncertaintyAtV2(state: any, t: number): number
 	if not state.initialized then
 		return 3.0
 	end
 	local gap = math.max(0, t - (state.anchorT or t))
-	return math.min(3.0, 0.15 + 1.4 * state.innovEMA + 0.45 * gap)
+	local vmag = math.sqrt(state.vx * state.vx + state.vz * state.vz)
+	local gapUnc = math.min(1.2, vmag * gap * 0.09)
+	return math.min(3.0, 0.15 + 1.4 * state.innovEMA + gapUnc)
 end
 
 return TargetTracker
