@@ -178,6 +178,8 @@ function ArmoryService.state(player: Player)
 		augmentCount = AugmentService.inventoryCount(profile),
 		pendingReroll = profile.pendingReroll,
 		scrap = (profile.salvage and tonumber(profile.salvage.scrap)) or 0,
+		energyCells = (profile.salvage and tonumber(profile.salvage.energyCells)) or 0,
+		militaryTechnology = (profile.salvage and tonumber(profile.salvage.militaryTechnology)) or 0,
 		augmentCatalog = catalogRows,
 		-- AUGMENT-V2 transitional shape: sockets are stored per-weapon (weaponAugments[weaponId][slot])
 		-- post-migration, but the current client UI reads a flat slot index for the selected weapon.

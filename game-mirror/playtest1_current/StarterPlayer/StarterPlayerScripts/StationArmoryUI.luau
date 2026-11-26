@@ -146,15 +146,19 @@ local function buildGui()
 	
 	newFrame(panel, { size = UDim2.fromOffset(560, 3), color = CYAN })
 	newLabel(panel, "ARMORY", UDim2.fromOffset(200, 22), UDim2.fromOffset(20, 14), CYAN, 18)
-	local credits = newLabel(panel, "", UDim2.fromOffset(300, 20), UDim2.fromOffset(190, 16), AMBER, 13)
+	local credits = newLabel(panel, "", UDim2.fromOffset(290, 20), UDim2.fromOffset(190, 16), AMBER, 13)
 	credits.Name = "Credits"
 	newLabel(panel, "CLOSE [E]", UDim2.fromOffset(84, 20), UDim2.fromOffset(494, 16), MUTED, 11)
-	
+	-- Unified wallet strip (economy spec §92): all five resources in one labeled row so players
+	-- never memorize abstract icons. Sits under the title row; the list shifted down to make room.
+	local wallet = newLabel(panel, "", UDim2.fromOffset(524, 16), UDim2.fromOffset(18, 34), Color3.fromRGB(200, 205, 215), 11)
+	wallet.Name = "Wallet"
+
 	local list = Instance.new("ScrollingFrame")
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
-	list.Size = UDim2.fromOffset(524, 286)
-	list.Position = UDim2.fromOffset(18, 44)
+	list.Size = UDim2.fromOffset(524, 272)
+	list.Position = UDim2.fromOffset(18, 58)
 	list.ScrollBarThickness = 4
 	list.CanvasSize = UDim2.fromOffset(0, 0)
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -165,10 +169,10 @@ local function buildGui()
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = list
 	
-	return panel, list, credits
+	return panel, list, credits, wallet
 end
 
-local panel, list, creditsLabel = buildGui()
+local panel, list, creditsLabel, walletLabel = buildGui()
 
 local function rowButton(parent, text, color, layoutOrder, onClick, xPos, width)
 	local b = Instance.new("TextButton")
@@ -199,6 +203,13 @@ if type(state.xp) == "number" and type(state.xpForNext) == "number" then
 	xpText = string.format("%d/%d XP", state.xp, state.xpForNext)
 end
 creditsLabel.Text = string.format("%d CR   ·   RANK %d   ·   %s", state.credits, state.rank, xpText)
+	-- §92 unified wallet: every resource named in words, no icon memorization required.
+	walletLabel.Text = string.format("WALLET   %d CREDITS · %d SCRAP · %d ENERGY CELLS · %d MILITARY TECH · %d WAR CREDITS",
+		tonumber(state.credits) or 0,
+		tonumber(state.scrap) or 0,
+		tonumber(state.energyCells) or 0,
+		tonumber(state.militaryTechnology) or 0,
+		tonumber(state.warCredits) or 0)
 	local order = 0
 	-- Saved loadouts. The server has supported three slots since build 417 and no player could reach
 	-- them; these two buttons per slot are the whole surface (Save writes the live loadout, Load restores).
