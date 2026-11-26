@@ -1946,6 +1946,16 @@ function EnemyService.start()
 				actor.tickErrors = 0
 				if model.Parent then
 					model:SetAttribute("GFState", resolveSpecState(model, actor))
+					-- spec sec.71 stamp at the UNIVERSAL resolution point — squad-coordinated states
+					-- (Suppress etc.) bypass the per-branch assignment, so stamping there missed them
+					local tp = nil
+					local target = actor.target
+					if target then
+						local tchar = target.Character or (target.Parent and target.Parent:IsA("Model") and target.Parent)
+						local troot = tchar and tchar:FindFirstChild("HumanoidRootPart")
+						if troot then tp = troot.Position end
+					end
+					model:SetAttribute("GFLegitTarget", tp)
 				end
 			end
 		end
