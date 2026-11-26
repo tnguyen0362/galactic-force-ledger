@@ -74,7 +74,11 @@ local LOSS_RATE = 0.8 -- q decay rate when visual contact is broken
 -- calibrated against measured hit rates (2026-11-26): strafing targets at 45 studs were hit only
 -- 11% of the time at the original floor values — no battlefield pressure. these values target
 -- roughly 20-30% against strafing exposure and 45-60% against stationary exposure on Normal.
-local SIGMA_FLOOR = { Easy = 1.7, Normal = 1.0, Hard = 0.7, Extreme = 0.45 } -- studs at 50 studs baseline
+-- progressive difficulty curve (2026-11-26 calibration sweep, stationary exposed 45 studs):
+-- measured hitrate vs total sigma: 0.5->83% 0.7->77% 1.0->61% 1.3->24% 1.6->23%.
+-- the earlier values straddled the cliff (Easy 9% vs Normal 77% — huge low-end jump, compressed
+-- top end). these floors target a progressive ladder ~= Easy25/Normal50/Hard68/Extreme82 percent.
+local SIGMA_FLOOR = { Easy = 1.35, Normal = 1.1, Hard = 0.8, Extreme = 0.45 } -- studs at 50 studs baseline
 local SIGMA_INITIAL = 4.2 -- acquisition dispersion at q=0, scaled by (1-q)^1.5 and range
 local HIT_RADIUS = 1.15 -- torso half-extent in studs: error inside this is a hit
 local function difficultyOf(actor: any): string

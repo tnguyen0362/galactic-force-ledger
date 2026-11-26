@@ -373,6 +373,11 @@ function StationService.resetMission(missionDifficulty: string, template: string
 	workspace:SetAttribute("GF_ExtractionState", "idle")
 	workspace:SetAttribute("GF_LastPayout", nil)
 	workspace:SetAttribute("GF_MissionEndReason", nil)
+	-- operation layer reset: clears the DAG state and destroys operation sites. Unconditional —
+	-- a legacy mission following an operation must not inherit operation structures.
+	pcall(function()
+		require(script.Parent.OperationService).reset()
+	end)
 	SquadService.reset()
 	ExtractionService.reset()
 	-- A redeploy used to leave the previous mission's hostiles standing: clearAll only ran on

@@ -597,8 +597,17 @@ function EncounterDirector.beginMission(): ()
 end
 function EncounterDirector.startExtractionPressure(): ()
 	workspace:SetAttribute("GF_ExtractionCalled", true)
+	-- termination contract (audit defect: the loop previously ran forever): stop when the
+	-- mission ends or a new mission supersedes this one. GF_MissionId rotates per deploy.
+	local missionId = workspace:GetAttribute("GF_MissionId")
 	task.spawn(function()
 		while task.wait(EXTRACTION_WAVE_INTERVAL) do
+			if workspace:GetAttribute("GF_InMission") ~= true then
+				break
+			end
+			if missionId ~= nil and workspace:GetAttribute("GF_MissionId") ~= missionId then
+				break
+			end
 			local lz = workspace:GetAttribute("GF_ExtractionLZ") or workspace:GetAttribute("GF_LZ")
 			if typeof(lz) ~= "Vector3" then
 				break
