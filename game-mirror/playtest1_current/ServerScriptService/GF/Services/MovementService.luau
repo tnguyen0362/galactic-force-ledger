@@ -309,6 +309,23 @@ do
 			character:SetAttribute("GF_VaultKind", kind == "climb" and "climb" or "vault")
 		end
 	end)
+
+	-- aim-state uplink: server scripts have no player camera — pitch must replicate through
+	-- this channel for the animator's torso decomposition (spec sec.45 anatomical aim).
+	local aimRemote = remotes:FindFirstChild("AimStateNotify")
+	if not aimRemote then
+		aimRemote = Instance.new("RemoteEvent")
+		aimRemote.Name = "AimStateNotify"
+		aimRemote.Parent = remotes
+	end
+	aimRemote.OnServerEvent:Connect(function(player, pitch)
+		if not require(script.Parent.NetGuard).allow(player, "aimstate") then return end
+		if type(pitch) ~= "number" or pitch ~= pitch or math.abs(pitch) > 1.6 then return end
+		local character = player.Character
+		if character then
+			character:SetAttribute("GF_AimPitch", pitch)
+		end
+	end)
 end
 
 return MovementService

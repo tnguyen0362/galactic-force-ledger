@@ -403,6 +403,23 @@ local function updateViewmodel(dt: number?)
 	local aimPitch = cam and math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1)) or 0
 	local sprinting = char:GetAttribute("Sprinting") == true
 	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5, nil, aimPitch, sprinting, nil, state.switchBlend or 0, state.lastShotAt))
+	-- aim-state uplink: the server animator has no camera — pitch must replicate for the
+	-- torso decomposition and remote-observer correctness. throttled: only while aiming,
+	-- max ~8Hz, only on meaningful change.
+	do
+		local cam3 = workspace.CurrentCamera
+		if cam3 and viewmodelAimLerp > 0.5 then
+			local pitchNow = math.asin(math.clamp(cam3.CFrame.LookVector.Y, -1, 1))
+			local lastP = state.lastUplinkPitch or 99
+			local nowC = os.clock()
+			if math.abs(pitchNow - lastP) > 0.03 and nowC - (state.lastUplinkAt or 0) > 0.12 then
+				state.lastUplinkPitch = pitchNow
+				state.lastUplinkAt = nowC
+				local rem = remotes:FindFirstChild("AimStateNotify")
+				if rem then rem:FireServer(pitchNow) end
+			end
+		end
+	end
 	char:SetAttribute("GF_WeaponGrip", viewmodel.PrimaryPart.Position)
 	char:SetAttribute("GF_ViewmodelAimLerp", viewmodelAimLerp)
 	-- spec sec.5: the magazine physically detaches, travels with the support hand, returns.

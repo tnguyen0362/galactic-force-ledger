@@ -529,11 +529,10 @@ RunService.Heartbeat:Connect(function(dt)
 		if hasWeapon then
 			-- Phase 12: weapon leads, arms solve onto grip points via two-bone IK.
 			-- Replaces both the old free-swing and the static aim pose whenever armed.
-			local cam = workspace.CurrentCamera
-			local pitch = 0
-			if aiming and cam then
-				pitch = math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1))
-			end
+			-- pitch comes from the replicated uplink (server scripts have no player camera);
+			-- workspace.CurrentCamera is a server-side stub, not the player's view
+			local pitch = character:GetAttribute("GF_AimPitch") or 0
+			if not aiming then pitch = 0 end
 			sharedPhase = phase
 			solveWeaponArms(aiming, pitch, sprinting)
 		elseif aiming then
@@ -553,10 +552,8 @@ RunService.Heartbeat:Connect(function(dt)
 		-- forward so the support grip is reachable — solved offline with the pose constants.
 		local stanceYaw = hasWeapon and (aiming and math.rad(-12) or math.rad(-25)) or 0
 		if aiming then
-			local cam2 = workspace.CurrentCamera
-			if cam2 then
-				lean = lean - math.asin(math.clamp(cam2.CFrame.LookVector.Y, -1, 1)) * 0.3
-			end
+			-- torso carries ~30% of aim pitch (spec sec.45) — from the replicated uplink
+			lean = lean - (character:GetAttribute("GF_AimPitch") or 0) * 0.3
 		end
 		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
 		if flinch > 0 then
