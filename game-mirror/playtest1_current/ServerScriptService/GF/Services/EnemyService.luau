@@ -78,7 +78,7 @@ local LOSS_RATE = 0.8 -- q decay rate when visual contact is broken
 -- measured hitrate vs total sigma: 0.5->83% 0.7->77% 1.0->61% 1.3->24% 1.6->23%.
 -- the earlier values straddled the cliff (Easy 9% vs Normal 77% — huge low-end jump, compressed
 -- top end). these floors target a progressive ladder ~= Easy25/Normal50/Hard68/Extreme82 percent.
-local SIGMA_FLOOR = { Easy = 1.35, Normal = 1.1, Hard = 0.8, Extreme = 0.45 } -- studs at 50 studs baseline
+local SIGMA_FLOOR = { Easy = 1.2, Normal = 1.0, Hard = 0.55, Extreme = 0.35 } -- studs at 50 studs baseline; platform-calibrated ladder (measured 8/44/42/70 at 1.35/1.1/0.8/0.45, inverted for progressive separation)
 local SIGMA_INITIAL = 4.2 -- acquisition dispersion at q=0, scaled by (1-q)^1.5 and range
 local HIT_RADIUS = 1.15 -- torso half-extent in studs: error inside this is a hit
 local function difficultyOf(actor: any): string

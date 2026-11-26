@@ -101,33 +101,51 @@ function OperationService.validateGraph(nodes: { ObjectiveNode }): (boolean, str
 		if byId[n.id] then return false, "duplicate objective id " .. n.id end
 		byId[n.id] = n
 	end
-	for _, n in nodes do
-		local reqs = n.requires or {}
+	-- collect prerequisite ids without mutating node tables
+	local function reqsOf(n: ObjectiveNode): { string }
+		local out = {}
+		for _, r in (n.requires or {}) do table.insert(out, r) end
 		if n.requiresAny then
 			for _, set in n.requiresAny do
-				for _, r in set do table.insert(reqs, r) end
+				for _, r in set do table.insert(out, r) end
 			end
 		end
-		for _, r in reqs do
+		return out
+	end
+	for _, n in nodes do
+		for _, r in reqsOf(n) do
 			if not byId[r] then return false, n.id .. " requires missing " .. r end
 		end
 	end
-	-- cycle detection via iterative deepening walk
-	for _, n in nodes do
-		local seen = {}
-		local stack = { n }
+	-- cycle detection: iterative DFS with white/gray/black coloring. Gray-on-revisit = cycle.
+	-- Diamond dependencies (shared prerequisites) must NOT false-positive: black nodes are safe.
+	local color: { [string]: string } = {}
+	for _, n in nodes do color[n.id] = "white" end
+	for _, start in nodes do
+		if color[start.id] ~= "white" then continue end
+		-- stack entries: {node, childIndex}; gray while on stack
+		local stack: { { node: ObjectiveNode, next: number } } = { { node = start, next = 1 } }
+		color[start.id] = "gray"
 		local guard = 0
 		while #stack > 0 do
 			guard += 1
-			if guard > 64 then return false, "dependency cycle involving " .. n.id end
-			local cur = table.remove(stack)
-			if cur then
-				if seen[cur.id] then return false, "dependency cycle involving " .. n.id end
-				seen[cur.id] = true
-				for _, r in (cur.requires or {}) do
-					local rn = byId[r]
-					if rn then table.insert(stack, rn) end
-				end
+			if guard > 4096 then return false, "dependency graph too deep to validate" end
+			local top = stack[#stack]
+			local reqs = reqsOf(top.node)
+			if top.next > #reqs then
+				color[top.node.id] = "black"
+				table.remove(stack)
+				continue
+			end
+			local childId = reqs[top.next]
+			top.next += 1
+			local child = byId[childId]
+			if not child then continue end
+			if color[childId] == "gray" then
+				return false, "dependency cycle involving " .. childId
+			elseif color[childId] == "white" then
+				color[childId] = "gray"
+				table.insert(stack, { node = child, next = 1 })
 			end
 		end
 	end
@@ -154,7 +172,9 @@ local function generateConquestStronghold(seed: number, difficulty: string, anal
 
 	local TerrainAnalysis = require(script.Parent.TerrainAnalysis)
 	local deploySite = TerrainAnalysis.nearest(analysis.valleyFloor, deployTargetX, deployTargetZ, nil, 900)
-		or TerrainAnalysis.nearest(analysis.sites, deployTargetX, deployTargetZ, nil, 1200)
+		or TerrainAnalysis.nearest(analysis.valleyFloor, deployTargetX, deployTargetZ, nil, 1600)
+		or TerrainAnalysis.nearest(analysis.sites, deployTargetX, deployTargetZ, nil, 1600)
+		or TerrainAnalysis.nearest(analysis.sites, deployTargetX, deployTargetZ)
 	if not deploySite then return nil end
 	local deployment = Vector3.new(deploySite.x, deploySite.y, deploySite.z)
 
@@ -185,6 +205,19 @@ local function generateConquestStronghold(seed: number, difficulty: string, anal
 			end
 		end
 	end
+	if not bestPrimary then
+		-- final fallback: maximize separation — the farthest flat site from deployment.
+		-- operation generation must degrade gracefully, never fail on geography alone.
+		local farD = 0
+		for _, s in analysis.sites do
+			local dx, dz = s.x - deploySite.x, s.z - deploySite.z
+			local d = math.sqrt(dx * dx + dz * dz)
+			if d > farD then
+				farD = d
+				bestPrimary = s
+			end
+		end
+	end
 	if not bestPrimary then return nil end
 	local primaryPos = Vector3.new(bestPrimary.x, bestPrimary.y, bestPrimary.z)
 
@@ -199,18 +232,43 @@ local function generateConquestStronghold(seed: number, difficulty: string, anal
 	local off1 = stream:NextInteger(400, 700)
 	local off2 = -stream:NextInteger(400, 700)
 	local shieldSite = TerrainAnalysis.nearest(analysis.sites, midX + px * off1, midZ + pz * off1, nil, 800)
+		or TerrainAnalysis.nearest(analysis.sites, midX + px * off1, midZ + pz * off1)
 	local commsSite = TerrainAnalysis.nearest(analysis.sites, midX + px * off2, midZ + pz * off2, nil, 800)
+		or TerrainAnalysis.nearest(analysis.sites, midX + px * off2, midZ + pz * off2)
+	-- separation enforcement: sparse candidate fields can collapse both prereqs onto the same
+	-- flat spot. If too close, search the comms side excluding the shield neighborhood.
+	if shieldSite and commsSite then
+		local sdx, sdz = shieldSite.x - commsSite.x, shieldSite.z - commsSite.z
+		if math.sqrt(sdx * sdx + sdz * sdz) < 350 then
+			-- repair: nearest site to the comms target that clears the shield separation,
+			-- unconstrained by the original radius — sparse geography must not collapse the pair.
+			local alt = nil
+			local bestD = math.huge
+			for _, s in analysis.sites do
+				local dx2, dz2 = s.x - (midX + px * off2), s.z - (midZ + pz * off2)
+				local d = math.sqrt(dx2 * dx2 + dz2 * dz2)
+				local fx, fz = s.x - shieldSite.x, s.z - shieldSite.z
+				if d < bestD and math.sqrt(fx * fx + fz * fz) >= 350 then
+					bestD = d
+					alt = s
+				end
+			end
+			if alt then commsSite = alt end
+		end
+	end
 
 	-- 4. optional supply cache: off-axis, roughly 60% along the route
 	local optX = deploySite.x + dx * 0.6 + px * stream:NextInteger(-900, 900)
 	local optZ = deploySite.z + dz * 0.6 + pz * stream:NextInteger(-900, 900)
 	local supplySite = TerrainAnalysis.nearest(analysis.sites, optX, optZ, nil, 700)
+		or TerrainAnalysis.nearest(analysis.sites, optX, optZ)
 
 	-- 5. extraction region: flat, 300-700 studs from primary, off the deployment axis
 	local extX = bestPrimary.x + px * (stream:NextInteger(0, 1) * 2 - 1) * 500
 	local extZ = bestPrimary.z + pz * (stream:NextInteger(0, 1) * 2 - 1) * 500
 	local extSite = TerrainAnalysis.nearest(analysis.valleyFloor, extX, extZ, nil, 800)
 		or TerrainAnalysis.nearest(analysis.sites, extX, extZ, nil, 900)
+		or TerrainAnalysis.nearest(analysis.sites, extX, extZ)
 
 	if not (shieldSite and commsSite and extSite) then return nil end
 
