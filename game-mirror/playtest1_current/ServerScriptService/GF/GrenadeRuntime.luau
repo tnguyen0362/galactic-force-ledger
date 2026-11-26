@@ -290,6 +290,12 @@ throwRemote.OnServerEvent:Connect(function(plr, payload)
 	if not NetGuard.allowPayload(plr, "throw", payload) then return end
 	local ok, err = pcall(toss, plr, payload)
 	if not ok then note("LastReject", tostring(err)) end
+	if ok and plr.Character then
+		-- throw-animation edge: stamped SERVER-side so the server-side animator shares
+		-- the clock base — the client-stamped version was a different time base and the
+		-- throw window could never trigger correctly.
+		plr.Character:SetAttribute("GF_GrenadeThrowAt", os.clock())
+	end
 end)
 note("GrenadeRuntime", true)
 print("[GF] grenades online")

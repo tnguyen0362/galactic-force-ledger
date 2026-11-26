@@ -258,7 +258,7 @@ local function probeVault(): boolean
 		-- low vault: physics-assisted hop, momentum preserved
 		state.vaulting = true
 		state.vaultUntil = os.clock() + 0.42
-		if character then character:SetAttribute("GF_VaultAt", os.clock()) character:SetAttribute("GF_VaultKind", "vault") end
+		pcall(function() game:GetService("ReplicatedStorage").GF.Remotes.VaultNotify:FireServer("vault") end)
 		humanoid.Jump = true
 		task.delay(0.07, function()
 			if root and root.Parent then
@@ -273,7 +273,7 @@ local function probeVault(): boolean
 		-- short ledge climb: stronger vertical assist, still physics-driven
 		state.vaulting = true
 		state.vaultUntil = os.clock() + 0.6
-		if character then character:SetAttribute("GF_VaultAt", os.clock()) character:SetAttribute("GF_VaultKind", "climb") end
+		pcall(function() game:GetService("ReplicatedStorage").GF.Remotes.VaultNotify:FireServer("climb") end)
 		humanoid.Jump = true
 		task.delay(0.07, function()
 			if root and root.Parent then

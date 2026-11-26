@@ -288,4 +288,27 @@ ReplicatedStorage.GF.Remotes.SprintChanged.OnServerEvent:Connect(function(player
 		end
 	end)
 end
+
+
+-- Vault/climb animation edge: the vault probe runs client-side (physics-responsive), so the
+-- client notifies through this channel and the server stamps the character — the animator is
+-- server-side and cannot see client-written attributes.
+do
+	local remotes = ReplicatedStorage.GF.Remotes
+	local vaultRemote = remotes:FindFirstChild("VaultNotify")
+	if not vaultRemote then
+		vaultRemote = Instance.new("RemoteEvent")
+		vaultRemote.Name = "VaultNotify"
+		vaultRemote.Parent = remotes
+	end
+	vaultRemote.OnServerEvent:Connect(function(player, kind)
+		if not require(script.Parent.NetGuard).allow(player, "vault") then return end
+		local character = player.Character
+		if character then
+			character:SetAttribute("GF_VaultAt", os.clock())
+			character:SetAttribute("GF_VaultKind", kind == "climb" and "climb" or "vault")
+		end
+	end)
+end
+
 return MovementService

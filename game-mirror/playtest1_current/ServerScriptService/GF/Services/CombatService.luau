@@ -1171,6 +1171,7 @@ function CombatService.start()
 			return
 		end
 		s.reloading = true
+		if player.Character then player.Character:SetAttribute("GF_Reloading", true) end
 		s.reloadCount = (s.reloadCount or 0) + 1
 		s.reloadDone = now() + ((require(script.Parent.AugmentService).reloadTime(weapon, require(script.Parent.AugmentService).forPlayerWeapon(player, s.weaponId))) * require(script.Parent.ClassService).reloadFactor(player))
 		note("Reloading", player.Name)
@@ -1181,6 +1182,7 @@ function CombatService.start()
 			end
 			if live.reloading and now() >= live.reloadDone then
 				live.reloading = false
+				if player.Character then player.Character:SetAttribute("GF_Reloading", false) end
 				-- S04-025: add only what the reserve can supply, and consume it.
 			local n = CombatService.reloadPlan(live.ammo, reloadCapacity, live.reserve or 0)
 			if n > 0 then
