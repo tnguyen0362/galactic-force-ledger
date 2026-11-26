@@ -23,6 +23,9 @@ def parse_stream(path):
             elif ln.startswith("route "):
                 parts = ln.split()
                 cur["routes"][parts[1]] = [tuple(map(float, pp.split(","))) for pp in parts[2:]]
+            elif ln.startswith("patrol "):
+                parts = ln.split()
+                cur.setdefault("patrols", []).append([tuple(map(float, pp.split(","))) for pp in parts[2:]])
             elif ln.startswith("cover "):
                 _, k, x, z = ln.split()
                 cur.setdefault("cover", []).append((k, float(x), float(z)))
@@ -61,6 +64,10 @@ def render_block(b, out):
         cx, cz = px(x, z)
         rr = max(4, fp * sc / 2)
         d.ellipse([cx - rr, cz - rr, cx + rr, cz + rr], outline=(255, 120, 40), width=3)
+    for pts in b.get("patrols", []):
+        xy = [px(x, z) for x, z in pts]
+        if len(xy) > 1:
+            d.line(xy, fill=(0, 220, 180), width=2)
     for k, x, z in b.get("cover", []):
         cx, cz = px(x, z)
         col = (110, 90, 70) if k == "rock" else (90, 110, 70)
