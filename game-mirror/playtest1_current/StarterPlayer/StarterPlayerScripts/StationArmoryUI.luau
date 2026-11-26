@@ -62,6 +62,49 @@ local function newLabel(parent, text, size, pos, color, textSize)
 	return l
 end
 
+-- 3D weapon previews: the premium library models render inside row ViewportFrames.
+-- Framing follows the bounding-box math from the visual directive: camera distance is
+-- derived from the model extents and the viewport FOV, not hard-coded per weapon.
+local WeaponVisuals = require(ReplicatedStorage:WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("WeaponVisuals"))
+
+local function buildWeaponPreview(parent: Frame, weaponId: string, size: UDim2, pos: UDim2)
+	local vp = Instance.new("ViewportFrame")
+	vp.Size = size
+	vp.Position = pos
+	vp.BackgroundColor3 = Color3.fromRGB(10, 14, 20)
+	vp.BorderSizePixel = 0
+	vp.Parent = parent
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 3)
+	corner.Parent = vp
+	local world = Instance.new("WorldModel")
+	world.Parent = vp
+	local model = WeaponVisuals.build(weaponId)
+	if not model then
+		return vp
+	end
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.Anchored = true
+		end
+	end
+	model.Parent = world
+	model:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(115), 0))
+	local cf, sizeV = model:GetBoundingBox()
+	local radius = math.max(sizeV.X, sizeV.Y, sizeV.Z) * 0.5
+	local fov = 40
+	local dist = radius / math.tan(math.rad(fov * 0.5)) * 1.45 + 0.4
+	local cam = Instance.new("Camera")
+	cam.FieldOfView = fov
+	cam.CFrame = CFrame.lookAt(cf.Position + Vector3.new(dist * 0.35, dist * 0.45, -dist), cf.Position)
+	cam.Parent = vp
+	vp.CurrentCamera = cam
+	vp.Ambient = Color3.fromRGB(200, 205, 215)
+	vp.LightColor = Color3.fromRGB(255, 245, 235)
+	vp.LightDirection = Vector3.new(-1, -2, -1)
+	return vp
+end
+
 -- Returns the part, not a cached Vector3: the station is rebuilt during boot, and a cached position
 -- kept pointing at the destroyed rack, so the Armory silently refused to open anywhere.
 local function findAnchor()
@@ -180,10 +223,11 @@ creditsLabel.Text = string.format("%d CR   ·   RANK %d   ·   %s", state.credit
 	order += 1
 		local row = newFrame(list, { size = UDim2.fromOffset(516, 48), radius = 3, color = Color3.fromRGB(20, 27, 35) })
 		row.LayoutOrder = order
-		newLabel(row, w.name, UDim2.fromOffset(300, 18), UDim2.fromOffset(12, 7), WHITE, 15)
+		buildWeaponPreview(row, w.id, UDim2.fromOffset(76, 44), UDim2.fromOffset(2, 2))
+		newLabel(row, w.name, UDim2.fromOffset(230, 18), UDim2.fromOffset(84, 7), WHITE, 15)
 		local masteryLevel = state.masteryLevel and state.masteryLevel[w.id]
 		local masteryText = masteryLevel and string.format(" · MASTERY %d (%d XP)", masteryLevel, (state.mastery and state.mastery[w.id]) or 0) or ""
-		newLabel(row, string.format("%s · %d DMG · %d MAG · %s%s", w.category, w.damage, w.magazine, w.mode, masteryText), UDim2.fromOffset(320, 16), UDim2.fromOffset(12, 26), MUTED, 12)
+		newLabel(row, string.format("%s · %d DMG · %d MAG · %s%s", w.category, w.damage, w.magazine, w.mode, masteryText), UDim2.fromOffset(240, 16), UDim2.fromOffset(84, 26), MUTED, 12)
 		if w.equipped then
 			newLabel(row, "EQUIPPED", UDim2.fromOffset(110, 18), UDim2.fromOffset(330, 15), CYAN, 12)
 		elseif w.owned then
