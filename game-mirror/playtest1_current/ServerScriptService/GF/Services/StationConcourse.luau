@@ -149,10 +149,13 @@ function Concourse.build(parent: Instance): Model
 			vistaPart("MoonRightHalo", Enum.PartType.Ball, Vector3.new(784, 784, 784), CFrame.new(centre + outward * 2100 + Vector3.new(1750, 900, 0)), Color3.fromRGB(92, 140, 186), Enum.Material.Neon, 0.88)
 			-- A distant orbital platform silhouette, so the right bay is not only a rock.
 			for k = 1, 3 do
-				vistaPart("OrbitRing" .. k, Enum.PartType.Block, Vector3.new(220 - k * 30, 5, 26), CFrame.new(centre + outward * (1250 + k * 60) + Vector3.new(1500 + k * 40, 620 - k * 55, 0)) * CFrame.Angles(0, math.rad(12 * k), math.rad(4 * k)), Color3.fromRGB(46, 52, 62), Enum.Material.Metal, 0)
+				vistaPart("OrbitRing" .. k, Enum.PartType.Block, Vector3.new(220 - k * 30, 5, 26), CFrame.new(centre + outward * (1250 + k * 60) + Vector3.new(1500 + k * 40, 900 - k * 30, 0)) * CFrame.Angles(0, math.rad(12 * k), math.rad(4 * k)), Color3.fromRGB(46, 52, 62), Enum.Material.Metal, 0)
 			end
 			-- Freight traffic: slow silhouettes crossing the bay at different depths.
-			for i, spec in ipairs({ { 520, -420, 300 }, { -700, 260, 900 }, { 120, 620, 1500 } }) do
+			-- hybrid-battlefield fix: freighters used to cross as low as y~335 inside the planetary
+			-- playfield, reading as floating dark slabs. The baked terrain peaks at 1156 studs, so
+			-- traffic now stays above the mountain line as distant orbital silhouettes.
+			for i, spec in ipairs({ { 520, 580, 300 }, { -700, 640, 900 }, { 120, 620, 1500 } }) do
 				local at = centre + outward * spec[3] + Vector3.new(spec[1], spec[2], 0)
 				vistaPart("Freighter" .. i, Enum.PartType.Block, Vector3.new(220, 60, 90), CFrame.lookAt(at, at + outward) * CFrame.Angles(0, math.rad(18 * i), 0), Color3.fromRGB(44, 48, 56), Enum.Material.Metal, 0.05)
 				vistaPart("FreighterLight" .. i, Enum.PartType.Block, Vector3.new(34, 34, 34), CFrame.new(at + Vector3.new(0, 46, 0)), Color3.fromRGB(255, 198, 146), Enum.Material.Neon, 0)
@@ -162,7 +165,11 @@ function Concourse.build(parent: Instance): Model
 			-- original texture can be uploaded yet (capture-audit 2026-11). Stagecraft instead: a
 			-- black-blue backdrop slab beyond every vista element, with authored star points scattered
 			-- across its face. From the concourse the glass now reads as deep space, not purple haze.
-			local backdropAt = centre + outward * 500
+			-- hybrid-battlefield fix: the backdrop at outward*500 stood at z~-512 INSIDE the planetary
+			-- playfield — a black wall reaching to the sky that players could walk through on the
+			-- surface. The battlefield spans +/-2450 studs horizontally, so the wall now sits at 2700,
+			-- beyond the northern edge, with coverage extended for the greater distance.
+			local backdropAt = centre + outward * 2700
 			local backdropCf = CFrame.lookAt(backdropAt, centre)
 			-- parts clamp at 2048 studs per axis: one 9600-wide slab silently shrank to a quarter of
 			-- the sky and the nebula bled through everywhere else (probe-audit 2026-11). Tile it.
@@ -171,8 +178,8 @@ function Concourse.build(parent: Instance): Model
 			-- 5x3 tiles left the oblique sightlines through the side bays uncovered: standing at the
 			-- left window and looking out-left misses a centered plane entirely (capture audit
 			-- 2026-11). 9x5 covers roughly 60 degrees off-axis horizontally and 40 vertically.
-			for tx = -4, 4 do
-				for ty = -2, 2 do
+			for tx = -7, 7 do
+				for ty = -3, 3 do
 					local tileAt = backdropAt + right0 * (tx * 590) + up0 * (ty * 440)
 					vistaPart("StarfieldBackdrop" .. tx .. "_" .. ty, Enum.PartType.Block, Vector3.new(590, 440, 4), CFrame.lookAt(tileAt, tileAt - outward), Color3.fromRGB(5, 8, 18), Enum.Material.SmoothPlastic, 0)
 				end
@@ -181,9 +188,9 @@ function Concourse.build(parent: Instance): Model
 			local right = backdropCf.RightVector
 			local up = backdropCf.UpVector
 			for i = 1, 170 do
-				local u = (starRng:NextNumber() - 0.5) * 5100
-				local v = (starRng:NextNumber() - 0.5) * 1900
-				local size = 1.6 + starRng:NextNumber() * 3.2
+				local u = (starRng:NextNumber() - 0.5) * 8500
+				local v = (starRng:NextNumber() - 0.5) * 2900
+				local size = 7 + starRng:NextNumber() * 15
 				local bright = starRng:NextNumber()
 				local starAt = backdropAt + right * u + up * v - outward * 6
 				local tint = 200 + math.floor(bright * 55)

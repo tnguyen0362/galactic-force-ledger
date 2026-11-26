@@ -199,15 +199,23 @@ function NPCLocomotion.moveTo(state: LocomotionState, destination: Vector3, spee
 	state.path = nil
 end
 
--- submit a path-following intent: waypoints array, stop within stopRadius of the final point
+-- submit a path-following intent: waypoints array, stop within stopRadius of the final point.
+-- Reissuing the same destination preserves progress: decision ticks re-declare intents at 5Hz,
+-- and resetting to waypoint 1 each time would trap the NPC at the path start.
 function NPCLocomotion.followPath(state: LocomotionState, waypoints: { Vector3 }, speedClass: string?, stopRadius: number?)
+	local finalWp = waypoints[#waypoints]
+	local sameDestination = state.mode == "path"
+		and state.destination ~= nil
+		and (state.destination - finalWp).Magnitude < 4
 	state.path = waypoints
-	state.pathIndex = 1
+	if not sameDestination then
+		state.pathIndex = 1
+	end
 	state.mode = "path"
 	state.speedClass = speedClass or state.speedClass
 	state.stopRadius = stopRadius or 2
 	state.arrived = false
-	state.destination = waypoints[#waypoints]
+	state.destination = finalWp
 end
 
 function NPCLocomotion.stop(state: LocomotionState)

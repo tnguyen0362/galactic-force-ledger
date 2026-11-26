@@ -28,6 +28,27 @@ local ARCHETYPE = {
 local function locoProfile(def: any)
 	return NPCLocomotion.profileFor(ARCHETYPE[def.id] or "Default")
 end
+local NPCNavigation = require(ServerScriptService.GF.Services.NPCNavigation)
+
+-- nav-aware movement intent (spec section 14): short hops steer directly; longer moves request
+-- tactical waypoints from the navigation cache. When the cache misses the compute is queued and
+-- the soldier steers directly meanwhile — nobody waits on pathfinding latency. Priority scales
+-- with urgency: engaged 3, investigate 2, everything else 1.
+local function navMove(actor: any, model: Model, destination: Vector3, speedClass: string, stopRadius: number, priority: number?)
+	local root = model.PrimaryPart
+	if not root then
+		return
+	end
+	local dist = (destination - root.Position).Magnitude
+	if dist > 30 then
+		local wps = NPCNavigation.waypointsFor(model, root.Position, destination, priority or 1)
+		if wps and #wps > 1 then
+			NPCLocomotion.followPath(actor.locomotion, wps, speedClass, stopRadius)
+			return
+		end
+	end
+	NPCLocomotion.moveTo(actor.locomotion, destination, speedClass, stopRadius)
+end
 
 local EnemyService = {}
 
@@ -424,6 +445,7 @@ end
 local corpses: { { model: Model, born: number } } = {}
 local CORPSE_CAP = 12
 local function die(model: Model, actor: any)
+	NPCNavigation.cleanup(model)
 	actor.deadAt = os.clock()
 	pcall(function()
 		require(script.Parent.CacheService).onEnemyKilled(model, nil)
@@ -649,7 +671,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 				actor.locomotion.aimYaw = NPCLocomotion.yawOf(flatToSentry)
 			end
 			if sentryDist > def.attackRange then
-				NPCLocomotion.moveTo(actor.locomotion, sentryPos, "combat", def.attackRange * 0.85)
+				navMove(actor, model, sentryPos, "combat", def.attackRange * 0.85, 3)
 				return
 			end
 			NPCLocomotion.stop(actor.locomotion)
@@ -769,7 +791,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 					end
 				end
 				actor.locomotion.aimYaw = nil -- face the direction of travel while investigating
-				NPCLocomotion.moveTo(actor.locomotion, actor.lastSeenPos, "relocate", 2.5)
+				navMove(actor, model, actor.lastSeenPos, "relocate", 2.5, 2)
 			else
 				-- Search: small deterministic wander around the last known position while confidence decays.
 				model:SetAttribute("GFState", "Search")
@@ -801,7 +823,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 		if toHome.Magnitude > 4 then
 			model:SetAttribute("GFState", "Return")
 			actor.locomotion.aimYaw = nil
-			NPCLocomotion.moveTo(actor.locomotion, actor.home, "walk", 3)
+			navMove(actor, model, actor.home, "walk", 3, 1)
 		else
 			model:SetAttribute("GFState", "Guard")
 			actor.locomotion.aimYaw = nil
@@ -979,7 +1001,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 			NPCLocomotion.moveTo(actor.locomotion, arcPoint, "combat", 2.5)
 		else
 			local targetPos = (targetRoot :: BasePart).Position
-			NPCLocomotion.moveTo(actor.locomotion, targetPos, "combat", def.attackRange * 0.85)
+			navMove(actor, model, targetPos, "combat", def.attackRange * 0.85, 3)
 		end
 		return
 	end
@@ -1389,6 +1411,7 @@ function EnemyService.start()
 			local ok, err = pcall(tickActor, model, actor, step)
 			if not ok then
 				warn("[GF] enemy tick error: " .. tostring(err))
+				NPCNavigation.cleanup(model)
 				actors[model] = nil
 			elseif model.Parent then
 				model:SetAttribute("GFState", resolveSpecState(model, actor))
