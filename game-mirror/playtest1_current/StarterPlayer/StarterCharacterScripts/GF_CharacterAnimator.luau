@@ -570,22 +570,27 @@ RunService.Heartbeat:Connect(function(dt)
 				twistYaw = math.clamp(dy, -0.78, 0.78) * 0.7  -- torso carries 70% within +-45deg
 			end
 		end
-		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18 + twistYaw, strafeBlend * 0.06))
+		-- waist composition is SINGLE-WRITE: accumulate pitch/yaw/roll terms through every
+		-- contributor, write once — incremental overwrites were silently dropping terms
+		-- (recoil rewrite lost the twist, flinch rewrite lost both)
+		local waistPitch = math.rad(2) * moveBlend - lean
+		local waistYaw = stanceYaw - strafeBlend * 0.18 + twistYaw
+		local waistRoll = strafeBlend * 0.06
 		-- spec sec.48: controlled upper-body firing response — a small bounded impulse per shot,
 		-- never a full-body restart, coherent at high fire rates, decaying with no accumulation
 		local shotAt3 = character:GetAttribute("GF_LastShotAt")
 		if shotAt3 then
 			local sdt = os.clock() - shotAt3
 			if sdt >= 0 and sdt < 0.12 then
-				local rb = (1 - sdt / 0.12) ^ 2 * 0.028
-				setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean + rb, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
+				waistPitch = waistPitch + (1 - sdt / 0.12) ^ 2 * 0.028
 			end
 		end
 		if flinch > 0 then
 			-- directional component: twist away from the hit bearing; explosives also displace
 			local dirYaw = math.sin(flinchDir or 0) * flinch * 0.3
 			local explosiveDrop = flinchKind == "explosive" and flinch * 0.35 or 0
-			setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean + flinch * 0.28, (stanceYaw or 0) - strafeBlend * 0.18 + flinch * 0.15 + dirYaw, strafeBlend * 0.06))
+			waistPitch = waistPitch + flinch * 0.28
+			waistYaw = waistYaw + flinch * 0.15 + dirYaw
 			setJoint("Neck", CFrame.Angles(-math.rad(2) * moveBlend - flinch * 0.2, dirYaw * 0.5, 0))
 			if explosiveDrop > 0 then
 				setJoint("Root", nil, Vector3.new(0, -explosiveDrop, 0))
@@ -593,6 +598,10 @@ RunService.Heartbeat:Connect(function(dt)
 				setJoint("RightKnee", CFrame.Angles(-0.05 - explosiveDrop * 0.8, 0, 0))
 			end
 		end
+		if crouching then
+			waistPitch = waistPitch + 0.28
+		end
+		setJoint("Waist", CFrame.Angles(waistPitch, waistYaw, waistRoll))
 		if throwing then
 			-- overhead throw sweep: arm cocks back then whips forward over the window
 			local f = throwT / 0.55
@@ -610,7 +619,6 @@ RunService.Heartbeat:Connect(function(dt)
 			setJoint("RightKnee", CFrame.Angles(-1.3, 0, 0))
 			setJoint("LeftAnkle", CFrame.Angles(0.55, 0, 0))
 			setJoint("RightAnkle", CFrame.Angles(0.5, 0, 0))
-			setJoint("Waist", CFrame.Angles(0.28 - lean, -strafeBlend * 0.12, 0))
 			if character:GetAttribute("GF_EquippedWeapon") == nil then
 				setJoint("LeftShoulder", CFrame.Angles(-0.5, 0, math.rad(16)))
 				setJoint("RightShoulder", CFrame.Angles(-0.5, 0, math.rad(-16)))
