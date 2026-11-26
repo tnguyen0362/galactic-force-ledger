@@ -47,6 +47,35 @@ is ~4s for 1500 studs (4.5x legacy area); acceptable, no batching changes needed
 5. Route lengths run 660-1135 studs vs the brief's 650-1000 preference — final tuning
    needs alpha's locomotion constants and real traversal timing.
 
+## P2 progress: first slice DONE (commit 3c3db88)
+
+Mission anchors wired: ObjectiveService.setup + WorldDressing.build consume plan nodes
+when flag on. Validated boot: industrial_wasteland, lz=(333,583) obj=(-56,-38), sep 732.
+LZ/extraction terrain pads flattened by plan nodes inside TerrainService build.
+
+### Exact remaining wiring points (file:line inventory, do not re-derive)
+
+1. **Deployment teleport** — players spawn in the orbital station (StationService),
+   then deploy to surface by a teleport/dropship flow not yet traced. Find who
+   teleports players planet-side and aim it at the LandingPad (which WorldDressing
+   now builds at the correct plan LZ). Search: deployment, teleport, warp, dropship
+   flow in Mission/StationService/ExtractionService.
+2. **Extraction call-site** — ExtractionService.beginCountdown(position) receives its
+   position at call time; trace ExtractionService.call/remote handler and substitute
+   plan.nodes.extraction when flag on (currently wherever the legacy flow points).
+3. **EncounterDirector.luau:478** — patrol center hardcoded Vector3.new(0,0,-120);
+   should become plan patrol zones (plan.zones.patrols have ax/az/bx/bz polylines).
+4. **StationService.luau:67** — RELAY = Vector3.new(0,0,-120) hardcoded.
+5. **TutorialService.luau:11** — ORIGIN = Vector3.new(0,0,120) hardcoded.
+6. **BossReplayService.luau:37** — arena fallback (0,0,-120); reads GF_BossArenaPos first.
+7. **WildlifeService.spawnForSite** in Mission.luau — still legacy anchor, cosmetic.
+8. **Installations** — plan.installations entries have x/z/rotation/templateId/score;
+   no physical structures built yet. Templates module has footprint/socket metadata.
+9. **Cover** — plan.cover has ~220 positions with kind/size; no physical objects yet.
+10. **Garrison/reinforcement zones** — plan.zones.garrisons (per installation),
+    plan.zones.reinforcements, quiet corridor + extraction pressure region exported;
+    EncounterDirector does not consume them yet.
+
 ## P2 backlog (ordered)
 
 1. Mission-layout wiring: nodes.lz/primary/extraction replace hardcoded flats/objective
