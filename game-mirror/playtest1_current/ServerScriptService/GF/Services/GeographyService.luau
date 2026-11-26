@@ -145,7 +145,28 @@ function GeographyService.generate(spec: GeoSpec, opts: any?): GenResult
 		decodeTime, writeTime, result.totalTime, memBefore, memAfter))
 	workspace:SetAttribute("GF_GeoFoundation", f.id)
 	workspace:SetAttribute("GF_GeoSeed", spec.seed)
+
+	-- terrain analysis for operation placement (directive section 23): the operation
+	-- generator consumes candidate sites, valley floor, high ground positions.
+	GeographyService.lastSampler = sampler
+	GeographyService.lastSpec = spec
+	task.spawn(function()
+		local ok, err = pcall(function()
+			local TerrainAnalysis = require(script.Parent.TerrainAnalysis)
+			GeographyService.analysis = TerrainAnalysis.analyze(sampler, 2450, 40)
+			if GeographyService.analysis then
+				workspace:SetAttribute("GF_GeoAnalyzed", true)
+				print(string.format("TerrainAnalysis: %d feasible sites (%d valley, %d high)",
+					#GeographyService.analysis.sites, #GeographyService.analysis.valleyFloor, #GeographyService.analysis.highGround))
+			end
+		end)
+		if not ok then warn("TerrainAnalysis failed:", err) end
+	end)
 	return result
 end
+
+GeographyService.lastSampler = nil
+GeographyService.lastSpec = nil
+GeographyService.analysis = nil
 
 return GeographyService

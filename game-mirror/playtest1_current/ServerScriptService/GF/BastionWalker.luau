@@ -405,16 +405,45 @@ local function step(state, dt)
 			task.spawn(function()
 				local players = game:GetService("Players"):GetPlayers()
 				task.wait(1.3) -- the tell: a rising whine and barrel glow, always 1.3s
+				-- legitimacy fix (spec scenario D): the cannon sweeps a forward arc, not an
+				-- omnidirectional radius. counterplay exists — flank the walker, get behind it,
+				-- or break line of sight during the telegraph and the pulses cannot reach you.
+				local losParams = RaycastParams.new()
+				losParams.FilterType = Enum.RaycastFilterType.Exclude
+				losParams.FilterDescendantsInstances = { model }
+				losParams.IgnoreWater = true
 				for pulse = 1, 3 do
 					if not model.Parent or not model.PrimaryPart then
 						break
 					end
+					local origin = model.PrimaryPart.Position
+					local forward = model.PrimaryPart.CFrame.LookVector
+					-- each pulse sweeps the arc: bearings rotate across a 150-degree frontal fan
+					local sweepOffset = (pulse - 2) * math.rad(50)
+					local cosHalfArc = math.cos(math.rad(80))
 					for _, plr in ipairs(players) do
 						local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
-						if root and (root.Position - model.PrimaryPart.Position).Magnitude < 70 then
-							local humanoid = plr.Character:FindFirstChild("Humanoid")
-							if humanoid then
-								humanoid:TakeDamage(20)
+						if root and (root.Position - origin).Magnitude < 70 then
+							local to = (root.Position - origin)
+							local flatTo = Vector3.new(to.X, 0, to.Z)
+							local flatFwd = Vector3.new(forward.X, 0, forward.Z)
+							if flatTo.Magnitude > 1 and flatFwd.Magnitude > 0.1 then
+								-- rotate facing by the sweep offset for this pulse
+								local c, sn = math.cos(sweepOffset), math.sin(sweepOffset)
+								local rx = flatFwd.X * c - flatFwd.Z * sn
+								local rz = flatFwd.X * sn + flatFwd.Z * c
+								local dot = (flatTo.Unit).X * rx + (flatTo.Unit).Z * rz
+								if dot >= cosHalfArc then
+									-- line of sight: cover and terrain genuinely protect
+									local eye = origin + Vector3.new(0, 8, 0)
+									local hit = workspace:Raycast(eye, root.Position + Vector3.new(0, 1.5, 0) - eye, losParams)
+									if hit == nil then
+										local humanoid = plr.Character:FindFirstChild("Humanoid")
+										if humanoid then
+											humanoid:TakeDamage(20)
+										end
+									end
+								end
 							end
 						end
 					end

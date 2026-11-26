@@ -40,7 +40,7 @@ end
 --   retreatHpFrac: below this health fraction they fall back instead of holding (0 = never).
 local TACTICAL = {
 	Rifleman = { preferredRange = 0.75, minRangeFrac = 0.15, repositionUrgency = 0.5, coverCommit = 5, flankArc = 0.85, suppressionShrug = 0.2, retreatHpFrac = 0.2 },
-	Vanguard = { preferredRange = 0.45, minRangeFrac = 0.0, repositionUrgency = 0.85, coverCommit = 2.5, flankArc = 1.3, suppressionShrug = 0.35, retreatHpFrac = 0.0 },
+	Vanguard = { preferredRange = 0.18, minRangeFrac = 0.0, repositionUrgency = 0.85, coverCommit = 2.5, flankArc = 1.3, suppressionShrug = 0.35, retreatHpFrac = 0.0 }, -- spec: close engagement distance; 0.45 held them at mid-range (measured 34.8 studs minimum vs a static target)
 	Marksman = { preferredRange = 0.9, minRangeFrac = 0.45, repositionUrgency = 0.65, coverCommit = 6, flankArc = 0.4, suppressionShrug = 0.1, retreatHpFrac = 0.35 },
 	Heavy = { preferredRange = 0.7, minRangeFrac = 0.1, repositionUrgency = 0.15, coverCommit = 8, flankArc = 0.0, suppressionShrug = 0.8, retreatHpFrac = 0.0 },
 	Commander = { preferredRange = 0.7, minRangeFrac = 0.2, repositionUrgency = 0.4, coverCommit = 6, flankArc = 0.5, suppressionShrug = 0.3, retreatHpFrac = 0.3 },
@@ -1374,8 +1374,21 @@ local function tickActor(model: Model, actor: any, dt: number)
 		workspace:SetAttribute("GF_Fallbacks", (workspace:GetAttribute("GF_Fallbacks") or 0) + 1)
 		return -- next tick picks up the reposition intent below
 	end
-	-- in range: hold position and fire. movement intents stop; facing continues via aimYaw.
-	NPCLocomotion.stop(actor.locomotion)
+	-- range-preference maneuvering (spec section 22, vanguard pressure): inside attackRange but
+	-- still outside the archetype's preferred fighting distance, keep closing while firing —
+	-- fire-and-maneuver rather than planting wherever the outer approach happened to stop. this is
+	-- what makes vanguards dangerous through movement: measured pre-fix they planted at 28-35 studs
+	-- against a static target (their preferred band is ~11). suppressed soldiers do not advance
+	-- into fire (heavies shrug most suppression — deliberate). the advance is deliberate combat
+	-- pace with the upper body tracking the target: readable and interruptible per the spec.
+	local preferredDist = def.attackRange * prof.preferredRange
+	if distance > preferredDist * 1.33 and (actor.suppression or 0) < SUPPRESS_ACT then
+		local closeGoal = root.Position + flat.Unit * math.max(0, distance - preferredDist)
+		NPCLocomotion.moveTo(actor.locomotion, closeGoal, "combat", 1.5)
+		-- no return: the firing cascade below still runs — the soldier shoots while closing
+	else
+		NPCLocomotion.stop(actor.locomotion)
+	end
 
 	-- S11 officer energy sweep: the signature crowd-control attack — a clearly telegraphed radial
 	-- burst that punishes clustered squads. Long windup (1.6s) with a published attribute clients
@@ -1459,6 +1472,12 @@ local function tickActor(model: Model, actor: any, dt: number)
 				if not liveRoot or (liveRoot.Position - root.Position).Magnitude > def.attackRange * 1.35 then
 					break
 				end
+				-- dtShot must be measured BEFORE overwriting lastFiredAt: the OU correlation factor rho
+				-- depends on time since the PREVIOUS shot. previously the assignment came first, making
+				-- dtShot~=0, rho=1 always — the correlated error never decayed and random-walked away
+				-- from the target, so accumulated error made hits impossible after the first few shots.
+				-- measured: q reached 1.00 with zero hits in 24 shots before this fix.
+				local dtSinceShot = os.clock() - (actor.lastFiredAt or 0)
 				actor.lastFiredAt = os.clock()
 				-- Hit resolution (spec section 27): physical aim dispersion, not dice. the soldier aims at
 				-- the target with a correlated error whose magnitude combines distance-scaled floor,
@@ -1491,8 +1510,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 				end
 				-- temporally correlated aim error (OU-like): consecutive shots walk around the aim
 				-- point rather than snapping independently — tracers read as tracking a target.
-				local dtShot = os.clock() - (actor.lastFiredAt or 0)
-				local rho = math.exp(-2.2 * math.min(dtShot, 1))
+				local rho = math.exp(-2.2 * math.min(dtSinceShot, 1))
 				actor.aimErr = (actor.aimErr or Vector3.zero) * rho
 					+ Vector3.new((math.random() - 0.5) * 2, (math.random() - 0.5) * 0.8, (math.random() - 0.5) * 2) * sigma
 				local errMag = actor.aimErr.Magnitude
