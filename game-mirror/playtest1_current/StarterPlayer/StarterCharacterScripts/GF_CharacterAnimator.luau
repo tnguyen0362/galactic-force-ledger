@@ -609,11 +609,8 @@ RunService.Heartbeat:Connect(function(dt)
 			setJoint("RightElbow", CFrame.Angles(-0.5, 0, 0))
 		else
 			-- armed airborne: the grip IK still runs — weapon stays genuinely held mid-jump
-			local cam = workspace.CurrentCamera
-			local pitch = 0
-			if aiming and cam then
-				pitch = math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1))
-			end
+			local pitch = character:GetAttribute("GF_AimPitch") or 0
+			if not aiming then pitch = 0 end
 			sharedPhase = phase
 			solveWeaponArms(aiming, pitch, sprinting)
 		end
