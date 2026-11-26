@@ -161,7 +161,15 @@ function StationArt.buildShell(station: Instance, base: CFrame)	-- V91 review: t
 			if okZone and zone == "Mission" then
 				return
 			end
+			-- mission participants are exempt whatever the zone table says (validation 2026-11-27:
+			-- operation deployments land ~2000 studs away at low altitude; an altitude-only rescue
+			-- yanked the squad back to the deck seconds after every deployment). The participant
+			-- attribute is set at server-confirmed deploy and survives any require-ordering failure.
+			if player:GetAttribute("GF_MissionParticipant") == true then
+				return
+			end
 			if root.Position.Y < base.Y - 10 then
+				print("[GF] reseat lifting " .. player.Name .. " zone=" .. tostring(zone) .. " participant=" .. tostring(player:GetAttribute("GF_MissionParticipant")))
 				root.CFrame = base * CFrame.new(-8, 5, 40) * CFrame.Angles(0, math.rad(180), 0)
 			end
 		end
