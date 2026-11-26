@@ -90,8 +90,8 @@ composers.canyon_network = function(seed: number, def: any, extent: number)
 	local function sampler(x: number, z: number): number
 		local wx, wz = NoiseKit.warp2(x, z, def.warpScale, def.warpAmp * 0.7, seed)
 		local f1, f2 = NoiseKit.voronoi(wx, wz, cellScale, seed + 31)
-		local border = 1 - math.clamp((f2 - f1) / 0.55, 0, 1) -- 1 at channel centerline
-		local channel = border ^ 1.6
+		local border = 1 - math.clamp((f2 - f1) / 0.75, 0, 1) -- 1 at channel centerline
+		local channel = border ^ 2.2
 		-- plateau tops at cell interiors, warped ridged noise gives rim character
 		local interior = 1 - channel
 		local crest = NoiseKit.ridged(wx, wz, 90, seed + 37) ^ 2
