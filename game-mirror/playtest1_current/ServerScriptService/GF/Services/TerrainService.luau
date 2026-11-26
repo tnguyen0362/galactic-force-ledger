@@ -8,6 +8,7 @@ local SectorBuilder = require(script.Parent.SectorBuilder)
 local BattlefieldService = require(script.Parent.Battlefield.BattlefieldService)
 local InstallationBuilder = require(script.Parent.Battlefield.InstallationBuilder)
 local CoverBuilder = require(script.Parent.Battlefield.CoverBuilder)
+local ScatterBuilder = require(script.Parent.Battlefield.ScatterBuilder)
 
 local TerrainService = {}
 
@@ -162,6 +163,11 @@ function TerrainService.build(seed: number): number
 				end, workspace, 240)
 				print(string.format("BattlefieldGen: cover objects built=%d", nCover))
 			end
+			-- biome-aware surface decoration: trees/shrubs/stones clustered by geography
+			local nScatter = ScatterBuilder.buildAll(plan, function(x, z)
+				return TerrainService.groundSurface(x, z)
+			end, workspace, 900)
+			print(string.format("BattlefieldGen: scatter instances=%d", nScatter))
 			local t = workspace.Terrain
 			pcall(function() t:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(84, 96, 88)) end)
 			pcall(function() t:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(116, 112, 108)) end)

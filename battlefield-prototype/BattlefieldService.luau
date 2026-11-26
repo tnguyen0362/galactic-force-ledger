@@ -42,7 +42,7 @@ local GENERATOR_VERSION = "2.0-alpha"
 local function nodeSpecs()
 	return {
 		{ id = "lz", minSpacing = 0, maxSlope = 18 },
-		{ id = "primary", minSpacing = 620, maxSlope = 16 },
+		{ id = "primary", minSpacing = 760, maxSlope = 16 },
 		{ id = "extraction", minSpacing = 200, maxSlope = 18 },
 	}
 end

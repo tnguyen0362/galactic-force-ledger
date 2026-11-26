@@ -377,7 +377,16 @@ local function presetFor(): { dist: number, right: number, height: number, fov: 
 	end
 	apply(blends.sprint, CAM.Sprint)
 	apply(blends.dodge, CAM.Dodge)
-	apply(blends.aim, CAM.Aim) -- aim last: strongest visual priority
+	-- per-weapon ADS zoom: the weapon layer publishes GF_AdsZoom (config adsZoom — 1.3 shotgun
+	-- through 3.4 marksman). FOV scales inversely: 70/zoom. Missing attribute reproduces the
+	-- legacy fixed-58 behavior exactly, so nothing shifts for unweaponed states.
+	local zoom = tonumber(game:GetService("Players").LocalPlayer:GetAttribute("GF_AdsZoom")) or 0
+	if zoom > 0.5 then
+		local aimTarget = { Distance = CAM.Aim.Distance, RightOffset = CAM.Aim.RightOffset, PivotHeight = CAM.Aim.PivotHeight, FOV = math.clamp(CAM.Explore.FOV / zoom, 20, 70) }
+		apply(blends.aim, aimTarget)
+	else
+		apply(blends.aim, CAM.Aim) -- aim last: strongest visual priority
+	end
 	apply(blends.downed, CAM.Downed) -- downed overrides all when active
 	return p
 end

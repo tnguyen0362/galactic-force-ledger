@@ -978,5 +978,12 @@
   "file": "ServerScriptService/GF/Services/Battlefield/CoverBuilder.luau",
   "lines": 98,
   "chars": 4173
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.ScatterBuilder",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/ScatterBuilder.luau",
+  "lines": 139,
+  "chars": 5679
  }
 ]

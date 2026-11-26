@@ -680,13 +680,16 @@ do
 		-- continuous bloom prediction: decay the last server value rather than waiting for the
 		-- next accepted shot — the old display stayed expanded indefinitely between shots.
 		local bloom = math.max(0, lastBloom - (os.clock() - bloomAt) * 2.6)
-		local alpha = base + bloom + (moving and 1.5 or 0)
-		-- compact monotonic accuracy representation (spec section 6): log response, not the raw
-		-- physical cone — alphaRef/alphaMax calibrate the display range, not ballistic truth.
+		-- response design (owner-tested 2026-11-26): the original mapping fed TOTAL dispersion
+		-- through one compressed log curve — bloom increments of 0.35deg/shot moved the ticks by
+		-- a fraction of a pixel and the reticle read as frozen. Now: the stance base sets the
+		-- rest width through the log curve (small range), and bloom+movement expand LINEARLY on
+		-- top at 4px/deg — first shot visibly opens, sustained fire opens wide, recovery reads.
 		local alphaRef, alphaMax = 0.5, 7
-		local x = math.clamp(math.log(1 + alpha / alphaRef) / math.log(1 + alphaMax / alphaRef), 0, 1)
-		-- inner-edge distance of the lines: 9px tight (aimed, no bloom) to 21px wide (hip, full)
-		local gapTarget = 9 + (21 - 9) * x
+		local xBase = math.clamp(math.log(1 + base / alphaRef) / math.log(1 + alphaMax / alphaRef), 0, 1)
+		local restGap = 9 + 6 * xBase -- stance rest width: ~9 tight aimed to ~15 wide hip
+		local expansion = (bloom + (moving and 1.5 or 0)) * 4
+		local gapTarget = restGap + math.min(expansion, 14)
 		-- expansion reacts immediately, recovery lightly damped (spec: tau 0.04-0.08s)
 		local tau = gapTarget > displayHalfGap and 0.02 or 0.06
 		displayHalfGap = gapTarget + (displayHalfGap - gapTarget) * math.exp(-dt / tau)

@@ -234,6 +234,9 @@ function WorldDressing.installationStyle(parent: Instance, center: Vector3, rng:
 		wall.Anchored = true
 		wall.CFrame = CFrame.new(center + Vector3.new(math.cos(angle) * 12, 5, math.sin(angle) * 12))
 			* CFrame.Angles(0, -angle, math.rad(12)) -- the slope: walls lean inward
+		-- walls are walls: solid. The WorldDressing default is non-collidable decor,
+		-- which made these read as massive black walls you could walk straight through.
+		wall.CanCollide = true
 		wall.Parent = parent
 	end
 	-- violet shield conduits tracing power flow between the walls

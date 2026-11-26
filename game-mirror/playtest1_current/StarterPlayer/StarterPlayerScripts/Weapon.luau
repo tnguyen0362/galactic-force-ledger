@@ -196,7 +196,27 @@ local function tryFire()
 	local muzzle = muzzlePosition()
 	VFX.muzzle(muzzle or origin, look)
 
-	Audio.play("rifle_fire", origin)
+	-- distinct voice per weapon class — the roster used to share one rifle crack, flattening
+	-- identity no matter what the stats said. Variants are pitch/volume-shaped in GFAudio.
+	do
+		local cat = weapon.category
+		local snd = (cat == "Shotgun" and "shotgun_fire")
+			or (cat == "Pistol" and "pistol_fire")
+			or (cat == "Marksman" and "marksman_fire")
+			or (cat == "LMG" and "lmg_fire")
+			or (cat == "SMG" and "smg_fire")
+			or (cat == "Launcher" and "launcher_fire")
+			or "rifle_fire"
+		Audio.play(snd, origin)
+	end
+	if weapon.explosive then
+		-- launchers: no hitscan impact theatre — the shell is a real travelling projectile and
+		-- feedback arrives at detonation. A short tracer toward the first stretch of flight is
+		-- honest visual texture; fake impact sparks at the hitscan endpoint were not.
+		VFX.tracer(muzzle or origin, (muzzle or origin) + look * 24)
+		HUD.setAmmo(state.ammo, state.magazine, state.reserve)
+		return
+	end
 	VFX.tracer(muzzle or origin, endPoint)
 	if hit and hit.Instance.Name == "DomeShield" then
 		-- Projectile rule: a dome shell stops bullets. The dome is queryable but not collidable, so it
@@ -341,6 +361,9 @@ function Weapon.equip(weaponId: string)
 	state.reloading = false
 	remotes.EquipWeapon:FireServer({ weaponId = weaponId })
 	buildViewmodel(weapon)
+	-- publish the zoom factor for the camera's per-weapon aim FOV (adsZoom was dead config data:
+	-- every weapon aimed at the same fixed 58 FOV regardless of being a marksman or an SMG)
+	game:GetService("Players").LocalPlayer:SetAttribute("GF_AdsZoom", tonumber(weapon.adsZoom) or 1.2)
 end
 
 function Weapon.getState()
@@ -386,7 +409,16 @@ function Weapon.init()
 		Weapon.reload()
 	end)
 	Input.onPress("SwapWeapon", function()
-		Weapon.equip(state.weaponId == "AR01" and "P01" or "AR01")
+		-- resolve against the server-published loadout slots — the hardcoded AR01/P01 toggle
+		-- stranded anyone carrying anything else (the toggle fired equip requests the server
+		-- correctly rejected as not-in-loadout, so swap silently did nothing).
+		local player = game:GetService("Players").LocalPlayer
+		local primary = player:GetAttribute("GF_PrimaryWeapon") or "AR01"
+		local secondary = player:GetAttribute("GF_SecondaryWeapon") or "P01"
+		local target = (state.weaponId == primary) and secondary or primary
+		if target ~= state.weaponId then
+			Weapon.equip(target)
+		end
 	end)
 
 	remotes.AmmoUpdated.OnClientEvent:Connect(function(payload)

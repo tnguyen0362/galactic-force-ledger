@@ -199,6 +199,8 @@ function CombatService.detonate(centre: Vector3, weapon: any, player: Player?): 
 	if not folder then
 		return 0
 	end
+	local blastDamageTotal = 0
+	local blastKilled = false
 	for _, model in folder:GetChildren() do
 		if model:IsA("Model") and model:GetAttribute("Dead") ~= true and model:GetAttribute("Health") ~= nil then
 			local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
@@ -206,11 +208,23 @@ function CombatService.detonate(centre: Vector3, weapon: any, player: Player?): 
 				local distance = (part.Position - centre).Magnitude
 				if distance <= radius then
 					local scale = math.clamp(1 - distance / radius, 0.3, 1)
-					CombatService.damageEnemy(model, weapon.damage * scale, player, nil, 1)
+					local killed = CombatService.damageEnemy(model, weapon.damage * scale, player, nil, 1, weapon)
+					blastDamageTotal += weapon.damage * scale
+					blastKilled = blastKilled or killed == true
 					hits += 1
 				end
 			end
 		end
+	end
+	-- detonation-driven feedback: launcher hitmarkers arrive when the shell actually lands,
+	-- never at trigger-pull. One aggregated marker per detonation — position is the blast centre.
+	if player and hits > 0 then
+		ReplicatedStorage.GF.Remotes.DamageFeedback:FireClient(player, {
+			position = centre,
+			damage = blastDamageTotal,
+			weakPoint = false,
+			killed = blastKilled,
+		})
 	end
 	for _, d in folder:GetDescendants() do
 		if d:IsA("BasePart") and d:GetAttribute("GFIntegrityMax") and d:GetAttribute("GFDestroyed") ~= true then
@@ -287,16 +301,26 @@ function CombatService.damageStructure(part: BasePart, amount: number, _attacker
 	return true
 end
 function CombatService.weakMultiplier(partName: string?, part: BasePart?): number
+	-- per-part authored weakpoint always wins — enemy setup writes these from the enemy config's
+	-- weakPointMultiplier onto the designated weak parts (core, lens, joints).
 	local wp = part and part:GetAttribute("WeakPoint")
 	if typeof(wp) == "number" then
 		return wp
 	end
 	if partName == "Head" then
-		return 2
+		-- headshots use the enemy type's configured weakpoint value when the model carries one —
+		-- the design table runs 1.0-2.5 per enemy type, and a flat 2x bypassed all of it. Spec
+		-- fallback for unconfigured enemies is 1.5x, not the old hardcoded 2x.
+		local model = part and part:FindFirstAncestorOfClass("Model")
+		local configured = model and model:GetAttribute("WeakPointMultiplier")
+		if typeof(configured) == "number" and configured > 1 then
+			return configured
+		end
+		return 1.5
 	end
 	return 1
 end
-function CombatService.damageEnemy(model: Model, amount: number, attacker: Player?, partName: string?, mult: number?): boolean
+function CombatService.damageEnemy(model: Model, amount: number, attacker: Player?, partName: string?, mult: number?, weapon: any?): boolean
 	-- Threat memory (S06-013): being hurt alerts the actor and biases its target scoring toward the attacker.
 	if attacker then
 		pcall(function()
@@ -350,9 +374,20 @@ function CombatService.damageEnemy(model: Model, amount: number, attacker: Playe
 	if armorFactor <= 0 or armorFactor > 1 then
 		armorFactor = 1
 	end
+	-- armor penetration bypasses a fraction of the mitigation: pen 0.4 vs armorFactor 0.5 yields
+	-- effective 0.7 — the target keeps 60% of its protection, the weapon ignores the rest.
+	local weaponArmorPen0 = math.clamp((weapon and tonumber(weapon.armorPenetration)) or 0, 0, 0.9)
+	if weaponArmorPen0 > 0 and armorFactor < 1 then
+		armorFactor = 1 - (1 - armorFactor) * (1 - weaponArmorPen0)
+	end
 	local healthDamage = 0
+	-- weapon interaction stats, the layer that makes the roster distinct against protected
+	-- targets: shieldMultiplier scales damage INTO shields (Arcus 1.1, sidearms higher), and
+	-- armorPenetration bypasses that fraction of armor mitigation on the health portion.
+	-- Abilities/projectiles pass weapon=nil and stay neutral, as before.
+	local weaponShieldMult = (weapon and tonumber(weapon.shieldMultiplier)) or 1
 	if shield > 0 then
-		local shieldRaw = raw
+		local shieldRaw = raw * weaponShieldMult
 		if augs then
 			shieldRaw = shieldRaw * (1 + augs.shieldDamage)
 		end
@@ -608,6 +643,34 @@ function CombatService.fire(player: Player, payload: any)
 	if (origin - root.Position).Magnitude > MAX_ORIGIN_OFFSET then
 		return rejectFire("origin-too-far")
 	end
+	-- Parallax validation (spec section 5 server model), pragmatic tier:
+	-- (a) facing coherence: the claimed direction must sit within a generous cone of where the
+	-- character faces. 100 degrees covers every legitimate third-person aim state (camera orbits,
+	-- aim-over-shoulder, hip-turn latency) while making backwards/spinbot fire impossible.
+	local rootLook = root.CFrame.LookVector
+	local flatClaim = (direction.Unit * Vector3.new(1, 0, 1))
+	local flatFace = (rootLook * Vector3.new(1, 0, 1))
+	if flatClaim.Magnitude > 0.05 and flatFace.Magnitude > 0.05 then
+		local cosA = flatClaim.Unit:Dot(flatFace.Unit)
+		if cosA < math.cos(math.rad(100)) then
+			return rejectFire("facing-incoherent")
+		end
+	end
+	-- (b) server-side muzzle obstruction mirror: the client denies shots where cover hugs the
+	-- muzzle, but a cheater simply omits that check. Re-run it here from the true head position:
+	-- if world geometry blocks the first 2.5 studs of the claimed line, the shot cannot be real —
+	-- legitimate play never produces it because the client-side check denies it first.
+	do
+		local head = character:FindFirstChild("Head")
+		local eyePos = head and head.Position or (root.Position + Vector3.new(0, 1.5, 0))
+		local muzzleParams = RaycastParams.new()
+		muzzleParams.FilterType = Enum.RaycastFilterType.Exclude
+		muzzleParams.FilterDescendantsInstances = { character }
+		local blocked = workspace:Raycast(eyePos, direction.Unit * 2.5, muzzleParams)
+		if blocked and blocked.Instance and blocked.Instance.CanCollide then
+			return rejectFire("muzzle-obstructed")
+		end
+	end
 	s.lastShotId = shotId
 	s.lastShotAt = t
 	s.ammo -= 1
@@ -759,12 +822,9 @@ function CombatService.fire(player: Player, payload: any)
 			require(script.Parent.ProjectileService).launch(player, weapon, origin, pelletDir)
 			note("BlastHits", 0)
 			note("LastBlast", hitPosition)
-			ReplicatedStorage.GF.Remotes.DamageFeedback:FireClient(player, {
-				position = hitPosition,
-				damage = weapon.damage,
-				weakPoint = false,
-				killed = false,
-			})
+			-- no immediate DamageFeedback here: the shell is still travelling. The old fake feedback
+			-- showed a hitmarker the instant the trigger was pulled regardless of where the shell
+			-- actually landed. Real feedback is detonation-driven inside ProjectileService.
 			ReplicatedStorage.GF.Remotes.AmmoUpdated:FireClient(player, { ammo = s.ammo, magazine = weapon.magazine, reserve = s.reserve or 0 })
 			return
 		end
@@ -784,7 +844,7 @@ function CombatService.fire(player: Player, payload: any)
 			end
 			local mult = CombatService.weakMultiplier(partName, result and result.Instance)
 			local damage = damagePerPellet * falloff * mult
-			local killed = CombatService.damageEnemy(enemyModel, damage, player, partName, mult)
+			local killed = CombatService.damageEnemy(enemyModel, damage, player, partName, mult, weapon)
 			counters.hits += 1
 			note("Hits", counters.hits)
 			note("LastDamage", damage)

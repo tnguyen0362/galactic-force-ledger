@@ -238,11 +238,13 @@ composers.broken_basin = function(seed: number, def: any, extent: number)
 	local function sampler(x: number, z: number): number
 		local wx, wz = NoiseKit.warp2(x, z, def.warpScale, def.warpAmp * 0.75, seed)
 		local f1, f2, cellSeed = NoiseKit.voronoi(wx, wz, cellScale, seed + 67)
-		local border = 1 - math.clamp((f2 - f1) / 0.42, 0, 1)
-		local rim = border ^ 1.6
+		-- wider rim falloff + gentler exponent: cratered country with climbable rim crossings
+		-- in most places instead of uniform cliff walls (unclimbable_share was 18/23 fails)
+		local border = 1 - math.clamp((f2 - f1) / 0.68, 0, 1)
+		local rim = border ^ 1.15
 		-- per-cell depth variance makes some basins deeper/more open than others
 		local depth = 0.55 + cellSeed * 0.65
-		local macro = rim * def.relief * 0.85 - (1 - rim) * def.relief * 0.34 * depth
+		local macro = rim * def.relief * 0.75 - (1 - rim) * def.relief * 0.34 * depth
 		return def.baseHeight + macro + detailLayer(x, z, seed, def) * (0.5 + 0.5 * rim)
 	end
 	return sampler, { cellScale = cellScale, kind = "basin" }

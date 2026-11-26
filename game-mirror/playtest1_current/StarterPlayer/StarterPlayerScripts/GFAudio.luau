@@ -27,6 +27,14 @@ end
 local EVENTS = {
 	rifle_fire     = { id = "rbxasset://sounds/metal.ogg",                pitch = { 1.55, 1.95 }, volume = 0.38, range = 130 },
 	shotgun_fire   = { id = "rbxasset://sounds/bass.wav",                pitch = { 1.20, 1.45 }, volume = 0.52, range = 140 },
+	-- class-distinct voices shaped from the stock set: pistol is a lighter snap, marksman a heavy
+	-- low crack, LMG a chugging mid, SMG a rapid high tick, launchers a deep whomp. Same assets,
+	-- different envelopes — identity comes from consistency, not from unique samples.
+	pistol_fire    = { id = "rbxasset://sounds/metal.ogg",                pitch = { 2.00, 2.30 }, volume = 0.30, range = 100 },
+	marksman_fire  = { id = "rbxasset://sounds/metal.ogg",                pitch = { 0.85, 1.00 }, volume = 0.50, range = 180 },
+	lmg_fire       = { id = "rbxasset://sounds/metal.ogg",                pitch = { 1.25, 1.45 }, volume = 0.42, range = 140 },
+	smg_fire       = { id = "rbxasset://sounds/metal.ogg",                pitch = { 2.10, 2.40 }, volume = 0.28, range = 95 },
+	launcher_fire  = { id = "rbxasset://sounds/bass.wav",                pitch = { 0.70, 0.85 }, volume = 0.55, range = 160 },
 	hit_flesh      = { id = "rbxasset://sounds/snap.wav",                pitch = { 0.72, 0.92 }, volume = 0.28, range = 90 },
 	hit_surface    = { id = "rbxasset://sounds/snap.wav",                pitch = { 1.05, 1.28 }, volume = 0.16, range = 70 },
 	hit_shield     = { id = "rbxasset://sounds/electronicpingshort.wav", pitch = { 1.05, 1.30 }, volume = 0.30, range = 80 },
