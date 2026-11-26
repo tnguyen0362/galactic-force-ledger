@@ -1,24 +1,72 @@
 --!strict
--- Client-local procedural enemy locomotion. Enemy rigs are kinematic server actors; animating their
--- joints on the server replicated cosmetic C0 churn to every client. The same motion is computed here
--- from observed per-frame displacement and never replicates back.
+-- EnemyAnimClient v2 — authoritative client-side procedural animation for Ascendancy infantry.
+--
+-- Architecture (per assignment): enemy rigs are kinematic server actors. All joint animation is
+-- computed HERE on each client from observed replicated displacement — zero additional network
+-- traffic, no server C0 churn, animation presentation fully separate from authoritative AI.
+-- The server never writes joint transforms; this is the ONE authoritative animation writer.
+--
+-- Locomotion math (per spec):
+--   GaitFrequency = |v| / L     (L = reference stride length)
+--   Phase += 2π · GaitFrequency · dt
+--   blending: x += (x_target - x) · (1 - exp(-dt/τ))   — frame-rate independent
+--
+-- Layered pose: lower body = locomotion (hips/knees/ankles), upper body = weapon-hold + aim
+-- (waist/neck/shoulders independent of locomotion), so enemies move while tracking targets.
+
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
-local WALK_AMPLITUDE = 0.62
-local ARM_AMPLITUDE = 0.38
-local PHASE_PER_STUD = 1.35
-local BOB = 0.10
+-- stride length L in studs — tuned to the rig's leg length (~2.6 stud inseam)
+local STRIDE = 2.4
+local TAU_GAIT = 0.18 -- amplitude blend time constant
+local TAU_AIM = 0.12
 
+type JointMap = { [string]: { motor: Motor6D, base: CFrame } }
 type RigState = {
-	joints: { [string]: { motor: Motor6D, base: CFrame } },
+	joints: JointMap,
 	phase: number,
 	last: Vector3,
+	speed: number, -- smoothed
+	amp: number, -- blended gait amplitude 0..1
+	aimYaw: number, -- blended aim yaw relative to body
+	aimPitch: number,
+	profile: any,
+	rig: Model,
 }
 
 local tracked: { [Model]: RigState } = {}
 
-local function indexJoints(rig: Model)
-	local joints: { [string]: { motor: Motor6D, base: CFrame } } = {}
+-- archetype animation personalities (spec §4) — multipliers on the shared infrastructure
+local PROFILES = {
+	Rifleman = { freqMul = 1.0, ampMul = 1.0, bobMul = 1.0, armSwing = 1.0, aimSharp = 1.0 },
+	Scout = { freqMul = 1.25, ampMul = 1.1, bobMul = 1.15, armSwing = 1.2, aimSharp = 1.2 }, -- vanguard: athletic
+	Vanguard = { freqMul = 1.25, ampMul = 1.1, bobMul = 1.15, armSwing = 1.2, aimSharp = 1.2 },
+	Heavy = { freqMul = 0.8, ampMul = 0.85, bobMul = 1.3, armSwing = 0.6, aimSharp = 0.7 }, -- deliberate weight
+	Marksman = { freqMul = 0.95, ampMul = 0.9, bobMul = 0.7, armSwing = 0.7, aimSharp = 1.4 }, -- stable aim
+	Officer = { freqMul = 0.9, ampMul = 0.85, bobMul = 0.8, armSwing = 0.8, aimSharp = 1.1 }, -- composed
+	Commander = { freqMul = 0.9, ampMul = 0.85, bobMul = 0.8, armSwing = 0.8, aimSharp = 1.1 },
+}
+local ELITE_MUL = { freqMul = 1.05, ampMul = 0.9, bobMul = 0.75, armSwing = 0.85, aimSharp = 1.3 } -- spectre/revenant precision
+
+local function profileFor(model: Model)
+	local id = model:GetAttribute("EnemyId")
+	local base = PROFILES[id] or PROFILES.Rifleman
+	if model:GetAttribute("Tier") == "Elite" then
+		-- elites: blend toward precision profile
+		return {
+			freqMul = base.freqMul * ELITE_MUL.freqMul,
+			ampMul = base.ampMul * ELITE_MUL.ampMul,
+			bobMul = base.bobMul * ELITE_MUL.bobMul,
+			armSwing = base.armSwing * ELITE_MUL.armSwing,
+			aimSharp = base.aimSharp * ELITE_MUL.aimSharp,
+		}
+	end
+	return base
+end
+
+local function indexJoints(rig: Model): JointMap
+	local joints: JointMap = {}
 	for _, d in rig:GetDescendants() do
 		if d:IsA("Motor6D") then
 			joints[d.Name] = { motor = d, base = d.C0 }
@@ -36,30 +84,138 @@ local function rigOf(model: Model): Model?
 	return nil
 end
 
-local function apply(state: RigState, swing: number, phase: number)
-	local legs = { { "LeftHip", swing }, { "RightHip", -swing }, { "LeftKnee", -math.abs(swing) * 0.55 }, { "RightKnee", -math.abs(-swing) * 0.55 } }
-	local arms = { { "LeftShoulder", -swing * ARM_AMPLITUDE / WALK_AMPLITUDE }, { "RightShoulder", swing * ARM_AMPLITUDE / WALK_AMPLITUDE } }
-	for _, entry in legs do
-		local joint = state.joints[entry[1]]
-		if joint then
-			joint.motor.C0 = joint.base * CFrame.Angles(entry[2], 0, 0)
-		end
-	end
-	for _, entry in arms do
-		local joint = state.joints[entry[1]]
-		if joint then
-			joint.motor.C0 = joint.base * CFrame.Angles(entry[2], 0, 0)
-		end
-	end
-	local torso = state.joints["Root"] or state.joints["Waist"]
-	if torso then
-		torso.motor.C0 = torso.base * CFrame.new(0, math.abs(math.sin(phase * 2)) * BOB, 0)
+local function setJoint(joints: JointMap, name: string, rot: CFrame)
+	local j = joints[name]
+	if j then
+		-- Transform rotates at the anatomical pivot (C0 is joint-located in rig v2)
+		j.motor.C0 = j.base * rot
 	end
 end
 
-local function rest(state: RigState)
-	for _, joint in state.joints do
-		joint.motor.C0 = joint.base
+local function clearJoints(joints: JointMap)
+	for _, j in joints do
+		j.motor.C0 = j.base
+	end
+end
+
+-- exponential blend helper: frame-rate independent
+local function blend(current: number, target: number, dt: number, tau: number): number
+	return target + (current - target) * math.exp(-dt / tau)
+end
+
+local function poseRig(model: Model, state: RigState, dt: number)
+	local pivot = model:GetPivot()
+	local pos = pivot.Position
+
+	-- velocity from replicated displacement
+	local instantSpeed = 0
+	if dt > 0 then
+		instantSpeed = (pos - state.last).Magnitude / dt
+	end
+	state.last = pos
+	state.speed = blend(state.speed, instantSpeed, dt, 0.15)
+
+	local prof = state.profile
+	local moving = state.speed > 1.2
+
+	-- gait: frequency from actual velocity, amplitude blended toward target
+	local gaitFreq = (state.speed / STRIDE) * prof.freqMul
+	if moving then
+		state.phase += 2 * math.pi * gaitFreq * dt
+	end
+	local ampTarget = moving and math.clamp(state.speed / 10, 0.3, 1) or 0
+	state.amp = blend(state.amp, ampTarget, dt, TAU_GAIT)
+
+	local phase = state.phase
+	local amp = state.amp * prof.ampMul
+
+	-- LOWER BODY — locomotion layer (radians)
+	local hipAmp = 0.55 * amp
+	local kneeAmp = 0.7 * amp
+	local sinL = math.sin(phase)
+	local sinR = math.sin(phase + math.pi)
+
+	-- hips swing contralaterally
+	setJoint(state.joints, "HipL", CFrame.Angles(-sinL * hipAmp, 0, 0))
+	setJoint(state.joints, "HipR", CFrame.Angles(-sinR * hipAmp, 0, 0))
+	-- knees flex during the backward/recovery half of each leg's cycle
+	local kneeL = math.max(0, -sinL) * kneeAmp + math.max(0, sinL) * kneeAmp * 0.15
+	local kneeR = math.max(0, -sinR) * kneeAmp + math.max(0, sinR) * kneeAmp * 0.15
+	setJoint(state.joints, "KneeL", CFrame.Angles(kneeL, 0, 0))
+	setJoint(state.joints, "KneeR", CFrame.Angles(kneeR, 0, 0))
+	-- ankles compensate for terrain contact
+	setJoint(state.joints, "AnkleL", CFrame.Angles(sinL * hipAmp * 0.4 - kneeL * 0.5, 0, 0))
+	setJoint(state.joints, "AnkleR", CFrame.Angles(sinR * hipAmp * 0.4 - kneeR * 0.5, 0, 0))
+
+	-- torso bob: subtle vertical at 2x gait frequency, scaled by personality
+	local bob = math.abs(math.sin(phase)) * 0.05 * amp * prof.bobMul
+	-- slight forward lean when moving — weight commitment
+	local lean = amp * 0.06
+	setJoint(state.joints, "RootJoint", CFrame.new(0, bob, 0) * CFrame.Angles(lean, 0, 0))
+
+	-- UPPER BODY — independent aim layer.
+	-- aim target: nearest visible player within engagement range (presentation only —
+	-- authoritative targeting stays server-side; this orients the weapon cosmetically)
+	local enemyId = model:GetAttribute("EnemyId")
+	local aimYawTarget, aimPitchTarget = 0, 0
+	local targetPos = nil
+	local myPos = pos
+	local bestD = 70
+	for _, plr in Players:GetPlayers() do
+		local char = plr.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			local d = (hrp.Position - myPos).Magnitude
+			if d < bestD then
+				bestD = d
+				targetPos = hrp.Position
+			end
+		end
+	end
+
+	if targetPos then
+		-- yaw of target relative to the enemy's facing
+		local look = pivot.LookVector
+		local toTarget = (targetPos - myPos)
+		local flat = Vector3.new(toTarget.X, 0, toTarget.Z)
+		if flat.Magnitude > 0.5 then
+			local flatN = flat.Unit
+			local cross = look.X * flatN.Z - look.Z * flatN.X
+			local dot = math.clamp(look.X * flatN.X + look.Z * flatN.Z, -1, 1)
+			aimYawTarget = math.clamp(math.atan2(-cross, dot), -0.9, 0.9)
+			aimPitchTarget = math.clamp(math.atan2(toTarget.Y, flat.Magnitude), -0.5, 0.6)
+		end
+	end
+
+	local sharp = prof.aimSharp
+	state.aimYaw = blend(state.aimYaw, aimYawTarget, dt, TAU_AIM / sharp)
+	state.aimPitch = blend(state.aimPitch, aimPitchTarget, dt, TAU_AIM / sharp)
+
+	-- waist yaw toward target (upper body tracks independently of locomotion direction)
+	setJoint(state.joints, "Waist", CFrame.Angles(0, state.aimYaw * 0.55, 0))
+	setJoint(state.joints, "Neck", CFrame.Angles(state.aimPitch * 0.4, state.aimYaw * 0.35, 0))
+
+	-- arms: weapon-hold base pose + small counter-swing scaled DOWN while aiming
+	-- (spec: no unnatural arm swinging while aiming)
+	local aiming = math.abs(state.aimYaw) > 0.06 or (targetPos ~= nil and bestD < 45)
+	local swingScale = aiming and 0.15 or prof.armSwing
+	local armAmp = 0.35 * amp * swingScale
+	-- left arm: counter-swings when free, stabilizes weapon when aiming
+	local leftArmBase = aiming and CFrame.Angles(-0.5, 0.5, 0.1) or CFrame.Angles(0, 0, 0.06)
+	setJoint(state.joints, "ShoulderL", leftArmBase * CFrame.Angles(-sinR * armAmp, 0, 0))
+	setJoint(state.joints, "ElbowL", CFrame.Angles(aiming and -0.9 or -0.35, 0, 0))
+	-- right arm: weapon-hold — raised toward aim pitch, minimal swing
+	local holdPitch = -0.85 - state.aimPitch * 0.7
+	setJoint(state.joints, "ShoulderR", CFrame.Angles(holdPitch, -0.15 + state.aimYaw * 0.3, -0.06) * CFrame.Angles(-sinL * armAmp * 0.4, 0, 0))
+	setJoint(state.joints, "ElbowR", CFrame.Angles(-0.5, 0, 0))
+
+	-- idle breathing when stationary — prevents dead-mannequin look
+	if not moving then
+		local breath = math.sin(os.clock() * 1.4 + phase) * 0.015
+		local waist = state.joints.Waist
+		if waist then
+			waist.motor.C0 = waist.base * CFrame.Angles(breath, state.aimYaw * 0.55, 0)
+		end
 	end
 end
 
@@ -68,35 +224,38 @@ RunService.Heartbeat:Connect(function(dt)
 	if not folder then
 		return
 	end
+	-- untrack destroyed models
+	for model in tracked do
+		if not model.Parent then
+			tracked[model] = nil
+		end
+	end
 	for _, model in folder:GetChildren() do
 		if model:IsA("Model") and model:GetAttribute("HasRig") then
 			local state = tracked[model]
 			if not state then
 				local rig = rigOf(model)
 				if rig then
-					state = { joints = indexJoints(rig), phase = 0, last = model:GetPivot().Position }
+					state = {
+						joints = indexJoints(rig),
+						phase = math.random() * math.pi * 2, -- desynchronize — no robotic uniformity
+						last = model:GetPivot().Position,
+						speed = 0,
+						amp = 0,
+						aimYaw = 0,
+						aimPitch = 0,
+						profile = profileFor(model),
+						rig = rig,
+					}
 					tracked[model] = state
 				end
 			end
 			if state then
-				local pos = model:GetPivot().Position
-				local moved = (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(state.last.X, 0, state.last.Z)).Magnitude
-				state.last = pos
-				if moved > 0.01 and moved < 30 then
-					state.phase += moved * PHASE_PER_STUD
-					apply(state, math.sin(state.phase) * WALK_AMPLITUDE, state.phase)
-				elseif math.abs(math.sin(state.phase)) > 0.01 then
-					state.phase += dt * 2
-					apply(state, math.sin(state.phase) * WALK_AMPLITUDE * 0.12, state.phase)
-				else
-					rest(state)
+				local ok, err = pcall(poseRig, model, state, dt)
+				if not ok then
+					tracked[model] = nil
 				end
 			end
-		end
-	end
-	for model in tracked do
-		if not model.Parent then
-			tracked[model] = nil
 		end
 	end
 end)

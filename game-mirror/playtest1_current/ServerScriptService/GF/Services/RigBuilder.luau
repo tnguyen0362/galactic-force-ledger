@@ -1,103 +1,184 @@
 --!strict
--- RigBuilder: one-shot constructor for the AscendancyTrooper rig asset in ServerStorage.GF.Art.
--- Run once in Edit mode — the asset persists with the place. Enemies pick it up through the
--- existing ArtService.clone path in EnemyService (zero behavior edits).
+-- RigBuilder v2: constructs the AscendancyTrooper rig asset in ServerStorage.GF.Art.
+-- Run once in Edit mode — the asset persists with the place; enemies pick it up through
+-- the existing ArtService.clone path in EnemyService (zero behavior edits).
 --
--- Rig doctrine: R15-style Motor6D hierarchy, arms at sides, right arm in weapon-hold pose,
--- violet visor slit, mesh plating welded to limbs so armor articulates with animation.
+-- v2 refinement (user directive — no chunky boxes, anatomically correct joints):
+--   * Motor6D C0/C1 positioned at ANATOMICAL JOINT LOCATIONS so Transform rotations
+--     pivot at shoulders/hips/elbows/knees — required for correct procedural animation.
+--   * Tapered proportions: waist narrower than chest, limbs slim with layered armor
+--     pieces adding the bulk instead of the body blocks themselves.
+--   * Layered armor shells: overlapping plates with small gaps read as manufactured
+--     armor rather than single rectangular masses.
+--   * Armor articulates with limbs (welded), mesh plating from GFTroopKit on top.
 
 local ServerStorage = game:GetService("ServerStorage")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RigBuilder = {}
 
+local OBSIDIAN = Color3.fromRGB(36, 33, 42)
+local VIOLETGRAY = Color3.fromRGB(81, 70, 94)
+local IVORY = Color3.fromRGB(214, 203, 180)
+local BRONZE = Color3.fromRGB(150, 120, 84)
+local ENERGY = Color3.fromRGB(169, 99, 233)
+
+-- limb definition: size + world CFrame in bind pose + joint positions.
+-- all heights: feet at y=0, total height ~5.3 studs before tier scaling.
+export type LimbDef = {
+	size: Vector3,
+	cframe: CFrame,
+	color: Color3,
+	jointIn: Vector3?, -- world position where this limb's incoming joint pivots
+}
+
+local LIMBS: { [string]: LimbDef } = {
+	HumanoidRootPart = { size = Vector3.new(1.6, 0.9, 0.9), cframe = CFrame.new(0, 3.05, 0), color = OBSIDIAN },
+	-- torso: chest broad, waist tapered — silhouette reads armored, not box
+	LowerTorso = { size = Vector3.new(1.55, 1.0, 1.0), cframe = CFrame.new(0, 3.05, 0), color = VIOLETGRAY, jointIn = Vector3.new(0, 3.5, 0) },
+	UpperTorso = { size = Vector3.new(1.95, 1.15, 1.1), cframe = CFrame.new(0, 4.05, 0), color = OBSIDIAN, jointIn = Vector3.new(0, 4.62, 0) },
+	Head = { size = Vector3.new(0.95, 1.0, 1.0), cframe = CFrame.new(0, 5.35, 0), color = OBSIDIAN },
+	-- arms slim at the core — armor pieces add the bulk
+	UpperArmL = { size = Vector3.new(0.52, 1.15, 0.52), cframe = CFrame.new(-1.32, 4.02, 0), color = OBSIDIAN, jointIn = Vector3.new(-1.28, 4.5, 0) },
+	LowerArmL = { size = Vector3.new(0.46, 1.05, 0.46), cframe = CFrame.new(-1.34, 2.95, -0.08), color = VIOLETGRAY, jointIn = Vector3.new(-1.33, 3.5, 0) },
+	HandL = { size = Vector3.new(0.42, 0.5, 0.42), cframe = CFrame.new(-1.34, 2.32, -0.14), color = OBSIDIAN, jointIn = Vector3.new(-1.34, 2.55, -0.1) },
+	UpperArmR = { size = Vector3.new(0.52, 1.15, 0.52), cframe = CFrame.new(1.32, 4.02, 0), color = OBSIDIAN, jointIn = Vector3.new(1.28, 4.5, 0) },
+	LowerArmR = { size = Vector3.new(0.46, 1.05, 0.46), cframe = CFrame.new(1.1, 3.3, -0.55), color = VIOLETGRAY, jointIn = Vector3.new(1.26, 3.55, -0.15) },
+	HandR = { size = Vector3.new(0.42, 0.5, 0.42), cframe = CFrame.new(0.8, 3.55, -0.95), color = OBSIDIAN, jointIn = Vector3.new(0.95, 3.45, -0.75) },
+	-- legs: armored segmentation — thigh slimmer, shin with plate bulk
+	UpperLegL = { size = Vector3.new(0.68, 1.25, 0.72), cframe = CFrame.new(-0.48, 1.95, 0), color = OBSIDIAN, jointIn = Vector3.new(-0.48, 2.55, 0) },
+	LowerLegL = { size = Vector3.new(0.58, 1.2, 0.62), cframe = CFrame.new(-0.48, 0.75, 0.02), color = VIOLETGRAY, jointIn = Vector3.new(-0.48, 1.35, 0) },
+	FootL = { size = Vector3.new(0.6, 0.32, 0.95), cframe = CFrame.new(-0.48, 0.16, -0.12), color = OBSIDIAN, jointIn = Vector3.new(-0.48, 0.32, 0) },
+	UpperLegR = { size = Vector3.new(0.68, 1.25, 0.72), cframe = CFrame.new(0.48, 1.95, 0), color = OBSIDIAN, jointIn = Vector3.new(0.48, 2.55, 0) },
+	LowerLegR = { size = Vector3.new(0.58, 1.2, 0.62), cframe = CFrame.new(0.48, 0.75, 0.02), color = VIOLETGRAY, jointIn = Vector3.new(0.48, 1.35, 0) },
+	FootR = { size = Vector3.new(0.6, 0.32, 0.95), cframe = CFrame.new(0.48, 0.16, -0.12), color = OBSIDIAN, jointIn = Vector3.new(0.48, 0.32, 0) },
+}
+
+-- joint graph: name = {part0, part1, worldPivot}
+local JOINTS = {
+	{ "RootJoint", "HumanoidRootPart", "LowerTorso", Vector3.new(0, 3.5, 0) },
+	{ "Waist", "LowerTorso", "UpperTorso", Vector3.new(0, 3.55, 0) },
+	{ "Neck", "UpperTorso", "Head", Vector3.new(0, 4.85, 0) },
+	{ "ShoulderL", "UpperTorso", "UpperArmL", Vector3.new(-1.05, 4.45, 0) },
+	{ "ElbowL", "UpperArmL", "LowerArmL", Vector3.new(-1.33, 3.5, 0) },
+	{ "WristL", "LowerArmL", "HandL", Vector3.new(-1.34, 2.55, -0.1) },
+	{ "ShoulderR", "UpperTorso", "UpperArmR", Vector3.new(1.05, 4.45, 0) },
+	{ "ElbowR", "UpperArmR", "LowerArmR", Vector3.new(1.26, 3.55, -0.15) },
+	{ "WristR", "LowerArmR", "HandR", Vector3.new(0.95, 3.45, -0.75) },
+	{ "HipL", "LowerTorso", "UpperLegL", Vector3.new(-0.48, 2.55, 0) },
+	{ "KneeL", "UpperLegL", "LowerLegL", Vector3.new(-0.48, 1.35, 0) },
+	{ "AnkleL", "LowerLegL", "FootL", Vector3.new(-0.48, 0.32, 0) },
+	{ "HipR", "LowerTorso", "UpperLegR", Vector3.new(0.48, 2.55, 0) },
+	{ "KneeR", "UpperLegR", "LowerLegR", Vector3.new(0.48, 1.35, 0) },
+	{ "AnkleR", "LowerLegR", "FootR", Vector3.new(0.48, 0.32, 0) },
+}
+
 function RigBuilder.build()
-	local SS = ServerStorage
-	local gf = SS:FindFirstChild("GF") or Instance.new("Folder")
+	local gf = ServerStorage:FindFirstChild("GF") or Instance.new("Folder")
 	gf.Name = "GF"
-	gf.Parent = SS
+	gf.Parent = ServerStorage
 	local art = gf:FindFirstChild("Art") or Instance.new("Folder")
 	art.Name = "Art"
 	art.Parent = gf
 	local old = art:FindFirstChild("AscendancyTrooper")
 	if old then old:Destroy() end
 
-	local OBSIDIAN = Color3.fromRGB(36, 33, 42)
-	local VIOLETGRAY = Color3.fromRGB(81, 70, 94)
-	local ENERGY = Color3.fromRGB(169, 99, 233)
-
 	local rig = Instance.new("Model")
 	rig.Name = "AscendancyTrooper"
 
-	local function limb(name, size, cf, color)
+	local parts: { [string]: BasePart } = {}
+	for name, def in LIMBS do
 		local p = Instance.new("Part")
 		p.Name = name
-		p.Size = size
-		p.CFrame = cf
-		p.Color = color or OBSIDIAN
+		p.Size = def.size
+		p.CFrame = def.cframe
+		p.Color = def.color
 		p.Material = Enum.Material.SmoothPlastic
 		p.CanCollide = false
 		p.CanQuery = false
 		p.CanTouch = false
 		p.Anchored = false
 		p.Parent = rig
-		return p
+		parts[name] = p
 	end
+	parts.HumanoidRootPart.Transparency = 1
 
-	local root = limb("HumanoidRootPart", Vector3.new(2, 1, 1), CFrame.new(0, 3.1, 0))
-	root.Transparency = 1
-	local lowerTorso = limb("LowerTorso", Vector3.new(1.85, 1.1, 1.1), CFrame.new(0, 3.1, 0), VIOLETGRAY)
-	local upperTorso = limb("UpperTorso", Vector3.new(2.0, 1.3, 1.2), CFrame.new(0, 4.15, 0))
-	local head = limb("Head", Vector3.new(1.0, 1.0, 1.0), CFrame.new(0, 5.45, 0))
-	local upperArmL = limb("UpperArmL", Vector3.new(0.65, 1.2, 0.65), CFrame.new(-1.42, 4.1, 0))
-	local lowerArmL = limb("LowerArmL", Vector3.new(0.58, 1.1, 0.58), CFrame.new(-1.45, 3.0, -0.1), VIOLETGRAY)
-	local handL = limb("HandL", Vector3.new(0.5, 0.55, 0.5), CFrame.new(-1.45, 2.3, -0.18), VIOLETGRAY)
-	local upperArmR = limb("UpperArmR", Vector3.new(0.65, 1.2, 0.65), CFrame.new(1.42, 4.1, 0))
-	local lowerArmR = limb("LowerArmR", Vector3.new(0.58, 1.1, 0.58), CFrame.new(1.05, 3.35, -0.75), VIOLETGRAY)
-	local handR = limb("HandR", Vector3.new(0.5, 0.55, 0.5), CFrame.new(0.75, 3.6, -1.1), VIOLETGRAY)
-	local upperLegL = limb("UpperLegL", Vector3.new(0.8, 1.3, 0.85), CFrame.new(-0.52, 1.95, 0))
-	local lowerLegL = limb("LowerLegL", Vector3.new(0.72, 1.25, 0.78), CFrame.new(-0.52, 0.72, 0.02), VIOLETGRAY)
-	local footL = limb("FootL", Vector3.new(0.72, 0.35, 1.0), CFrame.new(-0.52, 0.18, -0.1), VIOLETGRAY)
-	local upperLegR = limb("UpperLegR", Vector3.new(0.8, 1.3, 0.85), CFrame.new(0.52, 1.95, 0))
-	local lowerLegR = limb("LowerLegR", Vector3.new(0.72, 1.25, 0.78), CFrame.new(0.52, 0.72, 0.02), VIOLETGRAY)
-	local footR = limb("FootR", Vector3.new(0.72, 0.35, 1.0), CFrame.new(0.52, 0.18, -0.1), VIOLETGRAY)
-
-	local function bindJoint(name, p0, p1)
+	-- joints with pivots at anatomical locations:
+	-- C0/C1 express the SAME world pivot point in each part's bind-frame space.
+	for _, j in JOINTS do
+		local name, p0n, p1n, pivot = j[1], j[2], j[3], j[4]
+		local p0, p1 = parts[p0n], parts[p1n]
 		local m = Instance.new("Motor6D")
 		m.Name = name
 		m.Part0 = p0
 		m.Part1 = p1
-		m.C0 = CFrame.new()
-		m.C1 = p0.CFrame:Inverse() * p1.CFrame
+		m.C0 = p0.CFrame:Inverse() * CFrame.new(pivot)
+		m.C1 = p1.CFrame:Inverse() * CFrame.new(pivot)
 		m.Parent = p0
-		return m
 	end
 
-	bindJoint("RootJoint", root, lowerTorso)
-	bindJoint("Waist", lowerTorso, upperTorso)
-	bindJoint("Neck", upperTorso, head)
-	bindJoint("ShoulderL", upperTorso, upperArmL)
-	bindJoint("ElbowL", upperArmL, lowerArmL)
-	bindJoint("WristL", lowerArmL, handL)
-	bindJoint("ShoulderR", upperTorso, upperArmR)
-	bindJoint("ElbowR", upperArmR, lowerArmR)
-	bindJoint("WristR", lowerArmR, handR)
-	bindJoint("HipL", lowerTorso, upperLegL)
-	bindJoint("KneeL", upperLegL, lowerLegL)
-	bindJoint("AnkleL", lowerLegL, footL)
-	bindJoint("HipR", lowerTorso, upperLegR)
-	bindJoint("KneeR", upperLegR, lowerLegR)
-	bindJoint("AnkleR", lowerLegR, footR)
-
-	local visor = limb("VisorSlit", Vector3.new(0.7, 0.13, 0.08), head.CFrame * CFrame.new(0, 0.05, -0.5), ENERGY)
+	-- violet visor slit — recessed into the helmet face
+	local head = parts.Head
+	local visor = Instance.new("Part")
+	visor.Name = "VisorSlit"
+	visor.Size = Vector3.new(0.66, 0.12, 0.08)
+	visor.CFrame = head.CFrame * CFrame.new(0, 0.08, -0.48)
+	visor.Color = ENERGY
 	visor.Material = Enum.Material.Neon
-	bindJoint("VisorJoint", head, visor)
+	visor.CanCollide = false
+	visor.CanQuery = false
+	visor.CanTouch = false
+	visor.Anchored = false
+	visor.Parent = rig
+	local vj = Instance.new("Motor6D")
+	vj.Name = "VisorJoint"
+	vj.Part0 = head
+	vj.Part1 = visor
+	vj.C0 = head.CFrame:Inverse() * CFrame.new((head.CFrame * CFrame.new(0, 0.08, -0.48)).Position)
+	vj.C1 = CFrame.new()
+	vj.Parent = head
+
+	-- layered armor shells: overlapping plates that taper the silhouette.
+	-- these are primitive armor pieces welded to limbs — they articulate with joints.
+	local function armorShell(name, parent, size, offset, color, taper)
+		local a = Instance.new("Part")
+		a.Name = name
+		a.Size = size
+		a.CFrame = parent.CFrame * CFrame.new(offset)
+		a.Color = color or OBSIDIAN
+		a.Material = Enum.Material.SmoothPlastic
+		a.CanCollide = false
+		a.CanQuery = false
+		a.CanTouch = false
+		a.Anchored = false
+		a.Parent = rig
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = parent
+		w.Part1 = a
+		w.Parent = a
+		return a
+	end
+
+	-- chest plate: broad angular front shell over the upper torso
+	armorShell("ChestShell", parts.UpperTorso, Vector3.new(2.05, 0.95, 0.55), Vector3.new(0, 0.05, -0.42), OBSIDIAN)
+	-- waist belt plate — defines the waist transition
+	armorShell("WaistPlate", parts.LowerTorso, Vector3.new(1.7, 0.4, 1.1), Vector3.new(0, 0.35, 0), BRONZE)
+	-- thigh plating
+	armorShell("ThighPlateL", parts.UpperLegL, Vector3.new(0.78, 0.9, 0.82), Vector3.new(0, 0.05, -0.02), OBSIDIAN)
+	armorShell("ThighPlateR", parts.UpperLegR, Vector3.new(0.78, 0.9, 0.82), Vector3.new(0, 0.05, -0.02), OBSIDIAN)
+	-- shin plating — front-facing protective shells
+	armorShell("ShinPlateL", parts.LowerLegL, Vector3.new(0.64, 0.95, 0.3), Vector3.new(0, 0, -0.28), OBSIDIAN)
+	armorShell("ShinPlateR", parts.LowerLegR, Vector3.new(0.64, 0.95, 0.3), Vector3.new(0, 0, -0.28), OBSIDIAN)
+	-- forearm bracers
+	armorShell("BracerL", parts.LowerArmL, Vector3.new(0.54, 0.7, 0.54), Vector3.new(0, -0.1, 0), OBSIDIAN)
+	armorShell("BracerR", parts.LowerArmR, Vector3.new(0.54, 0.7, 0.54), Vector3.new(0, -0.1, 0), OBSIDIAN)
 
 	local hum = Instance.new("Humanoid")
 	hum.RigType = Enum.HumanoidRigType.R15
 	hum.Parent = rig
-	rig.PrimaryPart = root
+	rig.PrimaryPart = parts.HumanoidRootPart
 
+	-- mesh plating welded to limbs — articulates with animation
 	local kit = ReplicatedStorage:FindFirstChild("GFTroopKit")
 	local plated = 0
 	if kit then
@@ -128,17 +209,17 @@ function RigBuilder.build()
 				plated += 1
 			end
 		end
-		plate("RifleHelmet", head, Vector3.new(0, 0.05, 0))
-		plate("ChestArmor", upperTorso, Vector3.new(0, 0.05, 0))
-		plate("Pauldron", upperArmL, Vector3.new(-0.15, 0.45, 0))
-		plate("Pauldron", upperArmR, Vector3.new(0.15, 0.45, 0), 180)
-		plate("Greave", lowerLegL, Vector3.new(0, 0.1, 0))
-		plate("Greave", lowerLegR, Vector3.new(0, 0.1, 0), 180)
-		plate("EnergyRifle", handR, Vector3.new(0, 0.1, -0.4))
+		plate("RifleHelmet", parts.Head, Vector3.new(0, 0.05, 0))
+		plate("ChestArmor", parts.UpperTorso, Vector3.new(0, 0.05, 0))
+		plate("Pauldron", parts.UpperArmL, Vector3.new(-0.12, 0.42, 0))
+		plate("Pauldron", parts.UpperArmR, Vector3.new(0.12, 0.42, 0), 180)
+		plate("Greave", parts.LowerLegL, Vector3.new(0, 0.1, 0))
+		plate("Greave", parts.LowerLegR, Vector3.new(0, 0.1, 0), 180)
+		plate("EnergyRifle", parts.HandR, Vector3.new(0, 0.1, -0.4))
 	end
 
 	rig.Parent = art
-	return "RIG BUILT plated=" .. plated
+	return "RIG v2 BUILT plated=" .. plated
 end
 
 return RigBuilder
