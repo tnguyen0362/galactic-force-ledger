@@ -450,6 +450,7 @@ local function groundPoint(p: Vector3): Vector3
 end
 
 local function teleportTo(player: Player, position: Vector3)
+	print(string.format("[GF-TRACE] teleportTo %s -> %.0f,%.0f,%.0f", player.Name, position.X, position.Y, position.Z), debug.traceback("", 2))
 	workspace:SetAttribute("GF_Teleporting", true)
 	local character = player.Character
 	if not character or not character:FindFirstChild("HumanoidRootPart") then
@@ -638,6 +639,7 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 end
 
 function StationService.returnToStation(player: Player)
+	print("[GF-TRACE] returnToStation", player.Name, debug.traceback("", 2))
 	player:SetAttribute("GF_MissionParticipant", nil)
 	workspace:SetAttribute("GF_InMission", false)
 	workspace:SetAttribute("GF_ReinforcementTickets", 0)

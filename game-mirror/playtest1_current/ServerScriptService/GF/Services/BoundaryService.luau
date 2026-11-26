@@ -13,7 +13,12 @@ local lastSafe: { [Player]: Vector3 } = {}
 local warnStarted: { [Player]: number } = {}
 
 local BOUNDS_CENTER = Vector3.new(0, 0, 0)
-local BOUNDS_RADIUS = 900 -- studs — the mission valley rim
+-- the play space is the full hybrid-terrain extent (validation 2026-11-27: the legacy 900-stud
+-- mission-valley rim predates hybrid generation — operation deployments land 1500-2500 studs out
+-- and the enforcement repositioned the squad back to the station 2.5s after every deployment).
+-- 2500 matches the terrain-generation half-extent (2450) with a small margin; the boundary still
+-- catches players pushing past the world edge, which is its actual purpose.
+local BOUNDS_RADIUS = 2500 -- studs — the generated terrain rim
 
 local function insideBounds(pos: Vector3): boolean
 	local flat = Vector3.new(pos.X, 0, pos.Z)
@@ -25,7 +30,9 @@ function BoundaryService.start()
 	RunService.Heartbeat:Connect(function()
 		-- throttle: only evaluate a few times per second
 		if os.clock() % CHECK_INTERVAL > 0.03 then return end
+		if workspace:GetAttribute("GF_InMission") ~= true then return end
 		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr:GetAttribute("GF_MissionParticipant") ~= true then continue end
 			local character = plr.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart")
 			if not root then continue end
