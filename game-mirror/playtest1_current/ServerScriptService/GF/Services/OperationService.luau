@@ -419,9 +419,22 @@ function OperationService.completeObjective(id: string, source: string)
 		if n.state == "Locked" and requiresMet(n, ids) then
 			n.state = "Available"
 			Workspace:SetAttribute("GF_OpEvent_" .. n.id, "Available")
+			-- defend objectives self-start on unlock: the assault begins when the asset is live
+			if n.mechanic == "defend" then
+				OperationService.startDefend(n, n.defendSeconds or 90)
+			end
 		end
 	end
-	if id == current.primaryObjective then
+	-- multi-primary rule: parallel-objective families complete when every required objective
+	-- completes; single-terminus families complete on the primary node
+	local allRequiredComplete = true
+	for _, n in current.objectives do
+		if not n.optional and n.state ~= "Completed" then
+			allRequiredComplete = false
+			break
+		end
+	end
+	if id == current.primaryObjective or allRequiredComplete then
 		if Services.ObjectiveService and Services.ObjectiveService.complete then
 			pcall(function() Services.ObjectiveService.complete() end)
 		else
@@ -525,7 +538,20 @@ function OperationService.armEliminate(node: ObjectiveNode)
 				local sy = node.position.Y + 4
 				local hit = Workspace:Raycast(Vector3.new(sx, 1200, sz), Vector3.new(0, -1400, 0))
 				if hit then sy = hit.Position.Y + 3 end
-				local m = Services.EnemyService and Services.EnemyService.spawn(id, Vector3.new(sx, sy, sz))
+				-- boss ids route to their bespoke modules (audit: config rows alone don't
+				-- produce boss behavior — BastionWalker/Veyr are self-running modules)
+				local m = nil
+				if id == "BastionWalker" then
+					pcall(function()
+						m = require(game:GetService("ServerScriptService").GF.BastionWalker).spawn(Vector3.new(sx, sy, sz))
+					end)
+				elseif id == "HighMarshalVeyr" then
+					pcall(function()
+						m = require(game:GetService("ServerScriptService").GF.Veyr).spawn(Vector3.new(sx, sy, sz))
+					end)
+				else
+					m = Services.EnemyService and Services.EnemyService.spawn(id, Vector3.new(sx, sy, sz))
+				end
 				if m then
 					m:SetAttribute("GF_ObjectiveTarget", true)
 					table.insert(tagged, m)
@@ -748,6 +774,13 @@ function OperationService.activate(def: OperationDefinition): boolean
 					if not anyLeft then break end
 				end
 			end)
+		end
+	end
+
+	-- arm elimination mechanics: tagged targets exist in the world from activation
+	for _, node in def.objectives do
+		if node.mechanic == "eliminate" then
+			OperationService.armEliminate(node)
 		end
 	end
 

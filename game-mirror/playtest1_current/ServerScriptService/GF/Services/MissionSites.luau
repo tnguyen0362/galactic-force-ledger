@@ -28,18 +28,11 @@ local AMBER = Color3.fromRGB(255, 198, 146)
 -- raycasts below intentionally use the same real-terrain-first contract.
 local TerrainService: any = nil
 do
-	TerrainService = nil
-	local scriptParent = script.Parent
-	if scriptParent then
-		local terrainModule: any = scriptParent:FindFirstChild("TerrainService")
-		if terrainModule then
-			local ok, service = pcall(function()
-				return require(terrainModule)
-			end)
-			if ok then
-				TerrainService = service
-			end
-		end
+	local ok, service = pcall(function()
+		return require(script.Parent.TerrainService)
+	end)
+	if ok then
+		TerrainService = service
 	end
 end
 
