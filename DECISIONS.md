@@ -255,3 +255,9 @@ Verified from `C:/Users/tnguy`: `orchestrate status` resolves its log to
 `<local>\.goal\ORCH_LOG.jsonl` — the GF project is found without being named.
 Live source is mirrored at `.audit/quarantine/orchestrator.ts`; the old `gf-orchestrator.ts` snapshot is
 back to its committed state as history. Tests: orchestrator **37/37**, goal loop **15/15**, boot check clean.
+
+## 2026-11-26 — Phase 15 art direction reconciliation (claude)
+- Master-prompt four biomes (forest, mountain/frozen, arid, industrial) SUPERSEDE the 2025-11-25 "two themes only" note; the four already exist in code, so no new biomes are added.
+- Ascendancy armor: dark obsidian/bronze/ivory with RESTRAINED violet tech accents only; no red accents; not a human-kit recolor. Final violet balance decided at owner gate with an in-game sample.
+- Phase-15 work extends the existing GFArtKit/gf-art-build program rather than restarting it; gf-art-build/EVIDENCE.md items fold into VISUAL_REVIEW/BUILD_MANIFEST, no third ledger.
+- 2026-11-26 (claude) Mission biome rotation changed {Forest, Arid, Tundra, Volcanic} -> {Forest, Arid, Tundra, Industrial}: Volcanic was never an approved biome; Industrial (already in WorldDressing kits) is. Volcanic data retained, unused. Per-biome lighting lives in Services/BiomeLook.luau (data + apply), called last by Environment.apply("mission").

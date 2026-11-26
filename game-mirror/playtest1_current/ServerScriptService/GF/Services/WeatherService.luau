@@ -21,6 +21,7 @@ local BIOME_WEATHER = {
 	Arid =   { "Clear", "Dust", "Dust", "Overcast" },
 	Tundra = { "Clear", "Snow", "Fog", "Overcast" },
 	Volcanic = { "Clear", "Dust", "Fog", "Overcast" },
+	Industrial = { "Overcast", "Fog", "Dust", "Clear" },
 }
 
 local current = "Clear"

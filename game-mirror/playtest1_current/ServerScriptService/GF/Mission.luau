@@ -108,7 +108,7 @@ WildlifeService.start()
 local WeatherService = require(Services.WeatherService)
 WeatherService.start()
 -- S07-004: biome selection per mission — rotates across the four launch biome kits.
-local biomes = { "Forest", "Arid", "Tundra", "Volcanic" }
+local biomes = { "Forest", "Arid", "Tundra", "Industrial" } -- Phase 15: four approved biomes (Volcanic retired)
 local biomeIdx = ((workspace:GetAttribute("GF_MissionCount") or 0)) % #biomes + 1
 local biome = biomes[biomeIdx]
 workspace:SetAttribute("GF_Biome", biome)

@@ -215,6 +215,31 @@ function Environment.apply(zone: string)
 		end
 		workspace:SetAttribute("GF_TerrainTint", zone)
 	end
+	-- Phase 15: per-biome cinematic look is the last writer for mission zones. Guarded so a missing
+	-- module falls back to the base preset above. Operational circumstances are re-applied on top.
+	if zone == "mission" then
+		local ok, BiomeLook = pcall(function()
+			return require(script.Parent:WaitForChild("BiomeLook", 2))
+		end)
+		if ok and BiomeLook then
+			BiomeLook.apply()
+			local circ = workspace:GetAttribute("GF_OpCircumstance")
+			if circ == "night_assault" then
+				Lighting.ClockTime = 0.5
+				Lighting.Ambient = Color3.fromRGB(28, 34, 52)
+				Lighting.OutdoorAmbient = Color3.fromRGB(38, 48, 72)
+				Lighting.Brightness = 0.6
+				Lighting.FogColor = Color3.fromRGB(14, 18, 30)
+			elseif circ == "storm" then
+				Lighting.FogStart = 40
+				Lighting.FogEnd = 1400
+				Lighting.FogColor = Color3.fromRGB(120, 128, 140)
+				Lighting.Brightness = math.max(0.8, Lighting.Brightness - 1)
+			end
+		else
+			warn("[GF][Environment] BiomeLook unavailable, base mission preset kept")
+		end
+	end
 	workspace:SetAttribute("GF_EnvironmentPreset", zone)
 	return p
 end
