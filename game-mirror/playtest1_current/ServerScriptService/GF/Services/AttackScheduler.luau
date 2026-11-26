@@ -124,10 +124,31 @@ function AttackScheduler.step(state: SchedulerState, ctx: any): AttackDef?
 	end
 	-- select: feasible only, weighted with recency penalty, controlled stochastic choice
 	local feasibleList = {}
+	local rejects = {}
 	for _, attack in state.attacks do
 		if AttackScheduler.feasible(state, attack, ctx) then
 			table.insert(feasibleList, attack)
+		else
+			-- diagnose WHY infeasible — one token per failed check
+			local reasons = {}
+			local now2 = os.clock()
+			if (state.cooldowns[attack.id] or 0) > now2 then table.insert(reasons, "cd") end
+			if attack.requiredCapability and ctx.capabilityAvailable and not ctx.capabilityAvailable(attack.requiredCapability) then table.insert(reasons, "cap") end
+			if ctx.dist and attack.minRange and ctx.dist < attack.minRange then table.insert(reasons, "minr") end
+			if ctx.dist and attack.maxRange and ctx.dist > attack.maxRange then table.insert(reasons, "maxr") end
+			if attack.requiresLineOfSight and ctx.hasLineOfSight == false then table.insert(reasons, "los") end
+			if state.pressureActive + attack.pressureCost > state.maxPressure then table.insert(reasons, "press") end
+			rejects[attack.id] = table.concat(reasons, "+")
 		end
+	end
+	-- throttled telemetry: scheduler decisions are otherwise invisible outside the game VM
+	if (not state.lastDebug) or os.clock() - state.lastDebug > 1 then
+		state.lastDebug = os.clock()
+		local parts = { "phase=" .. state.phase, "feasible=" .. #feasibleList, "dist=" .. tostring(ctx.dist and math.floor(ctx.dist) or "nil"), "los=" .. tostring(ctx.hasLineOfSight) }
+		for id, r in rejects do table.insert(parts, id .. ":" .. r) end
+		pcall(function()
+			game:GetService("Workspace"):SetAttribute("GF_SchedDebug", table.concat(parts, "|"))
+		end)
 	end
 	if #feasibleList == 0 then return nil end
 	local best, bestScore = nil, -math.huge
@@ -151,6 +172,9 @@ function AttackScheduler.step(state: SchedulerState, ctx: any): AttackDef?
 	end
 	-- enter telegraph: the tell duration is the CONFIGURED duration, never aggression-compressed
 	state.activeAttack = chosen
+	pcall(function()
+		game:GetService("Workspace"):SetAttribute("GF_SchedSelected", chosen.id .. "@" .. math.floor(os.clock()))
+	end)
 	state.phase = "Telegraph"
 	state.phaseUntil = now + chosen.telegraphTime
 	state.busy = true

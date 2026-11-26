@@ -30,7 +30,27 @@ local function resolvePosition(): Vector3
 	return Vector3.new(0, 30, 0)
 end
 
+-- damage validation: GF_TestDamage = "partName,amount" applies CombatService.damageEnemy — the
+-- exact function player weapons call — against the most recent test entity. This exercises the
+-- real integration path (component burn + eta transfer + destruction events), not a simulation.
+local lastEntity: Model? = nil
+
 function EncounterTestHarness.start()
+	Workspace:GetAttributeChangedSignal("GF_TestDamage"):Connect(function()
+		local spec = Workspace:GetAttribute("GF_TestDamage")
+		if type(spec) ~= "string" or spec == "" then return end
+		Workspace:SetAttribute("GF_TestDamage", "")
+		if not lastEntity or not lastEntity.Parent then
+			Workspace:SetAttribute("GF_TestDamageError", "no test entity")
+			return
+		end
+		local partName, amount = spec:match("([^,]+),([%d%.]+)")
+		local ok, err = pcall(function()
+			local CombatService = require(script.Parent.CombatService)
+			CombatService.damageEnemy(lastEntity, tonumber(amount) or 100, nil, partName, 1, nil)
+		end)
+		Workspace:SetAttribute("GF_TestDamageDone", ok and (partName or "hull") or ("ERR:" .. tostring(err)))
+	end)
 	Workspace:GetAttributeChangedSignal("GF_TestSpawn"):Connect(function()
 		local directive = Workspace:GetAttribute("GF_TestSpawn")
 		if type(directive) ~= "string" or directive == "" then return end
@@ -39,15 +59,15 @@ function EncounterTestHarness.start()
 		task.defer(function()
 			local ok, err = pcall(function()
 				if directive == "bastion" then
-					BastionTank.spawn(pos, "Standard")
+					lastEntity = BastionTank.spawn(pos, "Standard")
 				elseif directive == "vanguard" then
-					BastionTank.spawn(pos, "Vanguard")
+					lastEntity = BastionTank.spawn(pos, "Vanguard")
 				elseif directive == "bulwark" then
-					BastionTank.spawn(pos, "Bulwark")
+					lastEntity = BastionTank.spawn(pos, "Bulwark")
 				elseif directive == "siege" then
-					BastionTank.spawn(pos, "Siege")
+					lastEntity = BastionTank.spawn(pos, "Siege")
 				elseif directive == "leviathan" then
-					LeviathanWalker.spawn(pos)
+					lastEntity = LeviathanWalker.spawn(pos)
 				elseif directive == "spectre" then
 					EliteOperations.spawnDivision("Spectre", pos, math.random(10000))
 				elseif directive == "revenant" then

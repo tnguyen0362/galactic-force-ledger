@@ -75,6 +75,8 @@ function ComponentService.registerEntity(model: Model, entitySpec: any, callback
 		entity.components[id] = def
 		if spec.part then
 			entity.partIndex[spec.part] = id
+		spec.part:SetAttribute("ComponentHP", def.health)
+		spec.part:SetAttribute("ComponentId", id)
 			spec.part:SetAttribute("GFComponentId", id)
 		end
 	end

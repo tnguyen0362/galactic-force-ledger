@@ -414,6 +414,8 @@ end
 -- controlled trajectories. Phase offsets produce diagonal stepping pairs.
 local function poseWalker(state: any, dt: number)
 	local hullCf = state.loco.cframe
+	local root = state.model.PrimaryPart
+	if root then root.CFrame = hullCf end
 	for part, offset in state.build.hullOffsets do
 		if part.Parent then part.CFrame = hullCf * offset end
 	end
@@ -571,7 +573,12 @@ function LeviathanWalker.start()
 		while true do
 			local dt = 1 / 12
 			task.wait(dt)
-			LeviathanWalker.step(dt)
+			local ok, err = pcall(LeviathanWalker.step, dt)
+			if ok then
+				Workspace:SetAttribute("GF_LeviathanHeartbeat", os.clock())
+			else
+				Workspace:SetAttribute("GF_LeviathanHeartbeatError", tostring(err))
+			end
 		end
 	end)
 end

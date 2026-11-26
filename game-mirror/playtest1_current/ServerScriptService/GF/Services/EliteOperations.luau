@@ -394,7 +394,12 @@ function EliteOperations.start()
 		while true do
 			local dt = 0.5
 			task.wait(dt)
-			EliteOperations.step(dt)
+			local ok, err = pcall(EliteOperations.step, dt)
+			if ok then
+				Workspace:SetAttribute("GF_EliteHeartbeat", os.clock())
+			else
+				Workspace:SetAttribute("GF_EliteHeartbeatError", tostring(err))
+			end
 		end
 	end)
 end

@@ -375,6 +375,9 @@ end
 -- for heavy machinery, cheap enough for multiple vehicles.
 local function poseModel(state: any)
 	local hullCf = state.loco.cframe
+	-- the root IS the hull frame: perception, probing, and model positioning all reference it
+	local root = state.model.PrimaryPart
+	if root then root.CFrame = hullCf end
 	for part, offset in state.build.hullOffsets do
 		if part.Parent then
 			part.CFrame = hullCf * offset
@@ -457,6 +460,15 @@ function BastionTank.step(dt: number)
 		end
 		poseModel(state)
 
+		-- step telemetry (throttled): movement internals are otherwise invisible outside the game VM
+		if (not state.lastDebug) or os.clock() - state.lastDebug > 1 then
+			state.lastDebug = os.clock()
+			Workspace:SetAttribute("GF_BastionDebug", string.format(
+				"mem=%s mob=%.2f speed=%.2f yaw=%.2f spd frac=%.2f stuck=%.1f",
+				tostring(mem ~= nil), mobilityFrac, state.loco.speed, state.loco.yaw,
+				speedFrac or -1, state.loco.stuckTime))
+		end
+
 		-- attack scheduler: legitimate target info only — turret roughly on target, los required for cannon
 		if mem and target then
 			local ch = target.Character
@@ -505,7 +517,12 @@ function BastionTank.start()
 		while true do
 			local dt = 1 / 12
 			task.wait(dt)
-			BastionTank.step(dt)
+			local ok, err = pcall(BastionTank.step, dt)
+			if ok then
+				Workspace:SetAttribute("GF_BastionHeartbeat", os.clock())
+			else
+				Workspace:SetAttribute("GF_BastionHeartbeatError", tostring(err))
+			end
 		end
 	end)
 end
