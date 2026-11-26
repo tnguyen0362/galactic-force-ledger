@@ -74,8 +74,10 @@ local function buildLMG12()
 		P("Box", 0.18, 0.08, 0.8, 0, 0.16, -0.2, NAVY, 0, 0, 0, METAL),
 		P("Box", 0.14, 0.16, 0.7, 0, 0, -0.95, NAVY, 0, 0, 0, METAL, "Handguard"),
 		P("Box", 0.15, 0.04, 0.5, 0, 0.09, -0.95, GRAPHITE),
-		P("Cylinder", 0.07, 0.55, 0.07, 0, 0, -1.5, STEEL, 90, 0, 0, METAL),
-		P("Cylinder", 0.085, 0.18, 0.085, 0, 0, -1.76, GRAPHITE, 90, 0, 0, METAL, "Muzzle"),
+		P("Cylinder", 0.08, 0.6, 0.08, 0, 0, -1.52, STEEL, 90, 0, 0, METAL),
+		P("Cylinder", 0.11, 0.22, 0.11, 0, 0, -1.8, GRAPHITE, 90, 0, 0, METAL, "Muzzle"),
+		-- gas tube below the barrel — support-weapon mechanical read
+		P("Cylinder", 0.04, 0.5, 0.04, 0, -0.06, -1.45, STEEL, 90, 0, 0, METAL),
 		P("Box", 0.24, 0.3, 0.4, 0, -0.28, -0.15, NAVY, 0, 0, 0, METAL, "CosmeticMagazine"),
 		P("Box", 0.2, 0.05, 0.35, 0, -0.44, -0.15, GRAPHITE),
 		P("Box", 0.13, 0.2, 0.5, 0, -0.04, 0.45, GRAPHITE, 0, 0, 0, METAL),
@@ -128,6 +130,9 @@ local function buildGL22()
 		P("Box", 0.15, 0.2, 0.6, 0, 0, 0, GRAPHITE, 0, 0, 0, METAL, "Receiver"),
 		P("Cylinder", 0.28, 0.22, 0.28, 0, -0.04, -0.25, NAVY, 0, 0, 90, METAL, "CosmeticMagazine"),
 		P("Cylinder", 0.3, 0.06, 0.3, 0, -0.04, -0.25, GRAPHITE, 0, 0, 90, METAL),
+		-- chamber mouths visible at the drum front — grenade-launcher identity detail
+		P("Cylinder", 0.05, 0.03, 0.05, -0.07, -0.04, -0.37, GRAPHITE, 90, 0, 0, METAL),
+		P("Cylinder", 0.05, 0.03, 0.05, 0.07, -0.04, -0.37, GRAPHITE, 90, 0, 0, METAL),
 		P("Cylinder", 0.13, 0.6, 0.13, 0, 0.04, -0.6, STEEL, 90, 0, 0, METAL),
 		P("Cylinder", 0.145, 0.12, 0.145, 0, 0.04, -0.88, GRAPHITE, 90, 0, 0, METAL, "Muzzle"),
 		P("Wedge", 0.14, 0.12, 0.4, 0, 0.12, -0.2, GRAPHITE, 0, 90, 0, METAL),
@@ -147,6 +152,9 @@ local function buildRL09()
 		P("Cylinder", 0.21, 0.1, 0.21, 0, 0.06, -0.9, NAVY, 90, 0, 0, METAL),
 		P("Cylinder", 0.21, 0.1, 0.21, 0, 0.06, -0.1, NAVY, 90, 0, 0, METAL),
 		P("Cylinder", 0.23, 0.22, 0.23, 0, 0.06, -1.48, GRAPHITE, 90, 0, 0, METAL, "Muzzle"),
+		-- warhead tip visible inside the bell — the anti-armor read
+		P("Cylinder", 0.14, 0.2, 0.14, 0, 0.06, -1.52, NAVY, 90, 0, 0, METAL),
+		P("Ball", 0.12, 0.12, 0.12, 0, 0.06, -1.62, STEEL, 0, 0, 0, METAL),
 		P("Box", 0.1, 0.06, 0.5, 0, 0.19, -0.5, CERAMIC, 0, 0, 0, SMOOTH),
 		P("Box", 0.08, 0.12, 0.2, -0.14, 0.12, -0.3, NAVY, 0, 0, 0, METAL),
 		P("Box", 0.02, 0.06, 0.06, -0.185, 0.12, -0.35, CYAN, 0, 0, 0, NEON),
