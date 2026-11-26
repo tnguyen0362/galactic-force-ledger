@@ -156,7 +156,13 @@ local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: bo
 			ccdPass("RightShoulder", "RightElbow", rhand, primaryTarget, rua, rla)
 		end
 	end
-	if profile.twoHanded ~= false then
+	if sprinting then
+		-- sprint carry: weapon rides one-handed in the right hand; left arm pumps with the stride.
+		-- the swing needs the gait phase — read it from the shared phase state set in the heartbeat.
+		local swing = math.sin((sharedPhase or 0)) * 0.55
+		setJoint("LeftShoulder", CFrame.Angles(-swing, 0, math.rad(4)))
+		setJoint("LeftElbow", CFrame.Angles(-0.9 - math.max(0, swing) * 0.3, 0, 0))
+	elseif profile.twoHanded ~= false then
 		for _ = 1, 2 do
 			ccdPass("LeftShoulder", "LeftElbow", lhand, supportTarget, lua, lla)
 		end
@@ -179,6 +185,7 @@ local lastHealth = nil
 local lastWeaponId = nil
 local deathClock = nil
 local perfPublishClock = nil
+local sharedPhase = nil
 local switchClock = nil
 local wasDowned = false
 local reviveClock = nil
@@ -433,6 +440,7 @@ RunService.Heartbeat:Connect(function(dt)
 			if aiming and cam then
 				pitch = math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1))
 			end
+			sharedPhase = phase
 			solveWeaponArms(aiming, pitch, sprinting)
 		elseif aiming then
 			setJoint("RightShoulder", CFrame.Angles(-1.35, 0, math.rad(-8)))
