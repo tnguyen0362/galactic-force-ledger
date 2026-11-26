@@ -201,8 +201,12 @@ do
 			math.sqrt((objAnchor.X - lzAnchor.X)^2 + (objAnchor.Z - lzAnchor.Z)^2)))
 	end
 end
-ObjectiveService.setup(lzAnchor)
-local dressed = require(Services.WorldDressing).build(lzAnchor, objAnchor)
+-- NOTE: legacy layout has the objective/relay at z=-120 and player LZ/spawn at z=+120
+-- (MISSION_SPAWN=(0,8,118)); WorldDressing.build(relayPos, spawnPos) and
+-- ObjectiveService.setup(relayPos) both key off the OBJECTIVE first. Plan mapping:
+-- primary -> relay/objective anchor, lz -> spawn anchor.
+ObjectiveService.setup(objAnchor)
+local dressed = require(Services.WorldDressing).build(objAnchor, lzAnchor)
 print("[GF] world dressing parts: " .. dressed)
 do
 	local missionState = require(Services.State).getMission()

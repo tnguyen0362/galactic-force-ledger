@@ -497,7 +497,16 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 			mission.difficulty = missionDifficulty
 		end
 	end
-	local spawnPoint = groundPoint(MISSION_SPAWN)
+	-- Battlefield mode: deploy at the generated plan LZ instead of the legacy fixed spawn.
+	local spawnTarget = MISSION_SPAWN
+	do
+		local bfOk, bfTerrain = pcall(require, script.Parent.TerrainService)
+		local plan = bfOk and bfTerrain.currentPlan or nil
+		if workspace:GetAttribute("GF_BattlefieldGen") == true and plan and plan.nodes and plan.nodes.lz then
+			spawnTarget = Vector3.new(plan.nodes.lz.x, 0, plan.nodes.lz.z)
+		end
+	end
+	local spawnPoint = groundPoint(spawnTarget)
 	workspace:SetAttribute("GF_LZ", spawnPoint)
 	workspace:SetAttribute("GF_InMission", true)
 	zone[player] = "Mission"
