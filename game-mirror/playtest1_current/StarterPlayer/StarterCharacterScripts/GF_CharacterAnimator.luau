@@ -517,8 +517,9 @@ RunService.Heartbeat:Connect(function(dt)
 			setJoint("RightElbow", CFrame.Angles(f < 0.4 and -1.8 or -0.3, 0, 0))
 		end
 		if crouching then
-			-- Crouch: hips and knees fold, torso pitches forward, arms tuck in.
-			setJoint("Root", nil, Vector3.new(0, -0.85, 0))
+			-- Crouch: hips and knees fold, torso pitches forward. When armed the grip IK keeps
+			-- the weapon in hand — the tuck applies only when unarmed. The root sink composes
+			-- into the final root write below rather than being overwritten by it.
 			setJoint("LeftHip", CFrame.Angles(0.85, 0, 0))
 			setJoint("RightHip", CFrame.Angles(0.72, 0, 0))
 			setJoint("LeftKnee", CFrame.Angles(-1.5, 0, 0))
@@ -526,14 +527,15 @@ RunService.Heartbeat:Connect(function(dt)
 			setJoint("LeftAnkle", CFrame.Angles(0.55, 0, 0))
 			setJoint("RightAnkle", CFrame.Angles(0.5, 0, 0))
 			setJoint("Waist", CFrame.Angles(0.28 - lean, -strafeBlend * 0.12, 0))
-			setJoint("Neck", CFrame.Angles(-0.22, 0, 0))
-			setJoint("LeftShoulder", CFrame.Angles(-0.5, 0, math.rad(16)))
-			setJoint("RightShoulder", CFrame.Angles(-0.5, 0, math.rad(-16)))
-			setJoint("LeftElbow", CFrame.Angles(-0.85, 0, 0))
-			setJoint("RightElbow", CFrame.Angles(-0.85, 0, 0))
+			if character:GetAttribute("GF_EquippedWeapon") == nil then
+				setJoint("LeftShoulder", CFrame.Angles(-0.5, 0, math.rad(16)))
+				setJoint("RightShoulder", CFrame.Angles(-0.5, 0, math.rad(-16)))
+				setJoint("LeftElbow", CFrame.Angles(-0.85, 0, 0))
+				setJoint("RightElbow", CFrame.Angles(-0.85, 0, 0))
+			end
 		end
-		setJoint("Neck", CFrame.Angles(-math.rad(2) * moveBlend, 0, 0))
-		setJoint("Root", nil, Vector3.new(0, bob + breathe * 0.4, 0))
+		setJoint("Neck", CFrame.Angles(-math.rad(2) * moveBlend + (crouching and -0.22 or 0), 0, 0))
+		setJoint("Root", nil, Vector3.new(0, bob + breathe * 0.4 + (crouching and -0.85 or 0), 0))
 	else
 		-- Airborne: tuck legs; when armed the grip IK keeps the weapon in hand (a soldier
 		-- does not let go of the rifle mid-jump) — free-arm raise only when unarmed.
