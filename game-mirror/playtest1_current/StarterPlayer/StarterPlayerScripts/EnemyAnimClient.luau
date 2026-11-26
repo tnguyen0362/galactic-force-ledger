@@ -33,6 +33,10 @@ type RigState = {
 	aimPitch: number,
 	profile: any,
 	rig: Model,
+	health: number,
+	hitPulse: number,
+	firePulse: number,
+	deathT: number?, -- time since death started, nil while alive
 }
 
 local tracked: { [Model]: RigState } = {}
@@ -106,6 +110,37 @@ end
 local function poseRig(model: Model, state: RigState, dt: number)
 	local pivot = model:GetPivot()
 	local pos = pivot.Position
+
+	-- COMBAT STATE CHANNELS — read replicated attributes, zero extra traffic.
+	-- hit reaction: health decrease pulses a flinch.
+	local hp = model:GetAttribute("Health") or state.health
+	if hp < state.health - 0.5 then
+		state.hitPulse = 1
+	end
+	state.health = hp
+	state.hitPulse = math.max(0, state.hitPulse - dt * 4)
+	-- firing recoil: tracer beams/parts spawning near the enemy pulse the weapon arm.
+	-- (detection hook installed below — firePulse decays here)
+	state.firePulse = math.max(0, state.firePulse - dt * 7)
+
+	-- DEATH TRANSITION — overrides all other posing: crumple forward, sink, hold.
+	local dead = model:GetAttribute("Dead") == true
+	if dead then
+		state.deathT = (state.deathT or 0) + dt
+		local t = math.min(state.deathT / 0.9, 1) -- 0.9s collapse
+		local ease = 1 - (1 - t) * (1 - t)
+		-- knees buckle, hips fold, torso pitches forward, arms drop
+		setJoint(state.joints, "KneeL", CFrame.Angles(ease * 1.4, 0, 0))
+		setJoint(state.joints, "KneeR", CFrame.Angles(ease * 1.2, 0, 0))
+		setJoint(state.joints, "HipL", CFrame.Angles(-ease * 1.1, 0, 0))
+		setJoint(state.joints, "HipR", CFrame.Angles(-ease * 0.9, 0, 0))
+		setJoint(state.joints, "RootJoint", CFrame.new(0, -ease * 1.2, 0) * CFrame.Angles(ease * 0.9, 0, ease * 0.15))
+		setJoint(state.joints, "Waist", CFrame.Angles(ease * 0.7, 0, 0))
+		setJoint(state.joints, "Neck", CFrame.Angles(ease * 0.5, 0, 0))
+		setJoint(state.joints, "ShoulderL", CFrame.Angles(ease * 0.4, 0, ease * 0.3))
+		setJoint(state.joints, "ShoulderR", CFrame.Angles(ease * 0.5, 0, -ease * 0.2))
+		return -- death terminal: no locomotion, no aim
+	end
 
 	-- velocity from replicated displacement
 	local instantSpeed = 0
@@ -206,8 +241,20 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	setJoint(state.joints, "ElbowL", CFrame.Angles(aiming and -0.9 or -0.35, 0, 0))
 	-- right arm: weapon-hold — raised toward aim pitch, minimal swing
 	local holdPitch = -0.85 - state.aimPitch * 0.7
-	setJoint(state.joints, "ShoulderR", CFrame.Angles(holdPitch, -0.15 + state.aimYaw * 0.3, -0.06) * CFrame.Angles(-sinL * armAmp * 0.4, 0, 0))
-	setJoint(state.joints, "ElbowR", CFrame.Angles(-0.5, 0, 0))
+	-- firing recoil: sharp backward snap on the weapon arm, fast recovery
+	local recoil = state.firePulse * state.firePulse -- quadratic falloff reads snappy
+	local hit = state.hitPulse
+	setJoint(state.joints, "ShoulderR",
+		CFrame.Angles(holdPitch - recoil * 0.35, -0.15 + state.aimYaw * 0.3, -0.06)
+			* CFrame.Angles(-sinL * armAmp * 0.4, 0, 0))
+	setJoint(state.joints, "ElbowR", CFrame.Angles(-0.5 - recoil * 0.3, 0, 0))
+	-- hit flinch: torso twist + slight stagger, layered over aim
+	if hit > 0.01 then
+		local waist = state.joints.Waist
+		if waist then
+			waist.motor.C0 = waist.motor.C0 * CFrame.Angles(-hit * 0.22, hit * 0.15, hit * 0.08)
+		end
+	end
 
 	-- idle breathing when stationary — prevents dead-mannequin look
 	if not moving then
@@ -218,6 +265,33 @@ local function poseRig(model: Model, state: RigState, dt: number)
 		end
 	end
 end
+
+-- fire detection: tracers/muzzle effects spawn as workspace parts/beams near the enemy.
+-- lane-safe observation — no server edits; pulse the matching rig's recoil.
+workspace.DescendantAdded:Connect(function(inst)
+	if not (inst:IsA("Beam") or inst:IsA("Part") or inst:IsA("Attachment")) then return end
+	if inst:IsA("Part") and not inst.Name:lower():match("tracer") and not inst.Name:lower():match("muzzle") and not inst.Name:lower():match("shot") then
+		return
+	end
+	task.defer(function()
+		local pos = nil
+		if inst:IsA("BasePart") then
+			pos = inst.Position
+		elseif inst:IsA("Attachment") then
+			pos = inst.WorldPosition
+		end
+		if not pos then return end
+		for model, state in tracked do
+			if model.Parent then
+				local d = (model:GetPivot().Position - pos).Magnitude
+				if d < 8 then
+					state.firePulse = 1
+					break
+				end
+			end
+		end
+	end)
+end)
 
 RunService.Heartbeat:Connect(function(dt)
 	local folder = workspace:FindFirstChild("ActiveActors")
@@ -246,6 +320,10 @@ RunService.Heartbeat:Connect(function(dt)
 						aimPitch = 0,
 						profile = profileFor(model),
 						rig = rig,
+						health = model:GetAttribute("Health") or 100,
+						hitPulse = 0,
+						firePulse = 0,
+						deathT = nil,
 					}
 					tracked[model] = state
 				end

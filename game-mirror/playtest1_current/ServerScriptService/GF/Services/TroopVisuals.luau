@@ -1,294 +1,403 @@
 --!strict
--- TroopVisuals: rigged-body visual system for Ascendancy infantry (user directive:
--- real articulated rigs, arms at sides, no static box bodies).
+-- TroopVisuals v3: archetype armor-package system for Ascendancy infantry.
 --
--- Architecture — LANE-SAFE, zero EnemyService edits:
---   EnemyService spawns primitive bodies moved rigidly via PivotTo. This layer replaces the
---   primitive VISUALS post-spawn with an articulated humanoid rig: anchored limb parts whose
---   CFrames are procedurally updated each heartbeat relative to the model root pivot.
---   Walk articulation is driven by actual root displacement — AI movement code untouched.
+-- Architecture — LANE-SAFE: EnemyService spawns the naked articulated rig (AscendancyTrooper
+-- asset) and never knows about armor. This module observes spawns and welds archetype-specific
+-- armor packages onto rig limbs server-side, once per spawn — pieces replicate with the model
+-- and articulate with animation because they weld to animated limbs.
 --
--- Hitbox doctrine — CRITICAL: semantic parts (Head/Torso/Root) stay exactly in place with
--- CanQuery TRUE — hitscan, headshot multipliers, weakpoint logic untouched. They are invisible.
--- All rig visual parts are CanQuery FALSE: rays pass through them into the semantic hitboxes.
+-- All armor is refined primitives (wedges for bevels, layered plates, recessed joints):
+-- generated-mesh content provably does not replicate to clients, so primitives are the
+-- production visual path. Piece design follows the faction direction: obsidian alloy,
+-- violet-gray metal, selective ivory plating, restrained bronze, recessed violet optics.
 --
--- Armor articulation: mesh kit pieces attach to RIG LIMB frames — pauldrons swing with arms,
--- greaves articulate with knees, the rifle rides the weapon-hold arm.
+-- Hitbox doctrine unchanged: semantic parts stay invisible-but-queryable; armor is CanQuery false.
 
 local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local TroopVisuals = {}
 
 local OBSIDIAN = Color3.fromRGB(36, 33, 42)
+local OBSIDIAN2 = Color3.fromRGB(24, 22, 30) -- spectre deep-matte
 local VIOLETGRAY = Color3.fromRGB(81, 70, 94)
+local IVORY = Color3.fromRGB(214, 203, 180)
+local BRONZE = Color3.fromRGB(150, 120, 84)
 local ENERGY = Color3.fromRGB(169, 99, 233)
 
-type LimbSpec = {
-	name: string,
+-- piece spec: shape Box/Wedge/Cylinder/Ball, size, limb attachment, offset in limb frame,
+-- rotation (degrees XYZ), color, material, optional neon
+export type Piece = {
+	shape: string?,
 	size: Vector3,
-	bind: Vector3,
-	parent: string?,
-	swing: number?,
-	phase: number?,
-	axis: string?,
+	limb: string,
+	offset: Vector3?,
+	rot: Vector3?,
+	color: Color3?,
+	mat: Enum.Material?,
 }
 
-local function rigPlan(scale: number): { LimbSpec }
-	local s = scale
+local function P(shape, sx, sy, sz, limb, ox, oy, oz, color, rx, ry, rz, mat): Piece
 	return {
-		{ name = "UpperTorso", size = Vector3.new(2.0*s, 1.35*s, 1.25*s), bind = Vector3.new(0, 0.55*s, 0) },
-		{ name = "LowerTorso", size = Vector3.new(1.85*s, 1.2*s, 1.15*s), bind = Vector3.new(0, -0.75*s, 0), parent = "UpperTorso" },
-		{ name = "HeadVis", size = Vector3.new(1.0*s, 1.05*s, 1.05*s), bind = Vector3.new(0, 2.05*s, 0), parent = "UpperTorso" },
-		{ name = "UpperArmL", size = Vector3.new(0.68*s, 1.25*s, 0.68*s), bind = Vector3.new(-1.42*s, 0.35*s, 0), parent = "UpperTorso", swing = 14, phase = 180, axis = "arm" },
-		{ name = "LowerArmL", size = Vector3.new(0.6*s, 1.15*s, 0.6*s), bind = Vector3.new(-1.45*s, -0.75*s, -0.15*s), parent = "UpperArmL", axis = "forearm" },
-		{ name = "UpperArmR", size = Vector3.new(0.68*s, 1.25*s, 0.68*s), bind = Vector3.new(1.42*s, 0.35*s, 0), parent = "UpperTorso", swing = 10, phase = 0, axis = "arm" },
-		{ name = "LowerArmR", size = Vector3.new(0.6*s, 1.15*s, 0.6*s), bind = Vector3.new(1.3*s, -0.5*s, -0.6*s), parent = "UpperArmR", axis = "hold" },
-		{ name = "UpperLegL", size = Vector3.new(0.85*s, 1.35*s, 0.9*s), bind = Vector3.new(-0.55*s, -2.05*s, 0), swing = 26, phase = 0, axis = "leg" },
-		{ name = "LowerLegL", size = Vector3.new(0.78*s, 1.3*s, 0.82*s), bind = Vector3.new(-0.55*s, -3.4*s, 0.02*s), parent = "UpperLegL", axis = "knee", phase = 0 },
-		{ name = "UpperLegR", size = Vector3.new(0.85*s, 1.35*s, 0.9*s), bind = Vector3.new(0.55*s, -2.05*s, 0), swing = 26, phase = 180, axis = "leg" },
-		{ name = "LowerLegR", size = Vector3.new(0.78*s, 1.3*s, 0.82*s), bind = Vector3.new(0.55*s, -3.4*s, 0.02*s), parent = "UpperLegR", axis = "knee", phase = 180 },
+		shape = shape,
+		size = Vector3.new(sx, sy, sz),
+		limb = limb,
+		offset = Vector3.new(ox or 0, oy or 0, oz or 0),
+		rot = Vector3.new(rx or 0, ry or 0, rz or 0),
+		color = color,
+		mat = mat,
 	}
 end
 
-local function platingPlan(scale: number): { any }
-	local s = scale
+-- ============ SHARED BASE PACKAGE — every soldier wears this ============
+-- offsets are in LIMB-local frames; -Z is the character's front.
+local function basePackage(): { Piece }
 	return {
-		{ kit = "RifleHelmet", limb = "HeadVis", offset = Vector3.new(0, 0.05*s, 0) },
-		{ kit = "ChestArmor", limb = "UpperTorso", offset = Vector3.new(0, 0.05*s, 0) },
-		{ kit = "Pauldron", limb = "UpperArmL", offset = Vector3.new(-0.12*s, 0.45*s, 0) },
-		{ kit = "Pauldron", limb = "UpperArmR", offset = Vector3.new(0.12*s, 0.45*s, 0), rotY = 180 },
-		{ kit = "Greave", limb = "LowerLegL", offset = Vector3.new(0, 0.1*s, 0) },
-		{ kit = "Greave", limb = "LowerLegR", offset = Vector3.new(0, 0.1*s, 0), rotY = 180 },
-		{ kit = "EnergyRifle", limb = "LowerArmR", offset = Vector3.new(0, -0.35*s, -0.5*s) },
+		-- helmet: angular crown + sloped face plate + crest — enclosed alien profile
+		P("Wedge", 1.1, 0.55, 1.15, "Head", 0, 0.35, 0.05, OBSIDIAN, 0, 180, 0),
+		P("Wedge", 1.0, 0.5, 0.5, "Head", 0, -0.05, -0.35, VIOLETGRAY, -35, 180, 0),
+		P("Box", 0.24, 0.45, 1.15, "Head", 0, 0.5, 0.1, OBSIDIAN),
+		-- chest: broad front plate + angular pectoral wedges
+		P("Box", 2.0, 0.85, 0.4, "UpperTorso", 0, 0.1, -0.55, OBSIDIAN),
+		P("Wedge", 0.85, 0.6, 0.35, "UpperTorso", -0.5, -0.25, -0.5, OBSIDIAN, 0, 180, 0),
+		P("Wedge", 0.85, 0.6, 0.35, "UpperTorso", 0.5, -0.25, -0.5, OBSIDIAN, 0, 180, 0),
+		-- back plate
+		P("Box", 1.85, 0.9, 0.3, "UpperTorso", 0, 0.1, 0.55, VIOLETGRAY),
+		-- waist belt — bronze transition band
+		P("Box", 1.7, 0.35, 1.1, "LowerTorso", 0, 0.35, 0, BRONZE, 0, 0, 0, Enum.Material.Metal),
+		-- pauldron shells: layered wedges over shoulders
+		P("Wedge", 0.75, 0.45, 0.8, "UpperArmL", -0.05, 0.55, 0, OBSIDIAN, 0, 90, 0),
+		P("Wedge", 0.75, 0.45, 0.8, "UpperArmR", 0.05, 0.55, 0, OBSIDIAN, 0, -90, 0),
+		-- bracers
+		P("Box", 0.56, 0.65, 0.56, "LowerArmL", 0, -0.08, 0, OBSIDIAN),
+		P("Box", 0.56, 0.65, 0.56, "LowerArmR", 0, -0.08, 0, OBSIDIAN),
+		-- thigh + shin plating
+		P("Box", 0.78, 0.85, 0.82, "UpperLegL", 0, 0.05, -0.02, OBSIDIAN),
+		P("Box", 0.78, 0.85, 0.82, "UpperLegR", 0, 0.05, -0.02, OBSIDIAN),
+		P("Wedge", 0.64, 0.95, 0.45, "LowerLegL", 0, 0, -0.3, OBSIDIAN, 0, 180, 0),
+		P("Wedge", 0.64, 0.95, 0.45, "LowerLegR", 0, 0, -0.3, OBSIDIAN, 0, 180, 0),
+		-- energy rifle: receiver + barrel + glowing cell, riding the weapon-hold hand
+		P("Box", 0.28, 0.4, 1.5, "HandR", 0, 0.05, -0.75, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.15, 1.1, 0.15, "HandR", 0, 0.12, -1.85, VIOLETGRAY, 90, 0, 0, Enum.Material.Metal),
+		P("Box", 0.18, 0.22, 0.38, "HandR", 0, -0.16, -0.7, ENERGY, 0, 0, 0, Enum.Material.Neon),
 	}
 end
 
-local function kitFolder(): Instance?
-	return ReplicatedStorage:FindFirstChild("GFTroopKit")
+-- ============ ARCHETYPE PACKAGES — silhouette-first differentiation ============
+-- each entry: add = extra pieces, remove = substrate pieces to skip (by index into base),
+-- recolor = optional substrate tint shift, scaleMul per-piece scaling handled at build.
+local PACKAGES: { [string]: any } = {
+	Rifleman = {}, -- reference: base package as-is
+
+	-- VANGUARD (Scout): lightweight aggressive — strip pauldrons, slim plates, aerodynamic fin
+	Scout = {
+		removeIndexes = { 9, 10 }, -- pauldron shells
+		add = {
+			-- swept helmet fin — speed read
+			P("Wedge", 0.2, 0.5, 0.9, "Head", 0, 0.55, 0.35, VIOLETGRAY, -25, 180, 0),
+			-- compact carbine instead of rifle (shorter barrel added; base rifle pieces recolored light)
+		},
+		recolor = VIOLETGRAY, -- lighter violet-gray dominance
+	},
+	Vanguard = {
+		removeIndexes = { 9, 10 },
+		add = {
+			P("Wedge", 0.2, 0.5, 0.9, "Head", 0, 0.55, 0.35, VIOLETGRAY, -25, 180, 0),
+		},
+		recolor = VIOLETGRAY,
+	},
+
+	-- HEAVY: broad reinforced everything — massive pauldrons, thick chest, support weapon
+	Heavy = {
+		add = {
+			-- second-layer pauldrons, notably wider
+			P("Wedge", 1.0, 0.6, 1.0, "UpperArmL", -0.12, 0.62, 0, OBSIDIAN, 0, 90, 0),
+			P("Wedge", 1.0, 0.6, 1.0, "UpperArmR", 0.12, 0.62, 0, OBSIDIAN, 0, -90, 0),
+			-- reinforced chest slab
+			P("Box", 2.2, 0.5, 0.3, "UpperTorso", 0, 0.35, -0.72, OBSIDIAN),
+			-- respirator-style faceplate
+			P("Box", 0.55, 0.35, 0.25, "Head", 0, -0.25, -0.55, BRONZE, 0, 0, 0, Enum.Material.Metal),
+			-- heavy support weapon: big receiver + drum
+			P("Box", 0.45, 0.55, 1.9, "HandR", 0, 0.02, -0.95, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
+			P("Cylinder", 0.5, 0.4, 0.5, "HandR", 0, -0.3, -1.1, VIOLETGRAY, 0, 0, 90, Enum.Material.Metal),
+		},
+		removeIndexes = { 17, 18, 19 }, -- remove base rifle pieces (heavy weapon replaces)
+	},
+
+	-- MARKSMAN: compact armor + advanced optics + long precision weapon
+	Marksman = {
+		add = {
+			-- optic sensor block over right eye — the signature
+			P("Cylinder", 0.3, 0.35, 0.3, "Head", 0.3, 0.15, -0.5, OBSIDIAN, 90, 0, 0, Enum.Material.Metal),
+			P("Cylinder", 0.18, 0.1, 0.18, "Head", 0.3, 0.15, -0.62, ENERGY, 90, 0, 0, Enum.Material.Neon),
+			-- long precision barrel extension
+			P("Cylinder", 0.1, 1.6, 0.1, "HandR", 0, 0.12, -2.9, OBSIDIAN, 90, 0, 0, Enum.Material.Metal),
+			-- stabilized stock
+			P("Box", 0.2, 0.35, 0.6, "HandR", 0, -0.05, 0.1, VIOLETGRAY),
+		},
+		removeIndexes = { 9, 10 }, -- no pauldrons — lean silhouette
+	},
+
+	-- OFFICER/COMMANDER: refined armor + comms + rank identification
+	Officer = {
+		add = {
+			-- ivory chest inlay — command plating
+			P("Box", 1.2, 0.5, 0.15, "UpperTorso", 0, 0.2, -0.78, IVORY, 0, 0, 0, Enum.Material.Metal),
+			-- comms antenna
+			P("Cylinder", 0.05, 1.1, 0.05, "Head", -0.45, 0.65, 0.2, BRONZE, 0, 0, 12, Enum.Material.Metal),
+			-- bronze rank vane on right pauldron
+			P("Box", 0.12, 0.5, 0.4, "UpperArmR", 0.3, 0.6, 0, BRONZE, 0, 0, 0, Enum.Material.Metal),
+		},
+	},
+	Commander = {
+		add = {
+			P("Box", 1.2, 0.5, 0.15, "UpperTorso", 0, 0.2, -0.78, IVORY, 0, 0, 0, Enum.Material.Metal),
+			P("Cylinder", 0.05, 1.1, 0.05, "Head", -0.45, 0.65, 0.2, BRONZE, 0, 0, 12, Enum.Material.Metal),
+			P("Box", 0.12, 0.5, 0.4, "UpperArmR", 0.3, 0.6, 0, BRONZE, 0, 0, 0, Enum.Material.Metal),
+		},
+	},
+}
+
+-- ============ ELITE DIVISION PACKAGES ============
+-- applied as OVERRIDES on top of role archetypes when Tier == Elite.
+local function spectreTreatment()
+	-- deep matte obsidian, compact sensor package, bronze identification notch
+	return {
+		bodyTint = OBSIDIAN2,
+		add = {
+			-- wide sensor visor band — special-operations read
+			P("Box", 0.85, 0.18, 0.12, "Head", 0, 0.12, -0.52, ENERGY, 0, 0, 0, Enum.Material.Neon),
+			-- compact backpack sensor
+			P("Box", 0.6, 0.7, 0.3, "UpperTorso", 0.3, 0.25, 0.72, OBSIDIAN2),
+			P("Cylinder", 0.04, 0.7, 0.04, "UpperTorso", 0.45, 0.9, 0.72, BRONZE, 0, 0, 0, Enum.Material.Metal),
+		},
+	}
 end
 
-type Rig = {
-	model: Model,
-	root: BasePart,
-	torsoCenterOffset: Vector3,
-	limbs: { [string]: BasePart },
-	specs: { [string]: LimbSpec },
-	plating: { any },
-	scale: number,
-	phase: number,
-	lastPos: Vector3?,
-	speed: number,
+local REVENANT_ROLE_PIECES: { [string]: { Piece } } = {
+	-- Leader: command vane + ivory inlay + antenna array
+	Leader = {
+		P("Box", 1.3, 0.55, 0.15, "UpperTorso", 0, 0.2, -0.78, IVORY, 0, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.05, 1.3, 0.05, "Head", -0.45, 0.7, 0.2, BRONZE, 0, 0, 12, Enum.Material.Metal),
+		P("Wedge", 0.15, 0.7, 0.5, "Head", 0, 0.75, 0.3, BRONZE, -20, 180, 0, Enum.Material.Metal),
+	},
+	-- Assault: reinforced chest + mobility pack nozzles
+	Assault = {
+		P("Box", 2.15, 0.5, 0.3, "UpperTorso", 0, 0.35, -0.72, IVORY, 0, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.22, 0.5, 0.22, "UpperTorso", -0.4, 0.3, 0.75, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.22, 0.5, 0.22, "UpperTorso", 0.4, 0.3, 0.75, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.12, 0.2, 0.12, "UpperTorso", -0.4, 0.05, 0.78, ENERGY, 0, 0, 0, Enum.Material.Neon),
+		P("Cylinder", 0.12, 0.2, 0.12, "UpperTorso", 0.4, 0.05, 0.78, ENERGY, 0, 0, 0, Enum.Material.Neon),
+	},
+	-- Weapons specialist: heavy gun + ammo pack
+	Weapons = {
+		P("Box", 0.45, 0.55, 2.0, "HandR", 0, 0.02, -1.0, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
+		P("Box", 0.7, 0.8, 0.35, "UpperTorso", -0.35, 0.15, 0.72, VIOLETGRAY),
+		P("Box", 0.15, 0.5, 0.15, "UpperTorso", -0.35, 0.15, 0.55, BRONZE, 0, 0, 0, Enum.Material.Metal),
+	},
+	-- Precision specialist: long rifle + advanced optic crown
+	Precision = {
+		P("Cylinder", 0.09, 1.8, 0.09, "HandR", 0, 0.12, -3.0, OBSIDIAN, 90, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.32, 0.4, 0.32, "Head", 0.28, 0.2, -0.5, OBSIDIAN, 90, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.2, 0.1, 0.2, "Head", 0.28, 0.2, -0.66, ENERGY, 90, 0, 0, Enum.Material.Neon),
+	},
+	-- Defense specialist: barrier projector backpack + shoulder shield plates
+	Defense = {
+		P("Box", 0.9, 1.0, 0.4, "UpperTorso", 0, 0.3, 0.75, VIOLETGRAY),
+		P("Cylinder", 0.15, 0.3, 0.15, "UpperTorso", 0, 0.9, 0.75, ENERGY, 0, 0, 0, Enum.Material.Neon),
+		P("Wedge", 0.9, 0.55, 0.25, "UpperArmL", -0.2, 0.5, -0.15, IVORY, 15, 90, 0, Enum.Material.Metal),
+		P("Wedge", 0.9, 0.55, 0.25, "UpperArmR", 0.2, 0.5, -0.15, IVORY, 15, -90, 0, Enum.Material.Metal),
+	},
 }
-local rigs: { [Model]: Rig } = {}
 
+local function revenantTreatment(role: string?)
+	-- prestigious obsidian + selective ivory + bronze identification + role equipment
+	return {
+		bodyTint = OBSIDIAN2,
+		add = (function()
+			local pieces = {
+				-- shared revenant signature: ivory faceplate accent + bronze chest notch
+				P("Box", 0.7, 0.3, 0.12, "Head", 0, -0.1, -0.55, IVORY, 0, 0, 0, Enum.Material.Metal),
+				P("Box", 0.3, 0.18, 0.1, "UpperTorso", 0, 0.45, -0.75, BRONZE, 0, 0, 0, Enum.Material.Metal),
+				-- recessed violet visor band
+				P("Box", 0.8, 0.14, 0.1, "Head", 0, 0.12, -0.5, ENERGY, 0, 0, 0, Enum.Material.Neon),
+			}
+			if role and REVENANT_ROLE_PIECES[role] then
+				for _, p in REVENANT_ROLE_PIECES[role] do
+					table.insert(pieces, p)
+				end
+			end
+			return pieces
+		end)(),
+	}
+end
+
+-- ============ CONSTRUCTION ============
+
+local function limbOf(rig: Model, name: string): BasePart?
+	local p = rig:FindFirstChild(name)
+	if p and p:IsA("BasePart") then
+		return p
+	end
+	return nil
+end
+
+local function buildPiece(piece: Piece, rig: Model, scale: number, tint: Color3?): BasePart?
+	local limb = limbOf(rig, piece.limb)
+	if not limb then return nil end
+	local className = "Part"
+	if piece.shape == "Wedge" then
+		className = "WedgePart"
+	end
+	local a = Instance.new(className)
+	a.Name = "GFArm_" .. piece.limb
+	if piece.shape == "Cylinder" then
+		-- cylinder approximation via smooth cylindrical part shape
+		a.Shape = Enum.PartType.Cylinder
+	end
+	if piece.shape == "Ball" then
+		a.Shape = Enum.PartType.Ball
+	end
+	a.Size = piece.size * scale
+	local rot = piece.rot or Vector3.new()
+	a.CFrame = limb.CFrame
+		* CFrame.new(piece.offset * scale)
+		* CFrame.Angles(math.rad(rot.X), math.rad(rot.Y), math.rad(rot.Z))
+	a.Color = tint and piece.color == OBSIDIAN and tint or (piece.color or OBSIDIAN)
+	a.Material = piece.mat or Enum.Material.SmoothPlastic
+	a.CanCollide = false
+	a.CanQuery = false
+	a.CanTouch = false
+	a.Anchored = false
+	a.Massless = true
+	a.CastShadow = true
+	a.Parent = rig
+	local w = Instance.new("WeldConstraint")
+	w.Part0 = limb
+	w.Part1 = a
+	w.Parent = a
+	return a
+end
+
+-- apply the archetype visual package to a spawned enemy. Idempotent.
 function TroopVisuals.restyle(model: Model)
 	if model:GetAttribute("GFVisualStyled") == true then return end
 	if model:GetAttribute("GFEnemy") ~= true then return end
-	-- art-rigged enemies (AscendancyTrooper asset) carry their own visual body — this layer
-	-- only animates their joints (future) rather than building a parallel rig
-	if model:GetAttribute("HasRig") == true then return end
+	if model:GetAttribute("HasRig") ~= true then return end -- naked-rig path only
 	local tier = model:GetAttribute("Tier")
 	if tier == "Vehicle" or tier == "Boss" then return end
-	if model.Name:match("^Bastion") or model.Name:match("^Leviathan") then return end
-	local torso = model:FindFirstChild("Torso")
-	local root = model.PrimaryPart
-	if not (torso and torso:IsA("BasePart") and root) then return end
+
+	local rig = nil
+	for _, c in model:GetChildren() do
+		if c:IsA("Model") and c:GetAttribute("GFEnemyRig") then
+			rig = c
+			break
+		end
+	end
+	if not rig then return end
 	model:SetAttribute("GFVisualStyled", true)
 
 	local scale = (tier == "Elite") and 1.25 or 1
-	local s = scale
+	local enemyId = model:GetAttribute("EnemyId") or "Rifleman"
+	local division = model:GetAttribute("EliteDivision")
+	local role = model:GetAttribute("RevenantRole")
 
-	-- 1. primitive semantic parts: invisible hitboxes, positions untouched
-	for _, p in model:GetChildren() do
-		if p:IsA("BasePart") and p.Name ~= "Root" then
-			p.Transparency = 1
+	local pkg = PACKAGES[enemyId] or {}
+	local treatment = nil
+	if division == "Spectre" then
+		treatment = spectreTreatment()
+	elseif division == "Revenant" then
+		treatment = revenantTreatment(role)
+	end
+
+	-- assemble final piece list: base minus removals, plus archetype adds, plus elite treatment
+	local removeSet = {}
+	for _, idx in (pkg.removeIndexes or {}) do
+		removeSet[idx] = true
+	end
+	local pieces: { Piece } = {}
+	for i, piece in basePackage() do
+		if not removeSet[i] then
+			table.insert(pieces, piece)
+		end
+	end
+	for _, piece in (pkg.add or {}) do
+		table.insert(pieces, piece)
+	end
+	if treatment then
+		for _, piece in treatment.add do
+			table.insert(pieces, piece)
 		end
 	end
 
-	local torsoCF = torso.CFrame
-	local rootCF = model:GetPivot()
-	local torsoOffset = rootCF:Inverse() * torsoCF.Position
-
-	-- 2. articulated rig limbs — anchored, CanQuery false, premium materials
-	local limbs: { [string]: BasePart } = {}
-	local specs: { [string]: LimbSpec } = {}
-	for _, spec in rigPlan(scale) do
-		specs[spec.name] = spec
-		local part = Instance.new("Part")
-		part.Name = "GFRig_" .. spec.name
-		part.Size = spec.size
-		if spec.name == "LowerTorso" or spec.axis == "knee" or spec.axis == "forearm" or spec.axis == "hold" then
-			part.Color = VIOLETGRAY
-		else
-			part.Color = OBSIDIAN
+	local tint = treatment and treatment.bodyTint or pkg.recolor
+	local built = 0
+	for _, piece in pieces do
+		if buildPiece(piece, rig, scale, tint) then
+			built += 1
 		end
-		part.Material = Enum.Material.SmoothPlastic
-		part.CanQuery = false
-		part.CanCollide = false
-		part.CanTouch = false
-		part.Anchored = true
-		part.CFrame = torsoCF * CFrame.new(spec.bind)
-		part.Parent = model
-		limbs[spec.name] = part
 	end
 
-	-- violet visor slit — faction identity glow
-	local visor = Instance.new("Part")
-	visor.Name = "GFRig_VisorSlit"
-	visor.Size = Vector3.new(0.72*s, 0.14*s, 0.1*s)
-	visor.Color = ENERGY
-	visor.Material = Enum.Material.Neon
-	visor.CanQuery = false
-	visor.CanCollide = false
-	visor.CanTouch = false
-	visor.Anchored = true
-	visor.Parent = model
-
-	-- 3. mesh plating rides limb frames
-	local plating: { any } = {}
-	local kit = kitFolder()
-	if kit then
-		for _, spec in platingPlan(scale) do
-			local template = kit:FindFirstChild(spec.kit)
-			if template and limbs[spec.limb] then
-				local piece = template:Clone()
-				piece.Name = "GFVis_" .. spec.kit .. "_" .. spec.limb
-				for _, d in piece:GetDescendants() do
-					if d:IsA("BasePart") then
-						d.CanQuery = false
-						d.CanCollide = false
-						d.CanTouch = false
-						d.Anchored = true
-						d.Material = Enum.Material.Metal
-					end
-				end
-				piece.Parent = model
-				table.insert(plating, { part = piece, limb = spec.limb, offset = spec.offset, rotY = spec.rotY or 0 })
+	-- elite body tinting: shift the naked rig limbs toward division tones
+	if treatment and treatment.bodyTint then
+		for _, d in rig:GetDescendants() do
+			if d:IsA("BasePart") and d.Color == OBSIDIAN then
+				d.Color = treatment.bodyTint
 			end
 		end
 	end
+end
 
-	rigs[model] = {
-		model = model,
-		root = root,
-		torsoCenterOffset = torsoOffset,
-		limbs = limbs,
-		specs = specs,
-		plating = plating,
-		scale = scale,
-		phase = math.random() * math.pi * 2,
-		lastPos = nil,
-		speed = 0,
-	}
-	model.Destroying:Connect(function()
-		rigs[model] = nil
+-- spawn observation — lane-safe, no EnemyService edits
+local function watchModel(model: Instance)
+	if not model:IsA("Model") then return end
+	task.defer(function()
+		task.wait(0.15) -- spawn construction + rig clone settle
+		if model.Parent then
+			TroopVisuals.restyle(model)
+		end
 	end)
 end
 
--- procedural articulation — poses every rig from actual root displacement.
--- hips swing contralaterally, knees flex on back-swing, arms counter-swing hanging
--- at sides, right forearm holds the weapon across the chest.
-local ORDER = { "UpperTorso", "LowerTorso", "HeadVis", "UpperArmL", "LowerArmL", "UpperArmR", "LowerArmR", "UpperLegL", "LowerLegL", "UpperLegR", "LowerLegR" }
-
-local function poseRig(rig: Rig, dt: number)
-	local model = rig.model
-	if not model.Parent then return end
-	local rootCF = model:GetPivot()
-
-	local pos = rootCF.Position
-	if rig.lastPos then
-		local disp = (pos - rig.lastPos).Magnitude
-		rig.speed = rig.speed * 0.7 + (disp / math.max(dt, 0.001)) * 0.3
-	end
-	rig.lastPos = pos
-
-	local moving = rig.speed > 1.5
-	if moving then
-		rig.phase += dt * math.clamp(rig.speed * 0.9, 4, 11)
-	else
-		rig.phase += dt * 1.2
-	end
-	local swingAmp = moving and math.clamp(rig.speed / 12, 0.35, 1) or 0
-
-	local torsoCF = rootCF * CFrame.new(rig.torsoCenterOffset)
-	local frames: { [string]: CFrame } = {}
-
-	for _, name in ORDER do
-		local spec = rig.specs[name]
-		local rot = CFrame.new()
-		if spec.axis == "leg" and spec.swing then
-			rot = CFrame.Angles(math.rad(spec.swing) * swingAmp * math.sin(rig.phase + math.rad(spec.phase or 0)), 0, 0)
-		elseif spec.axis == "arm" and spec.swing then
-			local swingA = math.rad(spec.swing) * swingAmp * math.sin(rig.phase + math.rad(spec.phase or 0))
-			local cant = math.rad(name == "UpperArmL" and 5 or -5) -- arms tucked at sides, never T-pose
-			rot = CFrame.Angles(swingA, 0, cant)
-		elseif spec.axis == "knee" then
-			local legSwing = math.sin(rig.phase + math.rad(spec.phase or 0))
-			rot = CFrame.Angles(-math.max(0, -legSwing) * math.rad(32) * swingAmp, 0, 0)
-		elseif spec.axis == "forearm" then
-			rot = CFrame.Angles(math.rad(-20), 0, 0)
-		elseif spec.axis == "hold" then
-			rot = CFrame.Angles(math.rad(-58), math.rad(28), 0) -- weapon-hold across chest
-		end
-
-		local frame
-		if spec.parent and frames[spec.parent] then
-			-- child follows parent frame at its bind-relative offset, then articulates
-			frame = frames[spec.parent] * CFrame.new(spec.bind - rig.specs[spec.parent].bind) * rot
-		else
-			frame = torsoCF * CFrame.new(spec.bind) * rot
-		end
-		frames[name] = frame
-		rig.limbs[name].CFrame = frame
-	end
-
-	local visorPart = model:FindFirstChild("GFRig_VisorSlit")
-	if visorPart and frames.HeadVis then
-		visorPart.CFrame = frames.HeadVis * CFrame.new(0, 0.05*rig.scale, -0.52*rig.scale)
-	end
-
-	for _, pl in rig.plating do
-		local frame = frames[pl.limb]
-		if frame and pl.part.Parent then
-			local rotY = pl.rotY ~= 0 and CFrame.Angles(0, math.rad(pl.rotY), 0) or CFrame.new()
-			pl.part:PivotTo(frame * CFrame.new(pl.offset) * rotY)
-		end
+local folder = Workspace:FindFirstChild("ActiveActors")
+if folder then
+	for _, m in folder:GetChildren() do
+		watchModel(m)
 	end
 end
-
-RunService.Heartbeat:Connect(function(dt)
-	for model, rig in rigs do
-		if model.Parent then
-			local ok, err = pcall(poseRig, rig, dt)
-			if not ok then
-				rigs[model] = nil
-				warn("TroopVisuals rig error: " .. tostring(err))
-			end
-		else
-			rigs[model] = nil
+Workspace.ChildAdded:Connect(function(c)
+	if c.Name == "ActiveActors" then
+		folder = c
+	end
+	watchModel(c)
+end)
+if folder then
+	folder.ChildAdded:Connect(watchModel)
+end
+-- the folder is created lazily — watch workspace for its appearance
+Workspace.ChildAdded:Connect(function(c)
+	if c.Name == "ActiveActors" then
+		folder = c
+		c.ChildAdded:Connect(watchModel)
+		for _, m in c:GetChildren() do
+			watchModel(m)
 		end
 	end
 end)
 
-local function watchModel(model: Instance)
-	if not model:IsA("Model") then return end
-	if model:GetAttribute("GFEnemy") == true then
-		task.defer(function()
-			task.wait(0.1)
-			TroopVisuals.restyle(model)
-		end)
-	end
-end
-
-for _, m in Workspace:GetChildren() do
-	watchModel(m)
-end
-Workspace.ChildAdded:Connect(watchModel)
-
 function TroopVisuals.init()
-	print("[TroopVisuals] rigged-body visual layer active")
+	print("[TroopVisuals] archetype armor-package system active")
+end
+
+-- boot entrypoint called by Main — watchers connect at module scope on first require,
+-- so start is the lifecycle confirmation plus a rescan for anything already present.
+function TroopVisuals.start()
+	TroopVisuals.init()
+	local folder = Workspace:FindFirstChild("ActiveActors")
+	if folder then
+		for _, m in folder:GetChildren() do
+			watchModel(m)
+		end
+	end
 end
 
 return TroopVisuals

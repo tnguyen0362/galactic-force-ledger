@@ -138,104 +138,17 @@ function RigBuilder.build()
 	vj.C1 = CFrame.new()
 	vj.Parent = head
 
-	-- layered armor shells: overlapping plates that taper the silhouette.
-	-- these are primitive armor pieces welded to limbs — they articulate with joints.
-	local function armorShell(name, parent, size, offset, color, taper)
-		local a = Instance.new("Part")
-		a.Name = name
-		a.Size = size
-		a.CFrame = parent.CFrame * CFrame.new(offset)
-		a.Color = color or OBSIDIAN
-		a.Material = Enum.Material.SmoothPlastic
-		a.CanCollide = false
-		a.CanQuery = false
-		a.CanTouch = false
-		a.Anchored = false
-		a.Parent = rig
-		local w = Instance.new("WeldConstraint")
-		w.Part0 = parent
-		w.Part1 = a
-		w.Parent = a
-		return a
-	end
-
-	-- chest plate: broad angular front shell over the upper torso
-	armorShell("ChestShell", parts.UpperTorso, Vector3.new(2.05, 0.95, 0.55), Vector3.new(0, 0.05, -0.42), OBSIDIAN)
-	-- waist belt plate — defines the waist transition
-	armorShell("WaistPlate", parts.LowerTorso, Vector3.new(1.7, 0.4, 1.1), Vector3.new(0, 0.35, 0), BRONZE)
-	-- thigh plating
-	armorShell("ThighPlateL", parts.UpperLegL, Vector3.new(0.78, 0.9, 0.82), Vector3.new(0, 0.05, -0.02), OBSIDIAN)
-	armorShell("ThighPlateR", parts.UpperLegR, Vector3.new(0.78, 0.9, 0.82), Vector3.new(0, 0.05, -0.02), OBSIDIAN)
-	-- shin plating — front-facing protective shells
-	armorShell("ShinPlateL", parts.LowerLegL, Vector3.new(0.64, 0.95, 0.3), Vector3.new(0, 0, -0.28), OBSIDIAN)
-	armorShell("ShinPlateR", parts.LowerLegR, Vector3.new(0.64, 0.95, 0.3), Vector3.new(0, 0, -0.28), OBSIDIAN)
-	-- forearm bracers
-	armorShell("BracerL", parts.LowerArmL, Vector3.new(0.54, 0.7, 0.54), Vector3.new(0, -0.1, 0), OBSIDIAN)
-	armorShell("BracerR", parts.LowerArmR, Vector3.new(0.54, 0.7, 0.54), Vector3.new(0, -0.1, 0), OBSIDIAN)
-
-	-- helmet shell: enclosed angular helmet over the head primitive — elongated alien profile.
-	-- layered crown + face plate so the head never reads as a bare cube.
-	armorShell("HelmetCrown", parts.Head, Vector3.new(1.1, 0.62, 1.15), Vector3.new(0, 0.28, 0.02), OBSIDIAN)
-	armorShell("HelmetFace", parts.Head, Vector3.new(1.0, 0.55, 0.35), Vector3.new(0, -0.12, -0.42), VIOLETGRAY)
-	armorShell("HelmetCrest", parts.Head, Vector3.new(0.28, 0.5, 1.2), Vector3.new(0, 0.42, 0.08), OBSIDIAN)
-	-- shoulder shells: layered pauldron plates sitting over the shoulder joints
-	armorShell("PauldronShellL", parts.UpperArmL, Vector3.new(0.72, 0.5, 0.72), Vector3.new(-0.08, 0.52, 0), OBSIDIAN)
-	armorShell("PauldronShellR", parts.UpperArmR, Vector3.new(0.72, 0.5, 0.72), Vector3.new(0.08, 0.52, 0), OBSIDIAN)
-	-- primitive energy rifle welded to the right hand: receiver + barrel + violet energy cell
-	local rifleBody = armorShell("RifleReceiver", parts.HandR, Vector3.new(0.3, 0.42, 1.5), Vector3.new(0, 0.05, -0.75), OBSIDIAN)
-	rifleBody.Material = Enum.Material.Metal
-	local barrel = armorShell("RifleBarrel", parts.HandR, Vector3.new(0.16, 0.16, 1.1), Vector3.new(0, 0.12, -1.85), VIOLETGRAY)
-	barrel.Material = Enum.Material.Metal
-	local cell = armorShell("RifleCell", parts.HandR, Vector3.new(0.2, 0.24, 0.4), Vector3.new(0, -0.18, -0.7), ENERGY)
-	cell.Material = Enum.Material.Neon
+	-- v3: base asset is the NAKED articulated rig — armor shells are per-archetype packages
+	-- applied by TroopVisuals post-spawn (lane-safe server-side attachment, replicates once).
+	-- mesh plating removed entirely: generated mesh content does not replicate to clients.
 
 	local hum = Instance.new("Humanoid")
 	hum.RigType = Enum.HumanoidRigType.R15
 	hum.Parent = rig
 	rig.PrimaryPart = parts.HumanoidRootPart
 
-	-- mesh plating welded to limbs — articulates with animation
-	local kit = ReplicatedStorage:FindFirstChild("GFTroopKit")
-	local plated = 0
-	if kit then
-		local function plate(kitName, parentLimb, offset, rotY)
-			local t = kit:FindFirstChild(kitName)
-			if not t then return end
-			local piece = t:Clone()
-			piece.Name = "Plate_" .. kitName .. "_" .. parentLimb.Name
-			local anchor = nil
-			for _, d in piece:GetDescendants() do
-				if d:IsA("BasePart") then
-					d.CanCollide = false
-					d.CanQuery = false
-					d.CanTouch = false
-					d.Anchored = false
-					d.Material = Enum.Material.Metal
-					d.Massless = true
-					if not anchor then anchor = d end
-				end
-			end
-			piece:PivotTo(parentLimb.CFrame * CFrame.new(offset) * CFrame.Angles(0, math.rad(rotY or 0), 0))
-			piece.Parent = rig
-			if anchor then
-				local w = Instance.new("WeldConstraint")
-				w.Part0 = parentLimb
-				w.Part1 = anchor
-				w.Parent = anchor
-				plated += 1
-			end
-		end
-		plate("RifleHelmet", parts.Head, Vector3.new(0, 0.05, 0))
-		plate("ChestArmor", parts.UpperTorso, Vector3.new(0, 0.05, 0))
-		plate("Pauldron", parts.UpperArmL, Vector3.new(-0.12, 0.42, 0))
-		plate("Pauldron", parts.UpperArmR, Vector3.new(0.12, 0.42, 0), 180)
-		plate("Greave", parts.LowerLegL, Vector3.new(0, 0.1, 0))
-		plate("Greave", parts.LowerLegR, Vector3.new(0, 0.1, 0), 180)
-		plate("EnergyRifle", parts.HandR, Vector3.new(0, 0.1, -0.4))
-	end
-
 	rig.Parent = art
-	return "RIG v2 BUILT plated=" .. plated
+	return "RIG v3 BUILT naked"
 end
 
 return RigBuilder
