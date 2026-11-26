@@ -652,7 +652,13 @@ function OperationService.activate(def: OperationDefinition): boolean
 											if z.size >= 3 then table.insert(comp, "Rifleman") end
 											for i, id in comp do
 												local a = (i / #comp) * math.pi * 2
-												Services.EnemyService.spawn(id, Vector3.new(z.x + math.cos(a) * 10, 0, z.z + math.sin(a) * 10) + Vector3.new(0, 30, 0))
+											local sx, sz = z.x + math.cos(a) * 10, z.z + math.sin(a) * 10
+											-- terrain-probe first: EnemyService.spawn ground-snaps from +40 down 160,
+											-- which starts below mountain surfaces. Probe from high above instead.
+											local sy = 60
+											local hit = Workspace:Raycast(Vector3.new(sx, 1200, sz), Vector3.new(0, -1400, 0))
+											if hit then sy = hit.Position.Y + 3 end
+											Services.EnemyService.spawn(id, Vector3.new(sx, sy, sz))
 											end
 											Workspace:SetAttribute("GF_OpPatrols", (Workspace:GetAttribute("GF_OpPatrols") or 0) + 1)
 										end)
