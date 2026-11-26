@@ -431,8 +431,12 @@ function OperationService.completeObjective(id: string, source: string)
 	OperationService.publishState()
 end
 
+-- hold tracking: one interaction per player at a time, cancelled by range/death/disconnect
+local holdingPlayers: { [Player]: boolean } = {}
+
 function OperationService.interact(player: Player, targetString: string)
 	if not current then return end
+	if holdingPlayers[player] then return end
 	local ids = byId(current)
 	for _, node in current.objectives do
 		if node.state == "Completed" or node.state == "Locked" then continue end
@@ -444,16 +448,42 @@ function OperationService.interact(player: Player, targetString: string)
 				local root = char and char:FindFirstChild("HumanoidRootPart")
 				if not root then return end
 				if (root.Position - d.Position).Magnitude > 14 then return end
-				node.state = "Active"
-				if node.mechanic == "capture" then
-					if not requiresMet(node, ids) then
-						Workspace:SetAttribute("GF_OpHint", "The stronghold shield is still active")
-						return
-					end
-					OperationService.completeObjective(node.id, "interact")
-				elseif node.mechanic == "disable" or node.mechanic == "recover" then
-					OperationService.completeObjective(node.id, "interact")
+				if node.mechanic == "capture" and not requiresMet(node, ids) then
+					Workspace:SetAttribute("GF_OpHint", "The stronghold shield is still active")
+					return
 				end
+				-- hold-to-complete: capture 4s (primary gravity), disable/recover 2.5s.
+				-- range re-checks every 0.15s; leaving/downing/disconnecting releases the hold.
+				local holdTime = node.mechanic == "capture" and 4 or 2.5
+				node.state = "Active"
+				OperationService.publishState()
+				holdingPlayers[player] = true
+				local opId = current and current.operationId
+				task.spawn(function()
+					local held = 0
+					local ok = true
+					while held < holdTime do
+						task.wait(0.15)
+						held += 0.15
+						-- cancellation conditions (directive: idempotent, lifecycle-safe)
+						if not current or current.operationId ~= opId then ok = false break end
+						if node.state == "Completed" then ok = false break end
+						local c = player.Character
+						local r = c and c:FindFirstChild("HumanoidRootPart")
+						local h = c and c:FindFirstChild("Humanoid")
+						if not r or not h or h.Health <= 0 then ok = false break end
+						if player:GetAttribute("GFDowned") == true then ok = false break end
+						if (r.Position - d.Position).Magnitude > 16 then ok = false break end
+					end
+					holdingPlayers[player] = nil
+					if ok and current and current.operationId == opId and node.state ~= "Completed" then
+						OperationService.completeObjective(node.id, "interact")
+					elseif not ok and node.state == "Active" then
+						-- released: back to available so the hint reflects reality
+						node.state = "Available"
+						OperationService.publishState()
+					end
+				end)
 				return
 			end
 		end
@@ -575,6 +605,70 @@ function OperationService.activate(def: OperationDefinition): boolean
 						Services.EnemyService.spawn(enemyId, pos)
 					end
 				end)
+			end)
+		end
+	end
+
+	-- route encounter zones: dormant patrols along the deployment->primary corridor
+	if Services.EnemyService and rng then
+		local primary = nil
+		for _, n in def.objectives do
+			if n.id == def.primaryObjective then primary = n end
+		end
+		if primary then
+			local zones = {}
+			local dx = primary.position.X - def.deploymentRegion.X
+			local dz = primary.position.Z - def.deploymentRegion.Z
+			local len = math.sqrt(dx * dx + dz * dz)
+			local px, pz = -dz / len, dx / len
+			for _, frac in ipairs({ 0.28, 0.52, 0.74 }) do
+				local lateral = rng:NextInteger(-260, 260)
+				zones[#zones + 1] = {
+					x = def.deploymentRegion.X + dx * frac + px * lateral,
+					z = def.deploymentRegion.Z + dz * frac + pz * lateral,
+					size = frac > 0.6 and 3 or 2,
+					done = false,
+				}
+			end
+			local opId = def.operationId
+			task.spawn(function()
+				while current and current.operationId == opId do
+					task.wait(3)
+					if Workspace:GetAttribute("GF_InMission") ~= true then break end
+					local players = game:GetService("Players"):GetPlayers()
+					for _, z in zones do
+						if z.done then continue end
+						for _, pl in players do
+							local c = pl.Character
+							local r = c and c:FindFirstChild("HumanoidRootPart")
+							if r then
+								local ddx, ddz = r.Position.X - z.x, r.Position.Z - z.z
+								if math.sqrt(ddx * ddx + ddz * ddz) < 200 then
+									z.done = true
+									-- patrol composition: standard infantry mix, squad-clustered
+									task.spawn(function()
+										pcall(function()
+											local comp = { "Rifleman", "Scout" }
+											if z.size >= 3 then table.insert(comp, "Rifleman") end
+											for i, id in comp do
+												local a = (i / #comp) * math.pi * 2
+												Services.EnemyService.spawn(id, Vector3.new(z.x + math.cos(a) * 10, 0, z.z + math.sin(a) * 10) + Vector3.new(0, 30, 0))
+											end
+											Workspace:SetAttribute("GF_OpPatrols", (Workspace:GetAttribute("GF_OpPatrols") or 0) + 1)
+										end)
+									end)
+									break
+								end
+							end
+						end
+					end
+					-- all zones consumed: stop polling
+					local anyLeft = false
+					for _, z in zones do
+						if not z.done then anyLeft = true break end
+					end
+					if not anyLeft then break end
+				end
 			end)
 		end
 	end
