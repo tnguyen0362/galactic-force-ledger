@@ -442,6 +442,28 @@ local function dome(player: Player, s: any, position: Vector3)
 	sphere.Material = Enum.Material.ForceField
 	sphere.Color = Color3.fromRGB(90, 190, 255)
 	sphere.Transparency = 0.55
+	-- Gate G deployment animation: the shell expands from a seed point over 0.45s with a
+	-- slight overshoot, then breathes at low amplitude while active — reads as projected
+	-- energy rather than a static prop.
+	do
+		local fullSize = sphere.Size
+		local bornAt = os.clock()
+		sphere.Size = fullSize * 0.08
+		task.spawn(function()
+			while sphere.Parent do
+				local t = os.clock() - bornAt
+				if t < 0.45 then
+					local f = t / 0.45
+					local ease = 1 - (1 - f) ^ 3
+					local overshoot = f > 0.7 and (1 + 0.06 * math.sin((f - 0.7) / 0.3 * math.pi)) or 1
+					sphere.Size = fullSize * (0.08 + 0.92 * ease) * overshoot
+				else
+					sphere.Size = fullSize * (1 + 0.015 * math.sin(os.clock() * 2.4))
+				end
+				task.wait(0.05)
+			end
+		end)
+	end
 	sphere:SetAttribute("DomeHealth", (ability.domeHealth or 600))
 	sphere:SetAttribute("Radius", effectiveRadius)
 	local host = workspace:FindFirstChild("GameplayEffects") or workspace
