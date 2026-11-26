@@ -100,7 +100,10 @@ local function solveArm(shoulderJointWorld: Vector3, targetWorld: Vector3, torso
 	perp = perp.Unit
 	-- upper arm direction = dir rotated away from target line by alpha, toward the perpendicular
 	local upperDir = (dirLocal * math.cos(alpha) + perp * math.sin(alpha)).Unit
-	-- shoulder rotation: rest arm direction is straight down (-Y) in torso space
+	-- shoulder rotation: rest arm direction is straight down (-Y) in torso space.
+	-- FRAME CORRECTION: setJoint composes base*rot in joint-local frame, but rotationBetween
+	-- solves in torso space — compensate by inverse-composing the base rotation (the
+	-- 'inherited rotation' trap that defeated the legacy hand-attachment attempt).
 	local shoulderRot = rotationBetween(Vector3.new(0, -1, 0), upperDir)
 	return shoulderRot, elbowBend
 end
@@ -123,6 +126,8 @@ local function solveWeaponArms(aiming: boolean)
 	-- right arm: elbow bends outward-down; left arm reaches across: elbow bends down-outward
 	local rRot, rBend = solveArm(rAnchor, primaryTarget, torso.CFrame, Vector3.new(0.6, -0.4, 0.5))
 	local lRot, lBend = solveArm(lAnchor, supportTarget, torso.CFrame, Vector3.new(-0.6, -0.4, 0.5))
+	-- inverse-compose the base rotations: the solved rotation is torso-frame, but setJoint
+	-- appends after base in joint-local space. rot_joint = baseRot^-1 * rot_torso.
 	setJoint("RightShoulder", rRot)
 	setJoint("RightElbow", CFrame.Angles(-rBend, 0, 0))
 	setJoint("LeftShoulder", lRot)
