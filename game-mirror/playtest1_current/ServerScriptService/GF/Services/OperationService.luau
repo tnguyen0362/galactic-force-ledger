@@ -865,6 +865,17 @@ function OperationService.activate(def: OperationDefinition): boolean
 		end
 	end
 
+	-- rare encounters: seeded opportunities layered over the garrison structure (spec sections
+	-- 54-59). The seed explains what was chosen; rarity is real. Runs after garrisons so elite
+	-- formations deploy around the established site geometry.
+	if rng then
+		task.delay(3, function()
+			pcall(function()
+				require(script.Parent.RareEncounters).planAndSpawn(def, rng, Services)
+			end)
+		end)
+	end
+
 	-- arm elimination mechanics: tagged targets exist in the world from activation
 	for _, node in def.objectives do
 		if node.mechanic == "eliminate" then
@@ -1091,6 +1102,9 @@ function OperationService.start()
 			EncounterDirector = require(script.Parent.EncounterDirector),
 			ObjectiveService = require(script.Parent.ObjectiveService),
 			EnemyService = require(script.Parent.EnemyService),
+			EliteOperations = require(script.Parent.EliteOperations),
+			BastionTank = require(script.Parent.BastionTank),
+			LeviathanWalker = require(script.Parent.LeviathanWalker),
 		})
 	end)
 end
