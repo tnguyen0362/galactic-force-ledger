@@ -347,8 +347,10 @@ local function buildViewmodel(weapon: any)
 end
 
 local viewmodelAimLerp = 0
-local VIEWMODEL_HIP = Vector3.new(0.62, -0.95, -0.85)
-local VIEWMODEL_ADS = Vector3.new(0.36, -0.58, -1.02)
+-- presentation-only offsets: hip position rides outside the torso silhouette so the
+-- weapon reads at gameplay camera angles instead of being swallowed by the body
+local VIEWMODEL_HIP = Vector3.new(0.78, -0.72, -0.62)
+local VIEWMODEL_ADS = Vector3.new(0.4, -0.52, -0.95)
 local function updateViewmodel(dt: number?)
 	local char = player.Character
 	local hand = char and (char:FindFirstChild("RightHand") or char:FindFirstChild("RightLowerArm"))
