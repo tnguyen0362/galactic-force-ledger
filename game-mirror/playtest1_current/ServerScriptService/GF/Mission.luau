@@ -75,6 +75,19 @@ DownedService.start()
 require(Services.AppearanceService).start()
 -- Phase 2 world: seeded terrain first, then all dressing sits on it.
 local TerrainService = require(Services.TerrainService)
+-- Battlefield mode (GF_BattlefieldGen): anchors come from the generated plan — LZ/primary
+-- are feature-placed nodes hundreds of studs apart; legacy mode keeps the compact layout.
+-- registerFlat calls below only affect the legacy sampler (battlefield build drops them).
+local BF_LZ = Vector3.new(0, 0, -120)
+local BF_OBJ = Vector3.new(0, 0, 120)
+do
+	local bfOn = workspace:GetAttribute("GF_BattlefieldGen") == true
+	if bfOn then
+		-- TerrainService.build hasn't run yet; plan nodes are only knowable after build, so the
+		-- flats are registered inside the battlefield build path itself. Here we pre-compute
+		-- nothing — anchors finalize after build below.
+	end
+end
 TerrainService.registerFlat(Vector3.new(0, 0, -120), 74)
 TerrainService.registerFlat(Vector3.new(0, 0, 120), 52)
 TerrainService.registerFlat(Vector3.new(74, 0, -54), 44)
@@ -172,8 +185,24 @@ for i = 1, 8 do
 	wall.Parent = workspace
 	CoverService.registerPiece(wall, 90)
 end
-ObjectiveService.setup(Vector3.new(0, 0, -120))
-local dressed = require(Services.WorldDressing).build(Vector3.new(0, 0, -120), Vector3.new(0, 0, 120))
+-- Finalize mission anchors: battlefield mode substitutes plan nodes (lz/primary) for the
+-- legacy compact positions; every downstream consumer receives the scaled coordinates.
+local lzAnchor = Vector3.new(0, 0, -120)
+local objAnchor = Vector3.new(0, 0, 120)
+do
+	local plan = TerrainService.currentPlan
+	if workspace:GetAttribute("GF_BattlefieldGen") == true and plan and plan.nodes then
+		lzAnchor = Vector3.new(plan.nodes.lz.x, 0, plan.nodes.lz.z)
+		objAnchor = Vector3.new(plan.nodes.primary.x, 0, plan.nodes.primary.z)
+		workspace:SetAttribute("GF_BFObjectiveX", objAnchor.X)
+		workspace:SetAttribute("GF_BFObjectiveZ", objAnchor.Z)
+		print(string.format("[GF] battlefield anchors: lz=(%.0f,%.0f) objective=(%.0f,%.0f) separation=%.0f",
+			lzAnchor.X, lzAnchor.Z, objAnchor.X, objAnchor.Z,
+			math.sqrt((objAnchor.X - lzAnchor.X)^2 + (objAnchor.Z - lzAnchor.Z)^2)))
+	end
+end
+ObjectiveService.setup(lzAnchor)
+local dressed = require(Services.WorldDressing).build(lzAnchor, objAnchor)
 print("[GF] world dressing parts: " .. dressed)
 do
 	local missionState = require(Services.State).getMission()

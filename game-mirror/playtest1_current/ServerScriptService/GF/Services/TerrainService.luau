@@ -99,9 +99,18 @@ function TerrainService.build(seed: number): number
 			workspace:SetAttribute("GF_BFArchetype", plan.archetype)
 			print(string.format("BattlefieldGen: archetype=%s seed=%d attempts=%d genTime=%.2fs",
 				plan.archetype, plan.seed, meta.attempts or 1, os.clock() - t0))
+			-- Legacy hardcoded mission flats are meaningless on battlefield geography; drop them
+			-- and instead flatten pads at the plan's own LZ/extraction nodes (heights sampled
+			-- from the plan sampler so pads sit on local terrain, not legacy BASE).
+			table.clear(flats)
 			local sampler = plan.sampler
+			local function nodePad(nx: number, nz: number, radius: number)
+				table.insert(flats, { pos = Vector3.new(nx, 0, nz), radius = radius, height = sampler(nx, nz) })
+			end
+			nodePad(plan.nodes.lz.x, plan.nodes.lz.z, 64)
+			nodePad(plan.nodes.extraction.x, plan.nodes.extraction.z, 52)
 			sample = function(x: number, z: number): number
-				return sampler(x, z)
+				return applyFlats(x, z, sampler(x, z))
 			end
 			workspace.Terrain:FillRegion(
 				Region3.new(Vector3.new(-780, -160, -780), Vector3.new(780, 240, 780)),
