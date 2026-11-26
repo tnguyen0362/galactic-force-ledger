@@ -677,8 +677,10 @@ function CombatService.fire(player: Player, payload: any)
 	counters.accepted += 1
 	note("Accepted", counters.accepted)
 	-- Hearing model (S06-008): a fired shot alerts hostiles within range of the muzzle.
+	-- Shooter identity passed through for player-keyed auditory memory (spec section 18):
+	-- optional parameter, behavior unchanged for positional-only callers.
 	pcall(function()
-		require(script.Parent.EnemyService).hearGunfire(origin)
+		require(script.Parent.EnemyService).hearGunfire(origin, game:GetService("Players"):GetPlayerFromCharacter(character))
 	end)
 	local unit = direction.Unit
 	local isAiming = character:GetAttribute("Aiming") == true

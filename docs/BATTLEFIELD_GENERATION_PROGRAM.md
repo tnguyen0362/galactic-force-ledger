@@ -165,3 +165,44 @@ archetype weighted selection with light recent-layout avoidance.
 - **P5:** Cover distribution + composition integration (WorldDressing reads plan zones).
 - **P6:** 150-seed batch validation across archetypes/templates/difficulties; envelope tuning;
   dev-only top-down visualization; cutover default-on.
+
+---
+
+## VARIABILITY ARCHITECTURE — owner decision 2026-11-25
+
+Owner direction, verbatim intent: bake multiple real-world foundations, then
+generate variety ON TOP of them. Formalized:
+
+**The geography is the constant. The operation is the variable.**
+
+### Layer 0 — Baked foundations (fixed, curated, real)
+- 2-4 battlefields, each real-world elevation data, baked into the place
+- foundation_v1 = Grand Teton mountain valley (DONE, verified)
+- Candidates from the same stitched dataset or new tiles: canyon network (west
+  canyons crop), alpine/lake basin (south lakes crop), escarpment front (r1200)
+- Each foundation is a PLACE you learn — peaks stay put, canyons stay put
+
+### Layer 1 — Procedural overlay per mission (varies every deployment)
+- Vegetation seed: same ecology rules, different forest expression per mission
+- Mission layout: objectives/installations/LZ/extraction placed per-operation
+  in tactically sensible terrain (the operations layer, not yet built)
+- Scatter: wrecks, craters, rockslide debris, patrol positions
+- Atmosphere: time-of-day, fog density, weather mood per mission
+- Palate/season shifts within the biome identity
+
+### Layer 2 — Regional operations (same map, different war)
+- 5000 studs is big enough that different missions use different REGIONS:
+  NW canyon country vs central glacial valley vs high alpine peaks
+- ARC Raiders model: the place is fixed, the operations move around it
+
+### What must NEVER vary at runtime
+- Macro geography. No runtime heightfield mutation. The mountains are real
+  and they stay where they are — that is what makes the place believable
+  and learnable.
+
+### Next actions (priority order)
+1. Prep + bake foundation_v2 (contrasting geography type) using existing pipeline
+2. Mission-geography integration: operations layer keyed to real terrain features
+3. Consolidated graphics pass: biome design (forest/wasteland themes), AI mesh
+   vegetation batch (generate_mesh pipeline validated, see MESH_GEN_PIPELINE.md),
+   lighting + atmosphere as one coherent art direction
