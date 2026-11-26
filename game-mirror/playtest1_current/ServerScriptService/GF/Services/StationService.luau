@@ -433,7 +433,11 @@ local function groundPoint(p: Vector3): Vector3
 	params.IgnoreWater = true
 	local actors = workspace:FindFirstChild("ActiveActors")
 	params.FilterDescendantsInstances = actors and { actors } or {}
-	local hit = workspace:Raycast(Vector3.new(p.X, 500, p.Z), Vector3.new(0, -1200, 0), params)
+	-- elevation-aware origin: mountain-valley geography can exceed the legacy fixed 500-stud
+	-- start (high valleys reach 600+). Operation positions carry real terrain elevation in p.Y;
+	-- the station underside (~760) bounds how high we may start, so cap the lift there.
+	local originY = math.max(500, math.min(p.Y + 80, 740))
+	local hit = workspace:Raycast(Vector3.new(p.X, originY, p.Z), Vector3.new(0, -1400, 0), params)
 	return hit and (hit.Position + Vector3.new(0, 6, 0)) or p
 end
 

@@ -541,6 +541,14 @@ function EncounterDirector.beginMission(): ()
 			end
 		end)
 	end
+	-- operation mode: the operation layer owns encounter placement (garrisons at objective
+	-- sites across the kilometer-scale geography). Legacy relay-centered posts/patrol/boss at
+	-- the old 240-stud site must not spawn — but the economy reset above always runs.
+	local opTemplate = workspace:GetAttribute("GF_OperationTemplate")
+	if workspace:GetAttribute("GF_OperationMode") == true
+		and type(opTemplate) == "string" and string.sub(opTemplate, 1, 9) == "CONQUEST_" then
+		return
+	end
 	local relay = ObjectiveService.getRelay()
 	local center = relay and relay.PrimaryPart and relay.PrimaryPart.Position
 	if center then
