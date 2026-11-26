@@ -80,3 +80,6 @@ Open Cloud upload of the Blender-generated vegetation GLBs is refused: `C:\Users
 
 ### Phase 15 — Blender asset upload — RESOLVED 2026-11-26
 Owner added the upload directory in MCP Permissions. All 31 vegetation GLBs uploaded (Approved). IDs in `tools/art/vegetation/asset_manifest.csv`. Remaining blocker: Studio Edit window (beta's test matrix holds Play mode) to insert/verify/deploy.
+
+## 2026-11-26 claude: kit upload dir not approved
+Open Cloud upload of 16 kit GLBs refused: C:\Users\tnguy\gf-art-build\blender\out_kit not in approved upload directories. Owner action: add it in Assistant Settings -> MCP Permissions. Not worked around.
