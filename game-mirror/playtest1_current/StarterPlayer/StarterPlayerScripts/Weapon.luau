@@ -366,7 +366,9 @@ local function updateViewmodel(dt: number?)
 	-- the hip while the camera tightens. This is presentation-only; the authoritative ray remains the reticle ray.
 	viewmodelAimLerp += ((state.aiming and 1 or 0) - viewmodelAimLerp) * math.min(1, (dt or 1/60) * 10)
 	local offset = VIEWMODEL_HIP:Lerp(VIEWMODEL_ADS, viewmodelAimLerp)
-	viewmodel.PrimaryPart.CFrame = root.CFrame * CFrame.new(offset)
+	-- PivotTo rigidly transforms the whole assembly; direct PrimaryPart assignment left
+	-- welded pieces behind (and unanchored assemblies fell through the world entirely)
+	viewmodel:PivotTo(root.CFrame * CFrame.new(offset))
 	char:SetAttribute("GF_WeaponGrip", viewmodel.PrimaryPart.Position)
 	char:SetAttribute("GF_ViewmodelAimLerp", viewmodelAimLerp)
 end

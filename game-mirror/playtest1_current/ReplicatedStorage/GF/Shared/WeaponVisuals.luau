@@ -192,6 +192,7 @@ function WeaponVisuals.build(weaponId, weldTo)
 	root.CanQuery = false
 	root.CanTouch = false
 	root.Massless = true
+	root.Anchored = true
 	root.CFrame = weldTo and weldTo.CFrame or CFrame.new()
 	root.Parent = model
 	model.PrimaryPart = root
@@ -210,6 +211,7 @@ function WeaponVisuals.build(weaponId, weldTo)
 		p.CanQuery = false
 		p.CanTouch = false
 		p.Massless = true
+		p.Anchored = true
 		p.CFrame = root.CFrame
 			* CFrame.new(piece.x, piece.y, piece.z)
 			* CFrame.Angles(math.rad(piece.rx), math.rad(piece.ry), math.rad(piece.rz))
