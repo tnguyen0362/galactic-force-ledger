@@ -1517,7 +1517,8 @@ local function tickActor(model: Model, actor: any, dt: number)
 				local sigma
 				local mem = actor.perception and actor.perception.memory[target]
 				local obsUncertainty = mem and (mem.uncertainty + (os.clock() - mem.observedAt) * 1.1) or 6
-				local useEstimator = workspace:GetAttribute("GF_TrackingModel") == "estimator"
+				local trackMode = workspace:GetAttribute("GF_TrackingModel") or "legacy"
+				local useEstimator = trackMode == "estimator" or trackMode == "estimator2"
 				local trackUnc = 0
 				local predX, predZ
 				if useEstimator then
@@ -1528,7 +1529,8 @@ local function tickActor(model: Model, actor: any, dt: number)
 					if trk then
 						local par = TargetTracker.params(diff)
 						TargetTracker.pump(trk, par, os.clock())
-						trackUnc = TargetTracker.uncertaintyAt(trk, par, os.clock())
+						trackUnc = (trackMode == "estimator2") and TargetTracker.uncertaintyAtV2(trk, os.clock())
+						or TargetTracker.uncertaintyAt(trk, par, os.clock())
 						predX, predZ = TargetTracker.predictTo(trk, os.clock())
 					else
 						trackUnc = 1.0
@@ -1583,7 +1585,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 						rolling = rolling,
 						targetVelocityMag = math.floor(relVel.Magnitude * 100 + 0.5) / 100,
 						targetTransverseSpeed = math.floor((omega * dist) * 100 + 0.5) / 100,
-						trackingModel = useEstimator and "estimator" or "legacy",
+						trackingModel = useEstimator and trackMode or "legacy",
 						trackUnc = math.floor(trackUnc * 1000 + 0.5) / 1000,
 					})
 				end

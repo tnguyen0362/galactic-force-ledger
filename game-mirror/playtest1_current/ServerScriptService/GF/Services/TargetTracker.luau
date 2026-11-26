@@ -24,7 +24,8 @@ function TargetTracker.newState()
 		px = 0, pz = 0,           -- position estimate anchored at anchorT (flat combat plane)
 		vx = 0, vz = 0,           -- velocity estimate
 		anchorT = nil :: number?, -- time the state is anchored at
-		unc = 1.0,                -- scalar tracking-uncertainty inflation
+		unc = 1.0,                -- scalar tracking-uncertainty inflation (legacy v1 path)
+		innovEMA = 1.0,           -- v2: normalized-innovation exponential moving average
 		initialized = false,
 		-- observation delay line: observations only become available tau_obs after they occur
 		obsBuf = {} :: { { t: number, x: number, z: number } },
@@ -99,10 +100,23 @@ function TargetTracker.update(state: any, par: any, zx: number, zz: number, tObs
 		local shrink = math.max(0, vmag - 1.2 * dt) / math.max(vmag, 1e-6)
 		state.vx *= shrink
 		state.vz *= shrink
+	else
+		-- physical plausibility clamp: velocities beyond sprint+dodge capability are estimation
+		-- noise, not movement — adversarial sweep showed high-gain difficulties whipsawing on
+		-- high-frequency jitter without this bound
+		local vmax = 30
+		if vmag > vmax then
+			state.vx *= vmax / vmag
+			state.vz *= vmax / vmag
+		end
 	end
 	if innovNorm < 1.0 then
 		state.unc = math.max(par.uncMin, state.unc - par.uncDecay * dt)
 	end
+	-- v2: innovation EMA — fast attack on maneuver, slow decay on clean track; converged
+	-- tracks earn precision instead of carrying a fixed uncertainty floor
+	local rate = (innovNorm > state.innovEMA) and 3.0 or 0.55
+	state.innovEMA += (innovNorm - state.innovEMA) * math.min(1, rate * dt)
 	return innov
 end
 
@@ -122,6 +136,16 @@ function TargetTracker.uncertaintyAt(state: any, par: any, t: number): number
 	end
 	local gap = math.max(0, t - (state.anchorT or t))
 	return math.min(par.uncMax, state.unc + 0.45 * gap)
+end
+
+-- v2 uncertainty: base + innovation-EMA scaled + open-loop gap. A long-converged track
+-- (small innovations) approaches the base precision floor; maneuvers inflate within seconds.
+function TargetTracker.uncertaintyAtV2(state: any, t: number): number
+	if not state.initialized then
+		return 3.0
+	end
+	local gap = math.max(0, t - (state.anchorT or t))
+	return math.min(3.0, 0.15 + 1.4 * state.innovEMA + 0.45 * gap)
 end
 
 return TargetTracker
