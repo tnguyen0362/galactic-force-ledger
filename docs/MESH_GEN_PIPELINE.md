@@ -30,3 +30,21 @@
 - "stick to the two themes of the forest and the wasteland"
 - part-built low-poly trees are a waste of time — quality assets or nothing
 - black wall ROOT-CAUSED + FIXED (OrbitVista starfield inside playfield) — commit 96356c5
+
+## CRITICAL: mesh ID schemes and persistence/replication (learned 2026-11-26, confirmed 2026-11-28)
+
+- `rbxruntime://` mesh IDs are what the raw `GenerateModelAsync` harness path produces. They are
+  SESSION-LOCAL: dead after the session ends — they do not replicate to clients and do not persist.
+  Errors look like: `MeshContentProvider failed to process rbxruntime://... because 'could not fetch'`.
+- `rbxassetid://` mesh IDs (generated through the official Assistant mesh-creation flow, or uploaded)
+  are durable and replication-safe.
+- RULE: old rbxruntime meshes stay dead forever — REGENERATE through the correct path, do not try
+  to convert or repair them.
+- The boot-log MeshContentProvider errors in Playtest1 are legacy debris from early generation
+  experiments, not an ongoing pipeline failure. Cleanup happens naturally in the planned graphic
+  overhaul; until then they are harmless noise (invisible meshes).
+- Any new mesh production (Stage 8 loot/cache/container assets, overhaul art) must use the
+  replication-safe path so meshes receive real asset IDs.
+- OPEN ISSUE (neither alpha nor beta resolved): some edit-mode content (a probe model) once failed
+  to survive into the playtest snapshot while other edit-mode models did. Pre-replication, not
+  mesh-related. Watch for it when verifying generated assets in play mode.
