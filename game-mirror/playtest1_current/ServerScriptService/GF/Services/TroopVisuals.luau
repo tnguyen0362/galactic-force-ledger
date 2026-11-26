@@ -21,7 +21,7 @@ local OBSIDIAN = Color3.fromRGB(36, 33, 42)
 local OBSIDIAN2 = Color3.fromRGB(24, 22, 30) -- spectre deep-matte
 local VIOLETGRAY = Color3.fromRGB(81, 70, 94)
 local IVORY = Color3.fromRGB(214, 203, 180)
-local BRONZE = Color3.fromRGB(150, 120, 84)
+local BRONZE = Color3.fromRGB(110, 88, 62)
 local ENERGY = Color3.fromRGB(169, 99, 233)
 
 -- piece spec: shape Box/Wedge/Cylinder/Ball, size, limb attachment, offset in limb frame,
@@ -299,7 +299,11 @@ function TroopVisuals.restyle(model: Model)
 	local scale = (tier == "Elite") and 1.25 or 1
 	local enemyId = model:GetAttribute("EnemyId") or "Rifleman"
 	local division = model:GetAttribute("EliteDivision")
+	-- revenant roles encode in the EnemyId itself (RevenantLeader etc.), not an attribute
 	local role = model:GetAttribute("RevenantRole")
+	if not role and type(enemyId) == "string" and enemyId:sub(1, 8) == "Revenant" then
+		role = enemyId:sub(9)
+	end
 
 	local pkg = PACKAGES[enemyId] or {}
 	local treatment = nil
