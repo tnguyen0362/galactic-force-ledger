@@ -384,6 +384,28 @@ function CombatService.damageEnemy(model: Model, amount: number, attacker: Playe
 					compPart:SetAttribute("ComponentDestroyed", true)
 					compPart.Color = Color3.fromRGB(30, 30, 32)
 					compPart.Material = Enum.Material.CorrodedMetal
+					-- spec final directive: destroyed components must VISIBLY reflect lost functionality.
+					-- beyond scorching: mechanical droop (the mount sags) plus persistent smoke.
+					if compPart:IsA("BasePart") then
+						compPart.CFrame = compPart.CFrame * CFrame.Angles(math.rad(7), 0, math.rad(4)) + Vector3.new(0, -0.25, 0)
+						local smoke = Instance.new("ParticleEmitter")
+						smoke.Name = "GF_DestroyedSmoke"
+						smoke.Color = ColorSequence.new(Color3.fromRGB(45, 45, 48))
+						smoke.Size = NumberSequence.new(1.2, 2.8)
+						smoke.Transparency = NumberSequence.new(0.35, 1)
+						smoke.Lifetime = NumberRange.new(1.2, 2)
+						smoke.Rate = 9
+						smoke.Speed = NumberRange.new(2, 4)
+						smoke.Parent = compPart
+						local ember = Instance.new("ParticleEmitter")
+						ember.Name = "GF_DestroyedEmbers"
+						ember.Color = ColorSequence.new(Color3.fromRGB(255, 120, 40))
+						ember.Size = NumberSequence.new(0.25, 0)
+						ember.Lifetime = NumberRange.new(0.4, 0.9)
+						ember.Rate = 5
+						ember.Speed = NumberRange.new(3, 6)
+						ember.Parent = compPart
+					end
 					workspace:SetAttribute("GF_ComponentDestroyed", tostring(compPart:GetAttribute("ComponentId")))
 				end
 			end
