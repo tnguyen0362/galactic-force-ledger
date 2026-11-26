@@ -128,10 +128,14 @@ local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: bo
 	local lla = character:FindFirstChild("LeftLowerArm")
 	local lhand = character:FindFirstChild("LeftHand")
 	if not (torso and rua and rla and rhand and lua and lla and lhand) then return end
-	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming, nil, aimPitch, sprinting)
+	local reloading = character:GetAttribute("GF_Reloading") == true
+	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming, nil, aimPitch, sprinting, reloading)
 	local profile = WeaponPose.gripProfile(character:GetAttribute("GF_EquippedWeapon") or "")
 	local primaryTarget = WeaponPose.gripWorld(weaponCf, profile.primaryGrip)
 	local supportTarget = WeaponPose.gripWorld(weaponCf, profile.supportGrip)
+	if reloading and profile.magazineGrip then
+		supportTarget = WeaponPose.gripWorld(weaponCf, profile.magazineGrip)
+	end
 	-- two CCD passes per arm per heartbeat: converges over a few frames, self-correcting.
 	-- end effector tracked is the hand part center; palm refinement is a later calibration step.
 	for _ = 1, 2 do

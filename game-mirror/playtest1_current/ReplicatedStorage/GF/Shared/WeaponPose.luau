@@ -17,6 +17,7 @@ export type GripProfile = {
 	supportGrip: Vector3,
 	length: number,
 	twoHanded: boolean?,
+	magazineGrip: Vector3?,
 }
 
 local DEFAULTS: GripProfile = {
@@ -31,14 +32,14 @@ local DEFAULTS: GripProfile = {
 -- clamped to the reach envelope validated by the offline study (<=0.65 forward of primary).
 -- P01 is a sidearm: one-handed, left arm stays free (twoHanded = false).
 local PROFILES: { [string]: GripProfile } = {
-	AR01 = { primaryGrip = Vector3.new(0, -0.16, 0.12), supportGrip = Vector3.new(0, -0.08, -0.5), length = 1.6, twoHanded = true },
-	SMG03 = { primaryGrip = Vector3.new(0, -0.14, 0.05), supportGrip = Vector3.new(0, -0.1, -0.35), length = 0.95, twoHanded = true },
-	LMG12 = { primaryGrip = Vector3.new(0, -0.18, 0.05), supportGrip = Vector3.new(0, -0.14, -0.6), length = 1.8, twoHanded = true },
-	SG04 = { primaryGrip = Vector3.new(0, -0.15, 0.12), supportGrip = Vector3.new(0, -0.06, -0.45), length = 1.25, twoHanded = true },
-	MR07 = { primaryGrip = Vector3.new(0, -0.14, 0.08), supportGrip = Vector3.new(0, -0.06, -0.5), length = 2.0, twoHanded = true },
-	GL22 = { primaryGrip = Vector3.new(0, -0.16, 0.15), supportGrip = Vector3.new(0, -0.1, -0.45), length = 1.0, twoHanded = true },
-	RL09 = { primaryGrip = Vector3.new(0, -0.18, 0.12), supportGrip = Vector3.new(0, -0.08, -0.5), length = 1.9, twoHanded = true },
-	P01 = { primaryGrip = Vector3.new(0, -0.14, 0.08), supportGrip = Vector3.new(0, 0, 0), length = 0.5, twoHanded = false },
+	AR01 = { primaryGrip = Vector3.new(0, -0.16, 0.12), supportGrip = Vector3.new(0, -0.08, -0.5), magazineGrip = Vector3.new(0, -0.21, -0.38), length = 1.6, twoHanded = true },
+	SMG03 = { primaryGrip = Vector3.new(0, -0.14, 0.05), supportGrip = Vector3.new(0, -0.1, -0.35), magazineGrip = Vector3.new(0, -0.24, -0.28), length = 0.95, twoHanded = true },
+	LMG12 = { primaryGrip = Vector3.new(0, -0.18, 0.05), supportGrip = Vector3.new(0, -0.14, -0.6), magazineGrip = Vector3.new(0, -0.28, -0.15), length = 1.8, twoHanded = true },
+	SG04 = { primaryGrip = Vector3.new(0, -0.15, 0.12), supportGrip = Vector3.new(0, -0.06, -0.45), magazineGrip = Vector3.new(0, -0.15, -0.1), length = 1.25, twoHanded = true },
+	MR07 = { primaryGrip = Vector3.new(0, -0.14, 0.08), supportGrip = Vector3.new(0, -0.06, -0.5), magazineGrip = Vector3.new(0, -0.2, -0.28), length = 2.0, twoHanded = true },
+	GL22 = { primaryGrip = Vector3.new(0, -0.16, 0.15), supportGrip = Vector3.new(0, -0.1, -0.45), magazineGrip = Vector3.new(0, -0.04, -0.25), length = 1.0, twoHanded = true },
+	RL09 = { primaryGrip = Vector3.new(0, -0.18, 0.12), supportGrip = Vector3.new(0, -0.08, -0.5), magazineGrip = Vector3.new(0, -0.1, 0.05), length = 1.9, twoHanded = true },
+	P01 = { primaryGrip = Vector3.new(0, -0.14, 0.08), supportGrip = Vector3.new(0, 0, 0), magazineGrip = Vector3.new(0, -0.18, 0.08), length = 0.5, twoHanded = false },
 }
 
 -- Posture offsets in ROOT space (character-local, -Z forward). Refined from the legacy
@@ -69,7 +70,7 @@ end
 -- Compute the weapon world transform.
 -- rootCf: HumanoidRootPart world CFrame. aiming: posture selector.
 -- aimYaw/aimPitch: optional torso-independent aim angles (rad) for upper-body aim decomposition.
-function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?): CFrame
+function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?, reloading: boolean?): CFrame
 	local pose = POSES.ready
 	if aiming then
 		pose = POSES.aim
@@ -77,6 +78,10 @@ function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?
 		pose = POSES.sprint
 	end
 	local cf = rootCf * pose.cf
+	if reloading and not aiming then
+		-- reload presentation: weapon rolls inward and down so the support hand can work the magazine
+		cf = cf * CFrame.Angles(math.rad(-28), math.rad(10), math.rad(-15))
+	end
 	if aiming and aimPitch then
 		-- weapon follows vertical aim exactly (authoritative); the torso carries ~30%
 		-- of the pitch via the waist joint so the arms absorb only the remainder.

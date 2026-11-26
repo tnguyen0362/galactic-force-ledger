@@ -262,10 +262,12 @@ function Weapon.reload()
 		return
 	end
 	state.reloading = true
+		if player.Character then player.Character:SetAttribute("GF_Reloading", true) end
 	remotes.ReloadWeapon:FireServer({})
 	Audio.play("reload_start")
 	task.delay(weapon.reloadTime, function()
 		state.reloading = false
+		if player.Character then player.Character:SetAttribute("GF_Reloading", false) end
 		state.ammo = weapon.magazine
 		Audio.play("reload")
 		HUD.setAmmo(state.ammo, state.magazine, state.reserve)
