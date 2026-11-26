@@ -453,6 +453,31 @@ RunService.Heartbeat:Connect(function(dt)
 	local throwT = throwAt and (os.clock() - throwAt) or 99
 	local throwing = throwT < 0.55
 
+	-- equipment interaction: a grenade visibly rides the right hand through the windup,
+	-- releasing at the throw moment (spec: equipment must visibly interact with character)
+	local prop = character:FindFirstChild("GF_GrenadeProp")
+	if throwing and throwT < 0.3 then
+		if not prop then
+			prop = Instance.new("Part")
+			prop.Name = "GF_GrenadeProp"
+			prop.Shape = Enum.PartType.Ball
+			prop.Size = Vector3.new(0.35, 0.35, 0.35)
+			prop.Color = Color3.fromRGB(52, 58, 54)
+			prop.Material = Enum.Material.Metal
+			prop.CanCollide = false
+			prop.CanQuery = false
+			prop.CanTouch = false
+			prop.Anchored = true
+			prop.Parent = character
+		end
+		local rhand2 = character:FindFirstChild("RightHand")
+		if rhand2 then
+			prop.CFrame = rhand2.CFrame * CFrame.new(0, -0.2, -0.1)
+		end
+	elseif prop then
+		prop:Destroy()
+	end
+
 	character:SetAttribute("GF_DbgAnim", string.format("downed=%s grounded=%s tick=%d", tostring(downed), tostring(grounded), elapsed % 1000))
 	if grounded then
 		-- Legs: hip swing + knee bend on the trailing leg.
