@@ -535,15 +535,27 @@ RunService.Heartbeat:Connect(function(dt)
 		setJoint("Neck", CFrame.Angles(-math.rad(2) * moveBlend, 0, 0))
 		setJoint("Root", nil, Vector3.new(0, bob + breathe * 0.4, 0))
 	else
-		-- Airborne: tuck legs, raise arms.
+		-- Airborne: tuck legs; when armed the grip IK keeps the weapon in hand (a soldier
+		-- does not let go of the rifle mid-jump) — free-arm raise only when unarmed.
 		setJoint("LeftHip", CFrame.Angles(0.52, 0, 0))
 		setJoint("RightHip", CFrame.Angles(0.30, 0, 0))
 		setJoint("LeftKnee", CFrame.Angles(-0.95, 0, 0))
 		setJoint("RightKnee", CFrame.Angles(-0.55, 0, 0))
-		setJoint("LeftShoulder", CFrame.Angles(-0.45, 0, math.rad(18)))
-		setJoint("RightShoulder", CFrame.Angles(-0.45, 0, math.rad(-18)))
-		setJoint("LeftElbow", CFrame.Angles(-0.5, 0, 0))
-		setJoint("RightElbow", CFrame.Angles(-0.5, 0, 0))
+		if character:GetAttribute("GF_EquippedWeapon") == nil then
+			setJoint("LeftShoulder", CFrame.Angles(-0.45, 0, math.rad(18)))
+			setJoint("RightShoulder", CFrame.Angles(-0.45, 0, math.rad(-18)))
+			setJoint("LeftElbow", CFrame.Angles(-0.5, 0, 0))
+			setJoint("RightElbow", CFrame.Angles(-0.5, 0, 0))
+		else
+			-- armed airborne: the grip IK still runs — weapon stays genuinely held mid-jump
+			local cam = workspace.CurrentCamera
+			local pitch = 0
+			if aiming and cam then
+				pitch = math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1))
+			end
+			sharedPhase = phase
+			solveWeaponArms(aiming, pitch, sprinting)
+		end
 		setJoint("Waist", CFrame.Angles(-0.08, 0, 0))
 	end
 	wasRolling = rolling
