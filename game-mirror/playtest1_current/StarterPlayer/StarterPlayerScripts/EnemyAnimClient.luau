@@ -244,7 +244,7 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	-- patrol/return are relaxed low-carry with scanning; investigate/search semi-raised alert;
 	-- guard ready-scanning; engage/takecover full combat posture. no independent decisions.
 	local aiState = model:GetAttribute("GFState") or "Engage"
-	local relaxed = aiState == "Patrol" or aiState == "Return"
+	local relaxed = aiState == "Patrol" or aiState == "Return" or aiState == "Idle"
 	local investigating = aiState == "Investigate" or aiState == "Search"
 	local guarding = aiState == "Guard"
 	local inCover = aiState == "TakeCover"
