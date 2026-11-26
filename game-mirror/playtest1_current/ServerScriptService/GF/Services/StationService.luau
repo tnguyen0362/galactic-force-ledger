@@ -544,9 +544,27 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 		end
 	end
 	if template then
-		-- the player picked a mission: rebuild the objective for it. Without this the boot-time
-		-- relay stayed in the world and every template played as SABOTAGE_RELAY.
-		StationService.resetMission(missionDifficulty or difficulty, template)
+		-- join-in-progress (stage 9): when the squad already generated this operation and it
+		-- hasn't terminally resolved, a later deployer drops into the SAME operation. The
+		-- naive path regenerated on every deploy — a second squadmate deploying wiped the
+		-- first player's in-progress operation out from under them.
+		local joinExisting = false
+		if workspace:GetAttribute("GF_OperationMode") == true then
+			local exState = workspace:GetAttribute("GF_ExtractionState")
+			if exState ~= "complete" and exState ~= "failed" then
+				local opOk, cur = pcall(function()
+					return require(script.Parent.OperationService).current()
+				end)
+				if opOk and cur and cur.template == template then
+					joinExisting = true
+				end
+			end
+		end
+		if not joinExisting then
+			-- the player picked a mission: rebuild the objective for it. Without this the boot-time
+			-- relay stayed in the world and every template played as SABOTAGE_RELAY.
+			StationService.resetMission(missionDifficulty or difficulty, template)
+		end
 	elseif mission and (mission.objectiveComplete or mission.extractionCalled) then
 		StationService.resetMission(missionDifficulty or difficulty, mission.objectiveTemplate)
 		workspace:SetAttribute("GF_InMission", true)
@@ -619,6 +637,11 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 		-- Vitals are reset first: publishing the stale record from the previous run painted DOWNED and
 		pcall(function() require(script.Parent.CombatService).publishAmmo(player) end)
 		pcall(function() require(script.Parent.ObjectiveService).publish(player) end)
+		-- op mode: paint the operation DAG picture for the deployer — critical for join-in-progress
+		-- players, whose activation-time publish happened before they arrived
+		if workspace:GetAttribute("GF_OperationMode") == true then
+			pcall(function() require(script.Parent.OperationService).publishProgress(player) end)
+		end
 		local squad = require(script.Parent.SquadService)
 		local salvageRemote = ReplicatedStorage.GF.Remotes:FindFirstChild("SalvageChanged")
 		if salvageRemote and squad and squad.snapshot then
