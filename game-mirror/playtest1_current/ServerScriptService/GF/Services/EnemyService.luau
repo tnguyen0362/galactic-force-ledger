@@ -14,6 +14,7 @@ local debugAttr -- forward declaration: used by closures throughout the module, 
 local ArtService = require(ServerScriptService.GF.Services.ArtService)
 local Telemetry = require(ServerScriptService.GF.Services.GFTelemetry)
 local NPCLocomotion = require(ServerScriptService.GF.Services.NPCLocomotion)
+local TargetTracker = require(ServerScriptService.GF.Services.TargetTracker)
 
 -- config ids map onto the spec's five archetypes: Scout is the Vanguard implementation,
 -- Officer is the Commander implementation (S06-archetype reconciliation, audit 2026-11-26).
@@ -578,6 +579,14 @@ local function perceiveTargets(model: Model, origin: Vector3, def: any, actor: a
 		if NPCPerception.isDetected(perception, player) and exposure > 0 then
 			-- direct visual contact: refresh memory with the legitimate observation
 			NPCPerception.observeVisual(perception, player, targetRoot.Position, targetRoot.AssemblyLinearVelocity)
+			-- tracking architecture v1: feed the estimator the same legitimate visual observation
+			actor.tracking = actor.tracking or {}
+			local trk = actor.tracking[player]
+			if not trk then
+				trk = TargetTracker.newState()
+				actor.tracking[player] = trk
+			end
+			TargetTracker.observe(trk, targetRoot.Position, os.clock())
 			-- threat selection (spec section 20): damage threat + visibility + distance + confidence,
 			-- persistence bonus for the current target so soldiers don't flicker between victims
 			local threat = 0
@@ -1508,9 +1517,26 @@ local function tickActor(model: Model, actor: any, dt: number)
 				local sigma
 				local mem = actor.perception and actor.perception.memory[target]
 				local obsUncertainty = mem and (mem.uncertainty + (os.clock() - mem.observedAt) * 1.1) or 6
+				local useEstimator = workspace:GetAttribute("GF_TrackingModel") == "estimator"
+				local trackUnc = 0
+				local predX, predZ
+				if useEstimator then
+					-- tracking architecture v1: motion degradation enters through tracker uncertainty and
+					-- systematic prediction bias; the 0.7 omega term is deleted in this mode (no double counting)
+					actor.tracking = actor.tracking or {}
+					local trk = actor.tracking[target]
+					if trk then
+						local par = TargetTracker.params(diff)
+						TargetTracker.pump(trk, par, os.clock())
+						trackUnc = TargetTracker.uncertaintyAt(trk, par, os.clock())
+						predX, predZ = TargetTracker.predictTo(trk, os.clock())
+					else
+						trackUnc = 1.0
+					end
+				end
 				sigma = (SIGMA_FLOOR[diff] or SIGMA_FLOOR.Normal) * rangeScale
 					+ SIGMA_INITIAL * ((1 - q) ^ 1.5) * rangeScale
-					+ omega * dist * 0.7 -- motion tracking error grows with angular velocity and range
+					+ (if useEstimator then trackUnc * 0.8 else omega * dist * 0.7)
 					+ obsUncertainty * 0.18
 					+ (actor.suppression or 0) * 2.2 -- suppressed shooters shake
 				-- calibration hook: swept during difficulty tuning, 1.0 in production
@@ -1525,6 +1551,13 @@ local function tickActor(model: Model, actor: any, dt: number)
 				actor.aimErr = (actor.aimErr or Vector3.zero) * rho
 					+ Vector3.new((math.random() - 0.5) * 2, (math.random() - 0.5) * 0.8, (math.random() - 0.5) * 2) * sigma
 				local errMag = actor.aimErr.Magnitude
+				local aimPoint = liveRoot.Position
+				if useEstimator and predX then
+					local biasX = predX - liveRoot.Position.X
+					local biasZ = predZ - liveRoot.Position.Z
+					errMag = Vector3.new(actor.aimErr.X + biasX, actor.aimErr.Y, actor.aimErr.Z + biasZ).Magnitude
+					aimPoint = Vector3.new(predX, liveRoot.Position.Y, predZ)
+				end
 				local blocked = not lineOfSight(root.Position, liveRoot.Position, { model, liveCharacter })
 				local isHit = (not blocked) and errMag < HIT_RADIUS
 				if Telemetry.enabled() then
@@ -1550,10 +1583,12 @@ local function tickActor(model: Model, actor: any, dt: number)
 						rolling = rolling,
 						targetVelocityMag = math.floor(relVel.Magnitude * 100 + 0.5) / 100,
 						targetTransverseSpeed = math.floor((omega * dist) * 100 + 0.5) / 100,
+						trackingModel = useEstimator and "estimator" or "legacy",
+						trackUnc = math.floor(trackUnc * 1000 + 0.5) / 1000,
 					})
 				end
 				if isHit then
-					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position)
+					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, aimPoint)
 					debugAttr("GF_LastShotPos", liveRoot.Position)
 					local dmgMult = tonumber(model:GetAttribute("DamageMultiplier")) or 1
 					VitalsService.applyDamage(target, def.damage * dmgMult, def.id, liveRoot.Position, model)
@@ -1562,7 +1597,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 				else
 					-- visible miss: the tracer lands where the aim actually was — correlated error
 					-- means near misses cluster around the target and walk with its motion
-					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position + (actor.aimErr or Vector3.zero))
+					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, aimPoint + (actor.aimErr or Vector3.zero))
 					debugAttr("GF_LastAttackAttempt", rolling and "dodged" or (blocked and "cover" or "miss"))
 					debugAttr("GF_EnemyMisses", (workspace:GetAttribute("GF_EnemyMisses") or 0) + 1)
 				end

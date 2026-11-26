@@ -1,0 +1,127 @@
+--!strict
+-- TargetTracker — stochastic target state estimation (tracking architecture v1, owner directive 2026-11-28).
+-- Measurement-frame alpha-beta filter per enemy-target pair: position+velocity latent state anchored
+-- at the last observation time; propagation only across inter-observation intervals; fire-time aim
+-- propagates the anchored estimate across the open-loop gap. Maneuver-adaptive gain inflates
+-- uncertainty on innovation spikes (reversals/acceleration) and boosts re-convergence.
+-- Legitimate information only: consumes delayed position observations, never inputs or hidden state.
+local TargetTracker = {}
+
+-- difficulty-conditioned parameters (initial values — calibrated against engine measurement)
+local PARAMS = {
+	Easy = { tauObs = 0.45, alpha = 0.35, beta = 0.12, kappa = 3.0, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+	Normal = { tauObs = 0.35, alpha = 0.45, beta = 0.20, kappa = 2.5, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+	Hard = { tauObs = 0.25, alpha = 0.55, beta = 0.30, kappa = 2.2, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+	Extreme = { tauObs = 0.15, alpha = 0.70, beta = 0.45, kappa = 2.0, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+}
+
+function TargetTracker.params(difficulty: string)
+	return PARAMS[difficulty] or PARAMS.Normal
+end
+
+function TargetTracker.newState()
+	return {
+		px = 0, pz = 0,           -- position estimate anchored at anchorT (flat combat plane)
+		vx = 0, vz = 0,           -- velocity estimate
+		anchorT = nil :: number?, -- time the state is anchored at
+		unc = 1.0,                -- scalar tracking-uncertainty inflation
+		initialized = false,
+		-- observation delay line: observations only become available tau_obs after they occur
+		obsBuf = {} :: { { t: number, x: number, z: number } },
+		lastConsumedT = -1e9,
+	}
+end
+
+-- record a raw visual observation (called when the perception system sees the target).
+-- buffer is bounded; consumed later through the delay line.
+function TargetTracker.observe(state: any, pos: Vector3, now: number)
+	local buf = state.obsBuf
+	buf[#buf + 1] = { t = now, x = pos.X, z = pos.Z }
+	if #buf > 64 then
+		table.remove(buf, 1)
+	end
+end
+
+-- consume observations that have matured past tau_obs, updating the filter.
+-- returns the newest innovation magnitude or nil.
+function TargetTracker.pump(state: any, par: any, now: number)
+	local horizon = now - par.tauObs
+	local innov = nil
+	for _, obs in ipairs(state.obsBuf) do
+		if obs.t <= horizon and obs.t > state.lastConsumedT then
+			innov = TargetTracker.update(state, par, obs.x, obs.z, obs.t)
+			state.lastConsumedT = obs.t
+		end
+	end
+	-- drop matured buffer entries
+	local keep = {}
+	for _, obs in ipairs(state.obsBuf) do
+		if obs.t > horizon - 0.5 then
+			keep[#keep + 1] = obs
+		end
+	end
+	state.obsBuf = keep
+	return innov
+end
+
+function TargetTracker.update(state: any, par: any, zx: number, zz: number, tObs: number)
+	if not state.initialized then
+		state.px, state.pz = zx, zz
+		state.vx, state.vz = 0, 0
+		state.anchorT = tObs
+		state.initialized = true
+		return 0
+	end
+	local dt = math.max(0.05, tObs - (state.anchorT or tObs))
+	-- propagate anchored state across the inter-observation interval
+	local px = state.px + state.vx * dt
+	local pz = state.pz + state.vz * dt
+	local rx = zx - px
+	local rz = zz - pz
+	local innov = math.sqrt(rx * rx + rz * rz)
+	local innovNorm = innov / 1.5
+	local boost = 1
+	if innovNorm > par.kappa then
+		boost = 1.8
+		state.unc = math.min(par.uncMax, state.unc + par.uncInflate)
+	end
+	local a = math.min(0.95, par.alpha * boost)
+	local b = math.min(0.95, par.beta * boost)
+	state.px = px + a * rx
+	state.pz = pz + a * rz
+	state.vx += b * rx / dt
+	state.vz += b * rz / dt
+	state.anchorT = tObs
+	-- near-stationary deadband: velocity estimation noise creates false lead for
+	-- targets that barely move — shrink small velocities toward zero
+	local vmag = math.sqrt(state.vx * state.vx + state.vz * state.vz)
+	if vmag < 2.5 then
+		local shrink = math.max(0, vmag - 1.2 * dt) / math.max(vmag, 1e-6)
+		state.vx *= shrink
+		state.vz *= shrink
+	end
+	if innovNorm < 1.0 then
+		state.unc = math.max(par.uncMin, state.unc - par.uncDecay * dt)
+	end
+	return innov
+end
+
+-- propagate the anchored estimate to time t (open-loop), returning flat x,z
+function TargetTracker.predictTo(state: any, t: number): (number, number)
+	if not state.initialized then
+		return state.px, state.pz
+	end
+	local dt = math.max(0, t - (state.anchorT or t))
+	return state.px + state.vx * dt, state.pz + state.vz * dt
+end
+
+-- tracking uncertainty including open-loop gap inflation since the last matured observation
+function TargetTracker.uncertaintyAt(state: any, par: any, t: number): number
+	if not state.initialized then
+		return par.uncMax
+	end
+	local gap = math.max(0, t - (state.anchorT or t))
+	return math.min(par.uncMax, state.unc + 0.45 * gap)
+end
+
+return TargetTracker
