@@ -253,8 +253,15 @@ RunService.Heartbeat:Connect(function(dt)
 	local local_ = character:GetPivot():VectorToObjectSpace(flat)
 	strafeBlend = lerp(strafeBlend, math.clamp(local_.X / 14, -1, 1), math.min(1, dt * 7))
 
-	local stride = lerp(9, 11.5, moveBlend)
-	phase += dt * stride * math.max(moveBlend, 0.08)
+	-- foot-slide correction (spec sec.111): stride frequency derives from ACTUAL ground speed,
+	-- not a fixed clock — one full phase cycle (2pi) covers one stride length in world space.
+	-- stride length grows with gait intensity; GF_StrideScale is the live-tunable calibration.
+	local strideLen = lerp(3.4, 4.8, moveBlend) * (character:GetAttribute("GF_StrideScale") or 1)
+	if speed > 0.5 then
+		phase += dt * (2 * math.pi * speed / strideLen)
+	else
+		phase += dt * 0.5  -- idle settling drift, negligible amplitude
+	end
 	local swing = math.sin(phase) * moveBlend
 	local bob = math.abs(math.cos(phase)) * 0.06 * moveBlend
 	local breathe = math.sin(elapsed * 1.7) * 0.012
