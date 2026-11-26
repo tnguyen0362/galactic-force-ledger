@@ -177,6 +177,7 @@ local lastPos = root.Position
 local wasRolling = false
 local lastHealth = nil
 local lastWeaponId = nil
+local deathClock = nil
 local switchClock = nil
 local wasDowned = false
 local reviveClock = nil
@@ -190,7 +191,28 @@ end
 
 RunService.Heartbeat:Connect(function(dt)
 	character:SetAttribute("GF_AnimatorTick", (character:GetAttribute("GF_AnimatorTick") or 0) + 1)
-	if not root.Parent or humanoid.Health <= 0 then return end
+	if not root.Parent then return end
+	if humanoid.Health <= 0 then
+		-- death collapse: authored fall instead of a frozen cut — body pitches backward,
+		-- limbs go slack, staged over 0.9s then held. the humanoid death teardown takes
+		-- over from the engine side regardless; this covers the visible window.
+		deathClock = deathClock or os.clock()
+		local f = math.min(1, (os.clock() - deathClock) / 0.9)
+		local e = 1 - (1 - f) * (1 - f)
+		setJoint("Root", CFrame.Angles(-e * 1.35, 0, e * 0.12), Vector3.new(0, -e * 1.6, 0))
+		setJoint("LeftHip", CFrame.Angles(e * 0.4, 0, 0))
+		setJoint("RightHip", CFrame.Angles(e * 0.25, 0, 0))
+		setJoint("LeftKnee", CFrame.Angles(-e * 0.6, 0, 0))
+		setJoint("RightKnee", CFrame.Angles(-e * 0.5, 0, 0))
+		setJoint("Waist", CFrame.Angles(-e * 0.3, 0, 0))
+		setJoint("Neck", CFrame.Angles(-e * 0.45, 0, e * 0.1))
+		setJoint("LeftShoulder", CFrame.Angles(e * 0.5, 0, math.rad(14) * e))
+		setJoint("RightShoulder", CFrame.Angles(e * 0.55, 0, -math.rad(14) * e))
+		setJoint("LeftElbow", CFrame.Angles(-e * 0.2, 0, 0))
+		setJoint("RightElbow", CFrame.Angles(-e * 0.2, 0, 0))
+		return
+	end
+	deathClock = nil
 	elapsed += dt
 
 	-- Speed comes from replicated position deltas: the server never receives
