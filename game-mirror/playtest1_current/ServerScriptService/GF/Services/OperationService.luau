@@ -636,9 +636,6 @@ function OperationService.startDefend(node: ObjectiveNode, seconds: number)
 	end)
 end
 
--- interact routing extension: mechanic-specific activation behavior
-local originalInteract = OperationService.interact
-
 -- ============ activation ============
 
 local lastActivationAt = 0
