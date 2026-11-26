@@ -223,6 +223,13 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	setJoint(state.joints, "AnkleL", CFrame.Angles(sinL * hipAmp * 0.4 - kneeL * 0.5, 0, 0))
 	setJoint(state.joints, "AnkleR", CFrame.Angles(sinR * hipAmp * 0.4 - kneeR * 0.5, 0, 0))
 
+	-- cover posture: crouched when holding cover stationary
+	if inCover and not moving then
+		setJoint(state.joints, "HipL", CFrame.Angles(0.55, 0, 0))
+		setJoint(state.joints, "HipR", CFrame.Angles(0.55, 0, 0))
+		setJoint(state.joints, "KneeL", CFrame.Angles(0.9, 0, 0))
+		setJoint(state.joints, "KneeR", CFrame.Angles(0.9, 0, 0))
+	end
 	-- torso bob: subtle vertical at 2x gait frequency, scaled by personality
 	local bob = math.abs(math.sin(phase)) * 0.05 * amp * prof.bobMul
 	-- slight forward lean when moving — weight commitment
@@ -233,6 +240,14 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	-- aim target: nearest visible player within engagement range (presentation only —
 	-- authoritative targeting stays server-side; this orients the weapon cosmetically)
 	local enemyId = model:GetAttribute("EnemyId")
+	-- spec sec.65 AI-state integration: posture consumes the authoritative replicated state.
+	-- patrol/return are relaxed low-carry with scanning; investigate/search semi-raised alert;
+	-- guard ready-scanning; engage/takecover full combat posture. no independent decisions.
+	local aiState = model:GetAttribute("GFState") or "Engage"
+	local relaxed = aiState == "Patrol" or aiState == "Return"
+	local investigating = aiState == "Investigate" or aiState == "Search"
+	local guarding = aiState == "Guard"
+	local inCover = aiState == "TakeCover"
 	local aimYawTarget, aimPitchTarget = 0, 0
 	local targetPos = nil
 	local myPos = pos
@@ -249,6 +264,9 @@ local function poseRig(model: Model, state: RigState, dt: number)
 		end
 	end
 
+	if relaxed then
+		targetPos = nil  -- relaxed states do not track targets — weapon stays lowered, head scans
+	end
 	if targetPos then
 		-- yaw of target relative to the enemy's facing
 		local look = pivot.LookVector
@@ -267,9 +285,17 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	state.aimYaw = blend(state.aimYaw, aimYawTarget, dt, TAU_AIM / sharp)
 	state.aimPitch = blend(state.aimPitch, aimPitchTarget, dt, TAU_AIM / sharp)
 
+	-- state-dependent head behavior: patrol/return scan the environment; investigate/search
+	-- scan wider and sharper; combat states hold aim-oriented head
+	local scanYaw = 0
+	if relaxed or guarding then
+		scanYaw = math.sin(os.clock() * 0.7 + state.phase) * 0.35
+	elseif investigating then
+		scanYaw = math.sin(os.clock() * 1.3 + state.phase) * 0.55
+	end
 	-- waist yaw toward target (upper body tracks independently of locomotion direction)
-	setJoint(state.joints, "Waist", CFrame.Angles(0, state.aimYaw * 0.55, 0))
-	setJoint(state.joints, "Neck", CFrame.Angles(state.aimPitch * 0.4, state.aimYaw * 0.35, 0))
+	setJoint(state.joints, "Waist", CFrame.Angles(0, state.aimYaw * 0.55 + scanYaw * 0.3, 0))
+	setJoint(state.joints, "Neck", CFrame.Angles(state.aimPitch * 0.4, state.aimYaw * 0.35 + scanYaw, 0))
 
 	-- arms: weapon-hold base pose + small counter-swing scaled DOWN while aiming
 	-- (spec: no unnatural arm swinging while aiming)
@@ -282,6 +308,11 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	setJoint(state.joints, "ElbowL", CFrame.Angles(aiming and -0.9 or -0.35, 0, 0))
 	-- right arm: weapon-hold — raised toward aim pitch, minimal swing
 	local holdPitch = -0.85 - state.aimPitch * 0.7
+	if relaxed then
+		holdPitch = -0.3  -- low carry: weapon angled down across the body
+	elseif investigating then
+		holdPitch = -0.6  -- semi-raised: alert but not engaged
+	end
 	-- firing recoil: sharp backward snap on the weapon arm, fast recovery
 	local recoil = state.firePulse * state.firePulse -- quadratic falloff reads snappy
 	local hit = state.hitPulse
