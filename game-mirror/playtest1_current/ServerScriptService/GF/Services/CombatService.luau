@@ -655,6 +655,7 @@ function CombatService.fire(player: Player, payload: any)
 		-- augmented magazine for free, which duplicated ammunition whenever a shot landed in the
 		-- window between reloadDone and the delayed commit task.
 		s.reloading = false
+		if player.Character then player.Character:SetAttribute("GF_Reloading", false) end
 		local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 		local capacity = require(script.Parent.AugmentService).magazine(weapon, augs)
 		local n = CombatService.reloadPlan(s.ammo, capacity, s.reserve or 0)
@@ -1007,6 +1008,7 @@ function CombatService.equipWeapon(player: Player, weaponId: any)
 	-- switching cancels an unfinished reload (commit never happens, no ammunition moves)
 	if s.reloading then
 		s.reloading = false
+		if player.Character then player.Character:SetAttribute("GF_Reloading", false) end
 		ReplicatedStorage.GF.Remotes.ReloadCancelled:FireClient(player, {})
 	end
 	-- stash the current weapon's ammunition, restore the target's
@@ -1119,6 +1121,7 @@ function CombatService.applyLoadout(player: Player)
 		end
 	end
 	s.reloading = false
+	if player.Character then player.Character:SetAttribute("GF_Reloading", false) end
 	s.lastShotId = 0
 	s.swapUntil = 0
 	ReplicatedStorage.GF.Remotes.WeaponEquipped:FireClient(player, {
