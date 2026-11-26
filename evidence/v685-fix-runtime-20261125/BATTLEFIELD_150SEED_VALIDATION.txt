@@ -1,0 +1,20 @@
+=== determinism ===
+same-seed identical:	true	industrial_wasteland|88.16|-460.92|296.80|289.73|7
+=== 150-seed batch ===
+passRate=0.993 (149/150) in 219.2s (1.46s/seed)
+reject reasons:
+  	elevation_sigma	1
+  	primary_site_invalid	1
+  	cover_too_sparse	1
+  	low_tactical_diversity	1
+  	route_too_long	2
+  	too_rugged	2
+archetype spread:
+  	canyon_network	7
+  	industrial_wasteland	43
+  	broken_basin	31
+  	open_plains	13
+  	fortified_plateau	18
+  	highland_valley	37
+routeLen min/med/max: 642 / 823 / 1123
+separation min/med/max: 66 / 113 / 264
