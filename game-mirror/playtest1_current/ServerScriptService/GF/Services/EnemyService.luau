@@ -62,6 +62,33 @@ local function rangeQuality(dist: number, attackRange: number, prof: any): numbe
 	return math.exp(-(delta * delta) / (2 * sigma * sigma))
 end
 
+-- exposure-dependent accuracy (spec section 27): accuracy is a continuous causal process, not a
+-- fixed hit probability. acquisition quality q builds exponentially while the target stays visible
+-- and decays when contact breaks — initial detection never grants instant precision. dispersion
+-- combines floor + acquisition + relative-motion + observation-uncertainty + suppression terms;
+-- consecutive shots carry temporally correlated error (OU-like) so tracers track and walk rather
+-- than snapping between unrelated positions. difficulty scales acquisition speed and floor within
+-- bounds — ordinary infantry never reaches zero dispersion.
+local ACQUIRE_RATES = { Easy = 0.35, Normal = 0.6, Hard = 0.9, Extreme = 1.2 }
+local LOSS_RATE = 0.8 -- q decay rate when visual contact is broken
+local SIGMA_FLOOR = { Easy = 1.9, Normal = 1.3, Hard = 0.9, Extreme = 0.6 } -- studs at 50 studs baseline
+local SIGMA_INITIAL = 4.2 -- acquisition dispersion at q=0, scaled by (1-q)^1.5 and range
+local HIT_RADIUS = 1.15 -- torso half-extent in studs: error inside this is a hit
+local function difficultyOf(actor: any): string
+	return tostring(actor.def and workspace:GetAttribute("GF_OperationDifficulty") or "Normal")
+end
+local function tickAcquisition(actor: any, visible: boolean, dt: number)
+	local diff = difficultyOf(actor)
+	local k = ACQUIRE_RATES[diff] or ACQUIRE_RATES.Normal
+	local q = actor.acquisition or 0
+	if visible then
+		q = 1 - (1 - q) * math.exp(-k * dt)
+	else
+		q = q * math.exp(-LOSS_RATE * dt)
+	end
+	actor.acquisition = math.clamp(q, 0, 1)
+end
+
 -- suppression (spec section 23): impulse-decay state. incoming fire events add impulses;
 -- between events the pressure bleeds off exponentially. affects decisions, never the player.
 local SUPPRESS_DECAY = 0.55 -- per second exponential decay constant
@@ -1001,6 +1028,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 	actor.target = target
 
 	if not target then
+		tickAcquisition(actor, false, dt)
 		-- A target that is gone must not stay on the actor: GF_EnemiesTracked counted stale pointers
 		-- (13 while the player stood on the station), which made it useless as a "who is hunting me" signal.
 		actor.target = nil
@@ -1064,7 +1092,11 @@ local function tickActor(model: Model, actor: any, dt: number)
 		actor.lastSeenPos = nil
 		actor.lastSeenAt = nil
 		local toHome = actor.home - origin
-		if toHome.Magnitude > 4 then
+		-- territorial structure (spec section 30): the patrol region extends well beyond the exact
+		-- home point. outside ~45 studs the soldier is genuinely away — walk back; inside, the
+		-- patrol loop is the correct territorial presence. the old 4-stud check ping-ponged every
+		-- patroller between outward waypoints and return-home every decision tick.
+		if toHome.Magnitude > 45 then
 			model:SetAttribute("GFState", "Return")
 			actor.locomotion.aimYaw = nil
 			navMove(actor, model, actor.home, "walk", 3, 1)
@@ -1257,6 +1289,15 @@ local function tickActor(model: Model, actor: any, dt: number)
 	-- rather than the old instantaneous lookAt snap.
 	actor.locomotion.aimYaw = NPCLocomotion.yawOf(flat)
 
+	-- acquisition tracking (spec section 27): the current target is visible (we are in the engage
+	-- path), so q builds this tick. target switches reset most of the buildup — a new victim is a
+	-- new tracking problem.
+	if actor.acquisitionTarget ~= target then
+		actor.acquisition = (actor.acquisition or 0) * 0.25
+		actor.acquisitionTarget = target
+	end
+	tickAcquisition(actor, true, dt)
+
 	local now = os.clock()
 
 	if actor.telegraphUntil > now then
@@ -1396,21 +1437,44 @@ local function tickActor(model: Model, actor: any, dt: number)
 					break
 				end
 				actor.lastFiredAt = os.clock()
-				-- Hit resolution (S06-028/029/030): per-shot probability at preferred range falling off with
-				-- distance; a rolling target consistently dodges aimed fire; a target that broke line of
-				-- sight since the telegraph is fully safe. Misses still visibly animate - the tracer goes
-				-- wide - so suppression reads as suppression rather than silence.
+				-- Hit resolution (spec section 27): physical aim dispersion, not dice. the soldier aims at
+				-- the target with a correlated error whose magnitude combines distance-scaled floor,
+				-- acquisition quality, relative angular motion, observation uncertainty, and own
+				-- suppression. error inside the torso extent is a hit; outside is a visible miss whose
+				-- tracer lands where the aim actually was — suppression reads as near-miss pressure.
 				local liveCharacter = target.Character
 				local rolling = liveCharacter and liveCharacter:GetAttribute("Rolling") == true
 				local dist = (liveRoot.Position - root.Position).Magnitude
-				local preferred = def.attackRange * 0.6
-				local baseProb = tonumber(def.hitProb) or 0.5
-				local rangeFactor = dist <= preferred and 1 or math.max(0.35, 1 - (dist - preferred) / math.max(1, def.attackRange - preferred))
-				local hitChance = baseProb * rangeFactor
+				local diff = difficultyOf(actor)
+				local rangeScale = dist / 50 -- dispersion scales with range: distant shots spread wider
+				-- relative angular velocity (spec formula): omega = ||r x v|| / ||r||^2
+				local relPos = liveRoot.Position - root.Position
+				local relVel = (liveRoot.AssemblyLinearVelocity - Vector3.zero) -- shooter is kinematic
+				local omega = 0
+				if relPos.Magnitude > 1 then
+					omega = (relPos:Cross(relVel)).Magnitude / math.max(relPos.Magnitude ^ 2, 1)
+				end
+				local q = actor.acquisition or 0
+				local mem = actor.perception and actor.perception.memory[target]
+				local obsUncertainty = mem and (mem.uncertainty + (os.clock() - mem.observedAt) * 1.1) or 6
+				local sigma = (SIGMA_FLOOR[diff] or SIGMA_FLOOR.Normal) * rangeScale
+					+ SIGMA_INITIAL * ((1 - q) ^ 1.5) * rangeScale
+					+ omega * dist * 0.9 -- motion tracking error grows with angular velocity and range
+					+ obsUncertainty * 0.18
+					+ (actor.suppression or 0) * 2.2 -- suppressed shooters shake
+				-- rolling targets are genuinely harder: evasive motion multiplies the motion term
+				if rolling then
+					sigma = sigma * 1.9
+				end
+				-- temporally correlated aim error (OU-like): consecutive shots walk around the aim
+				-- point rather than snapping independently — tracers read as tracking a target.
+				local dtShot = os.clock() - (actor.lastFiredAt or 0)
+				local rho = math.exp(-2.2 * math.min(dtShot, 1))
+				actor.aimErr = (actor.aimErr or Vector3.zero) * rho
+					+ Vector3.new((math.random() - 0.5) * 2, (math.random() - 0.5) * 0.8, (math.random() - 0.5) * 2) * sigma
+				local errMag = actor.aimErr.Magnitude
 				local blocked = not lineOfSight(root.Position, liveRoot.Position, { model, liveCharacter })
-				actor.rngCounter = (actor.rngCounter or 0) + 1
-				local roll = (math.sin((actor.rngCounter * 12.9898) + (model:GetAttribute("SpawnSeed") or 0)) * 43758.5453) % 1
-				local isHit = (not rolling) and (not blocked) and (roll < hitChance)
+				local isHit = (not blocked) and errMag < HIT_RADIUS
 				if isHit then
 					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position)
 					debugAttr("GF_LastShotPos", liveRoot.Position)
@@ -1419,9 +1483,9 @@ local function tickActor(model: Model, actor: any, dt: number)
 					debugAttr("GF_LastAttackAttempt", "hit")
 					debugAttr("GF_EnemyHits", (workspace:GetAttribute("GF_EnemyHits") or 0) + 1)
 				else
-					-- visible miss: tracer lands wide of the target so the shot reads as a near miss
-					local missOffset = Vector3.new((math.random() - 0.5) * 8, math.random() * 3, (math.random() - 0.5) * 8)
-					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position + missOffset)
+					-- visible miss: the tracer lands where the aim actually was — correlated error
+					-- means near misses cluster around the target and walk with its motion
+					ReplicatedStorage.GF.Remotes.EnemyFired:FireAllClients(model, liveRoot.Position + (actor.aimErr or Vector3.zero))
 					debugAttr("GF_LastAttackAttempt", rolling and "dodged" or (blocked and "cover" or "miss"))
 					debugAttr("GF_EnemyMisses", (workspace:GetAttribute("GF_EnemyMisses") or 0) + 1)
 				end

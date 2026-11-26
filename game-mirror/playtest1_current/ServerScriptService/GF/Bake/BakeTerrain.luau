@@ -78,7 +78,15 @@ function BakeTerrain.write(opts)
 							local dx = prevH and ((H - prevH) / CELL) or 0
 							local dz = (prevRow and (prevRow :: any)[cx]) and ((H - (prevRow :: any)[cx]) / CELL) or 0
 							local slope = math.sqrt(dx * dx + dz * dz)
+							-- anti-banding: real geological transitions never follow contour lines.
+							-- large-scale wander (240 studs) moves transition bands vertically by
+							-- several voxels; detail noise (61 studs) breaks up local uniformity.
+							-- without this the material gates trigger along exact elevation contours
+							-- and steep faces render as horizontal stripes (hv4_fv4 artifact).
+							local tnoise = math.noise(wx / 240 + 3.1, wz / 240 - 7.7, 542)
 							local mnoise = math.noise(wx / 61 + 9.2, wz / 61 - 4.7, 1337)
+							slope = slope + tnoise * 0.10 + mnoise * 0.07
+							local hEff = H + tnoise * 90 + mnoise * 22
 							local col = mats[cx]
 							local occCol = occ[cx]
 							local topCell = math.min(math.ceil(rel / CELL), hh)
@@ -90,7 +98,7 @@ function BakeTerrain.write(opts)
 								if fill >= 1 then
 									occCol[cy][cz] = 1
 									local depth = rel - cy * CELL
-									if depth > 14 or slope > 0.55 then
+									if depth > 14 or slope > 0.58 then
 										m = Enum.Material.Rock
 									else
 										m = Enum.Material.Ground
@@ -99,7 +107,7 @@ function BakeTerrain.write(opts)
 									occCol[cy][cz] = fill
 									if slope > 0.72 then
 										m = Enum.Material.Rock
-									elseif H > 620 then
+									elseif hEff > 620 then
 										-- high country: exposed pale rock/snow above the treeline zone
 										m = slope > 0.3 and Enum.Material.Rock or Enum.Material.Snow
 									elseif slope > 0.42 then
