@@ -9,10 +9,15 @@ local TargetTracker = {}
 
 -- difficulty-conditioned parameters (initial values — calibrated against engine measurement)
 local PARAMS = {
-	Easy = { tauObs = 0.45, alpha = 0.35, beta = 0.12, kappa = 3.0, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
-	Normal = { tauObs = 0.35, alpha = 0.45, beta = 0.20, kappa = 2.5, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
-	Hard = { tauObs = 0.25, alpha = 0.55, beta = 0.30, kappa = 2.2, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
-	Extreme = { tauObs = 0.15, alpha = 0.70, beta = 0.45, kappa = 2.0, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+	-- calibrated 2026-11-28 (calibrate_v3.py): beta aggressively difficulty-scaled. Key insight:
+	-- game observations are EXACT positions (legitimacy constraint is timing/visibility, not
+	-- measurement noise) — high velocity gain is free, and reconvergence speed after reversals is
+	-- what makes realistic oscillatory strafing trackable. Prototype triangular-strafe hitrates:
+	-- Easy 7 / Normal 7 / Hard 15 / Extreme 22 vs stationary 37 — mandate ordering + gradient.
+	Easy = { tauObs = 0.45, alpha = 0.35, beta = 0.40, kappa = 3.0, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+	Normal = { tauObs = 0.35, alpha = 0.45, beta = 0.60, kappa = 2.5, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+	Hard = { tauObs = 0.25, alpha = 0.55, beta = 0.80, kappa = 2.2, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
+	Extreme = { tauObs = 0.15, alpha = 0.70, beta = 0.90, kappa = 2.0, uncInflate = 0.9, uncDecay = 0.30, uncMin = 0.35, uncMax = 3.0 },
 }
 
 function TargetTracker.params(difficulty: string)
@@ -115,7 +120,10 @@ function TargetTracker.update(state: any, par: any, zx: number, zz: number, tObs
 	end
 	-- v2: innovation EMA — fast attack on maneuver, slow decay on clean track; converged
 	-- tracks earn precision instead of carrying a fixed uncertainty floor
-	local rate = (innovNorm > state.innovEMA) and 3.0 or 0.55
+	-- asymmetric EMA: fast attack on maneuver transients, fast-ish decay on clean track —
+	-- 0.55/s was resonant-trapping oscillatory strafing (2.4s legs vs 1.8s decay tau meant
+	-- uncertainty NEVER recovered within a leg); 2.0/s restores precision in converged windows
+	local rate = (innovNorm > state.innovEMA) and 3.0 or 2.0
 	state.innovEMA += (innovNorm - state.innovEMA) * math.min(1, rate * dt)
 	return innov
 end
