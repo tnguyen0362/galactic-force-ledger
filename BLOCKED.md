@@ -74,3 +74,6 @@ nothing. That is the same class of defect as the camera and the silent boot faul
 added in v260 is the first half of the fix (the HUD does not yet render it).
 
 | 2026-11-26 | Blender asset upload | Output dir not in approved upload directories | OPEN - owner must add C:\Users	nguy\gf-art-buildlender\out in MCP Permissions | claude |
+
+## Phase 15 — Blender asset upload (claude, 2026-11-26) — OPEN
+Open Cloud upload of the Blender-generated vegetation GLBs is refused: `C:\Users\tnguy\gf-art-build\blender\out` is not in the approved upload directories. Owner action: Assistant Settings -> MCP Permissions -> add that directory. No workaround attempted; no assets created.
