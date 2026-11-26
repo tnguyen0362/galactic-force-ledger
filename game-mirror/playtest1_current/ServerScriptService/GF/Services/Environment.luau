@@ -63,10 +63,12 @@ local PRESETS: { [string]: Preset } = {
 		exposure = 0.0,
 		-- Spec S27 sky: pale blue-green upper atmosphere, lightly dusty cream near the horizon.
 		-- Fog carries the cream horizon band; the atmosphere Color/Decay pair tints the dome.
-		fogEnd = 1600,
+		-- scaled for the 5000-stud baked battlefield: peaks at 2000+ studs must stay visible.
+		-- depth softness comes from the atmosphere haze, not a hard fog wall (spec section 18).
+		fogEnd = 9000,
 		fogColor = Color3.fromRGB(216, 208, 188),
-		atmoDensity = 0.22,
-		atmoHaze = 0.72,
+		atmoDensity = 0.3,
+		atmoHaze = 1.6,
 		atmoColor = Color3.fromRGB(158, 196, 184),
 		atmoDecay = Color3.fromRGB(222, 210, 186),
 	},

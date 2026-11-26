@@ -1,0 +1,15 @@
+{
+  "r0": 1740,
+  "c0": 1560,
+  "src": 420,
+  "comp": 4.14,
+  "vscale": 4.14,
+  "game_n": 1250,
+  "bands": {
+    "macro": 1.0,
+    "meso": 1.0,
+    "micro": 0.8
+  },
+  "provenance": "USGS 3DEP via AWS Open Data terrain tiles (terrarium z13), public domain",
+  "region": "Grand Teton front / Jackson Hole edge, Wyoming USA"
+}

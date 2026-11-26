@@ -85,6 +85,16 @@ function TerrainService.build(seed: number): number
 	SEED = seed or SEED
 	sample = nil
 	workspace:SetAttribute("GF_TerrainReady", false)
+	-- Hybrid pipeline (spec section 29): the geographical foundation is baked into the
+	-- place offline. Runtime writes are skipped entirely — terrain cost at boot is zero.
+	-- Localized gameplay deformations (LZ pads, installation foundations) still write
+	-- small regions later; the foundation itself is static.
+	if workspace:GetAttribute("GF_BakedTerrain") == true then
+		TerrainService.currentPlan = nil
+		workspace:SetAttribute("GF_TerrainReady", true)
+		print("BakedTerrain: foundation present, runtime terrain generation skipped")
+		return 0
+	end
 	-- Procedural battlefield path (P1 integration, default OFF): when the dev flag is set the
 	-- terrain comes from a validated BattlefieldService plan — feature-anchored archetype
 	-- geography, A*-validated routes, foundation-shaped installations — instead of the legacy
@@ -218,7 +228,7 @@ function TerrainService.groundSurface(x: number, z: number): number
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
 	params.FilterDescendantsInstances = { workspace.Terrain }
-	local hit = workspace:Raycast(Vector3.new(x, 400, z), Vector3.new(0, -900, 0), params)
+	local hit = workspace:Raycast(Vector3.new(x, 1600, z), Vector3.new(0, -2400, 0), params)
 	if hit then return hit.Position.Y end
 	local s = sample or ensureSampler(SEED)
 	return (s :: any)(x, z)
