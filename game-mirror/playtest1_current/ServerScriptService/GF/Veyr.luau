@@ -96,7 +96,18 @@ function Veyr.build(position)
 		end
 		model.Parent = folder
 	end
-	return model, rifle
+	-- Gate F articulation registry: every body part's offset in torso space at build time.
+	-- Parts are independently anchored — without this the limbs never follow the torso when
+	-- the boss moves (they were left behind at the build site). The articulate() pass each
+	-- tick repositions everything from the torso frame, then layers pose channels on top.
+	local offsets = {}
+	for _, p in ipairs(model:GetDescendants()) do
+		if p:IsA("BasePart") and p ~= torso and not p.Name:find("Pylon") then
+			offsets[p] = torso.CFrame:Inverse() * p.CFrame
+		end
+	end
+	model:SetAttribute("Articulated", true)
+	return model, rifle, offsets
 end
 local function alivePlayers()
 	local list = {}
@@ -218,6 +229,68 @@ local function die(state)
 		if model.Parent then model:Destroy() end
 	end)
 end
+-- Gate F mechanical articulation: reposition all registered parts from the torso frame
+-- each tick, then layer pose channels — helmet target tracking, rifle pitch aim, cape
+-- billow with velocity, alternating leg stride, arm raise during attack windows.
+local function articulate(state, dt)
+	local root = state.root
+	if not root.Parent then return end
+	local F = root.CFrame
+	state.walkClock = (state.walkClock or 0) + dt
+	local moving = state.lastPos and (root.Position - state.lastPos).Magnitude > 0.01
+	state.lastPos = root.Position
+	local wphase = state.walk or 0
+
+	-- pose inputs: target direction in torso space
+	local yawT, pitchT = 0, 0
+	if state.target and state.target.root and state.target.root.Parent then
+		local toT = state.target.root.Position - root.Position
+		local local_ = F:VectorToObjectSpace(toT)
+		yawT = math.clamp(math.atan2(-local_.X, -local_.Z), -0.7, 0.7)
+		local flat = Vector3.new(local_.X, 0, local_.Z).Magnitude
+		pitchT = math.clamp(math.atan2(local_.Y, math.max(flat, 0.1)), -0.4, 0.5)
+	end
+	state.aimYaw = state.aimYaw and state.aimYaw + (yawT - state.aimYaw) * math.min(1, dt * 4) or yawT
+	state.aimPitch = state.aimPitch and state.aimPitch + (pitchT - state.aimPitch) * math.min(1, dt * 4) or pitchT
+
+	-- attack raise: busy window means an attack telegraph is running
+	local attacking = os.clock() < (state.busyUntil or 0)
+	local armRaise = attacking and -1.15 or 0
+	state.armBlend = (state.armBlend or 0) + ((attacking and 1 or 0) - (state.armBlend or 0)) * math.min(1, dt * 6)
+
+	-- cape billow: backward angle scales with movement, plus idle flutter
+	local speedFrac = moving and 1 or 0
+	state.capeSpeed = (state.capeSpeed or 0) + (speedFrac - (state.capeSpeed or 0)) * math.min(1, dt * 3)
+	local flutter = math.sin(state.walkClock * 2.3) * 0.05
+	local capeAngle = state.capeSpeed * 0.5 + flutter
+
+	for p, offset in pairs(state.offsets or {}) do
+		if not p.Parent then continue end
+		local cf = F * offset
+		local n = p.Name
+		if n == "Helmet" or n == "Visor" or n == "Crest" then
+			cf = cf * CFrame.Angles(state.aimPitch * 0.35, state.aimYaw * 0.55, 0)
+		elseif n == "Rifle" or n == "RifleMuzzle" then
+			-- rifle pitches toward target and lifts with the attack raise
+			cf = cf * CFrame.Angles(-state.aimPitch * 0.7 - state.armBlend * 0.5, 0, 0)
+		elseif n:sub(1, 3) == "Arm" then
+			local side = tonumber(n:sub(4)) or 1
+			local swing = moving and math.sin(wphase + (side > 0 and 0 or math.pi)) * 0.15 or 0
+			cf = cf * CFrame.Angles(armRaise * state.armBlend + swing, 0, side * 0.06)
+		elseif n:sub(1, 3) == "Leg" or n:sub(1, 4) == "Boot" then
+			-- part names are Leg-1/Leg1/Boot-1/Boot1 — sign lives after the prefix
+			local numStr = n:match("%-?1$") or "1"
+			local sideSign = tonumber(numStr) or 1
+			local ph = wphase + (sideSign > 0 and 0 or math.pi)
+			local stride = moving and math.sin(ph) * 0.9 or 0
+			cf = cf * CFrame.new(0, math.max(0, math.cos(ph)) * (moving and 0.5 or 0), stride)
+		elseif n == "Cape" or n == "CapeTrim" then
+			cf = cf * CFrame.Angles(capeAngle, 0, 0)
+		end
+		p.CFrame = cf
+	end
+end
+
 local function step(state, dt)
 	local model = state.model
 	if model:GetAttribute("Health") <= 0 then
@@ -282,7 +355,7 @@ function Veyr.spawn(position, player)
 	if player and not Veyr.canSpawn(player) then
 		return nil, "rank"
 	end
-	local model, rifle = Veyr.build(position)
+	local model, rifle, offsets = Veyr.build(position)
 	local state = {
 		model = model,
 		root = model.PrimaryPart,
@@ -292,6 +365,7 @@ function Veyr.spawn(position, player)
 		nextBurst = os.clock() + 1.6,
 		nextLance = os.clock() + 8,
 		dead = false,
+		offsets = offsets,
 	}
 	table.insert(active, state)
 	workspace:SetAttribute("VeyrActive", true)
@@ -312,6 +386,13 @@ function Veyr.start()
 			local ok, err = pcall(step, state, stepDt)
 			if not ok then
 				warn("[GF] veyr tick error: " .. tostring(err))
+			end
+			if not state.dead then
+				local ok2, err2 = pcall(articulate, state, stepDt)
+				if not ok2 and not state.artErr then
+					warn("[GF] veyr articulate error: " .. tostring(err2))
+					state.artErr = true
+				end
 			end
 			if state.dead and os.clock() - (state.deadAt or 0) > 6 then
 				table.remove(active, i)
