@@ -52,33 +52,63 @@ end
 -- offsets are in LIMB-local frames; -Z is the character's front.
 local function basePackage(): { Piece }
 	return {
-		-- helmet: angular crown + sloped face plate + crest — enclosed alien profile
-		P("Wedge", 1.1, 0.55, 1.15, "Head", 0, 0.35, 0.05, OBSIDIAN, 0, 180, 0),
-		P("Wedge", 1.0, 0.5, 0.5, "Head", 0, -0.05, -0.35, VIOLETGRAY, -35, 180, 0),
-		P("Box", 0.24, 0.45, 1.15, "Head", 0, 0.5, 0.1, OBSIDIAN),
-		-- chest: broad front plate + angular pectoral wedges
-		P("Box", 2.0, 0.85, 0.4, "UpperTorso", 0, 0.1, -0.55, OBSIDIAN),
-		P("Wedge", 0.85, 0.6, 0.35, "UpperTorso", -0.5, -0.25, -0.5, OBSIDIAN, 0, 180, 0),
-		P("Wedge", 0.85, 0.6, 0.35, "UpperTorso", 0.5, -0.25, -0.5, OBSIDIAN, 0, 180, 0),
-		-- back plate
-		P("Box", 1.85, 0.9, 0.3, "UpperTorso", 0, 0.1, 0.55, VIOLETGRAY),
+		-- === HELMET v2 — enclosed angular shell, elongated alien rear profile ===
+		-- wedge slope runs along the part X axis: rotY 90 makes it descend forward (-Z)
+		P("Wedge", 1.05, 0.45, 0.95, "Head", 0, 0.28, -0.12, OBSIDIAN, 0, -90, 0),
+		P("Box", 0.95, 0.4, 1.0, "Head", 0, 0.42, 0.05, OBSIDIAN),
+		-- elongated rear taper — the alien silhouette signature
+		P("Wedge", 0.85, 0.5, 0.55, "Head", 0, 0.15, 0.45, OBSIDIAN, 0, 90, 0),
+		-- cheek guards — small angled side plates
+		P("Wedge", 0.2, 0.4, 0.5, "Head", -0.45, -0.1, -0.1, VIOLETGRAY, 0, 0, 0),
+		P("Wedge", 0.2, 0.4, 0.5, "Head", 0.45, -0.1, -0.1, VIOLETGRAY, 0, 180, 0),
+		-- recessed visor housing — dark slot the glow sits inside
+		P("Box", 0.7, 0.2, 0.15, "Head", 0, 0.05, -0.42, OBSIDIAN2),
+
+		-- === TORSO — tapered shell with angular pectoral wedges ===
+		P("Box", 1.9, 0.7, 0.35, "UpperTorso", 0, 0.25, -0.55, OBSIDIAN),
+		P("Wedge", 0.8, 0.55, 0.3, "UpperTorso", -0.48, -0.18, -0.55, OBSIDIAN, 0, 180, 0),
+		P("Wedge", 0.8, 0.55, 0.3, "UpperTorso", 0.48, -0.18, -0.55, OBSIDIAN, 0, 0, 0),
+		-- abdominal segment — narrower, recessed
+		P("Box", 1.45, 0.45, 0.3, "UpperTorso", 0, -0.42, -0.5, VIOLETGRAY),
+		-- back plate with spine channel
+		P("Box", 1.8, 0.85, 0.28, "UpperTorso", 0, 0.1, 0.55, VIOLETGRAY),
+		P("Box", 0.3, 0.7, 0.12, "UpperTorso", 0, 0.15, 0.72, OBSIDIAN),
 		-- waist belt — bronze transition band
 		P("Box", 1.7, 0.35, 1.1, "LowerTorso", 0, 0.35, 0, BRONZE, 0, 0, 0, Enum.Material.Metal),
-		-- pauldron shells: layered wedges over shoulders
-		P("Wedge", 0.75, 0.45, 0.8, "UpperArmL", -0.05, 0.55, 0, OBSIDIAN, 0, 90, 0),
-		P("Wedge", 0.75, 0.45, 0.8, "UpperArmR", 0.05, 0.55, 0, OBSIDIAN, 0, -90, 0),
-		-- bracers
-		P("Box", 0.56, 0.65, 0.56, "LowerArmL", 0, -0.08, 0, OBSIDIAN),
-		P("Box", 0.56, 0.65, 0.56, "LowerArmR", 0, -0.08, 0, OBSIDIAN),
-		-- thigh + shin plating
-		P("Box", 0.78, 0.85, 0.82, "UpperLegL", 0, 0.05, -0.02, OBSIDIAN),
-		P("Box", 0.78, 0.85, 0.82, "UpperLegR", 0, 0.05, -0.02, OBSIDIAN),
-		P("Wedge", 0.64, 0.95, 0.45, "LowerLegL", 0, 0, -0.3, OBSIDIAN, 0, 180, 0),
-		P("Wedge", 0.64, 0.95, 0.45, "LowerLegR", 0, 0, -0.3, OBSIDIAN, 0, 180, 0),
-		-- energy rifle: receiver + barrel + glowing cell, riding the weapon-hold hand
-		P("Box", 0.28, 0.4, 1.5, "HandR", 0, 0.05, -0.75, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
-		P("Cylinder", 0.15, 1.1, 0.15, "HandR", 0, 0.12, -1.85, VIOLETGRAY, 90, 0, 0, Enum.Material.Metal),
-		P("Box", 0.18, 0.22, 0.38, "HandR", 0, -0.16, -0.7, ENERGY, 0, 0, 0, Enum.Material.Neon),
+		-- hip guards — small side plates at the belt line
+		P("Wedge", 0.25, 0.5, 0.7, "LowerTorso", -0.85, 0.15, 0, OBSIDIAN, 0, 0, 0),
+		P("Wedge", 0.25, 0.5, 0.7, "LowerTorso", 0.85, 0.15, 0, OBSIDIAN, 0, 180, 0),
+
+		-- === PAULDRONS — sloped caps over shoulders, layered ===
+		P("Wedge", 0.8, 0.45, 0.85, "UpperArmL", -0.06, 0.55, 0, OBSIDIAN, 0, 0, 0),
+		P("Wedge", 0.8, 0.45, 0.85, "UpperArmR", 0.06, 0.55, 0, OBSIDIAN, 0, 180, 0),
+		-- trim line under the shell — violet-gray separation layer
+		P("Box", 0.6, 0.12, 0.7, "UpperArmL", -0.02, 0.32, 0, VIOLETGRAY),
+		P("Box", 0.6, 0.12, 0.7, "UpperArmR", 0.02, 0.32, 0, VIOLETGRAY),
+
+		-- === ARMS — bracers with elbow articulation gap ===
+		P("Box", 0.56, 0.6, 0.56, "LowerArmL", 0, -0.05, 0, OBSIDIAN),
+		P("Box", 0.56, 0.6, 0.56, "LowerArmR", 0, -0.05, 0, OBSIDIAN),
+		-- elbow caps — mechanical joint detail
+		P("Ball", 0.42, 0.42, 0.42, "LowerArmL", 0, 0.45, 0, VIOLETGRAY),
+		P("Ball", 0.42, 0.42, 0.42, "LowerArmR", 0, 0.45, 0, VIOLETGRAY),
+
+		-- === LEGS — knee-articulated plating ===
+		P("Wedge", 0.8, 0.85, 0.82, "UpperLegL", 0, 0.05, -0.02, OBSIDIAN, 0, 90, 0),
+		P("Wedge", 0.8, 0.85, 0.82, "UpperLegR", 0, 0.05, -0.02, OBSIDIAN, 0, 90, 0),
+		-- knee caps — mechanical joint read
+		P("Ball", 0.5, 0.5, 0.5, "LowerLegL", 0, 0.55, -0.05, OBSIDIAN),
+		P("Ball", 0.5, 0.5, 0.5, "LowerLegR", 0, 0.55, -0.05, OBSIDIAN),
+		-- shin guards — forward sloped plates
+		P("Wedge", 0.62, 0.9, 0.4, "LowerLegL", 0, 0, -0.3, OBSIDIAN, 0, 90, 0),
+		P("Wedge", 0.62, 0.9, 0.4, "LowerLegR", 0, 0, -0.3, OBSIDIAN, 0, 90, 0),
+
+		-- === ENERGY RIFLE — receiver + barrel + glowing cell, riding weapon-hold hand ===
+		P("Box", 0.26, 0.38, 1.45, "HandR", 0, 0.05, -0.72, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
+		P("Cylinder", 0.13, 1.15, 0.13, "HandR", 0, 0.12, -1.85, VIOLETGRAY, 90, 0, 0, Enum.Material.Metal),
+		P("Box", 0.16, 0.2, 0.36, "HandR", 0, -0.15, -0.68, ENERGY, 0, 0, 0, Enum.Material.Neon),
+		-- rear stock
+		P("Box", 0.2, 0.3, 0.45, "HandR", 0, -0.02, 0.12, OBSIDIAN),
 	}
 end
 
@@ -90,7 +120,7 @@ local PACKAGES: { [string]: any } = {
 
 	-- VANGUARD (Scout): lightweight aggressive — strip pauldrons, slim plates, aerodynamic fin
 	Scout = {
-		removeIndexes = { 9, 10 }, -- pauldron shells
+		removeIndexes = { 16, 17, 18, 19 }, -- pauldron shells + trim
 		add = {
 			-- swept helmet fin — speed read
 			P("Wedge", 0.2, 0.5, 0.9, "Head", 0, 0.55, 0.35, VIOLETGRAY, -25, 180, 0),
@@ -99,7 +129,7 @@ local PACKAGES: { [string]: any } = {
 		recolor = VIOLETGRAY, -- lighter violet-gray dominance
 	},
 	Vanguard = {
-		removeIndexes = { 9, 10 },
+		removeIndexes = { 16, 17, 18, 19 },
 		add = {
 			P("Wedge", 0.2, 0.5, 0.9, "Head", 0, 0.55, 0.35, VIOLETGRAY, -25, 180, 0),
 		},
@@ -120,7 +150,7 @@ local PACKAGES: { [string]: any } = {
 			P("Box", 0.45, 0.55, 1.9, "HandR", 0, 0.02, -0.95, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
 			P("Cylinder", 0.5, 0.4, 0.5, "HandR", 0, -0.3, -1.1, VIOLETGRAY, 0, 0, 90, Enum.Material.Metal),
 		},
-		removeIndexes = { 17, 18, 19 }, -- remove base rifle pieces (heavy weapon replaces)
+		removeIndexes = { 30, 31, 32, 33 }, -- remove base rifle pieces (heavy weapon replaces)
 	},
 
 	-- MARKSMAN: compact armor + advanced optics + long precision weapon
@@ -134,7 +164,7 @@ local PACKAGES: { [string]: any } = {
 			-- stabilized stock
 			P("Box", 0.2, 0.35, 0.6, "HandR", 0, -0.05, 0.1, VIOLETGRAY),
 		},
-		removeIndexes = { 9, 10 }, -- no pauldrons — lean silhouette
+		removeIndexes = { 16, 17, 18, 19 }, -- no pauldrons — lean silhouette
 	},
 
 	-- OFFICER/COMMANDER: refined armor + comms + rank identification

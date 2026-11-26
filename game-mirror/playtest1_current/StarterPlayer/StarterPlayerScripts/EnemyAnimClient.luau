@@ -37,6 +37,7 @@ type RigState = {
 	hitPulse: number,
 	firePulse: number,
 	deathT: number?, -- time since death started, nil while alive
+	prevPos: Vector3?,
 }
 
 local tracked: { [Model]: RigState } = {}
@@ -123,22 +124,28 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	-- (detection hook installed below — firePulse decays here)
 	state.firePulse = math.max(0, state.firePulse - dt * 7)
 
-	-- DEATH TRANSITION — overrides all other posing: crumple forward, sink, hold.
+	-- DEATH TRANSITION — sequential collapse: legs buckle first, torso folds through the
+	-- middle window, head/arms drop last. staged timing reads as weight loss, not scattering.
 	local dead = model:GetAttribute("Dead") == true
 	if dead then
 		state.deathT = (state.deathT or 0) + dt
-		local t = math.min(state.deathT / 0.9, 1) -- 0.9s collapse
-		local ease = 1 - (1 - t) * (1 - t)
-		-- knees buckle, hips fold, torso pitches forward, arms drop
-		setJoint(state.joints, "KneeL", CFrame.Angles(ease * 1.4, 0, 0))
-		setJoint(state.joints, "KneeR", CFrame.Angles(ease * 1.2, 0, 0))
-		setJoint(state.joints, "HipL", CFrame.Angles(-ease * 1.1, 0, 0))
-		setJoint(state.joints, "HipR", CFrame.Angles(-ease * 0.9, 0, 0))
-		setJoint(state.joints, "RootJoint", CFrame.new(0, -ease * 1.2, 0) * CFrame.Angles(ease * 0.9, 0, ease * 0.15))
-		setJoint(state.joints, "Waist", CFrame.Angles(ease * 0.7, 0, 0))
-		setJoint(state.joints, "Neck", CFrame.Angles(ease * 0.5, 0, 0))
-		setJoint(state.joints, "ShoulderL", CFrame.Angles(ease * 0.4, 0, ease * 0.3))
-		setJoint(state.joints, "ShoulderR", CFrame.Angles(ease * 0.5, 0, -ease * 0.2))
+		-- staged easing: each channel has its own [t0,t1] window within the 1.2s collapse
+		local function stage(t0, t1)
+			local x = math.clamp((state.deathT - t0) / (t1 - t0), 0, 1)
+			return 1 - (1 - x) * (1 - x)
+		end
+		local legE = stage(0.0, 0.45) -- legs buckle immediately
+		local torsoE = stage(0.25, 0.85) -- torso folds through the middle
+		local headE = stage(0.55, 1.1) -- head and arms drop last
+		setJoint(state.joints, "KneeL", CFrame.Angles(legE * 1.5, 0, 0))
+		setJoint(state.joints, "KneeR", CFrame.Angles(legE * 1.3, 0, 0))
+		setJoint(state.joints, "HipL", CFrame.Angles(-legE * 1.2, 0, 0))
+		setJoint(state.joints, "HipR", CFrame.Angles(-legE * 1.0, 0, 0))
+		setJoint(state.joints, "RootJoint", CFrame.new(0, -legE * 1.3, 0) * CFrame.Angles(torsoE * 0.85, 0, torsoE * 0.12))
+		setJoint(state.joints, "Waist", CFrame.Angles(torsoE * 0.65, 0, 0))
+		setJoint(state.joints, "Neck", CFrame.Angles(headE * 0.55, 0, headE * 0.1))
+		setJoint(state.joints, "ShoulderL", CFrame.Angles(headE * 0.35, 0, headE * 0.25))
+		setJoint(state.joints, "ShoulderR", CFrame.Angles(headE * 0.45, 0, -headE * 0.15))
 		return -- death terminal: no locomotion, no aim
 	end
 
@@ -164,15 +171,35 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	local phase = state.phase
 	local amp = state.amp * prof.ampMul
 
+	-- movement direction in the enemy's facing frame: strafe/backpedal modulation.
+	-- forward movement uses the standard gait; lateral movement reduces hip swing and
+	-- adds a sideways weight shift; backward motion reverses the gait phase sign.
+	local look = pivot.LookVector
+	local right = pivot.RightVector
+	local vel = (pos - (state.prevPos or pos)) / math.max(dt, 0.001)
+	state.prevPos = pos
+	local fwdDot = 0
+	local latDot = 0
+	if state.speed > 1.2 then
+		fwdDot = (vel.X * look.X + vel.Z * look.Z) / math.max(state.speed, 0.1)
+		latDot = (vel.X * right.X + vel.Z * right.Z) / math.max(state.speed, 0.1)
+	end
+	local strafeAmt = math.clamp(math.abs(latDot), 0, 1) * amp
+	local backpedal = fwdDot < -0.35
+
 	-- LOWER BODY — locomotion layer (radians)
 	local hipAmp = 0.55 * amp
 	local kneeAmp = 0.7 * amp
 	local sinL = math.sin(phase)
 	local sinR = math.sin(phase + math.pi)
 
-	-- hips swing contralaterally
-	setJoint(state.joints, "HipL", CFrame.Angles(-sinL * hipAmp, 0, 0))
-	setJoint(state.joints, "HipR", CFrame.Angles(-sinR * hipAmp, 0, 0))
+	-- hips swing contralaterally — reduced amplitude + lateral lean when strafing,
+	-- reversed phase sign when backpedaling so feet step with the motion direction
+	local dirSign = backpedal and -1 or 1
+	local lateralReduction = 1 - strafeAmt * 0.45
+	local strafeLean = strafeAmt * 0.12 * (latDot > 0 and -1 or 1)
+	setJoint(state.joints, "HipL", CFrame.Angles(-sinL * hipAmp * lateralReduction * dirSign, 0, strafeLean))
+	setJoint(state.joints, "HipR", CFrame.Angles(-sinR * hipAmp * lateralReduction * dirSign, 0, strafeLean))
 	-- knees flex during the backward/recovery half of each leg's cycle
 	local kneeL = math.max(0, -sinL) * kneeAmp + math.max(0, sinL) * kneeAmp * 0.15
 	local kneeR = math.max(0, -sinR) * kneeAmp + math.max(0, sinR) * kneeAmp * 0.15
@@ -324,6 +351,7 @@ RunService.Heartbeat:Connect(function(dt)
 						hitPulse = 0,
 						firePulse = 0,
 						deathT = nil,
+						prevPos = nil,
 					}
 					tracked[model] = state
 				end
