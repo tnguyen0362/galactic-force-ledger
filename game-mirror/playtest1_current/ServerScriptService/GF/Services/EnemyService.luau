@@ -29,6 +29,7 @@ local function locoProfile(def: any)
 	return NPCLocomotion.profileFor(ARCHETYPE[def.id] or "Default")
 end
 local NPCNavigation = require(ServerScriptService.GF.Services.NPCNavigation)
+local NPCPerception = require(ServerScriptService.GF.Services.NPCPerception)
 
 -- nav-aware movement intent (spec section 14): short hops steer directly; longer moves request
 -- tactical waypoints from the navigation cache. When the cache misses the compute is queued and
@@ -310,6 +311,7 @@ function EnemyService.spawn(enemyId: string, position: Vector3): Model?
 		deadAt = 0,
 		groundOffset = 3.1 * scaleNum,
 		locomotion = NPCLocomotion.newState(model.PrimaryPart and (model.PrimaryPart :: BasePart).Position or position, 0),
+		perception = NPCPerception.newState(),
 	}
 	return model
 end
@@ -378,6 +380,113 @@ task.spawn(function()
 		end
 	end
 end)
+
+-- Exposure sampling (spec section 17): two representative points — head and upper torso.
+-- V is the weighted visibility 0..1. Cheap filters run before any raycast: range, FOV periphery.
+local exposureParams = RaycastParams.new()
+exposureParams.FilterType = Enum.RaycastFilterType.Exclude
+exposureParams.IgnoreWater = true
+local function sampleExposure(model: Model, origin: Vector3, character: Model, targetRoot: BasePart): number
+	local head = character:FindFirstChild("Head")
+	exposureParams.FilterDescendantsInstances = { model, character }
+	local visible = 0
+	local samples = 0
+	-- eye height offset: soldiers look from their head, not their center
+	local eye = origin + Vector3.new(0, 1.6, 0)
+	for _, samplePart in ipairs({ head, targetRoot }) do
+		if samplePart and samplePart:IsA("BasePart") then
+			samples += 1
+			local aim = (samplePart :: BasePart).Position + Vector3.new(0, samplePart == head and 0.3 or 1.0, 0)
+			local hit = workspace:Raycast(eye, aim - eye, exposureParams)
+			-- strict obstruction: any hit before the target blocks (no more 3-stud tolerance)
+			if not hit or (aim - hit.Position).Magnitude < 0.6 then
+				visible += 1
+			end
+		end
+	end
+	if samples == 0 then
+		return 0
+	end
+	return visible / samples
+end
+
+-- perceiveTargets (spec sections 17/20): evidence-accumulation detection with threat selection.
+-- Returns the best currently-visible detected target and its distance. Side effects: evidence
+-- accumulates per candidate, visual observations refresh memory, alertness rises on contact.
+local function perceiveTargets(model: Model, origin: Vector3, def: any, actor: any, dt: number): (Player?, number?)
+	local perception = actor.perception
+	if not perception then
+		return nil, nil
+	end
+	local forward = model.PrimaryPart and model.PrimaryPart.CFrame.LookVector or Vector3.zAxis
+	local flatFwd = Vector3.new(forward.X, 0, forward.Z)
+	local now = os.clock()
+	local best: Player? = nil
+	local bestDist = math.huge
+	local bestScore = -math.huge
+	for _, player in SpatialGrid.query(origin, def.sightRange) do
+		local character = player.Character
+		if player:GetAttribute("GF_Aboard") == true then
+			continue
+		end
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if not character or not humanoid or humanoid.Health <= 0 then
+			continue
+		end
+		local st = State.get(player)
+		if st and st.downed then
+			continue
+		end
+		local targetRoot = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not targetRoot then
+			continue
+		end
+		local dist = (targetRoot.Position - origin).Magnitude
+		if dist > def.sightRange then
+			continue
+		end
+		-- alignment: flat FOV cone. proximity bypasses facing (soldiers feel nearby presence).
+		local toTarget = targetRoot.Position - origin
+		local flatTo = Vector3.new(toTarget.X, 0, toTarget.Z)
+		local alignment = -1
+		if flatTo.Magnitude > 0.1 and flatFwd.Magnitude > 0.1 then
+			alignment = flatTo.Unit:Dot(flatFwd.Unit)
+		end
+		local inProximity = dist <= PROXIMITY_RANGE
+		if inProximity then
+			alignment = 1 -- proximity presence: full attention regardless of facing
+		end
+		-- exposure sampling only when cheap filters pass (spec: expensive checks last)
+		local exposure = 0
+		if alignment >= -0.2 or inProximity then
+			if lineOfSight(origin, targetRoot.Position, { model, character }) then
+				exposure = sampleExposure(model, origin, character, targetRoot)
+			end
+		end
+		-- evidence accumulation (spec detection-rate model)
+		local targetSpeed = targetRoot.AssemblyLinearVelocity.Magnitude
+		NPCPerception.accumulate(perception, player, exposure, alignment, dist, def.sightRange, targetSpeed, dt)
+		if NPCPerception.isDetected(perception, player) and exposure > 0 then
+			-- direct visual contact: refresh memory with the legitimate observation
+			NPCPerception.observeVisual(perception, player, targetRoot.Position, targetRoot.AssemblyLinearVelocity)
+			-- threat selection (spec section 20): damage threat + visibility + distance + confidence,
+			-- persistence bonus for the current target so soldiers don't flicker between victims
+			local threat = 0
+			if actor.recentThreat and actor.recentThreat[player] then
+				threat = math.exp(-(now - actor.recentThreat[player]) / 8)
+			end
+			local distanceSuitability = 1 - math.clamp(dist / math.max(1, def.sightRange), 0, 1)
+			local persistence = (actor.target == player) and 0.18 or 0
+			local score = 0.30 * threat + 0.25 * exposure + 0.20 * distanceSuitability + 0.25 * 1.0 + persistence
+			if score > bestScore then
+				best = player
+				bestDist = dist
+				bestScore = score
+			end
+		end
+	end
+	return best, bestDist
+end
 
 local function nearestVisiblePlayer(model: Model, origin: Vector3, def: any, actor: any?): (Player?, number?)
 	local best: Player? = nil
@@ -624,38 +733,55 @@ local function tickActor(model: Model, actor: any, dt: number)
 	end
 	tickScoutBeacon(model, actor, def)
 	local origin = root.Position
-	local target, targetDist = nearestVisiblePlayer(model, origin, def, actor)
-	-- Perception bookkeeping: fresh sightings pin exact position; lost targets decay by exp(-age/4).
+	local target, targetDist = perceiveTargets(model, origin, def, actor, dt)
+	-- memory bridge: the legacy investigate/search/return FSM consumes lastSeenPos/confidence.
+	-- Derive those from the richest current memory record so the FSM runs on legitimate,
+	-- uncertainty-aware information (spec section 19) rather than perfect positions.
 	local nowClock = os.clock()
-	if target then
-		actor.lastSeenPos = target.Character and target.Character:FindFirstChild("HumanoidRootPart") and (target.Character:FindFirstChild("HumanoidRootPart") :: BasePart).Position or actor.lastSeenPos
-		actor.lastSeenAt = nowClock
-		-- S06-011 radio knowledge: a fresh sighting is shared with same-group hostiles within 100 studs
-		-- after a 0.5s radio delay. What propagates is a jittered, partial-confidence estimate — the
-		-- receiver investigates the area rather than snapping onto exact omniscient tracking.
-		if (actor.confidence or 0) < 0.9 and actor.lastSeenPos then
-			local seenPos = actor.lastSeenPos
+	NPCPerception.cooldown(actor.perception, dt)
+	do
+		local bestMem: any = nil
+		local bestConf = 0
+		for player, mem in pairs(actor.perception.memory) do
+			local c = NPCPerception.confidenceNow(mem, nowClock)
+			if c > bestConf then
+				bestConf = c
+				bestMem = mem
+			end
+		end
+		if bestMem then
+			-- the investigate target is the ESTIMATED position: bounded velocity extrapolation,
+			-- never perfect hidden tracking
+			actor.lastSeenPos = NPCPerception.estimatePosition(bestMem, nowClock)
+			actor.lastSeenAt = bestMem.observedAt + (5 - 4) -- approximate legacy timing semantics
+			actor.confidence = bestConf
+		else
+			actor.lastSeenPos = nil
+			actor.confidence = 0
+		end
+	end
+	if target and target.Character then
+		-- radio knowledge sharing (spec section 19/24): a fresh sighting propagates to nearby allies
+		-- after a 0.5s radio delay as a REPORT — preserving the original observation timestamp and
+		-- uncertainty. Receivers investigate a fuzzy area; nobody gets perfect positions by radio.
+		local targetRoot3 = target.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if targetRoot3 and actor.perception.memory[target] then
+			local mem = actor.perception.memory[target]
 			local myOrigin = origin
 			task.delay(0.5, function()
+				if not model.Parent or model:GetAttribute("Dead") then
+					return -- spotter died or lost contact before the transmission completed
+				end
 				for other, otherActor in pairs(actors) do
 					if other ~= model and other.Parent and other:GetAttribute("Dead") ~= true then
 						local otherRoot = other.PrimaryPart
-						if otherRoot and (otherRoot.Position - myOrigin).Magnitude <= 100 then
-							if (otherActor.confidence or 0) < 0.6 then
-								local jitter = Vector3.new((math.random() - 0.5) * 14, 0, (math.random() - 0.5) * 14)
-								otherActor.lastSeenPos = seenPos + jitter
-								otherActor.lastSeenAt = os.clock()
-								otherActor.confidence = math.max(otherActor.confidence or 0, 0.55)
-							end
+						if otherRoot and (otherRoot.Position - myOrigin).Magnitude <= 100 and otherActor.perception then
+							NPCPerception.receiveReport(otherActor.perception, target, mem)
 						end
 					end
 				end
 			end)
 		end
-		actor.confidence = 1
-	else
-		local age = nowClock - (actor.lastSeenAt or 0)
-		actor.confidence = if actor.lastSeenAt then math.exp(-age / CONFIDENCE_TAU) else 0
 	end
 	model:SetAttribute("PerceptionConfidence", math.floor((actor.confidence or 0) * 100) / 100)
 	-- Sentries are destructible: a hostile engages a visible sentry when it is nearer than its player target.
@@ -1233,6 +1359,14 @@ function EnemyService.noteThreat(model: Model, player: Player)
 		actor.recentThreat = actor.recentThreat or {}
 		actor.recentThreat[player] = os.clock()
 		actor.alertedUntil = os.clock() + 8
+		-- damage awareness (spec section 17): pain is unambiguous — the soldier knows roughly
+		-- where the fire came from without needing to see the shooter.
+		if actor.perception and player.Character then
+			local shooterRoot = player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if shooterRoot then
+				NPCPerception.noteDamage(actor.perception, player, shooterRoot.Position)
+			end
+		end
 	end
 end
 
