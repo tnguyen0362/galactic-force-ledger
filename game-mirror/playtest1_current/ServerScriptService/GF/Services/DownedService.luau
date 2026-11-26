@@ -384,6 +384,12 @@ function DownedService.start()
 					and (byRoot.Position - progress.anchor).Magnitude <= MOVE_TOLERANCE
 				if not valid then
 					reviving[target] = nil
+					-- interrupt path must clear the pose attribute too — otherwise the kneeling-medic
+					-- pose sticks on the reviver forever (same class as the reload-cancel bug)
+					local byChar = by and by.Character
+					if byChar then
+						byChar:SetAttribute("GFReviveProgress", nil)
+					end
 				else
 					local remaining = progress.endsAt - now
 					local byCharacter = by.Character
