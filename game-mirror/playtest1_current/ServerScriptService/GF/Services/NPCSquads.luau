@@ -22,6 +22,7 @@ local MAX_FLANKERS_PER_SQUAD = 1 -- spec: squad-level limits on simultaneous alt
 
 export type SquadBlackboard = {
 	id: number,
+	centre: Vector3, -- last-known squad centre: founding position, updated as members move
 	members: { [Model]: boolean },
 	roles: { [Model]: string },
 	reportedTargets: { [Player]: { position: Vector3, observedAt: number, confidence: number, observer: Model? } },
@@ -43,6 +44,7 @@ local function newSquad(position: Vector3): SquadBlackboard
 	nextId += 1
 	local sq: SquadBlackboard = {
 		id = nextId,
+		centre = position,
 		members = {},
 		roles = {},
 		reportedTargets = {},
@@ -76,8 +78,10 @@ function NPCSquads.assign(model: Model, position: Vector3, archetype: string): S
 				n += 1
 			end
 		end
-		if count < SQUAD_MAX_SIZE and n > 0 then
-			local centre = Vector3.new(cx / n, 0, cz / n)
+		if count < SQUAD_MAX_SIZE then
+			-- use live member positions when available; the stored centre otherwise — spawn-time
+			-- races must not fragment a cluster into single-member squads
+			local centre = n > 0 and Vector3.new(cx / n, 0, cz / n) or Vector3.new(sq.centre.X, 0, sq.centre.Z)
 			local d = (Vector3.new(position.X, 0, position.Z) - centre).Magnitude
 			if d < bestDist then
 				bestDist = d
@@ -87,6 +91,7 @@ function NPCSquads.assign(model: Model, position: Vector3, archetype: string): S
 	end
 	local sq = best or newSquad(position)
 	sq.members[model] = true
+	sq.centre = position -- newest member position keeps the centre honest during formation
 	membership[model] = sq.id
 	if archetype == "Commander" and not sq.commander then
 		sq.commander = model

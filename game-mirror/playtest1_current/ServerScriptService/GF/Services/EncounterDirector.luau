@@ -46,6 +46,27 @@ local function connectedPlayers(): number
 end
 
 -- round(4+2*(P-1)) scaled by difficulty pressure (S06-036/038): solo Normal 4, 4-player Normal 10, Extreme 16.
+-- difficulty resolution (S06-038): the spawn economy must see the mission's actual difficulty,
+-- not behave as perpetual Normal. Cached briefly; mission difficulty changes are rare.
+local cachedDifficulty: string? = nil
+local difficultyCachedAt = 0
+local function currentDifficulty(): string
+	local now = os.clock()
+	if cachedDifficulty and now - difficultyCachedAt < 5 then
+		return cachedDifficulty :: string
+	end
+	local d = "Normal"
+	pcall(function()
+		local mission = require(script.Parent.State).getMission()
+		if mission and mission.difficulty then
+			d = mission.difficulty
+		end
+	end)
+	cachedDifficulty = d
+	difficultyCachedAt = now
+	return d
+end
+
 function EncounterDirector.activeCap(difficulty: string?): number
 	local p = connectedPlayers()
 	local base = math.round(4 + 2 * (p - 1))
@@ -220,7 +241,7 @@ function EncounterDirector.isSpawnPointValid(position: Vector3): boolean
 end
 
 function EncounterDirector.economyStats()
-	return { tokens = math.floor(tokens * 100) / 100, alert = math.floor(alert), cap = EncounterDirector.activeCap(), phase = phaseScalar() }
+	return { tokens = math.floor(tokens * 100) / 100, alert = math.floor(alert), cap = EncounterDirector.activeCap(currentDifficulty()), phase = phaseScalar() }
 end
 local function groundAt(position: Vector3): Vector3?
 	local params = RaycastParams.new()
@@ -264,7 +285,7 @@ function EncounterDirector.spawnAround(center: Vector3, radius: number, count: n
 	end
 	local placed = 0
 	for i = 1, count do
-		if activeCount() >= MAX_ACTIVE or activeCount() >= math.max(0, EncounterDirector.activeCap() - EncounterDirector.bossSeats()) then
+		if activeCount() >= MAX_ACTIVE or activeCount() >= math.max(0, EncounterDirector.activeCap(currentDifficulty()) - EncounterDirector.bossSeats()) then
 			break
 		end
 		if spawnedThisMission >= MISSION_SPAWN_BUDGET then
@@ -511,7 +532,7 @@ function EncounterDirector.beginMission(): ()
 			while true do
 				task.wait(1)
 				if workspace:GetAttribute("GF_InMission") == true then
-					refillTokens()
+					refillTokens(currentDifficulty())
 					local stats = EncounterDirector.economyStats()
 					workspace:SetAttribute("GF_EconomyTokens", stats.tokens)
 					workspace:SetAttribute("GF_EconomyAlert", stats.alert)
@@ -582,8 +603,8 @@ function EncounterDirector.startExtractionPressure(): ()
 			if typeof(lz) ~= "Vector3" then
 				break
 			end
-			refillTokens()
-			if activeCount() >= EncounterDirector.activeCap() then
+			refillTokens(currentDifficulty())
+			if activeCount() >= EncounterDirector.activeCap(currentDifficulty()) then
 				continue
 			end
 			EncounterDirector.spawnAround(lz, 55, EXTRACTION_WAVE_SIZE)

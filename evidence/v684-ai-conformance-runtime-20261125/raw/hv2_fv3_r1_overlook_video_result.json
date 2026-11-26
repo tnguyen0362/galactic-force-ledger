@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "warnings": [],
+  "recording_id": "wob-20428000243",
+  "artifacts": {
+    "manifest": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\6C76DA9D-7AFF-46A8-83AF-5FB3AC38175B\\manifest.json",
+    "frame_times": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\6C76DA9D-7AFF-46A8-83AF-5FB3AC38175B\\pts.json",
+    "video": "C:\\Users\\tnguy\\AppData\\Local\\Roblox\\tmp-capture-storage\\mcp\\6C76DA9D-7AFF-46A8-83AF-5FB3AC38175B\\wob-20428000243.mp4"
+  },
+  "copied_artifacts": {
+    "manifest": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\hv2_fv3_r1_overlook_manifest.json",
+    "frame_times": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\hv2_fv3_r1_overlook_frame_times.json",
+    "video": "C:\\Users\\tnguy\\galactic-force\\evidence\\v684-ai-conformance-runtime-20261125\\raw\\hv2_fv3_r1_overlook_video.mp4"
+  }
+}

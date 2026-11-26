@@ -81,6 +81,31 @@ local NPCSquads = require(ServerScriptService.GF.Services.NPCSquads)
 -- tactical waypoints from the navigation cache. When the cache misses the compute is queued and
 -- the soldier steers directly meanwhile — nobody waits on pathfinding latency. Priority scales
 -- with urgency: engaged 3, investigate 2, everything else 1.
+-- patrol routes (spec section 30): geographically plausible loops around the squad's home region —
+-- perimeter walks, not random wandering. waypoints are ground-snapped at generation time so the
+-- route follows the terrain; the locomotion/nav layer handles local obstacles en route.
+local function generatePatrolLoop(home: Vector3): { Vector3 }
+	local wps = {}
+	local radius = 26 + math.random() * 14
+	local count = 4 + math.random(2) -- 4-6 points
+	local baseAngle = math.random() * math.pi * 2
+	local patrolParams = RaycastParams.new()
+	patrolParams.FilterType = Enum.RaycastFilterType.Exclude
+	local actorsFolder = workspace:FindFirstChild("ActiveActors")
+	patrolParams.FilterDescendantsInstances = actorsFolder and { actorsFolder } or {}
+	patrolParams.IgnoreWater = true
+	for i = 1, count do
+		local angle = baseAngle + (i / count) * math.pi * 2
+		local candidate = home + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+		-- ground snap: probe down through vegetation-free space; waypoints sit on real terrain
+		local probe = workspace:Raycast(candidate + Vector3.new(0, 30, 0), Vector3.new(0, -80, 0), patrolParams)
+		if probe then
+			wps[#wps + 1] = Vector3.new(candidate.X, probe.Position.Y, candidate.Z)
+		end
+	end
+	return wps
+end
+
 local function navMove(actor: any, model: Model, destination: Vector3, speedClass: string, stopRadius: number, priority: number?)
 	local root = model.PrimaryPart
 	if not root then
@@ -957,6 +982,20 @@ local function tickActor(model: Model, actor: any, dt: number)
 		end
 	end
 
+	-- territorial leash (spec section 30): legitimate local pursuit is allowed, but a defensive
+	-- squad never abandons its region indefinitely. beyond the leash the soldier breaks off —
+	-- the memory of the target persists, so it re-engages if the player re-enters the territory.
+	do
+		local leashRadius = 130
+		local fromHome = Vector3.new(origin.X - actor.home.X, 0, origin.Z - actor.home.Z).Magnitude
+		if fromHome > leashRadius and not actor.retreating then
+			actor.target = nil
+			actor.engagementStarted = false
+			actor.confidence = math.min(actor.confidence or 0, 0.15) -- low enough to trigger return
+			model:SetAttribute("GFState", "Return")
+		end
+	end
+
 	actor.target = target
 
 	if not target then
@@ -1016,7 +1055,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 			end
 			return
 		end
-		-- Return: confidence expired; drift home, then Guard idle.
+		-- Return: confidence expired; drift home, then resume the squad's patrol.
 		-- stale memory is consumed the moment the actor gives up: reaching this branch means any
 		-- lastSeenPos is below the confidence threshold (a fresh one would have taken the
 		-- investigate branch above). Clearing here lets hearGunfire write new positions again.
@@ -1028,9 +1067,44 @@ local function tickActor(model: Model, actor: any, dt: number)
 			actor.locomotion.aimYaw = nil
 			navMove(actor, model, actor.home, "walk", 3, 1)
 		else
-			model:SetAttribute("GFState", "Guard")
-			actor.locomotion.aimYaw = nil
-			NPCLocomotion.stop(actor.locomotion)
+			-- patrol (spec section 30): territorial military presence. squad members share a loop
+			-- generated around their common home, each walking it with a positional phase offset —
+			-- recognizable group movement without rigid formation lock. narrow passages compress
+			-- naturally because each soldier navigates independently to its own phase point.
+			if not actor.patrolLoop then
+				actor.patrolLoop = generatePatrolLoop(actor.home)
+				-- phase offset by squad membership order hash: stable spread along the loop
+				actor.patrolIndex = 1 + (math.abs(math.floor(origin.X + origin.Z)) % math.max(1, #actor.patrolLoop))
+			end
+			local loop = actor.patrolLoop
+			if loop and #loop > 0 then
+				model:SetAttribute("GFState", "Patrol")
+				-- scan pause (spec readability): soldiers halt at some waypoints and face outward —
+				-- the patrol reads as soldiers watching their sector, not bots orbiting a track.
+				if (actor.patrolPauseUntil or 0) > nowClock then
+					local outward = Vector3.new(origin.X - actor.home.X, 0, origin.Z - actor.home.Z)
+					if outward.Magnitude > 1 then
+						actor.locomotion.aimYaw = NPCLocomotion.yawOf(outward)
+					end
+					NPCLocomotion.stop(actor.locomotion)
+					return
+				end
+				local wp = loop[actor.patrolIndex]
+				local flatToWp = Vector3.new(wp.X - origin.X, 0, wp.Z - origin.Z)
+				if flatToWp.Magnitude < 3.5 then
+					actor.patrolIndex = (actor.patrolIndex % #loop) + 1
+					if math.random() < 0.35 then
+						actor.patrolPauseUntil = nowClock + 2 + math.random() * 2.5
+						return
+					end
+				end
+				actor.locomotion.aimYaw = nil
+				NPCLocomotion.moveTo(actor.locomotion, loop[actor.patrolIndex], "walk", 2.5)
+			else
+				model:SetAttribute("GFState", "Guard")
+				actor.locomotion.aimYaw = nil
+				NPCLocomotion.stop(actor.locomotion)
+			end
 		end
 		return
 	end
@@ -1668,11 +1742,20 @@ function EnemyService.start()
 			ticked += 1
 			local ok, err = pcall(tickActor, model, actor, step)
 			if not ok then
-				warn("[GF] enemy tick error: " .. tostring(err))
-				NPCNavigation.cleanup(model)
-				actors[model] = nil
-			elseif model.Parent then
-				model:SetAttribute("GFState", resolveSpecState(model, actor))
+				-- error tolerance: transient failures (a target's character mid-respawn, a raycast
+				-- against a half-streamed world) must not permanently kill the brain. three strikes
+				-- in a row before the actor is dropped; a clean tick resets the count.
+				actor.tickErrors = (actor.tickErrors or 0) + 1
+				warn("[GF] enemy tick error (" .. actor.tickErrors .. "): " .. tostring(err))
+				if actor.tickErrors >= 3 then
+					NPCNavigation.cleanup(model)
+					actors[model] = nil
+				end
+			else
+				actor.tickErrors = 0
+				if model.Parent then
+					model:SetAttribute("GFState", resolveSpecState(model, actor))
+				end
 			end
 		end
 		workspace:SetAttribute("GF_AITickMs", math.floor((os.clock() - tickStart) * 1000 * 100) / 100)
