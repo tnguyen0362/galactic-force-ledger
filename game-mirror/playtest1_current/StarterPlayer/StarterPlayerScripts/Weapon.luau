@@ -395,9 +395,57 @@ function Weapon.getState()
 	return state
 end
 
+-- === REMOTE PLAYER WEAPON VISIBILITY ===
+-- every client builds viewmodels for other players' characters from the replicated
+-- GF_EquippedWeapon attribute. presentation-only, zero network traffic beyond the
+-- attribute itself — same philosophy as the enemy animation system.
+local remoteViewmodels: { [Model]: Model } = {}
+local remoteWeaponIds: { [Model]: string } = {}
+
+local function updateRemoteViewmodels()
+	for _, other in game:GetService("Players"):GetPlayers() do
+		if other == player then
+			continue
+		end
+		local char = other.Character
+		if not char then
+			continue
+		end
+		local wid = char:GetAttribute("GF_EquippedWeapon")
+		local existing = remoteViewmodels[char]
+		if wid and (not existing or remoteWeaponIds[char] ~= wid) then
+			if existing then
+				existing:Destroy()
+			end
+			local built = WeaponVisuals.build(wid)
+			if built then
+				built.Parent = char
+				remoteViewmodels[char] = built
+				remoteWeaponIds[char] = wid
+			end
+		end
+		local vm = remoteViewmodels[char]
+		local root = char:FindFirstChild("HumanoidRootPart")
+		if vm and root then
+			vm:PivotTo(root.CFrame * CFrame.new(VIEWMODEL_HIP))
+		end
+	end
+	-- cleanup for characters that left
+	for char, vm in remoteViewmodels do
+		if not char.Parent or not char:GetAttribute("GF_EquippedWeapon") then
+			vm:Destroy()
+			remoteViewmodels[char] = nil
+			remoteWeaponIds[char] = nil
+		end
+	end
+end
+
 function Weapon.init()
 	VFX.init()
-	RunService.RenderStepped:Connect(updateViewmodel)
+	RunService.RenderStepped:Connect(function(dt)
+		updateViewmodel(dt)
+		updateRemoteViewmodels()
+	end)
 	local function rebuildForCharacter(character: Model)
 		task.defer(function()
 			if player.Character ~= character then

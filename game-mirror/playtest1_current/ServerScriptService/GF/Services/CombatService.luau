@@ -979,6 +979,11 @@ function CombatService.equipWeapon(player: Player, weaponId: any)
 	local augs = require(script.Parent.AugmentService).forPlayerWeapon(player, weaponId)
 	-- swapSpeed uses rate division consistent with the reload algebra: +35% caps at 0.4/1.35s.
 	s.swapUntil = now() + 0.4 / math.max(0.5, 1 + (tonumber(augs and augs.swapSpeed) or 0))
+	-- replicate the visual weapon identity to every client: remote viewmodel builders
+	-- read this attribute to render what other players are carrying (presentation only)
+	if character then
+		character:SetAttribute("GF_EquippedWeapon", weaponId)
+	end
 	ReplicatedStorage.GF.Remotes.WeaponEquipped:FireClient(player, {
 		weaponId = weaponId,
 		ammo = s.ammo,
@@ -1035,6 +1040,10 @@ function CombatService.applyLoadout(player: Player)
 	player:SetAttribute("GF_SecondaryWeapon", secondary)
 	weapon = Weapons.get(primary) or weapon
 	s.weaponId = weapon.id
+	local char = player.Character
+	if char then
+		char:SetAttribute("GF_EquippedWeapon", weapon.id)
+	end
 	local loadoutAugs = require(script.Parent.AugmentService).forPlayerWeapon(player, primary)
 	local effectiveMagazine = require(script.Parent.AugmentService).magazine(weapon, loadoutAugs)
 	s.ammo = effectiveMagazine
