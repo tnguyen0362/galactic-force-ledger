@@ -80,6 +80,13 @@ function EliteOperations.spawnDivision(division: string, center: Vector3, seed: 
 			members[model] = enemyId
 			model:SetAttribute("EliteEncounter", encounterId)
 			model:SetAttribute("EliteDivision", division)
+			-- role-signaling visual equipment + division identity (spec sections 10/13)
+			for _, rdef in (division == "Revenant" and Hierarchy.RevenantRoles or Hierarchy.SpectreRoles) do
+				if rdef.id == enemyId then
+					EliteOperations.augmentVisuals(model, rdef.role, division)
+					break
+				end
+			end
 			-- accumulate capability contributions (spec section 22)
 			if division == "Revenant" then
 				for _, rdef in Hierarchy.RevenantRoles do
@@ -195,6 +202,92 @@ function EliteOperations.observe(encounterId: string, feature: string, value: nu
 	local alpha = 1 - math.exp(-dt / tau)
 	local cur = state.adaptation[feature] or 0
 	state.adaptation[feature] = cur + alpha * (value - cur)
+end
+
+
+--========== elite visual production (spec sections 7-11, 13) ==========
+-- applied post-spawn: the base soldier comes from EnemyService; this layer adds the elite
+-- silhouette. Silhouette distinction over cosmetic noise — armor geometry communicates role.
+local IVORY = Color3.fromRGB(214, 203, 180)
+local BRONZE = Color3.fromRGB(150, 120, 84)
+local OBSIDIAN_DEEP = Color3.fromRGB(28, 25, 34)
+local VIOLET_BRIGHT = Color3.fromRGB(169, 99, 233)
+local GOLD_TRIM = Color3.fromRGB(196, 158, 96)
+
+local function vpart(model: Model, name: string, size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?): BasePart
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Material = material or Enum.Material.Metal
+	p.Anchored = false
+	p.CanCollide = false
+	p.CanQuery = false
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = model
+	-- weld to the torso so the equipment follows the body
+	local torso = model:FindFirstChild("Torso")
+	if torso then
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = torso
+		w.Part1 = p
+		w.Parent = p
+	end
+	return p
+end
+
+function EliteOperations.augmentVisuals(model: Model, role: string, division: string)
+	local root = model.PrimaryPart
+	local torso = model:FindFirstChild("Torso")
+	if not (root and torso) then return end
+	local base = torso.CFrame
+	local trim = division == "Revenant" and GOLD_TRIM or BRONZE
+	-- division identity: elites wear darkened armor with luminous accents. Revenants run darker
+	-- still with gold trim — visibly the most dangerous soldiers in the field.
+	for _, p in model:GetChildren() do
+		if p:IsA("BasePart") and p.Material ~= Enum.Material.Neon then
+			if division == "Revenant" then
+				p.Color = p.Color:Lerp(OBSIDIAN_DEEP, 0.45)
+			else
+				p.Color = p.Color:Lerp(OBSIDIAN_DEEP, 0.25)
+			end
+		end
+	end
+	-- command vane: leaders carry the squad coordination apparatus
+	if role == "leader" or role == "Leader" then
+		vpart(model, "CommandVane", Vector3.new(0.12, 2.6, 0.12), base * CFrame.new(0.9, 1.6, 0.5), trim)
+		vpart(model, "CommandEmitter", Vector3.new(0.5, 0.3, 0.5), base * CFrame.new(0.9, 2.9, 0.5), VIOLET_BRIGHT, Enum.Material.Neon)
+		vpart(model, "MantlePlate", Vector3.new(2.4, 0.5, 1.3), base * CFrame.new(0, 1.35, 0), IVORY, Enum.Material.Slate)
+	end
+	-- mobility pack: assault operators carry the jump apparatus
+	if role == "assault" or role == "Assault" then
+		vpart(model, "MobilityPack", Vector3.new(1.5, 1.6, 0.7), base * CFrame.new(0, 0.2, 0.85), trim)
+		vpart(model, "ThrusterL", Vector3.new(0.4, 0.9, 0.4), base * CFrame.new(-0.5, -0.6, 0.95), OBSIDIAN_DEEP)
+		vpart(model, "ThrusterR", Vector3.new(0.4, 0.9, 0.4), base * CFrame.new(0.5, -0.6, 0.95), OBSIDIAN_DEEP)
+		vpart(model, "ThrusterGlowL", Vector3.new(0.3, 0.2, 0.3), base * CFrame.new(-0.5, -1.1, 0.95), VIOLET_BRIGHT, Enum.Material.Neon)
+		vpart(model, "ThrusterGlowR", Vector3.new(0.3, 0.2, 0.3), base * CFrame.new(0.5, -1.1, 0.95), VIOLET_BRIGHT, Enum.Material.Neon)
+	end
+	-- heavy weapon assembly: weapons operators are visibly the firepower
+	if role == "weapons" or role == "Weapons" then
+		vpart(model, "HeavyBarrel", Vector3.new(0.5, 0.5, 2.6), base * CFrame.new(0.85, -0.2, -1.9), OBSIDIAN_DEEP)
+		vpart(model, "HeavyChamber", Vector3.new(0.7, 0.7, 0.8), base * CFrame.new(0.85, -0.2, -0.9), VIOLET_BRIGHT, Enum.Material.Neon)
+		vpart(model, "ArmorBandL", Vector3.new(0.95, 0.3, 1.1), base * CFrame.new(-1.3, 0.5, 0), IVORY, Enum.Material.Slate)
+		vpart(model, "ArmorBandR", Vector3.new(0.95, 0.3, 1.1), base * CFrame.new(1.3, 0.5, 0), IVORY, Enum.Material.Slate)
+	end
+	-- precision assembly: long barrel + optic mast
+	if role == "precision" or role == "Precision" then
+		vpart(model, "LongBarrel", Vector3.new(0.24, 0.24, 3.2), base * CFrame.new(0.85, -0.1, -2.2), trim)
+		vpart(model, "OpticMast", Vector3.new(0.3, 0.5, 0.3), base * CFrame.new(0.3, 1.3, -0.3), OBSIDIAN_DEEP)
+		vpart(model, "OpticLens", Vector3.new(0.34, 0.2, 0.1), base * CFrame.new(0.3, 1.35, -0.5), VIOLET_BRIGHT, Enum.Material.Neon)
+	end
+	-- defense/support assembly: barrier projector + emitter nodes
+	if role == "defense" or role == "Defense" or role == "support" or role == "Support" then
+		vpart(model, "BarrierProjector", Vector3.new(1.1, 1.1, 0.6), base * CFrame.new(0, 0.9, 0.75), trim)
+		vpart(model, "EmitterNodeL", Vector3.new(0.4, 0.4, 0.2), base * CFrame.new(-1.1, 0.9, -0.4), VIOLET_BRIGHT, Enum.Material.Neon)
+		vpart(model, "EmitterNodeR", Vector3.new(0.4, 0.4, 0.2), base * CFrame.new(1.1, 0.9, -0.4), VIOLET_BRIGHT, Enum.Material.Neon)
+	end
 end
 
 --========== lifecycle + encounter step ==========
