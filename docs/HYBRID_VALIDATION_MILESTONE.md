@@ -59,3 +59,35 @@ regeneration vs navmesh caching (GF_TerrainReady gate documented).
 - Controlled deformation is conservative (height-scale only) — expansion after
   operations layer validation.
 - Forested basin + industrial wasteland archetypes: datasets to acquire.
+
+## ADDENDUM — final results (2026-11-26)
+
+### BOOT PATH — PASS (end-to-end production flow)
+Attributes-only boot (GF_HybridGen=true, GF_GeoSeed=424242):
+- HybridGen dispatched at boot; seed deterministically selected fv5/rot3/scale1.015
+- generation 6.1s + vegetation 1.8s = ~8s total mission-init environmental cost
+  (fits inside a loading/drop sequence; HD2-class games hold players longer)
+- GF_TerrainReady gating confirmed; GF_GeoFoundation/GF_GeoSeed recorded for audit
+- memory: one full generation costs ~200MB server-side terrain data (2886->3092MB).
+  Client memory cost unmeasured — required before low-end target signoff.
+
+### Foundation library: NINE real-world mountain valley layouts
+fv1-fv6 Teton fault-block province + fv7-fv9 Cascades volcanic province
+(Mt Rainier region, relief 935-987 studs, younger steeper landforms).
+9 foundations x 8 orientations = 72 distinct geographies available to stream G,
+before controlled deformation. All deployed to place.
+
+### Evidence index (mission-lit captures, hv4_*)
+- hv4_fv1_r0_ground.png — regression layout, valley grass + erosion foothills
+- hv4_fv2_r0_overlook.png — rocky outcrop ridge structure, distinct from fv1
+- hv4_fv3..fv6 ground+overlook pairs — per-layout evidence
+- KNOWN ARTIFACT: steep faces show contour-following material bands; slope-threshold
+  noise needs widening (composition-stage work, not structural)
+
+### Validation harness lessons (reusable)
+- anchor the character BEFORE terrain regeneration — falling during Clear causes
+  death/respawn races that invalidate captures
+- one layout per play session: clients drop after ~6 rapid successive full-map
+  regenerations (replication overload) — irrelevant in production (once per boot)
+- Environment.apply("mission") works standalone for evidence lighting without
+  the deploy flow
