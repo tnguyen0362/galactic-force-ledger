@@ -359,6 +359,43 @@ RunService.Heartbeat:Connect(function(dt)
 		local f = castT / 0.7
 		local pulse = math.sin(math.min(f * 1.4, 1) * math.pi)
 		local abil = character:GetAttribute("GF_AbilityId") or ""
+		-- equipment interaction: the airstrike designator visibly rides the raised hand
+		local desig = character:FindFirstChild("GF_DesignatorProp")
+		if abil == "Airstrike" and pulse > 0.25 then
+			if not desig then
+				desig = Instance.new("Part")
+				desig.Name = "GF_DesignatorProp"
+				desig.Size = Vector3.new(0.25, 0.45, 0.7)
+				desig.Color = Color3.fromRGB(40, 42, 48)
+				desig.Material = Enum.Material.Metal
+				desig.CanCollide = false
+				desig.CanQuery = false
+				desig.CanTouch = false
+				desig.Anchored = true
+				desig.Parent = character
+				local lens = Instance.new("Part")
+				lens.Name = "Lens"
+				lens.Shape = Enum.PartType.Cylinder
+				lens.Size = Vector3.new(0.12, 0.18, 0.18)
+				lens.Color = Color3.fromRGB(255, 80, 60)
+				lens.Material = Enum.Material.Neon
+				lens.CanCollide = false
+				lens.CanQuery = false
+				lens.CanTouch = false
+				lens.Anchored = true
+				lens.Parent = desig
+			end
+			local rhand3 = character:FindFirstChild("RightHand")
+			if rhand3 then
+				desig.CFrame = rhand3.CFrame * CFrame.new(0, -0.15, -0.25)
+				local lens2 = desig:FindFirstChild("Lens")
+				if lens2 then
+					lens2.CFrame = desig.CFrame * CFrame.new(0, 0, -0.42) * CFrame.Angles(0, math.rad(90), 0)
+				end
+			end
+		elseif desig then
+			desig:Destroy()
+		end
 		if abil == "Airstrike" then
 			setJoint("RightShoulder", CFrame.Angles(-2.9 * pulse, 0, math.rad(-10) * pulse))
 			setJoint("RightElbow", CFrame.Angles(-0.2 * pulse, 0, 0))
