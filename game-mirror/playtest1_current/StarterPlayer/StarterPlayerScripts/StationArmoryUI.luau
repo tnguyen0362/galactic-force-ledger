@@ -23,7 +23,23 @@ local isOpen = false
 local state = nil
 local anchor = nil
 local CACHE_CATEGORIES = { "ANY", "Universal", "AR", "SMG", "LMG", "Shotgun", "Marksman", "Launcher", "Pistol", "Support" }
+local cacheCfg = require(ReplicatedStorage:WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("Configs"):WaitForChild("Caches"))
+
 local cacheCategoryIndex = 1
+-- P-1 targeting cost display: mirrors CacheService — 25 scrap per augment the tier rolls,
+-- first targeted open per profile free. Untargeted (ANY) stays free.
+local function targetingCostLabel(tierId)
+	local sel = CACHE_CATEGORIES[cacheCategoryIndex] or "ANY"
+	if sel == "ANY" then
+		return "CAT ANY"
+	end
+	local tier = cacheCfg.get and cacheCfg.get(tierId) or nil
+	local n = tier and tonumber(tier.augments) or 1
+	if state and state.freeTargetedOpenAvailable then
+		return string.format("CAT %s · FREE 1ST", sel)
+	end
+	return string.format("CAT %s · %dS", sel, 25 * n)
+end
 local rerollLockChoices = {}
 local BULK_RARITIES = { "ALL", "Common", "Rare", "Epic", "Legendary" }
 local bulkRarityIndex = 1
@@ -327,10 +343,10 @@ creditsLabel.Text = string.format("%d CR   ·   RANK %d   ·   %s", state.credit
 		cacheRow.LayoutOrder = cacheOrder
 		newLabel(cacheRow, string.format("%s  ·  %d held", cache.name, cache.held), UDim2.fromOffset(300, 18), UDim2.fromOffset(12, 10), WHITE, 14)
 		if cache.held > 0 then
-			local catButton = rowButton(cacheRow, "CAT " .. (CACHE_CATEGORIES[cacheCategoryIndex] or "ANY"), AMBER, order, function()
+			local catButton = rowButton(cacheRow, targetingCostLabel(cache.id), AMBER, order, function()
 				cacheCategoryIndex = cacheCategoryIndex % #CACHE_CATEGORIES + 1
 				render()
-			end, 316, 88)
+			end, 296, 108)
 			catButton.Name = "CacheCategory"
 			local openButton = rowButton(cacheRow, "OPEN", CYAN, order, function()
 				setLoadout:FireServer({ action = "openCache", tier = cache.id, category = selectedCacheCategory() })
