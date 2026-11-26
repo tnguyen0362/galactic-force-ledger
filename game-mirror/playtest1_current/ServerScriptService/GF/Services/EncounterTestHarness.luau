@@ -81,7 +81,25 @@ function EncounterTestHarness.start()
 		local pos = resolvePosition()
 		task.defer(function()
 			local ok, err = pcall(function()
-				if directive == "bastion" then
+				-- Gate H extension: ordinary infantry + bosses + death-state trigger.
+				-- infantry goes through EnemyService.spawn (the real spawn path); bosses via their modules.
+				if directive == "rifleman" or directive == "scout" or directive == "marksman" or directive == "heavy" or directive == "officer" then
+					local EnemyService = require(script.Parent.EnemyService)
+					local id = directive:sub(1, 1):upper() .. directive:sub(2)
+					lastEntity = EnemyService.spawn(id, pos)
+				elseif directive == "veyr" then
+					local Veyr = require(script.Parent.Parent.Veyr)
+					lastEntity = Veyr.spawn(pos)
+				elseif directive == "walker" then
+					local BastionWalker = require(script.Parent.Parent.BastionWalker)
+					lastEntity = BastionWalker.spawn(pos)
+				elseif directive == "kill" then
+					-- death-animation validation: attribute-driven death path, same as real kills
+					if lastEntity and lastEntity.Parent then
+						lastEntity:SetAttribute("Health", 0)
+						lastEntity:SetAttribute("Dead", true)
+					end
+				elseif directive == "bastion" then
 					lastEntity = BastionTank.spawn(pos, "Standard")
 				elseif directive == "vanguard" then
 					lastEntity = BastionTank.spawn(pos, "Vanguard")
