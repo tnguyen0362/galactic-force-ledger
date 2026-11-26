@@ -51,6 +51,20 @@ local PROFILES = {
 	Marksman = { freqMul = 0.95, ampMul = 0.9, bobMul = 0.7, armSwing = 0.7, aimSharp = 1.4 }, -- stable aim
 	Officer = { freqMul = 0.9, ampMul = 0.85, bobMul = 0.8, armSwing = 0.8, aimSharp = 1.1 }, -- composed
 	Commander = { freqMul = 0.9, ampMul = 0.85, bobMul = 0.8, armSwing = 0.8, aimSharp = 1.1 },
+	-- Gate D expansion: Spectre profiles — precision operatives: tight gait, minimal
+	-- wasted motion, fast aim acquisition. Support is the most deliberate of the five.
+	SpectreLeader = { freqMul = 1.0, ampMul = 0.85, bobMul = 0.65, armSwing = 0.7, aimSharp = 1.35 },
+	SpectreAssault = { freqMul = 1.15, ampMul = 0.95, bobMul = 0.8, armSwing = 0.85, aimSharp = 1.25 },
+	SpectreWeapons = { freqMul = 0.9, ampMul = 0.9, bobMul = 1.0, armSwing = 0.6, aimSharp = 1.2 },
+	SpectrePrecision = { freqMul = 0.85, ampMul = 0.8, bobMul = 0.5, armSwing = 0.55, aimSharp = 1.5 },
+	SpectreSupport = { freqMul = 0.95, ampMul = 0.85, bobMul = 0.75, armSwing = 0.7, aimSharp = 1.15 },
+	-- Revenant profiles — specialist hunters: aggressive cadence, sharp directional
+	-- commitment, the fastest aim in the roster. Defense is anchored and heavy.
+	RevenantLeader = { freqMul = 1.05, ampMul = 0.9, bobMul = 0.6, armSwing = 0.75, aimSharp = 1.5 },
+	RevenantAssault = { freqMul = 1.3, ampMul = 1.05, bobMul = 0.9, armSwing = 0.95, aimSharp = 1.4 },
+	RevenantWeapons = { freqMul = 0.95, ampMul = 0.95, bobMul = 1.05, armSwing = 0.6, aimSharp = 1.3 },
+	RevenantPrecision = { freqMul = 0.9, ampMul = 0.85, bobMul = 0.45, armSwing = 0.5, aimSharp = 1.65 },
+	RevenantDefense = { freqMul = 0.75, ampMul = 0.8, bobMul = 1.2, armSwing = 0.5, aimSharp = 1.1 },
 }
 local ELITE_MUL = { freqMul = 1.05, ampMul = 0.9, bobMul = 0.75, armSwing = 0.85, aimSharp = 1.3 } -- spectre/revenant precision
 
