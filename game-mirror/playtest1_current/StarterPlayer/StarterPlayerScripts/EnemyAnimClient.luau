@@ -46,8 +46,8 @@ local tracked: { [Model]: RigState } = {}
 local PROFILES = {
 	Rifleman = { freqMul = 1.0, ampMul = 1.0, bobMul = 1.0, armSwing = 1.0, aimSharp = 1.0 },
 	Scout = { freqMul = 1.25, ampMul = 1.1, bobMul = 1.15, armSwing = 1.2, aimSharp = 1.2 }, -- vanguard: athletic
-	Vanguard = { freqMul = 1.25, ampMul = 1.1, bobMul = 1.15, armSwing = 1.2, aimSharp = 1.2 },
-	Heavy = { freqMul = 0.8, ampMul = 0.85, bobMul = 1.3, armSwing = 0.6, aimSharp = 0.7 }, -- deliberate weight
+	Vanguard = { freqMul = 1.25, ampMul = 1.1, bobMul = 1.15, armSwing = 1.2, aimSharp = 1.2, leanBias = 0.09 }, -- assault posture: forward intent
+	Heavy = { freqMul = 0.8, ampMul = 0.85, bobMul = 1.3, armSwing = 0.6, aimSharp = 0.7, stanceRoll = 0.06 }, -- planted wide stance
 	Marksman = { freqMul = 0.95, ampMul = 0.9, bobMul = 0.7, armSwing = 0.7, aimSharp = 1.4 }, -- stable aim
 	Officer = { freqMul = 0.9, ampMul = 0.85, bobMul = 0.8, armSwing = 0.8, aimSharp = 1.1 }, -- composed
 	Commander = { freqMul = 0.9, ampMul = 0.85, bobMul = 0.8, armSwing = 0.8, aimSharp = 1.1 },
@@ -232,9 +232,9 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	end
 	-- torso bob: subtle vertical at 2x gait frequency, scaled by personality
 	local bob = math.abs(math.sin(phase)) * 0.05 * amp * prof.bobMul
-	-- slight forward lean when moving — weight commitment
-	local lean = amp * 0.06
-	setJoint(state.joints, "RootJoint", CFrame.new(0, bob, 0) * CFrame.Angles(lean, 0, 0))
+	-- slight forward lean when moving — weight commitment; vanguard carries assault lean always
+	local lean = amp * 0.06 + (prof.leanBias or 0)
+	setJoint(state.joints, "RootJoint", CFrame.new(0, bob, 0) * CFrame.Angles(lean, 0, (prof.stanceRoll or 0)))
 
 	-- UPPER BODY — independent aim layer.
 	-- aim target: nearest visible player within engagement range (presentation only —
