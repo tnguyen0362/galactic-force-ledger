@@ -191,6 +191,9 @@ local moveBlend = 0
 local strafeBlend = 0
 local lastPos = root.Position
 
+local airborneSince = nil
+local landedAt = nil
+local landSeverity = 0
 local wasRolling = false
 local lastHealth = nil
 local lastDmgAt = nil
@@ -246,6 +249,20 @@ RunService.Heartbeat:Connect(function(dt)
 	local flat = Vector3.new(delta.X, 0, delta.Z)
 	local speed = math.min(flat.Magnitude / math.max(dt, 1e-3), 40)
 	local grounded = humanoid.FloorMaterial ~= Enum.Material.Air
+	-- landing absorption (spec sec.55): measure fall time; on touch-down the legs flex to
+	-- absorb, scaled by fall severity, recovering over ~0.3s. no movement lock.
+	if not grounded then
+		airborneSince = airborneSince or os.clock()
+	else
+		if airborneSince then
+			local fallT = os.clock() - airborneSince
+			if fallT > 0.25 then
+				landedAt = os.clock()
+				landSeverity = math.clamp((fallT - 0.25) / 1.2, 0.15, 1)
+			end
+			airborneSince = nil
+		end
+	end
 	local aiming = character:GetAttribute("Aiming") == true
 
 	-- Blend weights smoothed so state changes do not snap.
@@ -528,6 +545,18 @@ RunService.Heartbeat:Connect(function(dt)
 		setJoint("RightKnee", CFrame.Angles(math.min(0, -swing) * 0.85 - 0.05, 0, 0))
 		setJoint("LeftAnkle", CFrame.Angles(-swing * 0.22, 0, 0))
 		setJoint("RightAnkle", CFrame.Angles(swing * 0.22, 0, 0))
+		-- landing absorb overlay: deep knee+hip flex decaying fast
+		if landedAt then
+			local lt = os.clock() - landedAt
+			if lt < 0.3 then
+				local ab = (1 - lt / 0.3) ^ 1.5 * (landSeverity or 0.3)
+				setJoint("LeftHip", CFrame.Angles(swing * 0.62 + ab * 0.7, 0, 0))
+				setJoint("RightHip", CFrame.Angles(-swing * 0.62 + ab * 0.7, 0, 0))
+				setJoint("LeftKnee", CFrame.Angles(math.min(0, swing) * 0.85 - 0.05 - ab * 1.1, 0, 0))
+				setJoint("RightKnee", CFrame.Angles(math.min(0, -swing) * 0.85 - 0.05 - ab * 1.1, 0, 0))
+				setJoint("Root", nil, Vector3.new(0, -ab * 0.45, 0))
+			end
+		end
 
 		local hasWeapon = character:GetAttribute("GF_EquippedWeapon") ~= nil
 		if hasWeapon then
