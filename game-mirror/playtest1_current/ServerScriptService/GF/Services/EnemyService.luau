@@ -75,6 +75,7 @@ local function addSuppression(actor: any, impulse: number, prof: any)
 end
 local NPCNavigation = require(ServerScriptService.GF.Services.NPCNavigation)
 local NPCPerception = require(ServerScriptService.GF.Services.NPCPerception)
+local NPCSquads = require(ServerScriptService.GF.Services.NPCSquads)
 
 -- nav-aware movement intent (spec section 14): short hops steer directly; longer moves request
 -- tactical waypoints from the navigation cache. When the cache misses the compute is queued and
@@ -357,6 +358,7 @@ function EnemyService.spawn(enemyId: string, position: Vector3): Model?
 		groundOffset = 3.1 * scaleNum,
 		locomotion = NPCLocomotion.newState(model.PrimaryPart and (model.PrimaryPart :: BasePart).Position or position, 0),
 		perception = NPCPerception.newState(),
+		squad = NPCSquads.assign(model, position, ARCHETYPE[def.id] or "Default"),
 	}
 	return model
 end
@@ -600,6 +602,7 @@ local corpses: { { model: Model, born: number } } = {}
 local CORPSE_CAP = 12
 local function die(model: Model, actor: any)
 	NPCNavigation.cleanup(model)
+	NPCSquads.release(model)
 	actor.deadAt = os.clock()
 	pcall(function()
 		require(script.Parent.CacheService).onEnemyKilled(model, nil)
@@ -780,6 +783,28 @@ local function tickActor(model: Model, actor: any, dt: number)
 	local origin = root.Position
 	tickSuppression(actor, dt)
 	local prof = tacticalProfile(def)
+	-- squad blackboard pull (spec section 24): members ingest the shared picture through their own
+	-- perception — timestamps preserved, so a stale board entry never reads as fresh knowledge.
+	-- periodic role reevaluation is bounded (internal cooldown) and event-driven.
+	if actor.squad then
+		NPCSquads.reevaluateRoles(actor.squad, function(m)
+			local a = actors[m]
+			return a and (ARCHETYPE[a.def.id] or "Default") or "Default"
+		end)
+		for player, report in pairs(actor.squad.reportedTargets) do
+			if actor.perception and player.Character then
+				NPCPerception.receiveReport(actor.perception, player, {
+					position = report.position,
+					velocity = Vector3.zero,
+					observedAt = report.observedAt,
+					confidence = report.confidence,
+					uncertainty = 8,
+					obsType = "report",
+					threat = 0,
+				})
+			end
+		end
+	end
 	local target, targetDist = perceiveTargets(model, origin, def, actor, dt)
 	-- memory bridge: the legacy investigate/search/return FSM consumes lastSeenPos/confidence.
 	-- Derive those from the richest current memory record so the FSM runs on legitimate,
@@ -814,6 +839,11 @@ local function tickActor(model: Model, actor: any, dt: number)
 		local targetRoot3 = target.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if targetRoot3 and actor.perception.memory[target] then
 			local mem = actor.perception.memory[target]
+			-- squad blackboard (spec section 24): explicit local reports with original timestamps.
+			-- the board is the squad's shared picture — distribution, not truth override.
+			if actor.squad then
+				NPCSquads.postReport(actor.squad, target, mem.position, mem.observedAt, mem.confidence, model)
+			end
 			local myOrigin = origin
 			task.delay(0.5, function()
 				if not model.Parent or model:GetAttribute("Dead") then
@@ -1049,6 +1079,11 @@ local function tickActor(model: Model, actor: any, dt: number)
 		end)
 		local band = REACTION_BANDS[difficulty] or REACTION_BANDS.Normal
 		local delay = band[1] + math.random() * (band[2] - band[1])
+		-- commander influence (spec section 25): coordination speed scales with exp falloff —
+		-- organization improves under leadership, never raw damage. soldiers near their officer
+		-- react up to 25% faster; losing the officer visibly degrades this.
+		local influence = NPCSquads.commanderInfluence(actor.squad, origin)
+		delay = delay * math.clamp(1 - 0.25 * influence, 0.75, 1)
 		local engNow = os.clock()
 		if engNow < actor.nextAttack or actor.nextAttack == 0 then
 			actor.nextAttack = engNow + delay
@@ -1064,11 +1099,19 @@ local function tickActor(model: Model, actor: any, dt: number)
 	-- S06-015 flank routes: fast movers (Vanguard-type, speed 16+) approach through a flanking arc
 	-- rather than the direct line — they pick a side once per engagement and swing wide before
 	-- closing, so players face crossing pressure instead of a single-file conga line.
+	-- flanking (spec section 22/24): alternative approaches are squad-limited — one flanker at a
+	-- time per squad so the player faces coherent pressure instead of simultaneous abandons.
 	if (def.speed or 13) >= 16 then
 		if not actor.flankSide then
-			actor.flankSide = (math.random() < 0.5) and 1 or -1
+			local role = NPCSquads.roleOf(model)
+			if (role == "flanker" or role == "engager") and NPCSquads.requestFlank(model) then
+				actor.flankSide = (math.random() < 0.5) and 1 or -1
+			end
 		end
 	else
+		if actor.flankSide then
+			NPCSquads.endFlank(model)
+		end
 		actor.flankSide = nil
 	end
 
@@ -1096,14 +1139,10 @@ local function tickActor(model: Model, actor: any, dt: number)
 					local chest = targetRoot.Position + Vector3.new(0, 1.5, 0)
 					local coverHit = workspace:Raycast(eye, chest - eye, testParams)
 					if coverHit then
-						-- blocked sightline = cover; score prefers nearer nodes and ones no squadmate holds
-						local claimed = false
-						for other, otherActor in pairs(actors) do
-							if other ~= model and other.Parent and otherActor.coverPos and (otherActor.coverPos - cand).Magnitude < 4 then
-								claimed = true
-								break
-							end
-						end
+						-- blocked sightline = cover; score prefers nearer nodes. squad blackboard
+						-- reservations (spec section 21) replace the old proximity scan: claims are
+						-- owned, expire, and release on death rather than being positional guesses.
+						local claimed = NPCSquads.coverConflict(model, cand)
 						local score = (claimed and 0 or 10) + (24 - reach)
 						if score > bestScore then
 							bestScore = score
@@ -1113,6 +1152,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 				end
 			end
 			if bestPos then
+				NPCSquads.claimCover(model, bestPos)
 				actor.coverPos = bestPos
 				actor.coverAt = os.clock()
 			end
