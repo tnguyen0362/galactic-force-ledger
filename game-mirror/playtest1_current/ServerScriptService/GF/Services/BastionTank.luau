@@ -354,14 +354,20 @@ end
 -- per-frame-ish articulation: hull parts rigidly follow the loco cframe; turret parts follow the
 -- turret frame composed on top of hull frame. Stepped at controller rate (12Hz) — smooth enough
 -- for heavy machinery, cheap enough for multiple vehicles.
-local function poseModel(state: any)
+local function poseModel(state: any, dt: number?)
 	local hullCf = state.loco.cframe
 	-- the root IS the hull frame: perception, probing, and model positioning all reference it
 	local root = state.model.PrimaryPart
 	if root then root.CFrame = hullCf end
+	-- spec sec.78/79: road wheels spin with hull speed; cosmetic only, hull stays authoritative
+	state.wheelSpin = (state.wheelSpin or 0) + (state.loco.speed / 0.9) * (dt or 1/20)
 	for part, offset in state.build.hullOffsets do
 		if part.Parent then
-			part.CFrame = hullCf * offset
+			if part.Name:match("^Wheel[LR]") then
+				part.CFrame = hullCf * offset * CFrame.Angles(state.wheelSpin, 0, 0)
+			else
+				part.CFrame = hullCf * offset
+			end
 		end
 	end
 	-- turret frame: hull frame * pivot offset * turret yaw rotation
@@ -439,7 +445,7 @@ function BastionTank.step(dt: number)
 				state.turretYawRel, worldYaw, state.loco.yaw,
 				state.build.vcfg.turretOmegaMax, tauTurret, dt)
 		end
-		poseModel(state)
+		poseModel(state, dt)
 
 		-- step telemetry (throttled): movement internals are otherwise invisible outside the game VM
 		if (not state.lastDebug) or os.clock() - state.lastDebug > 1 then
