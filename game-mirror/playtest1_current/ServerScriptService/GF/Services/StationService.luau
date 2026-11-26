@@ -449,29 +449,42 @@ local function teleportTo(player: Player, position: Vector3)
 		character = player.Character
 	end
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local wasLongMove = false
+	if root then
+		wasLongMove = (root.Position - position).Magnitude > 500
+	end
 	if root then
 		-- streaming-aware long teleport (validation root cause: 2000-stud operation deployments
 		-- exceeded the streaming radius — client-side terrain absent, the character fell through
 		-- the world and respawned at the station). For long moves: request streaming at the
 		-- destination, anchor through the transition so physics cannot drop the character, and
 		-- release only after the stream-in window. The loading overlay already covers this pause.
-		local longMove = (root.Position - position).Magnitude > 500
+		local longMove = wasLongMove
 		if longMove then
+			-- stream FIRST, pivot after: RequestStreamAroundAsync returns when the destination
+			-- region has replicated (or the timeout elapses). 2000 studs of mountain terrain
+			-- needs seconds, not the original 1.5 — validation evidence: character fell through
+			-- unstreamed terrain even with the 1.4s anchor.
 			pcall(function()
-				player:RequestStreamAroundAsync(position, 1.5)
+				player:RequestStreamAroundAsync(position, 3.5)
 			end)
 		end
 		character:PivotTo(CFrame.new(position))
 		if longMove then
 			root.Anchored = true
-			task.delay(1.4, function()
+			-- hold the anchor through the post-pivot replication settle; the loading overlay
+			-- covers the pause. Release is unconditional — a stuck anchor is worse than a fall.
+			task.delay(4, function()
 				if root.Parent then
 					root.Anchored = false
 				end
 			end)
 		end
 	end
-	task.delay(1.2, function()
+	-- overlay duration matches the transition: long moves hold the loading screen
+	-- until the anchor release, short hops keep the snappy 1.2s
+	local overlaySeconds = wasLongMove and 4.2 or 1.2
+	task.delay(overlaySeconds, function()
 		workspace:SetAttribute("GF_Teleporting", false)
 	end)
 end

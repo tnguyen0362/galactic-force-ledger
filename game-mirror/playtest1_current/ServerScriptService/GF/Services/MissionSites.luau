@@ -125,6 +125,9 @@ local function mkPart(parent: Instance, name: string, size: Vector3, cf: CFrame,
 	else
 		p.CanCollide = canCollide
 	end
+	if canCollide == false then
+		p.CanQuery = false
+	end
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Parent = parent

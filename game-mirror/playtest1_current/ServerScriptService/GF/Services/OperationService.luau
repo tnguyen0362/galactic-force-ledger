@@ -503,6 +503,78 @@ function OperationService.structureDestroyed(part: BasePart)
 	end
 end
 
+-- ============ extended mechanics runtime ============
+
+-- eliminate: spawn tagged targets at the site when the objective activates; completion when
+-- all tagged targets die. Untagged enemies never count (audit-proven pattern).
+local eliminateWatchers: { [string]: boolean } = {}
+
+function OperationService.armEliminate(node: ObjectiveNode)
+	if eliminateWatchers[node.id] then return end
+	eliminateWatchers[node.id] = true
+	local opId = current and current.operationId
+	task.spawn(function()
+		-- spawn the elimination roster at the site
+		local comp = node.elimComposition or { "Officer", "Rifleman", "Rifleman" }
+		local tagged = {}
+		pcall(function()
+			for i, id in comp do
+				local a = (i / #comp) * math.pi * 2
+				local sx = node.position.X + math.cos(a) * 12
+				local sz = node.position.Z + math.sin(a) * 12
+				local sy = node.position.Y + 4
+				local hit = Workspace:Raycast(Vector3.new(sx, 1200, sz), Vector3.new(0, -1400, 0))
+				if hit then sy = hit.Position.Y + 3 end
+				local m = Services.EnemyService and Services.EnemyService.spawn(id, Vector3.new(sx, sy, sz))
+				if m then
+					m:SetAttribute("GF_ObjectiveTarget", true)
+					table.insert(tagged, m)
+				end
+			end
+		end)
+		if #tagged == 0 then return end
+		-- death watch: attribute-driven, checked sparsely (deaths are rare events)
+		while current and current.operationId == opId do
+			task.wait(1)
+			if node.state == "Completed" then break end
+			if node.state == "Locked" then continue end
+			local alive = 0
+			for _, m in tagged do
+				if m.Parent and m:GetAttribute("Dead") ~= true then alive += 1 end
+			end
+			node.progress = 1 - (alive / #tagged)
+			if alive == 0 then
+				OperationService.completeObjective(node.id, "elimination")
+				break
+			end
+		end
+	end)
+end
+
+-- defend: once started (by interaction), survive the timer; pressure escalation comes from
+-- the director economy (already extraction/objective-aware). Completion at timer end.
+function OperationService.startDefend(node: ObjectiveNode, seconds: number)
+	local opId = current and current.operationId
+	node.state = "Active"
+	OperationService.publishState()
+	task.spawn(function()
+		local t = 0
+		while t < seconds do
+			task.wait(1)
+			t += 1
+			if not current or current.operationId ~= opId then return end
+			if node.state ~= "Active" then return end
+			node.progress = t / seconds
+		end
+		if current and current.operationId == opId and node.state == "Active" then
+			OperationService.completeObjective(node.id, "defend")
+		end
+	end)
+end
+
+-- interact routing extension: mechanic-specific activation behavior
+local originalInteract = OperationService.interact
+
 -- ============ activation ============
 
 function OperationService.activate(def: OperationDefinition): boolean
