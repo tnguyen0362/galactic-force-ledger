@@ -1539,7 +1539,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 				sigma = (SIGMA_FLOOR[diff] or SIGMA_FLOOR.Normal) * rangeScale
 					+ SIGMA_INITIAL * ((1 - q) ^ 1.5) * rangeScale
 					+ (if useEstimator then trackUnc * 0.8 else omega * dist * 0.7)
-					+ obsUncertainty * 0.18
+					+ obsUncertainty * (if useEstimator then 0.05 else 0.18)
 					+ (actor.suppression or 0) * 2.2 -- suppressed shooters shake
 				-- calibration hook: swept during difficulty tuning, 1.0 in production
 				sigma = sigma * (tonumber(workspace:GetAttribute("GF_SigmaScale")) or 1)
