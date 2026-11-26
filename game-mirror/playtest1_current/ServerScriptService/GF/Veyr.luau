@@ -196,6 +196,7 @@ local function lance(state)
 end
 local function summon(state)
 	state.busyUntil = os.clock() + 2
+	state.summonUntil = os.clock() + 2
 	local pos = state.root.Position
 	for i = 1, 2 do
 		local angle = (i / 2) * math.pi * 2
@@ -235,6 +236,46 @@ end
 local function articulate(state, dt)
 	local root = state.root
 	if not root.Parent then return end
+	-- staged mechanical defeat: deathT drives a 2.2s collapse — knees buckle first,
+	-- torso pitches forward through the middle, arms/helmet/cape settle last.
+	if state.dead then
+		state.deathAnimT = (state.deathAnimT or 0) + dt
+		local T = state.deathAnimT
+		local function stage(t0, t1)
+			local x = math.clamp((T - t0) / (t1 - t0), 0, 1)
+			return 1 - (1 - x) * (1 - x)
+		end
+		local legE = stage(0.0, 0.7)
+		local torsoE = stage(0.4, 1.5)
+		local headE = stage(1.0, 2.2)
+		local F = root.CFrame
+		for p, offset in pairs(state.offsets or {}) do
+			if not p.Parent then continue end
+			local cf = F * offset
+			local n = p.Name
+			if n:sub(1, 3) == "Leg" or n:sub(1, 4) == "Boot" then
+				cf = cf * CFrame.new(0, -legE * 1.2, legE * 0.6) * CFrame.Angles(legE * 0.5, 0, 0)
+			elseif n:sub(1, 3) == "Arm" then
+				local side = tonumber(n:sub(4)) or 1
+				cf = cf * CFrame.Angles(headE * 0.6, 0, side * headE * 0.5)
+			elseif n == "Helmet" or n == "Visor" or n == "Crest" then
+				cf = cf * CFrame.Angles(headE * 0.9, headE * 0.2, 0)
+			elseif n == "Cape" or n == "CapeTrim" then
+				cf = cf * CFrame.Angles(headE * 0.35, 0, 0)
+			elseif n == "Rifle" or n == "RifleMuzzle" then
+				cf = cf * CFrame.Angles(headE * 1.2, 0, headE * 0.3) * CFrame.new(0, -headE * 1.5, headE * 0.8)
+			end
+			p.CFrame = cf
+		end
+		-- torso pitches and sinks as the defeat completes — applied as DELTAS: multiplying
+		-- the absolute staged rotation each tick would compound the spin without bound.
+		local dT = torsoE - (state.prevTorsoE or 0)
+		local dL = legE - (state.prevLegE or 0)
+		state.prevTorsoE = torsoE
+		state.prevLegE = legE
+		root.CFrame = (root.CFrame * CFrame.Angles(dT * 0.35, 0, dT * 0.08)) + Vector3.new(0, -dL * 2.2, 0)
+		return
+	end
 	local F = root.CFrame
 	state.walkClock = (state.walkClock or 0) + dt
 	local moving = state.lastPos and (root.Position - state.lastPos).Magnitude > 0.01
@@ -253,10 +294,13 @@ local function articulate(state, dt)
 	state.aimYaw = state.aimYaw and state.aimYaw + (yawT - state.aimYaw) * math.min(1, dt * 4) or yawT
 	state.aimPitch = state.aimPitch and state.aimPitch + (pitchT - state.aimPitch) * math.min(1, dt * 4) or pitchT
 
-	-- attack raise: busy window means an attack telegraph is running
+	-- attack raise: busy window means an attack telegraph is running;
+	-- summon is a distinct both-arms-skyward command gesture
 	local attacking = os.clock() < (state.busyUntil or 0)
+	local summoning = os.clock() < (state.summonUntil or 0)
 	local armRaise = attacking and -1.15 or 0
-	state.armBlend = (state.armBlend or 0) + ((attacking and 1 or 0) - (state.armBlend or 0)) * math.min(1, dt * 6)
+	if summoning then armRaise = -2.4 end
+	state.armBlend = (state.armBlend or 0) + (((attacking or summoning) and 1 or 0) - (state.armBlend or 0)) * math.min(1, dt * 6)
 
 	-- cape billow: backward angle scales with movement, plus idle flutter
 	local speedFrac = moving and 1 or 0
@@ -387,7 +431,7 @@ function Veyr.start()
 			if not ok then
 				warn("[GF] veyr tick error: " .. tostring(err))
 			end
-			if not state.dead then
+			if true then
 				local ok2, err2 = pcall(articulate, state, stepDt)
 				if not ok2 and not state.artErr then
 					warn("[GF] veyr articulate error: " .. tostring(err2))
