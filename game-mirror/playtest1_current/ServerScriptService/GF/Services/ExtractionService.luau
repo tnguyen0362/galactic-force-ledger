@@ -153,7 +153,14 @@ local function buildDropship(position: Vector3)
 			game:GetService("TweenService"):Create(dust, TweenInfo.new(1.4), { Size = Vector3.new(34, 5, 34), Transparency = 1 }):Play()
 		end
 	end)
-	ramp.Transparency = 1
+	-- spec sec.99: boarding access articulates — ramp starts folded against the hull and
+	-- deploys downward when the ship lands. Anchored parts: pivot manually around the hinge edge.
+	local rampCenter = position + Vector3.new(0, 4.5, 13)
+	local hingeWorld = rampCenter + Vector3.new(0, 0, -6)
+	local deployedCf = CFrame.new(rampCenter)
+	local foldedCf = CFrame.new(hingeWorld) * CFrame.Angles(math.rad(-75), 0, 0) * CFrame.new(0, 0, 6)
+	ramp.CFrame = foldedCf
+	model:SetAttribute("GFRampDeployed", false)
 	local engine = part("Engine", Vector3.new(3, 3, 3), Vector3.new(0, 9, -14), Color3.fromRGB(120, 210, 255), Enum.Material.Neon)
 	engine.CanCollide = false
 	local thruster = Instance.new("PointLight")
@@ -197,6 +204,15 @@ local function beginCountdown(position: Vector3, seconds: number)
 		if called then
 			landed = true
 			landedAt = os.clock()
+			-- ramp deployment: the boarding access physically opens (spec sec.99)
+			if dropship and dropship.Parent then
+				local r = dropship:FindFirstChild("Ramp")
+				if r then
+					local rc = position + Vector3.new(0, 4.5, 13)
+					game:GetService("TweenService"):Create(r, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CFrame = CFrame.new(rc) }):Play()
+					dropship:SetAttribute("GFRampDeployed", true)
+				end
+			end
 			publish()
 		end
 	end)
