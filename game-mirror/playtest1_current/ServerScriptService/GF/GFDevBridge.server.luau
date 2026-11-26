@@ -213,12 +213,13 @@ verbs.difficulty = function(d: string)
 end
 
 -- drain — pull telemetry events through the game-VM buffer and return compact rows
-verbs.drain = function()
+verbs.drain = function(nStr: string?)
 	local drain = game:GetService("ReplicatedStorage"):FindFirstChild("GFTelemetryDrain")
 	if not drain then
 		return "no drain bindable"
 	end
-	local events = drain:Invoke(2000)
+	local maxN = tonumber(nStr) or 2000
+	local events = drain:Invoke(maxN)
 	local rows = {}
 	for _, ev in ipairs(events) do
 		if ev.eventType == "shot_fired" or ev.eventType == "hit_registered" or ev.eventType == "enemy_killed" then
@@ -230,12 +231,14 @@ verbs.drain = function()
 			end
 			table.insert(rows, row)
 		elseif ev.eventType == "enemy_attack_hit" or ev.eventType == "enemy_attack_miss" then
-			table.insert(rows, string.format("%s;d=%.1f;sig=%.2f;sf=%.2f;sa=%.2f;sm=%.2f;so=%.2f;ss=%.2f;err=%.2f;q=%.2f;vel=%.1f;tv=%.1f;roll=%s;blk=%s",
+			local row = string.format("%s;d=%.1f;sig=%.2f;sf=%.2f;sa=%.2f;sm=%.2f;so=%.2f;ss=%.2f;err=%.2f;q=%.2f;vel=%.1f;tv=%.1f;roll=%s;blk=%s",
 				ev.eventType == "enemy_attack_hit" and "HIT" or "MISS",
 				ev.distance or -1, ev.sigmaFinal or -1, ev.sigmaFloor or -1, ev.sigmaAcquisition or -1,
 				ev.sigmaMotion or -1, ev.sigmaObsUnc or -1, ev.sigmaSuppression or -1,
 				ev.aimErrorMag or -1, ev.acquisitionQ or -1, ev.targetVelocityMag or -1,
-				ev.targetTransverseSpeed or -1, tostring(ev.rolling), tostring(ev.blocked)))
+				ev.targetTransverseSpeed or -1, tostring(ev.rolling), tostring(ev.blocked))
+			row = row .. string.format(";t=%.2f;tm=%s", ev.serverTimestamp or -1, tostring(ev.trackingModel or "?"))
+			table.insert(rows, row)
 		end
 	end
 	if #rows == 0 then
