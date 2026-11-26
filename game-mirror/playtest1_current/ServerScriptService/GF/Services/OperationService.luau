@@ -263,13 +263,56 @@ local function generateConquestStronghold(seed: number, difficulty: string, anal
 	local supplySite = TerrainAnalysis.nearest(analysis.sites, optX, optZ, nil, 700)
 		or TerrainAnalysis.nearest(analysis.sites, optX, optZ)
 
-	-- 5. extraction region: flat, 300-700 studs from primary, off the deployment axis
+	-- 5. extraction region: 300-900 studs from primary, off the deployment axis. Constraint is
+	-- enforced relative to the primary itself — unconstrained fallback snapped onto the primary
+	-- bench in validation (85 studs, unacceptable: extraction must be its own decision).
 	local extX = bestPrimary.x + px * (stream:NextInteger(0, 1) * 2 - 1) * 500
 	local extZ = bestPrimary.z + pz * (stream:NextInteger(0, 1) * 2 - 1) * 500
-	local extSite = TerrainAnalysis.nearest(analysis.valleyFloor, extX, extZ, nil, 800)
-		or TerrainAnalysis.nearest(analysis.sites, extX, extZ, nil, 900)
-		or TerrainAnalysis.nearest(analysis.sites, extX, extZ)
+	local function clearOfPrimary(s: any, minD: number): boolean
+		local dx, dz = s.x - bestPrimary.x, s.z - bestPrimary.z
+		return math.sqrt(dx * dx + dz * dz) >= minD
+	end
+	local extSite = nil
+	do
+		-- candidates near the perpendicular target, filtered by the distance band
+		local bestD = math.huge
+		for _, pool in ipairs({ analysis.valleyFloor, analysis.sites }) do
+			for _, s in pool do
+				local dx, dz = s.x - extX, s.z - extZ
+				local d = math.sqrt(dx * dx + dz * dz)
+				local pd = math.sqrt((s.x - bestPrimary.x) ^ 2 + (s.z - bestPrimary.z) ^ 2)
+				if d < bestD and pd >= 300 and pd <= 1100 then
+					bestD = d
+					extSite = s
+				end
+			end
+			if extSite then break end
+		end
+		-- fallback: any site in the band, closest to the target direction
+		if not extSite then
+			local bestScore2 = -math.huge
+			for _, s in analysis.sites do
+				local pd = math.sqrt((s.x - bestPrimary.x) ^ 2 + (s.z - bestPrimary.z) ^ 2)
+				if pd >= 300 and pd <= 1100 then
+					if s.score > bestScore2 then
+						bestScore2 = s.score
+						extSite = s
+					end
+				end
+			end
+		end
+	end
 
+	if not extSite then
+		local bestScore3 = -math.huge
+		for _, s in analysis.sites do
+			local pd = math.sqrt((s.x - bestPrimary.x) ^ 2 + (s.z - bestPrimary.z) ^ 2)
+			if pd >= 200 and s.score > bestScore3 then
+				bestScore3 = s.score
+				extSite = s
+			end
+		end
+	end
 	if not (shieldSite and commsSite and extSite) then return nil end
 
 	local circumstance = "fortified"

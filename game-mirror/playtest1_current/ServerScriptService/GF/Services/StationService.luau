@@ -450,7 +450,26 @@ local function teleportTo(player: Player, position: Vector3)
 	end
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if root then
+		-- streaming-aware long teleport (validation root cause: 2000-stud operation deployments
+		-- exceeded the streaming radius — client-side terrain absent, the character fell through
+		-- the world and respawned at the station). For long moves: request streaming at the
+		-- destination, anchor through the transition so physics cannot drop the character, and
+		-- release only after the stream-in window. The loading overlay already covers this pause.
+		local longMove = (root.Position - position).Magnitude > 500
+		if longMove then
+			pcall(function()
+				player:RequestStreamAroundAsync(position, 1.5)
+			end)
+		end
 		character:PivotTo(CFrame.new(position))
+		if longMove then
+			root.Anchored = true
+			task.delay(1.4, function()
+				if root.Parent then
+					root.Anchored = false
+				end
+			end)
+		end
 	end
 	task.delay(1.2, function()
 		workspace:SetAttribute("GF_Teleporting", false)
