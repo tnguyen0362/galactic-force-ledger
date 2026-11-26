@@ -1,990 +1,129 @@
 [
  {
-  "path": "ServerStorage.DressTest",
-  "className": "ModuleScript",
-  "file": "ServerStorage/DressTest.luau",
-  "lines": 173,
-  "chars": 5434
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.Input",
-  "className": "ModuleScript",
-  "file": "StarterPlayer/StarterPlayerScripts/Input.luau",
-  "lines": 135,
-  "chars": 5007
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.CameraCtl",
-  "className": "ModuleScript",
-  "file": "StarterPlayer/StarterPlayerScripts/CameraCtl.luau",
-  "lines": 18,
-  "chars": 536
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.Weapon",
-  "className": "ModuleScript",
-  "file": "StarterPlayer/StarterPlayerScripts/Weapon.luau",
-  "lines": 362,
-  "chars": 11594
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.HUD",
-  "className": "ModuleScript",
-  "file": "StarterPlayer/StarterPlayerScripts/HUD.luau",
-  "lines": 433,
-  "chars": 15200
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.GFClient",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/GFClient.luau",
-  "lines": 24,
-  "chars": 547
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.MissionHUD",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/MissionHUD.luau",
-  "lines": 464,
-  "chars": 18685
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.StationUI",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/StationUI.luau",
-  "lines": 650,
-  "chars": 27120
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.EnemyAnimClient",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/EnemyAnimClient.luau",
-  "lines": 103,
-  "chars": 3061
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.VFX",
-  "className": "ModuleScript",
-  "file": "StarterPlayer/StarterPlayerScripts/VFX.luau",
-  "lines": 242,
-  "chars": 7093
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.GFAudio",
-  "className": "ModuleScript",
-  "file": "StarterPlayer/StarterPlayerScripts/GFAudio.luau",
-  "lines": 179,
-  "chars": 6459
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.GFAudioRuntime",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/GFAudioRuntime.luau",
-  "lines": 168,
-  "chars": 4940
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.Controller",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/Controller.luau",
-  "lines": 305,
-  "chars": 10881
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.GFUIGate",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/GFUIGate.luau",
-  "lines": 27,
-  "chars": 977
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.StationArmoryUI",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/StationArmoryUI.luau",
-  "lines": 519,
-  "chars": 22521
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.GrenadeClient",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/GrenadeClient.luau",
-  "lines": 71,
-  "chars": 2705
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.VistaQuality",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/VistaQuality.luau",
-  "lines": 37,
-  "chars": 1518
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.TacticalMapUI",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/TacticalMapUI.luau",
-  "lines": 175,
-  "chars": 5447
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.CinematicUI",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/CinematicUI.luau",
-  "lines": 205,
-  "chars": 7112
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.TutorialUI",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/TutorialUI.luau",
-  "lines": 190,
-  "chars": 7008
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.CrewAnim",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/CrewAnim.luau",
-  "lines": 142,
-  "chars": 4385
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.CharRim",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/CharRim.luau",
-  "lines": 49,
-  "chars": 1296
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.PhotoCam",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/PhotoCam.luau",
-  "lines": 46,
-  "chars": 1974
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.GF_CrouchInput",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/GF_CrouchInput.luau",
-  "lines": 35,
-  "chars": 1080
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.SettingsUI",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/SettingsUI.luau",
-  "lines": 173,
-  "chars": 5725
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.Minimap",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/Minimap.luau",
-  "lines": 274,
-  "chars": 9882
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.StatusStrip",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/StatusStrip.luau",
-  "lines": 145,
-  "chars": 5036
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.Voss",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/Voss.luau",
-  "lines": 104,
-  "chars": 3209
- },
- {
-  "path": "StarterPlayer.StarterCharacterScripts.GF_CharacterAnimator",
-  "className": "Script",
-  "file": "StarterPlayer/StarterCharacterScripts/GF_CharacterAnimator.luau",
-  "lines": 162,
-  "chars": 6635
- },
- {
-  "path": "StarterPlayer.StarterCharacter.AnimateScript",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterCharacter/AnimateScript.luau",
-  "lines": 972,
-  "chars": 28803
- },
- {
-  "path": "ServerScriptService.GF.Main",
-  "className": "Script",
-  "file": "ServerScriptService/GF/Main.luau",
-  "lines": 94,
-  "chars": 3906
- },
- {
-  "path": "ServerScriptService.GF.Mission",
-  "className": "Script",
-  "file": "ServerScriptService/GF/Mission.luau",
-  "lines": 78,
-  "chars": 2912
- },
- {
-  "path": "ServerScriptService.GF.GrenadeRuntime",
-  "className": "Script",
-  "file": "ServerScriptService/GF/GrenadeRuntime.luau",
-  "lines": 256,
-  "chars": 11816
- },
- {
-  "path": "ServerScriptService.GF.BastionWalker",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/BastionWalker.luau",
-  "lines": 441,
-  "chars": 15697
- },
- {
-  "path": "ServerScriptService.GF.Veyr",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Veyr.luau",
-  "lines": 284,
-  "chars": 10130
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Constants",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Constants.luau",
-  "lines": 87,
-  "chars": 2124
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Types",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Types.luau",
-  "lines": 116,
-  "chars": 2519
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Remotes",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Remotes.luau",
-  "lines": 110,
-  "chars": 2500
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Validate",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Validate.luau",
-  "lines": 38,
-  "chars": 1266
- },
- {
-  "path": "ServerScriptService.GF.Services.RemoteService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/RemoteService.luau",
-  "lines": 25,
-  "chars": 781
- },
- {
-  "path": "ServerScriptService.GF.Services.State",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/State.luau",
-  "lines": 104,
-  "chars": 2776
- },
- {
-  "path": "ServerScriptService.GF.Services.ProfileService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/ProfileService.luau",
-  "lines": 440,
-  "chars": 15672
- },
- {
-  "path": "ServerScriptService.GF.Services.VitalsService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/VitalsService.luau",
-  "lines": 229,
-  "chars": 7246
- },
- {
-  "path": "ServerScriptService.GF.Services.EnemyService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/EnemyService.luau",
-  "lines": 733,
-  "chars": 27515
- },
- {
-  "path": "ServerScriptService.GF.Services.AbilityService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/AbilityService.luau",
-  "lines": 734,
-  "chars": 30322
- },
- {
-  "path": "ServerScriptService.GF.Services.PlayerService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/PlayerService.luau",
-  "lines": 72,
-  "chars": 2151
- },
- {
-  "path": "ServerScriptService.GF.Services.MovementService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/MovementService.luau",
-  "lines": 166,
-  "chars": 6286
- },
- {
-  "path": "ServerScriptService.GF.Services.CombatService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/CombatService.luau",
-  "lines": 677,
-  "chars": 27477
- },
- {
-  "path": "ServerScriptService.GF.Services.SquadService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/SquadService.luau",
-  "lines": 61,
-  "chars": 1711
- },
- {
-  "path": "ServerScriptService.GF.Services.LootService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/LootService.luau",
-  "lines": 229,
-  "chars": 7144
- },
- {
-  "path": "ServerScriptService.GF.Services.ObjectiveService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/ObjectiveService.luau",
-  "lines": 1633,
-  "chars": 60522
- },
- {
-  "path": "ServerScriptService.GF.Services.ExtractionService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/ExtractionService.luau",
-  "lines": 538,
-  "chars": 18630
- },
- {
-  "path": "ServerScriptService.GF.Services.RewardsService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/RewardsService.luau",
-  "lines": 172,
-  "chars": 7292
- },
- {
-  "path": "ServerScriptService.GF.Services.EncounterDirector",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/EncounterDirector.luau",
-  "lines": 238,
-  "chars": 9592
- },
- {
-  "path": "ServerScriptService.GF.Services.DownedService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/DownedService.luau",
-  "lines": 248,
-  "chars": 7896
- },
- {
-  "path": "ServerScriptService.GF.Services.AppearanceService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/AppearanceService.luau",
-  "lines": 185,
-  "chars": 6955
- },
- {
-  "path": "ServerScriptService.GF.Services.WorldDressing",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/WorldDressing.luau",
-  "lines": 109,
-  "chars": 3558
- },
- {
-  "path": "ServerScriptService.GF.Services.TerrainService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/TerrainService.luau",
-  "lines": 132,
-  "chars": 4795
- },
- {
-  "path": "ServerScriptService.GF.Services.StationService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/StationService.luau",
-  "lines": 706,
-  "chars": 31428
- },
- {
-  "path": "ServerScriptService.GF.Services.ArtService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/ArtService.luau",
-  "lines": 85,
-  "chars": 2623
- },
- {
-  "path": "ServerScriptService.GF.Services.SectorBuilder",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/SectorBuilder.luau",
-  "lines": 122,
-  "chars": 3933
- },
- {
-  "path": "ServerScriptService.GF.Services.EnvironmentDressing",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/EnvironmentDressing.luau",
-  "lines": 208,
-  "chars": 7475
- },
- {
-  "path": "ServerScriptService.GF.Services.EnemyAnimation",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/EnemyAnimation.luau",
-  "lines": 112,
-  "chars": 3236
- },
- {
-  "path": "ServerScriptService.GF.Services.OutpostService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/OutpostService.luau",
-  "lines": 201,
-  "chars": 7822
- },
- {
-  "path": "ServerScriptService.GF.Services.StationArt",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/StationArt.luau",
-  "lines": 663,
-  "chars": 40130
- },
- {
-  "path": "ServerScriptService.GF.Services.Environment",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Environment.luau",
-  "lines": 175,
-  "chars": 7844
- },
- {
-  "path": "ServerScriptService.GF.Services.ArmoryService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/ArmoryService.luau",
-  "lines": 681,
-  "chars": 27527
- },
- {
-  "path": "ServerScriptService.GF.Services.StationWarTable",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/StationWarTable.luau",
-  "lines": 226,
-  "chars": 9112
- },
- {
-  "path": "ServerScriptService.GF.Services.StationConcourse",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/StationConcourse.luau",
-  "lines": 277,
-  "chars": 15560
- },
- {
-  "path": "ServerScriptService.GF.Services.ClassService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/ClassService.luau",
-  "lines": 124,
-  "chars": 3665
- },
- {
-  "path": "ServerScriptService.GF.Services.AugmentService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/AugmentService.luau",
-  "lines": 322,
-  "chars": 11997
- },
- {
-  "path": "ServerScriptService.GF.Services.TacticalMapService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/TacticalMapService.luau",
-  "lines": 101,
-  "chars": 3132
- },
- {
-  "path": "ServerScriptService.GF.Services.DispatchService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/DispatchService.luau",
-  "lines": 447,
-  "chars": 14246
- },
- {
-  "path": "ServerScriptService.GF.Services.TutorialService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/TutorialService.luau",
-  "lines": 282,
-  "chars": 10058
- },
- {
-  "path": "ServerScriptService.GF.Services.CrewService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/CrewService.luau",
-  "lines": 188,
-  "chars": 6815
- },
- {
-  "path": "ServerScriptService.GF.Services.SettingsService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/SettingsService.luau",
-  "lines": 126,
-  "chars": 3555
- },
- {
-  "path": "ServerScriptService.GF.Services.GalacticWarService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/GalacticWarService.luau",
-  "lines": 121,
-  "chars": 3880
- },
- {
-  "path": "ServerScriptService.GF.Services.HackingService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/HackingService.luau",
-  "lines": 158,
-  "chars": 4709
- },
- {
-  "path": "ServerScriptService.GF.Services.CacheService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/CacheService.luau",
-  "lines": 366,
-  "chars": 13493
- },
- {
-  "path": "ServerScriptService.GF.Services.DialogueService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/DialogueService.luau",
-  "lines": 43,
-  "chars": 1497
- },
- {
-  "path": "ServerScriptService.GF.Services.RewardLedgerService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/RewardLedgerService.luau",
-  "lines": 198,
-  "chars": 7938
- },
- {
-  "path": "ServerScriptService.GF.Services.SupplyService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/SupplyService.luau",
-  "lines": 182,
-  "chars": 6574
- },
- {
-  "path": "ServerScriptService.GF.Test.CheckRunner",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Test/CheckRunner.luau",
-  "lines": 331,
-  "chars": 16403
- },
- {
-  "path": "ServerScriptService.GF.Test.DamageChecks",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Test/DamageChecks.luau",
-  "lines": 188,
-  "chars": 9526
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Weapons",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Weapons.luau",
-  "lines": 89,
-  "chars": 3930
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Enemies",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Enemies.luau",
-  "lines": 78,
-  "chars": 2919
- },
- {
   "path": "ReplicatedStorage.GF.Shared.Configs.Abilities",
   "className": "ModuleScript",
   "file": "ReplicatedStorage/GF/Shared/Configs/Abilities.luau",
-  "lines": 53,
-  "chars": 1580
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Classes",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Classes.luau",
-  "lines": 50,
-  "chars": 1339
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Difficulties",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Difficulties.luau",
   "lines": 54,
-  "chars": 2014
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Missions",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Missions.luau",
-  "lines": 91,
-  "chars": 3960
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Economy",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Economy.luau",
-  "lines": 49,
-  "chars": 1599
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Augments",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Augments.luau",
-  "lines": 178,
-  "chars": 8180
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Cinematic",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Cinematic.luau",
-  "lines": 49,
-  "chars": 2888
- },
- {
-  "path": "ReplicatedStorage.GF.Shared.Configs.Caches",
-  "className": "ModuleScript",
-  "file": "ReplicatedStorage/GF/Shared/Configs/Caches.luau",
-  "lines": 67,
-  "chars": 1919
+  "chars": 1580
  },
  {
   "path": "ReplicatedStorage.GF.Shared.Configs.Armor",
   "className": "ModuleScript",
   "file": "ReplicatedStorage/GF/Shared/Configs/Armor.luau",
-  "lines": 56,
-  "chars": 2242
+  "lines": 57,
+  "chars": 2243
  },
  {
-  "path": "ServerStorage.GF.Art.GFSoldierRig.AnimateScript",
-  "className": "LocalScript",
-  "file": "ServerStorage/GF/Art/GFSoldierRig/AnimateScript.luau",
-  "lines": 972,
-  "chars": 28803
+  "path": "ReplicatedStorage.GF.Shared.Configs.Augments",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Augments.luau",
+  "lines": 465,
+  "chars": 21260
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Configs.Caches",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Caches.luau",
+  "lines": 68,
+  "chars": 1919
  },
  {
   "path": "ReplicatedStorage.GF.Shared.Configs.Campaign",
   "className": "ModuleScript",
   "file": "ReplicatedStorage/GF/Shared/Configs/Campaign.luau",
-  "lines": 39,
+  "lines": 40,
   "chars": 2125
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Configs.Cinematic",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Cinematic.luau",
+  "lines": 45,
+  "chars": 2339
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Configs.Classes",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Classes.luau",
+  "lines": 52,
+  "chars": 1442
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Configs.Difficulties",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Difficulties.luau",
+  "lines": 61,
+  "chars": 2383
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Configs.Economy",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Economy.luau",
+  "lines": 50,
+  "chars": 1582
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Configs.Enemies",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Enemies.luau",
+  "lines": 79,
+  "chars": 3067
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Configs.Missions",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Missions.luau",
+  "lines": 99,
+  "chars": 4337
  },
  {
   "path": "ReplicatedStorage.GF.Shared.Configs.Monetization",
   "className": "ModuleScript",
   "file": "ReplicatedStorage/GF/Shared/Configs/Monetization.luau",
-  "lines": 41,
+  "lines": 42,
   "chars": 1261
  },
  {
   "path": "ReplicatedStorage.GF.Shared.Configs.Requisitions",
   "className": "ModuleScript",
   "file": "ReplicatedStorage/GF/Shared/Configs/Requisitions.luau",
-  "lines": 104,
+  "lines": 105,
   "chars": 3522
  },
  {
-  "path": "ServerScriptService.GF.Services.BossReplayService",
+  "path": "ReplicatedStorage.GF.Shared.Configs.Weapons",
   "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/BossReplayService.luau",
-  "lines": 47,
-  "chars": 2208
- },
- {
-  "path": "ServerScriptService.GF.Services.BoundaryService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/BoundaryService.luau",
-  "lines": 64,
-  "chars": 2092
- },
- {
-  "path": "ServerScriptService.GF.Services.DestructibleCoverService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/DestructibleCoverService.luau",
-  "lines": 61,
-  "chars": 2401
- },
- {
-  "path": "ServerScriptService.GF.Services.DoorService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/DoorService.luau",
-  "lines": 73,
-  "chars": 2656
- },
- {
-  "path": "ServerScriptService.GF.Services.MatchmakingService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/MatchmakingService.luau",
-  "lines": 185,
-  "chars": 6015
- },
- {
-  "path": "ServerScriptService.GF.Services.MonetizationService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/MonetizationService.luau",
-  "lines": 220,
-  "chars": 8819
- },
- {
-  "path": "ServerScriptService.GF.Services.NetGuard",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/NetGuard.luau",
-  "lines": 220,
-  "chars": 7072
- },
- {
-  "path": "ServerScriptService.GF.Services.OptionalService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/OptionalService.luau",
-  "lines": 235,
-  "chars": 7806
- },
- {
-  "path": "ServerScriptService.GF.Services.PathThrottle",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/PathThrottle.luau",
-  "lines": 85,
-  "chars": 2439
- },
- {
-  "path": "ServerScriptService.GF.Services.PerformanceTelemetry",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/PerformanceTelemetry.luau",
-  "lines": 137,
-  "chars": 5318
- },
- {
-  "path": "ServerScriptService.GF.Services.ProjectileService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/ProjectileService.luau",
-  "lines": 112,
-  "chars": 4057
- },
- {
-  "path": "ServerScriptService.GF.Services.RequisitionService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/RequisitionService.luau",
-  "lines": 398,
-  "chars": 15122
- },
- {
-  "path": "ServerScriptService.GF.Services.SpatialGrid",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/SpatialGrid.luau",
-  "lines": 60,
-  "chars": 1522
- },
- {
-  "path": "ServerScriptService.GF.Services.TelemetryService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/TelemetryService.luau",
-  "lines": 37,
-  "chars": 1579
- },
- {
-  "path": "ServerScriptService.GF.Services.TeleportFlowService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/TeleportFlowService.luau",
-  "lines": 74,
-  "chars": 2888
- },
- {
-  "path": "ServerScriptService.GF.Services.WeatherService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/WeatherService.luau",
-  "lines": 72,
-  "chars": 2823
- },
- {
-  "path": "ServerScriptService.GF.Services.WildlifeService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/WildlifeService.luau",
-  "lines": 78,
-  "chars": 2778
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.AimAssist",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/AimAssist.luau",
-  "lines": 71,
-  "chars": 2957
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.ArmorFlashlight",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/ArmorFlashlight.luau",
-  "lines": 44,
-  "chars": 1626
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.Flashlight",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/Flashlight.luau",
-  "lines": 79,
-  "chars": 2227
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.GraphicsPresets",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/GraphicsPresets.luau",
-  "lines": 48,
-  "chars": 1448
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.LoadingScreen",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/LoadingScreen.luau",
-  "lines": 55,
-  "chars": 1840
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.LootFeed",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/LootFeed.luau",
-  "lines": 85,
-  "chars": 3311
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.Nameplates",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/Nameplates.luau",
-  "lines": 76,
-  "chars": 2503
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.TouchControls",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/TouchControls.luau",
-  "lines": 73,
-  "chars": 2651
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.TutorialHints",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/TutorialHints.luau",
-  "lines": 142,
-  "chars": 4214
- },
- {
-  "path": "StarterPlayer.StarterPlayerScripts.VirtualCursor",
-  "className": "LocalScript",
-  "file": "StarterPlayer/StarterPlayerScripts/VirtualCursor.luau",
-  "lines": 75,
-  "chars": 2730
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.Archetypes",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/Archetypes.luau",
-  "lines": 203,
-  "chars": 7717
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.BattlefieldService",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/BattlefieldService.luau",
-  "lines": 390,
-  "chars": 16200
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.Cover",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/Cover.luau",
-  "lines": 150,
-  "chars": 4750
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.EncounterZones",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/EncounterZones.luau",
-  "lines": 99,
-  "chars": 3812
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.MacroGeography",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/MacroGeography.luau",
-  "lines": 352,
-  "chars": 16131
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.Metrics",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/Metrics.luau",
-  "lines": 298,
-  "chars": 10383
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.NoiseKit",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/NoiseKit.luau",
-  "lines": 176,
-  "chars": 7629
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.Placement",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/Placement.luau",
-  "lines": 196,
-  "chars": 7284
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.RegionAnalysis",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/RegionAnalysis.luau",
-  "lines": 162,
-  "chars": 5204
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.SeedStream",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/SeedStream.luau",
-  "lines": 91,
-  "chars": 3255
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.Templates",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/Templates.luau",
-  "lines": 284,
-  "chars": 10403
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.Topology",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/Topology.luau",
-  "lines": 296,
-  "chars": 10283
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.InstallationBuilder",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/InstallationBuilder.luau",
-  "lines": 164,
-  "chars": 7817
- },
- {
-  "path": "ServerScriptService.GF.Services.Battlefield.CoverBuilder",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/CoverBuilder.luau",
+  "file": "ReplicatedStorage/GF/Shared/Configs/Weapons.luau",
   "lines": 98,
-  "chars": 4173
+  "chars": 4149
  },
  {
-  "path": "ServerScriptService.GF.Services.Battlefield.ScatterBuilder",
+  "path": "ReplicatedStorage.GF.Shared.Constants",
   "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Services/Battlefield/ScatterBuilder.luau",
-  "lines": 139,
-  "chars": 5679
+  "file": "ReplicatedStorage/GF/Shared/Constants.luau",
+  "lines": 149,
+  "chars": 3951
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Remotes",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Remotes.luau",
+  "lines": 120,
+  "chars": 2902
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Types",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Types.luau",
+  "lines": 117,
+  "chars": 2519
+ },
+ {
+  "path": "ReplicatedStorage.GF.Shared.Validate",
+  "className": "ModuleScript",
+  "file": "ReplicatedStorage/GF/Shared/Validate.luau",
+  "lines": 39,
+  "chars": 1266
  },
  {
   "path": "ServerScriptService.GF.Bake.BakeDriver",
@@ -997,15 +136,8 @@
   "path": "ServerScriptService.GF.Bake.BakeTerrain",
   "className": "ModuleScript",
   "file": "ServerScriptService/GF/Bake/BakeTerrain.luau",
-  "lines": 135,
-  "chars": 4849
- },
- {
-  "path": "ServerScriptService.GF.Bake.HeightfieldCodec",
-  "className": "ModuleScript",
-  "file": "ServerScriptService/GF/Bake/HeightfieldCodec.luau",
-  "lines": 107,
-  "chars": 3356
+  "lines": 152,
+  "chars": 5904
  },
  {
   "path": "ServerScriptService.GF.Bake.Data.bfh_d00",
@@ -1258,5 +390,3225 @@
   "file": "ServerScriptService/GF/Bake/Data/bfh_d35.luau",
   "lines": 3,
   "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv1_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv1_d35.luau",
+  "lines": 3,
+  "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv2_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv2_d35.luau",
+  "lines": 3,
+  "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv3_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv3_d35.luau",
+  "lines": 3,
+  "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv4_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv4_d35.luau",
+  "lines": 3,
+  "chars": 29883
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv5_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv5_d35.luau",
+  "lines": 3,
+  "chars": 29883
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv6_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv6_d35.luau",
+  "lines": 3,
+  "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv7_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv7_d35.luau",
+  "lines": 3,
+  "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv8_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv8_d35.luau",
+  "lines": 3,
+  "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d00",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d00.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d01",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d01.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d02",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d02.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d03",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d03.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d04",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d04.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d05",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d05.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d06",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d06.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d07",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d07.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d08",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d08.luau",
+  "lines": 3,
+  "chars": 55067
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d09",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d09.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d10",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d10.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d11",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d11.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d12",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d12.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d13",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d13.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d14",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d14.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d15",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d15.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d16",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d16.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d17",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d17.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d18",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d18.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d19",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d19.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d20",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d20.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d21",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d21.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d22",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d22.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d23",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d23.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d24",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d24.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d25",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d25.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d26",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d26.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d27",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d27.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d28",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d28.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d29",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d29.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d30",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d30.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d31",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d31.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d32",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d32.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d33",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d33.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d34",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d34.luau",
+  "lines": 3,
+  "chars": 55068
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.Data.fv9_d35",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/Data/fv9_d35.luau",
+  "lines": 3,
+  "chars": 29758
+ },
+ {
+  "path": "ServerScriptService.GF.Bake.HeightfieldCodec",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Bake/HeightfieldCodec.luau",
+  "lines": 107,
+  "chars": 3356
+ },
+ {
+  "path": "ServerScriptService.GF.BastionWalker",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/BastionWalker.luau",
+  "lines": 573,
+  "chars": 21453
+ },
+ {
+  "path": "ServerScriptService.GF.GrenadeRuntime",
+  "className": "Script",
+  "file": "ServerScriptService/GF/GrenadeRuntime.luau",
+  "lines": 296,
+  "chars": 14129
+ },
+ {
+  "path": "ServerScriptService.GF.Main",
+  "className": "Script",
+  "file": "ServerScriptService/GF/Main.luau",
+  "lines": 99,
+  "chars": 4145
+ },
+ {
+  "path": "ServerScriptService.GF.Mission",
+  "className": "Script",
+  "file": "ServerScriptService/GF/Mission.luau",
+  "lines": 235,
+  "chars": 11183
+ },
+ {
+  "path": "ServerScriptService.GF.Services.AbilityService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/AbilityService.luau",
+  "lines": 1174,
+  "chars": 49789
+ },
+ {
+  "path": "ServerScriptService.GF.Services.AppearanceService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/AppearanceService.luau",
+  "lines": 251,
+  "chars": 10570
+ },
+ {
+  "path": "ServerScriptService.GF.Services.ArmoryService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/ArmoryService.luau",
+  "lines": 888,
+  "chars": 37662
+ },
+ {
+  "path": "ServerScriptService.GF.Services.ArtService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/ArtService.luau",
+  "lines": 86,
+  "chars": 2623
+ },
+ {
+  "path": "ServerScriptService.GF.Services.AugmentService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/AugmentService.luau",
+  "lines": 914,
+  "chars": 29820
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.Archetypes",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/Archetypes.luau",
+  "lines": 203,
+  "chars": 7716
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.BattlefieldService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/BattlefieldService.luau",
+  "lines": 390,
+  "chars": 16200
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.Cover",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/Cover.luau",
+  "lines": 150,
+  "chars": 4750
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.CoverBuilder",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/CoverBuilder.luau",
+  "lines": 98,
+  "chars": 4173
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.EncounterZones",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/EncounterZones.luau",
+  "lines": 99,
+  "chars": 3812
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.InstallationBuilder",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/InstallationBuilder.luau",
+  "lines": 164,
+  "chars": 7817
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.MacroGeography",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/MacroGeography.luau",
+  "lines": 354,
+  "chars": 16308
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.Metrics",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/Metrics.luau",
+  "lines": 298,
+  "chars": 10383
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.NoiseKit",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/NoiseKit.luau",
+  "lines": 176,
+  "chars": 7629
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.Placement",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/Placement.luau",
+  "lines": 196,
+  "chars": 7284
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.RegionAnalysis",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/RegionAnalysis.luau",
+  "lines": 162,
+  "chars": 5204
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.ScatterBuilder",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/ScatterBuilder.luau",
+  "lines": 139,
+  "chars": 5679
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.SeedStream",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/SeedStream.luau",
+  "lines": 91,
+  "chars": 3255
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.Templates",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/Templates.luau",
+  "lines": 284,
+  "chars": 10403
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Battlefield.Topology",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Battlefield/Topology.luau",
+  "lines": 296,
+  "chars": 10283
+ },
+ {
+  "path": "ServerScriptService.GF.Services.BossReplayService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/BossReplayService.luau",
+  "lines": 48,
+  "chars": 2208
+ },
+ {
+  "path": "ServerScriptService.GF.Services.BoundaryService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/BoundaryService.luau",
+  "lines": 65,
+  "chars": 2092
+ },
+ {
+  "path": "ServerScriptService.GF.Services.CacheService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/CacheService.luau",
+  "lines": 631,
+  "chars": 23869
+ },
+ {
+  "path": "ServerScriptService.GF.Services.ClassService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/ClassService.luau",
+  "lines": 135,
+  "chars": 4279
+ },
+ {
+  "path": "ServerScriptService.GF.Services.CombatService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/CombatService.luau",
+  "lines": 1179,
+  "chars": 50179
+ },
+ {
+  "path": "ServerScriptService.GF.Services.CrewService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/CrewService.luau",
+  "lines": 190,
+  "chars": 6825
+ },
+ {
+  "path": "ServerScriptService.GF.Services.DestructibleCoverService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/DestructibleCoverService.luau",
+  "lines": 62,
+  "chars": 2401
+ },
+ {
+  "path": "ServerScriptService.GF.Services.DialogueService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/DialogueService.luau",
+  "lines": 44,
+  "chars": 1497
+ },
+ {
+  "path": "ServerScriptService.GF.Services.DispatchService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/DispatchService.luau",
+  "lines": 457,
+  "chars": 14612
+ },
+ {
+  "path": "ServerScriptService.GF.Services.DoorService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/DoorService.luau",
+  "lines": 74,
+  "chars": 2656
+ },
+ {
+  "path": "ServerScriptService.GF.Services.DownedService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/DownedService.luau",
+  "lines": 448,
+  "chars": 16788
+ },
+ {
+  "path": "ServerScriptService.GF.Services.EncounterDirector",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/EncounterDirector.luau",
+  "lines": 618,
+  "chars": 24772
+ },
+ {
+  "path": "ServerScriptService.GF.Services.EnemyAnimation",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/EnemyAnimation.luau",
+  "lines": 116,
+  "chars": 3556
+ },
+ {
+  "path": "ServerScriptService.GF.Services.EnemyService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/EnemyService.luau",
+  "lines": 1924,
+  "chars": 85423
+ },
+ {
+  "path": "ServerScriptService.GF.Services.Environment",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/Environment.luau",
+  "lines": 203,
+  "chars": 9598
+ },
+ {
+  "path": "ServerScriptService.GF.Services.EnvironmentDressing",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/EnvironmentDressing.luau",
+  "lines": 209,
+  "chars": 7475
+ },
+ {
+  "path": "ServerScriptService.GF.Services.ExtractionService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/ExtractionService.luau",
+  "lines": 805,
+  "chars": 28548
+ },
+ {
+  "path": "ServerScriptService.GF.Services.GalacticWarService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/GalacticWarService.luau",
+  "lines": 364,
+  "chars": 13457
+ },
+ {
+  "path": "ServerScriptService.GF.Services.GeographyService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/GeographyService.luau",
+  "lines": 173,
+  "chars": 6512
+ },
+ {
+  "path": "ServerScriptService.GF.Services.HackingService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/HackingService.luau",
+  "lines": 162,
+  "chars": 4800
+ },
+ {
+  "path": "ServerScriptService.GF.Services.LootService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/LootService.luau",
+  "lines": 326,
+  "chars": 11194
+ },
+ {
+  "path": "ServerScriptService.GF.Services.MatchmakingService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/MatchmakingService.luau",
+  "lines": 186,
+  "chars": 6015
+ },
+ {
+  "path": "ServerScriptService.GF.Services.MissionSites",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/MissionSites.luau",
+  "lines": 267,
+  "chars": 12156
+ },
+ {
+  "path": "ServerScriptService.GF.Services.MonetizationService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/MonetizationService.luau",
+  "lines": 221,
+  "chars": 8819
+ },
+ {
+  "path": "ServerScriptService.GF.Services.MovementService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/MovementService.luau",
+  "lines": 292,
+  "chars": 11956
+ },
+ {
+  "path": "ServerScriptService.GF.Services.NPCLocomotion",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/NPCLocomotion.luau",
+  "lines": 397,
+  "chars": 17331
+ },
+ {
+  "path": "ServerScriptService.GF.Services.NPCNavigation",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/NPCNavigation.luau",
+  "lines": 187,
+  "chars": 5933
+ },
+ {
+  "path": "ServerScriptService.GF.Services.NPCPerception",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/NPCPerception.luau",
+  "lines": 217,
+  "chars": 10217
+ },
+ {
+  "path": "ServerScriptService.GF.Services.NPCSquads",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/NPCSquads.luau",
+  "lines": 341,
+  "chars": 12108
+ },
+ {
+  "path": "ServerScriptService.GF.Services.NetGuard",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/NetGuard.luau",
+  "lines": 221,
+  "chars": 7072
+ },
+ {
+  "path": "ServerScriptService.GF.Services.ObjectiveService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/ObjectiveService.luau",
+  "lines": 1760,
+  "chars": 66948
+ },
+ {
+  "path": "ServerScriptService.GF.Services.OperationService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/OperationService.luau",
+  "lines": 633,
+  "chars": 22832
+ },
+ {
+  "path": "ServerScriptService.GF.Services.OptionalService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/OptionalService.luau",
+  "lines": 236,
+  "chars": 7806
+ },
+ {
+  "path": "ServerScriptService.GF.Services.OutpostService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/OutpostService.luau",
+  "lines": 231,
+  "chars": 9721
+ },
+ {
+  "path": "ServerScriptService.GF.Services.PathThrottle",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/PathThrottle.luau",
+  "lines": 86,
+  "chars": 2439
+ },
+ {
+  "path": "ServerScriptService.GF.Services.PerformanceTelemetry",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/PerformanceTelemetry.luau",
+  "lines": 138,
+  "chars": 5318
+ },
+ {
+  "path": "ServerScriptService.GF.Services.PlayerService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/PlayerService.luau",
+  "lines": 81,
+  "chars": 2872
+ },
+ {
+  "path": "ServerScriptService.GF.Services.ProfileService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/ProfileService.luau",
+  "lines": 688,
+  "chars": 26241
+ },
+ {
+  "path": "ServerScriptService.GF.Services.ProjectileService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/ProjectileService.luau",
+  "lines": 113,
+  "chars": 4057
+ },
+ {
+  "path": "ServerScriptService.GF.Services.RemoteService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/RemoteService.luau",
+  "lines": 26,
+  "chars": 781
+ },
+ {
+  "path": "ServerScriptService.GF.Services.RequisitionService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/RequisitionService.luau",
+  "lines": 399,
+  "chars": 15122
+ },
+ {
+  "path": "ServerScriptService.GF.Services.RewardLedgerService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/RewardLedgerService.luau",
+  "lines": 202,
+  "chars": 8181
+ },
+ {
+  "path": "ServerScriptService.GF.Services.RewardsService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/RewardsService.luau",
+  "lines": 227,
+  "chars": 9890
+ },
+ {
+  "path": "ServerScriptService.GF.Services.SectorBuilder",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/SectorBuilder.luau",
+  "lines": 159,
+  "chars": 5461
+ },
+ {
+  "path": "ServerScriptService.GF.Services.SettingsService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/SettingsService.luau",
+  "lines": 141,
+  "chars": 3973
+ },
+ {
+  "path": "ServerScriptService.GF.Services.SpatialGrid",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/SpatialGrid.luau",
+  "lines": 61,
+  "chars": 1522
+ },
+ {
+  "path": "ServerScriptService.GF.Services.SquadService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/SquadService.luau",
+  "lines": 354,
+  "chars": 11527
+ },
+ {
+  "path": "ServerScriptService.GF.Services.State",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/State.luau",
+  "lines": 112,
+  "chars": 3134
+ },
+ {
+  "path": "ServerScriptService.GF.Services.StationArt",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/StationArt.luau",
+  "lines": 686,
+  "chars": 41406
+ },
+ {
+  "path": "ServerScriptService.GF.Services.StationConcourse",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/StationConcourse.luau",
+  "lines": 321,
+  "chars": 18475
+ },
+ {
+  "path": "ServerScriptService.GF.Services.StationService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/StationService.luau",
+  "lines": 822,
+  "chars": 36649
+ },
+ {
+  "path": "ServerScriptService.GF.Services.StationWarTable",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/StationWarTable.luau",
+  "lines": 281,
+  "chars": 11195
+ },
+ {
+  "path": "ServerScriptService.GF.Services.SupplyService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/SupplyService.luau",
+  "lines": 219,
+  "chars": 8065
+ },
+ {
+  "path": "ServerScriptService.GF.Services.TacticalMapService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/TacticalMapService.luau",
+  "lines": 137,
+  "chars": 4729
+ },
+ {
+  "path": "ServerScriptService.GF.Services.TelemetryService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/TelemetryService.luau",
+  "lines": 38,
+  "chars": 1579
+ },
+ {
+  "path": "ServerScriptService.GF.Services.TeleportFlowService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/TeleportFlowService.luau",
+  "lines": 75,
+  "chars": 2888
+ },
+ {
+  "path": "ServerScriptService.GF.Services.TerrainAnalysis",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/TerrainAnalysis.luau",
+  "lines": 153,
+  "chars": 4890
+ },
+ {
+  "path": "ServerScriptService.GF.Services.TerrainService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/TerrainService.luau",
+  "lines": 397,
+  "chars": 16955
+ },
+ {
+  "path": "ServerScriptService.GF.Services.TutorialService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/TutorialService.luau",
+  "lines": 308,
+  "chars": 11108
+ },
+ {
+  "path": "ServerScriptService.GF.Services.VegetationService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/VegetationService.luau",
+  "lines": 193,
+  "chars": 7610
+ },
+ {
+  "path": "ServerScriptService.GF.Services.VitalsService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/VitalsService.luau",
+  "lines": 303,
+  "chars": 10670
+ },
+ {
+  "path": "ServerScriptService.GF.Services.WeatherService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/WeatherService.luau",
+  "lines": 73,
+  "chars": 2823
+ },
+ {
+  "path": "ServerScriptService.GF.Services.WildlifeService",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/WildlifeService.luau",
+  "lines": 79,
+  "chars": 2778
+ },
+ {
+  "path": "ServerScriptService.GF.Services.WorldDressing",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Services/WorldDressing.luau",
+  "lines": 272,
+  "chars": 10839
+ },
+ {
+  "path": "ServerScriptService.GF.Test.CheckRunner",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Test/CheckRunner.luau",
+  "lines": 347,
+  "chars": 17628
+ },
+ {
+  "path": "ServerScriptService.GF.Test.DamageChecks",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Test/DamageChecks.luau",
+  "lines": 189,
+  "chars": 9526
+ },
+ {
+  "path": "ServerScriptService.GF.Veyr",
+  "className": "ModuleScript",
+  "file": "ServerScriptService/GF/Veyr.luau",
+  "lines": 331,
+  "chars": 12163
+ },
+ {
+  "path": "ServerStorage.DressTest",
+  "className": "ModuleScript",
+  "file": "ServerStorage/DressTest.luau",
+  "lines": 174,
+  "chars": 5434
+ },
+ {
+  "path": "ServerStorage.GF.Art.GFSoldierRig.AnimateScript",
+  "className": "LocalScript",
+  "file": "ServerStorage/GF/Art/GFSoldierRig/AnimateScript.luau",
+  "lines": 973,
+  "chars": 28803
+ },
+ {
+  "path": "StarterPlayer.StarterCharacter.AnimateScript",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterCharacter/AnimateScript.luau",
+  "lines": 973,
+  "chars": 28803
+ },
+ {
+  "path": "StarterPlayer.StarterCharacterScripts.GF_CharacterAnimator",
+  "className": "Script",
+  "file": "StarterPlayer/StarterCharacterScripts/GF_CharacterAnimator.luau",
+  "lines": 191,
+  "chars": 7866
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.AimAssist",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/AimAssist.luau",
+  "lines": 6,
+  "chars": 376
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.ArmorFlashlight",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/ArmorFlashlight.luau",
+  "lines": 45,
+  "chars": 1626
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.CameraController",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/CameraController.luau",
+  "lines": 675,
+  "chars": 25167
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.CameraCtl",
+  "className": "ModuleScript",
+  "file": "StarterPlayer/StarterPlayerScripts/CameraCtl.luau",
+  "lines": 46,
+  "chars": 1660
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.CharRim",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/CharRim.luau",
+  "lines": 53,
+  "chars": 1495
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.CinematicUI",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/CinematicUI.luau",
+  "lines": 207,
+  "chars": 7122
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.Controller",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/Controller.luau",
+  "lines": 206,
+  "chars": 7678
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.CrewAnim",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/CrewAnim.luau",
+  "lines": 144,
+  "chars": 4395
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.EnemyAnimClient",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/EnemyAnimClient.luau",
+  "lines": 103,
+  "chars": 3061
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.Flashlight",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/Flashlight.luau",
+  "lines": 80,
+  "chars": 2227
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.GFAudio",
+  "className": "ModuleScript",
+  "file": "StarterPlayer/StarterPlayerScripts/GFAudio.luau",
+  "lines": 208,
+  "chars": 8342
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.GFAudioRuntime",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/GFAudioRuntime.luau",
+  "lines": 204,
+  "chars": 6608
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.GFClient",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/GFClient.luau",
+  "lines": 25,
+  "chars": 547
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.GFUIGate",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/GFUIGate.luau",
+  "lines": 28,
+  "chars": 961
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.GF_CrouchInput",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/GF_CrouchInput.luau",
+  "lines": 3,
+  "chars": 87
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.GraphicsPresets",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/GraphicsPresets.luau",
+  "lines": 49,
+  "chars": 1448
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.GrenadeClient",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/GrenadeClient.luau",
+  "lines": 179,
+  "chars": 6764
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.HUD",
+  "className": "ModuleScript",
+  "file": "StarterPlayer/StarterPlayerScripts/HUD.luau",
+  "lines": 727,
+  "chars": 28622
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.Input",
+  "className": "ModuleScript",
+  "file": "StarterPlayer/StarterPlayerScripts/Input.luau",
+  "lines": 135,
+  "chars": 4908
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.LoadingScreen",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/LoadingScreen.luau",
+  "lines": 166,
+  "chars": 5711
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.LootFeed",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/LootFeed.luau",
+  "lines": 86,
+  "chars": 3311
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.Minimap",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/Minimap.luau",
+  "lines": 402,
+  "chars": 14729
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.MissionHUD",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/MissionHUD.luau",
+  "lines": 504,
+  "chars": 20406
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.MovementDiagnostics",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/MovementDiagnostics.luau",
+  "lines": 99,
+  "chars": 3197
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.Nameplates",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/Nameplates.luau",
+  "lines": 77,
+  "chars": 2503
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.PhotoCam",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/PhotoCam.luau",
+  "lines": 48,
+  "chars": 1984
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.PlayerController",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/PlayerController.luau",
+  "lines": 565,
+  "chars": 18584
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.SettingsUI",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/SettingsUI.luau",
+  "lines": 180,
+  "chars": 5992
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.StationArmoryUI",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/StationArmoryUI.luau",
+  "lines": 780,
+  "chars": 36664
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.StationUI",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/StationUI.luau",
+  "lines": 658,
+  "chars": 27480
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.StatusStrip",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/StatusStrip.luau",
+  "lines": 155,
+  "chars": 5552
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.TacticalMapUI",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/TacticalMapUI.luau",
+  "lines": 177,
+  "chars": 5457
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.TouchControls",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/TouchControls.luau",
+  "lines": 75,
+  "chars": 3010
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.TutorialHints",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/TutorialHints.luau",
+  "lines": 143,
+  "chars": 4214
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.TutorialUI",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/TutorialUI.luau",
+  "lines": 192,
+  "chars": 7020
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.VFX",
+  "className": "ModuleScript",
+  "file": "StarterPlayer/StarterPlayerScripts/VFX.luau",
+  "lines": 438,
+  "chars": 14455
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.VirtualCursor",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/VirtualCursor.luau",
+  "lines": 76,
+  "chars": 2730
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.VistaQuality",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/VistaQuality.luau",
+  "lines": 39,
+  "chars": 1528
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.Voss",
+  "className": "LocalScript",
+  "file": "StarterPlayer/StarterPlayerScripts/Voss.luau",
+  "lines": 105,
+  "chars": 3209
+ },
+ {
+  "path": "StarterPlayer.StarterPlayerScripts.Weapon",
+  "className": "ModuleScript",
+  "file": "StarterPlayer/StarterPlayerScripts/Weapon.luau",
+  "lines": 512,
+  "chars": 18905
  }
 ]
