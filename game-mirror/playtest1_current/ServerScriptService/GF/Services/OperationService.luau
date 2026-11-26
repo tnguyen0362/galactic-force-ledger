@@ -398,6 +398,28 @@ function OperationService.activate(def: OperationDefinition): boolean
 
 	MissionSites.build("extraction_pad", def.extractionRegion, { parent = sitesFolder })
 
+	-- extraction console: the legitimate initiation path (audit P0). Interact -> squad vote ->
+	-- dropship. Positioned at the operation extraction region, not the deployment LZ.
+	local console = Instance.new("Part")
+	console.Name = "ExtractionConsole"
+	console.Size = Vector3.new(2.2, 3.6, 1.4)
+	console.Position = def.extractionRegion + Vector3.new(6, 2.2, 6)
+	console.Anchored = true
+	console.Material = Enum.Material.Metal
+	console.Color = Color3.fromRGB(52, 56, 66)
+	console:SetAttribute("GFInteract", "ExtractCall")
+	console:SetAttribute("InteractPrompt", "Call extraction")
+	console.Parent = sitesFolder
+	local lamp = Instance.new("Part")
+	lamp.Name = "ConsoleLamp"
+	lamp.Size = Vector3.new(1.6, 0.4, 0.8)
+	lamp.Position = console.Position + Vector3.new(0, 2.1, 0)
+	lamp.Anchored = true
+	lamp.CanCollide = false
+	lamp.Material = Enum.Material.Neon
+	lamp.Color = Color3.fromRGB(96, 214, 232)
+	lamp.Parent = sitesFolder
+
 	-- destruction wiring: destroy-mechanic objectives complete when their GFStructure part is
 	-- destroyed by the shared combat pipeline (listens instead of polling, no CombatService edits)
 	for _, node in def.objectives do
@@ -468,6 +490,7 @@ local OP_TARGETS = {
 	CaptureConsole = true,
 	CommsRelay = true,
 	SupplyCache = true,
+	ExtractCall = true,
 }
 
 function OperationService.start()
@@ -477,6 +500,20 @@ function OperationService.start()
 	interact.OnServerEvent:Connect(function(player, targetString)
 		if type(targetString) ~= "string" or not OP_TARGETS[targetString] then return end
 		if not current then return end
+		if targetString == "ExtractCall" then
+			-- range-validate against the physical console, then route through the squad vote —
+			-- never the direct call path (audit: vote bypass defect)
+			local sitesFolder = Workspace:FindFirstChild("OperationSites")
+			local console = sitesFolder and sitesFolder:FindFirstChild("ExtractionConsole")
+			local char = player.Character
+			local root = char and char:FindFirstChild("HumanoidRootPart")
+			if not (console and root) then return end
+			if (root.Position - console.Position).Magnitude > 14 then return end
+			pcall(function()
+				require(script.Parent.ExtractionService).requestVote(player)
+			end)
+			return
+		end
 		OperationService.interact(player, targetString)
 	end)
 	-- services bound for garrison spawns + completion handoff

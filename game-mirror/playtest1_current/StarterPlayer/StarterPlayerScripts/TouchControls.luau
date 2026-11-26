@@ -35,7 +35,9 @@ end
 local fire = mkButton("FIRE", 90, 170, 64)
 local reload = mkButton("R", 165, 110, 52)
 local dodge = mkButton("DODGE", 90, 90, 52)
--- no custom jump button: the Roblox default touch UI already renders one — a second was duplication.
+-- jump IS needed here: verified live — this game has NO Roblox PlayerModule at all (stripped
+-- during the movement overhaul), so no default jump button or thumbstick exists on mobile.
+local jump = mkButton("JUMP", 165, 190, 52)
 local interact = mkButton("USE", 240, 140, 52)
 
 -- wire buttons into the semantic input layer by firing the same virtual inputs other scripts read
@@ -48,6 +50,7 @@ local function bindKey(button: TextButton, key: Enum.KeyCode)
 		VirtualInputManager:SendKeyEvent(false, key, false, game)
 	end)
 end
+bindKey(jump, Enum.KeyCode.Space)
 bindKey(reload, Enum.KeyCode.R)
 bindKey(dodge, Enum.KeyCode.LeftControl)
 bindKey(interact, Enum.KeyCode.E)
