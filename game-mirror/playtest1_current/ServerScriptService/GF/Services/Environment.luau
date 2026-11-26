@@ -120,6 +120,27 @@ function Environment.apply(zone: string)
 	Lighting.ClockTime = p.clock
 	Lighting.FogEnd = p.fogEnd
 	Lighting.FogColor = p.fogColor
+	-- operational circumstances (stage 8): the operation layer publishes its rolled condition;
+	-- lighting stays owned here so the ordering rules above keep their invariants.
+	if zone == "mission" then
+		local circ = workspace:GetAttribute("GF_OpCircumstance")
+		if circ == "night_assault" then
+			Lighting.ClockTime = 0.5
+			Lighting.Ambient = Color3.fromRGB(28, 34, 52)
+			Lighting.OutdoorAmbient = Color3.fromRGB(38, 48, 72)
+			Lighting.Brightness = 0.6
+			Lighting.FogColor = Color3.fromRGB(14, 18, 30)
+		elseif circ == "storm" then
+			Lighting.FogEnd = 1400
+			Lighting.FogColor = Color3.fromRGB(120, 128, 140)
+			Lighting.Brightness = math.max(0.8, p.brightness - 1)
+			local atmo2 = Lighting:FindFirstChildOfClass("Atmosphere")
+			if atmo2 then
+				atmo2.Density = 0.55
+				atmo2.Haze = 6
+			end
+		end
+	end
 	local atmo = Lighting:FindFirstChildOfClass("Atmosphere")
 	if atmo then
 		atmo.Density = p.atmoDensity

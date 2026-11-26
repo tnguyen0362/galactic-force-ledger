@@ -24,6 +24,42 @@ local OperationService = {}
 
 local GENERATOR_VERSION = "op-1.0"
 
+-- operational circumstances (directive stage 8): the same template plays differently under
+-- different conditions. Selection is seeded — deterministic per operation seed — and weighted
+-- toward harsher conditions at higher difficulties. Effects apply at activation: lighting,
+-- garrison composition, patrol distribution.
+local CIRCUMSTANCES: { [string]: { weight: number, minRank: number } } = {
+	standard = { weight = 38, minRank = 0 },
+	night_assault = { weight = 15, minRank = 0 },
+	storm = { weight = 14, minRank = 0 },
+	entrenched = { weight = 12, minRank = 0 },
+	alerted = { weight = 12, minRank = 0 },
+	fortified = { weight = 9, minRank = 3 },
+}
+local DIFFICULTY_RANKS: { [string]: number } = { Easy = 1, Normal = 3, Hard = 6, Extreme = 14 }
+
+local function pickCircumstance(seed: number, difficulty: string): string
+	local stream = Random.new(seed * 7919 + 31)
+	local rank = DIFFICULTY_RANKS[difficulty] or 1
+	local total = 0
+	local eligible = {}
+	for id, c in CIRCUMSTANCES do
+		-- harder operations skew hostile: at Hard+ the standard weight halves
+		local w = c.weight
+		if id == "standard" and rank >= 6 then w = math.floor(w / 2) end
+		if rank >= c.minRank then
+			total += w
+			eligible[id] = w
+		end
+	end
+	local roll = stream:NextInteger(1, math.max(1, total))
+	for id, w in eligible do
+		roll -= w
+		if roll <= 0 then return id end
+	end
+	return "standard"
+end
+
 -- ============ types ============
 
 export type ObjectiveNode = {
@@ -315,7 +351,7 @@ local function generateConquestStronghold(seed: number, difficulty: string, anal
 	end
 	if not (shieldSite and commsSite and extSite) then return nil end
 
-	local circumstance = "fortified"
+	local circumstance = pickCircumstance(seed, difficulty)
 
 	local objectives: { ObjectiveNode } = {
 		{
@@ -678,6 +714,24 @@ function OperationService.activate(def: OperationDefinition): boolean
 	Workspace:SetAttribute("GF_ExtractionLZ", def.extractionRegion)
 	Workspace:SetAttribute("GF_OperationLZ", def.deploymentRegion)
 	Workspace:SetAttribute("GF_OperationId", def.operationId)
+	Workspace:SetAttribute("GF_OpCircumstance", def.circumstance or "standard")
+	-- squad-facing condition brief: the circumstance is a fact of the operation, not a secret
+	do
+		local circ = def.circumstance or "standard"
+		if circ ~= "standard" then
+			local briefs = {
+				night_assault = "Night assault. The dark is cover — the enemy line is thin but the walk is long.",
+				storm = "Storm front over the valley. Visibility is short; patrols are thin.",
+				entrenched = "Enemy is entrenched. Expect hardened positions at every site.",
+				alerted = "The Ascendancy is alerted. Patrol density is high — move fast.",
+				fortified = "The stronghold is fortified. Bring everything you have.",
+			}
+			local ev = game:GetService("ReplicatedStorage"):FindFirstChild("GF") and game:GetService("ReplicatedStorage").GF:FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").GF.Remotes:FindFirstChild("MissionEvent")
+			if ev and briefs[circ] then
+				ev:FireAllClients({ text = briefs[circ], kind = "info" })
+			end
+		end
+	end
 
 	-- garrisons: scripted mission-critical spawns direct through EnemyService (audit posture:
 	-- the director's spawnAround validity rules require 65-140 studs from players — impossible
@@ -699,6 +753,18 @@ function OperationService.activate(def: OperationDefinition): boolean
 			else
 				comp = { "Rifleman", "Rifleman" }
 				if diff ~= "Easy" then table.insert(comp, "Scout") end
+			end
+			-- circumstance posture: entrenched digs in, fortified hardens the stronghold,
+			-- night assault thins the line (the dark is the squad's ally)
+			local circ = def.circumstance or "standard"
+			if circ == "entrenched" then
+				table.insert(comp, "Rifleman")
+				table.insert(comp, "Rifleman")
+			elseif circ == "fortified" and node.siteType == "stronghold" then
+				table.insert(comp, "Heavy")
+				table.insert(comp, "Marksman")
+			elseif circ == "night_assault" and #comp > 3 then
+				table.remove(comp, #comp)
 			end
 			local idx = 0
 			task.delay(2, function()
@@ -727,13 +793,22 @@ function OperationService.activate(def: OperationDefinition): boolean
 			local dz = primary.position.Z - def.deploymentRegion.Z
 			local len = math.sqrt(dx * dx + dz * dz)
 			local px, pz = -dz / len, dx / len
-			for _, frac in ipairs({ 0.28, 0.52, 0.74 }) do
+			-- route variety: alerted operations run denser patrols, storm operations thinner
+			local circ2 = def.circumstance or "standard"
+			local fractions = { 0.28, 0.52, 0.74 }
+			if circ2 == "alerted" then
+				fractions = { 0.22, 0.4, 0.58, 0.76 }
+			elseif circ2 == "storm" then
+				fractions = { 0.35, 0.65 }
+			end
+			for _, frac in ipairs(fractions) do
 				local lateral = rng:NextInteger(-260, 260)
 				zones[#zones + 1] = {
 					x = def.deploymentRegion.X + dx * frac + px * lateral,
 					z = def.deploymentRegion.Z + dz * frac + pz * lateral,
 					size = frac > 0.6 and 3 or 2,
 					done = false,
+					comp = rng:NextInteger(1, 3),
 				}
 			end
 			local opId = def.operationId
@@ -754,7 +829,13 @@ function OperationService.activate(def: OperationDefinition): boolean
 									-- patrol composition: standard infantry mix, squad-clustered
 									task.spawn(function()
 										pcall(function()
+											-- seeded composition variety: scout parties, infantry lines, heavy teams
 											local comp = { "Rifleman", "Scout" }
+											if z.comp == 2 then
+												comp = { "Scout", "Scout" }
+											elseif z.comp == 3 then
+												comp = { "Rifleman", "Rifleman", "Marksman" }
+											end
 											if z.size >= 3 then table.insert(comp, "Rifleman") end
 											for i, id in comp do
 												local a = (i / #comp) * math.pi * 2
@@ -884,7 +965,7 @@ function OperationService.generate(seed: number, variant: string, difficulty: st
 		objectives = objectives,
 		extractionRegion = fr.extraction,
 		missionTimeLimit = 1500,
-		circumstance = "standard",
+		circumstance = pickCircumstance(seed, difficulty),
 	}
 end
 
