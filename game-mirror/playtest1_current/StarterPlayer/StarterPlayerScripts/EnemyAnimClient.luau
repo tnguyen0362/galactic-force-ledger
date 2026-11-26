@@ -334,10 +334,17 @@ workspace.DescendantAdded:Connect(function(inst)
 	end)
 end)
 
+local statClock = os.clock()
 RunService.Heartbeat:Connect(function(dt)
 	local folder = workspace:FindFirstChild("ActiveActors")
 	if not folder then
 		return
+	end
+	if os.clock() - statClock > 1 then
+		statClock = os.clock()
+		local n = 0
+		for _ in tracked do n += 1 end
+		workspace:SetAttribute("GF_EnemyAnimTracked", n)
 	end
 	-- untrack destroyed models
 	for model in tracked do
@@ -385,3 +392,5 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 end)
+
+print("[EnemyAnimClient] v2-online archetypes=15")
