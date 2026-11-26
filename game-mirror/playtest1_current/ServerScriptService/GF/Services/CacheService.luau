@@ -194,10 +194,35 @@ function CacheService.openFromInventory(player: Player, tierId: string, category
 				weightsOverride = CacheService.scaledWeights(tier.id, instance.difficulty, instance.boss == true)
 			end
 		end
+		-- P-1 category targeting (owner-approved, TARGETING_CALIBRATION_REPORT.md): supplying a valid
+		-- categoryChoice costs 25 scrap per augment the tier rolls; the first targeted open per profile
+		-- is free (one-shot introductory grant). Untargeted opening remains free and untouched.
+		local targetCost = 0
+		local usesFreeGrant = false
+		if type(categoryChoice) == "string" and Augments.ByCategory[categoryChoice] then
+			if profile.freeTargetedOpenUsed ~= true then
+				usesFreeGrant = true
+			else
+				targetCost = 25 * (tonumber(tier.augments) or 1)
+				profile.salvage = profile.salvage or {}
+				local bal = tonumber(profile.salvage.scrap) or 0
+				if bal < targetCost then
+					workspace:SetAttribute("GF_CacheRejected", string.format("targeting needs %d scrap", targetCost))
+					return {}
+				end
+			end
+		end
 		rolled = CacheService.roll(tier.id, profile.ownedAugments, nil, categoryChoice, weightsOverride)
 		if #rolled == 0 then
 			workspace:SetAttribute("GF_CacheRejected", "nothing left to roll")
 			return {}
+		end
+		-- Charge only after a successful draw, before the durable commit: a journaled retry replays the
+		-- receipt and never re-charges, and a rejected roll never charges.
+		if usesFreeGrant then
+			profile.freeTargetedOpenUsed = true
+		elseif targetCost > 0 then
+			profile.salvage.scrap = (tonumber(profile.salvage.scrap) or 0) - targetCost
 		end
 		-- First mission Rare guarantee: the first successful mission cache contains at least one Rare+ item.
 		if instance and instance.guaranteedRare == true then
@@ -235,6 +260,8 @@ function CacheService.openFromInventory(player: Player, tierId: string, category
 			uid = instanceUid,
 			tier = tier.id,
 			category = categoryChoice,
+			targetingCost = targetCost,
+			targetingFreeGrant = usesFreeGrant,
 			source = instance and tostring(instance.source) or "inventory",
 			createdAt = os.time(),
 			status = "committed",
