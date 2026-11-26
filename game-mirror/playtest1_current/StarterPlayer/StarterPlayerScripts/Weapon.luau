@@ -93,6 +93,14 @@ local function muzzlePosition(): Vector3?
 	if not hand or not root then
 		return nil
 	end
+	-- prefer the viewmodel's actual muzzle part when the premium library is in use —
+	-- fx originate at the real barrel tip instead of a hand+facing approximation
+	if viewmodel then
+		local muzzlePart = viewmodel:FindFirstChild("Muzzle", true)
+		if muzzlePart and muzzlePart:IsA("BasePart") then
+			return muzzlePart.Position
+		end
+	end
 	local facing = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
 	if facing.Magnitude < 0.01 then
 		facing = Vector3.new(0, 0, -1)
@@ -277,10 +285,23 @@ local function clearViewmodel()
 	end
 end
 
+local WeaponVisuals = require(game:GetService("ReplicatedStorage"):WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("WeaponVisuals"))
+
 local function buildViewmodel(weapon: any)
 	clearViewmodel()
 	local char = player.Character
 	if not char then
+		return
+	end
+	-- premium per-weapon library: distinct silhouettes, faction palette, muzzle parts.
+	-- the returned model uses the same Grip-root/PrimaryPart convention as the legacy
+	-- placeholder, so updateViewmodel positioning and all combat behavior are untouched.
+	local premium = WeaponVisuals.build(weapon.id)
+	if premium then
+		premium.Parent = char
+		viewmodel = premium
+		local length = tonumber(weapon.range) and math.clamp(weapon.range / 60, 1.4, 2.4) or 1.8
+		char:SetAttribute("GF_ViewmodelLength", length)
 		return
 	end
 	local model = Instance.new("Model")
