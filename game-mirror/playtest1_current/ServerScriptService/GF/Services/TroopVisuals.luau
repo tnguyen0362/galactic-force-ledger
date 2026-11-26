@@ -103,12 +103,20 @@ local function basePackage(): { Piece }
 		P("Wedge", 0.62, 0.9, 0.4, "LowerLegL", 0, 0, -0.3, OBSIDIAN, 0, 90, 0),
 		P("Wedge", 0.62, 0.9, 0.4, "LowerLegR", 0, 0, -0.3, OBSIDIAN, 0, 90, 0),
 
-		-- === ENERGY RIFLE — receiver + barrel + glowing cell, riding weapon-hold hand ===
-		P("Box", 0.26, 0.38, 1.45, "HandR", 0, 0.05, -0.72, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
-		P("Cylinder", 0.13, 1.15, 0.13, "HandR", 0, 0.12, -1.85, VIOLETGRAY, 90, 0, 0, Enum.Material.Metal),
-		P("Box", 0.16, 0.2, 0.36, "HandR", 0, -0.15, -0.68, ENERGY, 0, 0, 0, Enum.Material.Neon),
-		-- rear stock
-		P("Box", 0.2, 0.3, 0.45, "HandR", 0, -0.02, 0.12, OBSIDIAN),
+		-- === ASCENDANCY ENERGY RIFLE — alien industrial language: tapered angular housing,
+		-- shrouded barrel, recessed violet energy channel, swept rear assembly ===
+		-- tapered main housing: wedge nose sloping down-forward, layered over the receiver core
+		P("Wedge", 0.28, 0.34, 1.1, "HandR", 0, 0.06, -0.85, OBSIDIAN, 0, -90, 0, Enum.Material.Metal),
+		P("Box", 0.24, 0.3, 0.7, "HandR", 0, 0.02, -0.35, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
+		-- angular barrel shroud — the barrel is encased, not exposed (alien manufacturing)
+		P("Wedge", 0.18, 0.2, 0.85, "HandR", 0, 0.1, -1.55, VIOLETGRAY, 0, -90, 0, Enum.Material.Metal),
+		P("Cylinder", 0.09, 0.3, 0.09, "HandR", 0, 0.1, -1.95, OBSIDIAN2, 90, 0, 0, Enum.Material.Metal),
+		-- recessed violet energy channel — a slit of light along the flank, not a bolted box
+		P("Box", 0.03, 0.06, 0.8, "HandR", -0.13, 0.08, -0.7, ENERGY, 0, 0, 0, Enum.Material.Neon),
+		P("Box", 0.03, 0.06, 0.8, "HandR", 0.13, 0.08, -0.7, ENERGY, 0, 0, 0, Enum.Material.Neon),
+		-- swept rear assembly — angular, echoing the elongated helmet profile
+		P("Wedge", 0.22, 0.28, 0.5, "HandR", 0, 0, 0.18, OBSIDIAN, 0, 90, 0, Enum.Material.Metal),
+		P("Box", 0.16, 0.2, 0.3, "HandR", 0, -0.12, 0.05, OBSIDIAN2),
 	}
 end
 
@@ -150,7 +158,7 @@ local PACKAGES: { [string]: any } = {
 			P("Box", 0.45, 0.55, 1.9, "HandR", 0, 0.02, -0.95, OBSIDIAN, 0, 0, 0, Enum.Material.Metal),
 			P("Cylinder", 0.5, 0.4, 0.5, "HandR", 0, -0.3, -1.1, VIOLETGRAY, 0, 0, 90, Enum.Material.Metal),
 		},
-		removeIndexes = { 30, 31, 32, 33 }, -- remove base rifle pieces (heavy weapon replaces)
+		removeIndexes = { 30, 31, 32, 33, 34, 35, 36, 37 }, -- remove base rifle pieces (heavy weapon replaces)
 	},
 
 	-- MARKSMAN: compact armor + advanced optics + long precision weapon
