@@ -35,7 +35,7 @@ end
 local fire = mkButton("FIRE", 90, 170, 64)
 local reload = mkButton("R", 165, 110, 52)
 local dodge = mkButton("DODGE", 90, 90, 52)
-local jump = mkButton("JUMP", 165, 190, 52)
+-- no custom jump button: the Roblox default touch UI already renders one — a second was duplication.
 local interact = mkButton("USE", 240, 140, 52)
 
 -- wire buttons into the semantic input layer by firing the same virtual inputs other scripts read
@@ -50,7 +50,6 @@ local function bindKey(button: TextButton, key: Enum.KeyCode)
 end
 bindKey(reload, Enum.KeyCode.R)
 bindKey(dodge, Enum.KeyCode.LeftControl)
-bindKey(jump, Enum.KeyCode.Space)
 bindKey(interact, Enum.KeyCode.E)
 fire.InputBegan:Connect(function()
 	VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)

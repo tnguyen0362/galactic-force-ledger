@@ -1296,10 +1296,14 @@ local function buildArchive(position)
 	return model
 end
 
-function ObjectiveService.setup(position, template)
-	if objective then objective:Destroy() end
+function ObjectiveService.resetState()
 	progress = 0
 	complete = false
+end
+
+function ObjectiveService.setup(position, template)
+	if objective then objective:Destroy() end
+	ObjectiveService.resetState()
 	-- A fresh mission gets its own rewards ledger, so seq restarts and claim-once is scoped per mission.
 	pcall(function()
 		require(script.Parent.RewardLedgerService).begin(template)

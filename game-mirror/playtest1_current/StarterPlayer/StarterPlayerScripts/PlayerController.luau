@@ -48,6 +48,9 @@ local character: Model? = nil
 local padMove = Vector2.zero
 local padLook = Vector2.zero
 local touchMove = Vector2.zero
+-- touch input: fed by the dynamic thumbstick in Controller.luau via setTouchMove.
+-- (no Roblox default stick exists in this game — PlayerModule is deliberately absent —
+-- so the custom stick is the only touch input; it is fixed, not inverted, and dynamic.)
 local lookDelta = Vector2.zero -- mouse, consumed per frame (no dt scaling)
 
 -- orientation state

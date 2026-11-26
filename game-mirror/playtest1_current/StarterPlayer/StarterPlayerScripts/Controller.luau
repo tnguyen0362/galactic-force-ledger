@@ -118,20 +118,26 @@ end)
 
 -- ---------------------------------------------------------------------------
 -- touch movement stick: the one piece of touch UI owned here; feeds PlayerController
--- ---------------------------------------------------------------------------
+-- dynamic touch movement stick: appears wherever the left-thumb lands (the UX pattern players
+-- know from the Roblox default stick, which does not exist in this game — PlayerModule is absent).
+-- the finger that starts the stick owns it (multi-touch safe: other fingers fire/jump/use).
+-- INPUT ORIENTATION: screen Y grows downward but forward input is positive-Y in the movement
+-- pipeline — the vector MUST be flipped here. the pre-fix build fed raw screen delta, so pushing
+-- the stick up walked the character backward (measured inverted by the owner).
 local function buildTouchStick()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "GFControllerStick"
 	gui.ResetOnSpawn = false
 	gui.Parent = player:WaitForChild("PlayerGui")
 
+	local RADIUS = 62 -- px of travel for full magnitude
 	local base = Instance.new("Frame")
 	base.Name = "Stick"
 	base.Size = UDim2.fromOffset(150, 150)
-	base.Position = UDim2.new(0, 28, 1, -178)
 	base.BackgroundColor3 = Color3.fromRGB(18, 28, 38)
 	base.BackgroundTransparency = 0.55
 	base.BorderSizePixel = 0
+	base.Visible = false
 	base.Parent = gui
 	local bc = Instance.new("UICorner")
 	bc.CornerRadius = UDim.new(1, 0)
@@ -148,32 +154,51 @@ local function buildTouchStick()
 	kc.CornerRadius = UDim.new(1, 0)
 	kc.Parent = knob
 
+	local activeTouch: InputObject? = nil
 	local centre = Vector2.zero
-	local held = false
-	base.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch then
-			held = true
-			centre = Vector2.new(base.AbsolutePosition.X + base.AbsoluteSize.X / 2, base.AbsolutePosition.Y + base.AbsoluteSize.Y / 2)
-		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
-		if not held or input.UserInputType ~= Enum.UserInputType.Touch then
+
+	local function feed(input: InputObject)
+		local d = Vector2.new(input.Position.X, input.Position.Y) - centre
+		local mag = math.min(1, d.Magnitude / RADIUS)
+		local n = if d.Magnitude > 0.01 then d.Unit else Vector2.zero
+		-- screen-space (x right, y down) -> input-space (x right, y forward): negate Y
+		PlayerController.setTouchMove(Vector2.new(n.X, -n.Y) * mag)
+		knob.Position = UDim2.fromOffset(75 - 29 + n.X * mag * 44, 75 - 29 + n.Y * mag * 44)
+	end
+
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed or activeTouch then
 			return
 		end
-		local d = Vector2.new(input.Position.X, input.Position.Y) - centre
-		local mag = math.min(1, d.Magnitude / 55)
-		local n = if d.Magnitude > 0.01 then d.Unit else Vector2.zero
-		PlayerController.setTouchMove(n * mag)
-		knob.Position = UDim2.fromOffset(75 - 29 + n.X * mag * 44, 75 - 29 + n.Y * mag * 44)
+		if input.UserInputType ~= Enum.UserInputType.Touch then
+			return
+		end
+		-- left 45% of the screen is the movement zone (the camera drag owns the right)
+		if input.Position.X > workspace.CurrentCamera.ViewportSize.X * 0.45 then
+			return
+		end
+		activeTouch = input
+		centre = Vector2.new(input.Position.X, input.Position.Y)
+		base.Position = UDim2.fromOffset(centre.X - 75, centre.Y - 75)
+		base.Visible = true
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if input ~= activeTouch then
+			return
+		end
+		feed(input)
 	end)
 	UserInputService.InputEnded:Connect(function(input)
-		if held and input.UserInputType == Enum.UserInputType.Touch then
-			held = false
-			PlayerController.setTouchMove(Vector2.zero)
-			knob.Position = UDim2.new(0.5, -29, 0.5, -29)
+		if input ~= activeTouch then
+			return
 		end
+		activeTouch = nil
+		PlayerController.setTouchMove(Vector2.zero)
+		knob.Position = UDim2.new(0.5, -29, 0.5, -29)
+		base.Visible = false
 	end)
 end
+
 
 if touchMode then
 	buildTouchStick()

@@ -71,7 +71,10 @@ end
 -- bounds — ordinary infantry never reaches zero dispersion.
 local ACQUIRE_RATES = { Easy = 0.35, Normal = 0.6, Hard = 0.9, Extreme = 1.2 }
 local LOSS_RATE = 0.8 -- q decay rate when visual contact is broken
-local SIGMA_FLOOR = { Easy = 1.9, Normal = 1.3, Hard = 0.9, Extreme = 0.6 } -- studs at 50 studs baseline
+-- calibrated against measured hit rates (2026-11-26): strafing targets at 45 studs were hit only
+-- 11% of the time at the original floor values — no battlefield pressure. these values target
+-- roughly 20-30% against strafing exposure and 45-60% against stationary exposure on Normal.
+local SIGMA_FLOOR = { Easy = 1.7, Normal = 1.0, Hard = 0.7, Extreme = 0.45 } -- studs at 50 studs baseline
 local SIGMA_INITIAL = 4.2 -- acquisition dispersion at q=0, scaled by (1-q)^1.5 and range
 local HIT_RADIUS = 1.15 -- torso half-extent in studs: error inside this is a hit
 local function difficultyOf(actor: any): string
@@ -1501,7 +1504,7 @@ local function tickActor(model: Model, actor: any, dt: number)
 				local obsUncertainty = mem and (mem.uncertainty + (os.clock() - mem.observedAt) * 1.1) or 6
 				local sigma = (SIGMA_FLOOR[diff] or SIGMA_FLOOR.Normal) * rangeScale
 					+ SIGMA_INITIAL * ((1 - q) ^ 1.5) * rangeScale
-					+ omega * dist * 0.9 -- motion tracking error grows with angular velocity and range
+					+ omega * dist * 0.7 -- motion tracking error grows with angular velocity and range
 					+ obsUncertainty * 0.18
 					+ (actor.suppression or 0) * 2.2 -- suppressed shooters shake
 				-- rolling targets are genuinely harder: evasive motion multiplies the motion term

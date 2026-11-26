@@ -380,7 +380,21 @@ function StationService.resetMission(missionDifficulty: string, template: string
 	-- new mission's own spawns (including elimination targets) are the only ones alive.
 	EnemyService.clearAll()
 	clearUntaggedBosses()
-	ObjectiveService.setup(RELAY, template)
+	-- operation mode: conquest templates are generated as multi-site operations on the real
+	-- geography; the legacy single-site objective (and its outpost) must not double-build.
+	local opMode = workspace:GetAttribute("GF_OperationMode") == true
+		and type(template) == "string" and string.sub(template, 1, 9) == "CONQUEST_"
+	if not opMode then
+		ObjectiveService.setup(RELAY, template)
+	else
+		-- completion flags still flow through the legacy singleton's complete() handoff,
+		-- but no physical objective is constructed — the operation layer owns the sites.
+		ObjectiveService.resetState()
+		workspace:SetAttribute("GF_WarCommitted", false)
+		pcall(function()
+			require(script.Parent.RewardLedgerService).begin(template)
+		end)
+	end
 	EncounterDirector.reset()
 	pcall(function()
 		require(script.Parent.CacheService).resetMission()
@@ -504,6 +518,30 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 		local plan = bfOk and bfTerrain.currentPlan or nil
 		if workspace:GetAttribute("GF_BattlefieldGen") == true and plan and plan.nodes and plan.nodes.lz then
 			spawnTarget = Vector3.new(plan.nodes.lz.x, 0, plan.nodes.lz.z)
+		end
+	end
+	-- Operation mode (hybrid procedural operations, directive 2026-11-26): when enabled and the
+	-- template is a conquest variant, the authoritative operation layer generates the mission
+	-- layout on the real geography — deployment region, objective sites, extraction — and the
+	-- player deploys at the operation deployment region (~1km separation from primary).
+	if workspace:GetAttribute("GF_OperationMode") == true and template and string.sub(template, 1, 9) == "CONQUEST_" then
+		local opOk, opErr = pcall(function()
+			local OperationService = require(script.Parent.OperationService)
+			local seed = math.floor(os.clock() * 1000) % 90000 + 1000
+			-- honor a pinned seed for deterministic validation when set
+			local pinned = workspace:GetAttribute("GF_OperationSeed")
+			if type(pinned) == "number" and pinned > 0 then seed = pinned end
+			local def = OperationService.generate(seed, template, tostring(missionDifficulty or difficulty or "Normal"))
+			if def then
+				OperationService.activate(def)
+			else
+				warn("OperationService: generation returned nil — falling back to legacy mission")
+			end
+		end)
+		if not opOk then warn("OperationService deploy integration failed:", opErr) end
+		local opLZ = workspace:GetAttribute("GF_OperationLZ")
+		if typeof(opLZ) == "Vector3" then
+			spawnTarget = Vector3.new(opLZ.X, 0, opLZ.Z)
 		end
 	end
 	local spawnPoint = groundPoint(spawnTarget)

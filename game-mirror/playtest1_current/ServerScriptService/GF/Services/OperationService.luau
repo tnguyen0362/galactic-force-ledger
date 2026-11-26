@@ -398,6 +398,24 @@ function OperationService.activate(def: OperationDefinition): boolean
 
 	MissionSites.build("extraction_pad", def.extractionRegion, { parent = sitesFolder })
 
+	-- destruction wiring: destroy-mechanic objectives complete when their GFStructure part is
+	-- destroyed by the shared combat pipeline (listens instead of polling, no CombatService edits)
+	for _, node in def.objectives do
+		if node.mechanic == "destroy" and node.site then
+			for _, d in node.site:GetDescendants() do
+				if d:IsA("BasePart") and d:GetAttribute("GFStructure") == true then
+					local conn
+					conn = d:GetAttributeChangedSignal("GFDestroyed"):Connect(function()
+						if d:GetAttribute("GFDestroyed") == true then
+							if conn then conn:Disconnect() end
+							OperationService.structureDestroyed(d)
+						end
+					end)
+				end
+			end
+		end
+	end
+
 	Workspace:SetAttribute("GF_ExtractionLZ", def.extractionRegion)
 	Workspace:SetAttribute("GF_OperationLZ", def.deploymentRegion)
 	Workspace:SetAttribute("GF_OperationId", def.operationId)
@@ -442,6 +460,32 @@ end
 
 function OperationService.current(): OperationDefinition?
 	return current
+end
+
+-- boot wiring: interaction fan-out for operation-owned target strings. The legacy
+-- ObjectiveService whitelist deliberately untouched — operation sites register their own listener.
+local OP_TARGETS = {
+	CaptureConsole = true,
+	CommsRelay = true,
+	SupplyCache = true,
+}
+
+function OperationService.start()
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local remotes = ReplicatedStorage:WaitForChild("GF"):WaitForChild("Remotes")
+	local interact = remotes:WaitForChild("InteractRequest")
+	interact.OnServerEvent:Connect(function(player, targetString)
+		if type(targetString) ~= "string" or not OP_TARGETS[targetString] then return end
+		if not current then return end
+		OperationService.interact(player, targetString)
+	end)
+	-- services bound for garrison spawns + completion handoff
+	pcall(function()
+		OperationService.bind({
+			EncounterDirector = require(script.Parent.EncounterDirector),
+			ObjectiveService = require(script.Parent.ObjectiveService),
+		})
+	end)
 end
 
 function OperationService.reset()

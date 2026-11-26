@@ -81,6 +81,7 @@ GalacticWarService.start()
 	SettingsService.start()
 TutorialService.start()
 require(ServerScriptService.GF.Services.SupplyService).start()
+require(ServerScriptService.GF.Services.OperationService).start()
 task.defer(function()
 	local ok, err = pcall(StationWarTable.start)
 	if not ok then warn("[GF] war table dressing failed: " .. tostring(err)) end
