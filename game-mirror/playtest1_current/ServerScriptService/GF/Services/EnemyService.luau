@@ -1233,25 +1233,48 @@ local function tickActor(model: Model, actor: any, dt: number)
 		-- pinned soldiers stay in cover rather than re-exposing; no rapid repetitive peeking.
 		local coverHoldTime = prof.coverCommit * ((actor.suppression or 0) >= SUPPRESS_ACT and 2.2 or 1)
 		if not actor.coverPos or (actor.coverPos - origin).Magnitude < 2 or (os.clock() - (actor.coverAt or 0)) > coverHoldTime then
-			local bestPos, bestScore = nil, -1
+			local bestPos, bestScore = nil, -math.huge
 			local perp = Vector3.new(-flat.Unit.Z, 0, flat.Unit.X)
+			local testParams = RaycastParams.new()
+			testParams.FilterType = Enum.RaycastFilterType.Exclude
+			testParams.FilterDescendantsInstances = { model, targetCharacter }
+			testParams.IgnoreWater = true
+			local chest = targetRoot.Position + Vector3.new(0, 1.5, 0)
 			for _, side in ipairs({ 1, -1 }) do
 				for _, reach in ipairs({ 8, 16, 24 }) do
 					local cand = origin + perp * side * reach + flat.Unit * math.min(flat.Magnitude * 0.4, 12)
-					-- cover test: geometry between candidate eye height and the target's chest
-					local testParams = RaycastParams.new()
-					testParams.FilterType = Enum.RaycastFilterType.Exclude
-					testParams.FilterDescendantsInstances = { model, targetCharacter }
-					testParams.IgnoreWater = true
-					local eye = cand + Vector3.new(0, 2.5, 0)
-					local chest = targetRoot.Position + Vector3.new(0, 1.5, 0)
-					local coverHit = workspace:Raycast(eye, chest - eye, testParams)
-					if coverHit then
-						-- blocked sightline = cover; score prefers nearer nodes. squad blackboard
-						-- reservations (spec section 21) replace the old proximity scan: claims are
-						-- owned, expire, and release on death rather than being positional guesses.
+					-- cheap filter first (spec: expensive checks only after inexpensive filtering):
+					-- one ray at chest height must show SOME ballistic obstruction
+					local eyeMid = cand + Vector3.new(0, 1.6, 0)
+					if workspace:Raycast(eyeMid, chest - eyeMid, testParams) then
+						-- full quality evaluation (spec section 21):
+						-- protection: fraction of combat-pose samples (knee/chest/head) obstructed
+						local protected = 0
+						for _, h in ipairs({ 0.6, 1.6, 2.6 }) do
+							local eye = cand + Vector3.new(0, h, 0)
+							if workspace:Raycast(eye, chest - eye, testParams) then
+								protected += 1
+							end
+						end
+						local protection = protected / 3
+						-- firing opportunity: from a half-step toward the threat (the natural peek),
+						-- can the soldier actually engage? total concealment is retreat cover, not
+						-- combat cover — unsuitable for sustained fighting per the spec.
+						local peek = cand + flat.Unit * 1.8 + Vector3.new(0, 1.6, 0)
+						local firingOpportunity = workspace:Raycast(peek, chest - peek, testParams) == nil and 1 or 0
+						-- range suitability: gaussian preference for the archetype's engagement distance
+						local candDist = (cand - targetRoot.Position).Magnitude
+						local rangeScore = rangeQuality(candDist, def.attackRange, prof)
+						-- reservation conflict + travel cost
 						local claimed = NPCSquads.coverConflict(model, cand)
-						local score = (claimed and 0 or 10) + (24 - reach)
+						local travelCost = reach / 24
+						-- utility (spec weights, role-tuned): marksmen prize range+firing, vanguards
+						-- barely use cover at all, rifles want the balanced mix
+						local score = 4.0 * protection
+							+ 3.0 * firingOpportunity
+							+ 2.0 * rangeScore
+							- 1.5 * travelCost
+							- (claimed and 5 or 0)
 						if score > bestScore then
 							bestScore = score
 							bestPos = cand

@@ -75,6 +75,15 @@ function BakeTerrain.write(opts)
 						row[cx] = H
 						local rel = H - origin.Y
 						if rel > 0 then
+							-- adaptive shell depth: the exposed face toward lower neighbors is what
+							-- needs covering. flat ground gets MIN_SHELL, cliff edges keep up to SHELL.
+							local drop = 0
+							local hx1 = sample(wx + CELL, wz)
+							local hx0 = sample(wx - CELL, wz)
+							local hz1 = sample(wx, wz + CELL)
+							local hz0 = sample(wx, wz - CELL)
+							drop = math.max(drop, H - hx1, H - hx0, H - hz1, H - hz0)
+							local shellN = math.clamp(math.ceil(drop / CELL) + 1, 2, SHELL)
 							local dx = prevH and ((H - prevH) / CELL) or 0
 							local dz = (prevRow and (prevRow :: any)[cx]) and ((H - (prevRow :: any)[cx]) / CELL) or 0
 							local slope = math.sqrt(dx * dx + dz * dz)
@@ -90,7 +99,7 @@ function BakeTerrain.write(opts)
 							local col = mats[cx]
 							local occCol = occ[cx]
 							local topCell = math.min(math.ceil(rel / CELL), hh)
-							local bottomCell = math.max(1, topCell - SHELL)
+							local bottomCell = math.max(1, topCell - shellN)
 							for cy = topCell, bottomCell, -1 do
 								local voxBottom = (cy - 1) * CELL
 								local fill = (rel - voxBottom) / CELL

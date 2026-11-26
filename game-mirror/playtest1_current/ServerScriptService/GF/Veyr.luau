@@ -118,10 +118,20 @@ local function nearest(state)
 	end
 	return best, bestDist
 end
-local function groundY(pos)
+local function groundY(pos, model)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { model }
+	params.IgnoreWater = true
+	-- terrain-inclusive pass: vegetation canopy otherwise reports false footing
 	local hit = workspace:Raycast(pos + Vector3.new(0, 60, 0), Vector3.new(0, -220, 0), params)
+	if hit and hit.Instance and not hit.Instance:IsA("Terrain") then
+		local params2 = RaycastParams.new()
+		params2.FilterType = Enum.RaycastFilterType.Include
+		params2.FilterDescendantsInstances = { workspace.Terrain }
+		local hit2 = workspace:Raycast(pos + Vector3.new(0, 60, 0), Vector3.new(0, -220, 0), params2)
+		if hit2 then return hit2.Position.Y end
+	end
 	return hit and hit.Position.Y or pos.Y
 end
 local function burst(state)
@@ -240,7 +250,13 @@ local function step(state, dt)
 	local root = state.root
 	local flat = (target.root.Position - root.Position) * Vector3.new(1, 0, 1)
 	if flat.Magnitude > 0.4 then
-		root.CFrame = CFrame.lookAt(root.Position, root.Position + flat.Unit, Vector3.yAxis)
+		-- bounded turning: bosses rotate at a deliberate rate instead of snapping
+		local wantYaw = math.atan2(-flat.X, -flat.Z)
+		local curYaw = select(2, root.CFrame:ToOrientation())
+		local diff = (wantYaw - curYaw + math.pi) % (2 * math.pi) - math.pi
+		local maxStep = 1.6 * dt -- rad/s turn rate: heavy deliberate commander
+		local stepYaw = math.clamp(diff, -maxStep, maxStep)
+		root.CFrame = CFrame.new(root.Position) * CFrame.Angles(0, curYaw + stepYaw, 0)
 	end
 	if phase == 2 and now >= state.nextLance then
 		state.nextLance = now + 7
@@ -248,8 +264,8 @@ local function step(state, dt)
 		return
 	end
 	-- Engagement gate: no burst fire at a squad that is still at the landing zone.
-	local nearest, nearestDist = nearest(alivePlayers())
-	local engaged = nearest ~= nil and nearestDist < 120
+	local nearestPl, nearestDist = nearest(state)
+	local engaged = nearestPl ~= nil and nearestDist < 120
 	if engaged and now >= state.nextBurst then
 		state.nextBurst = now + (phase == 2 and 2.4 or 3.4)
 		burst(state)
@@ -258,7 +274,7 @@ local function step(state, dt)
 	if dist > 26 then
 		local move = flat.Unit * math.min(state.speed * dt, dist - 24)
 		local next = root.Position + move
-		root.CFrame = CFrame.new(next.X, groundY(next) + 9, next.Z) * (root.CFrame - root.CFrame.Position)
+		root.CFrame = CFrame.new(next.X, groundY(next, state.model) + 9, next.Z) * (root.CFrame - root.CFrame.Position)
 		state.walk = (state.walk or 0) + dt * 6
 	end
 end
