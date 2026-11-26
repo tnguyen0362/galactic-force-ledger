@@ -281,6 +281,40 @@ RunService.Heartbeat:Connect(function(dt)
 		return
 	end
 
+	-- traversal: vault (low obstacle hop) and climb (ledge pull-up) — attribute edge-driven.
+	-- vault: legs tuck forward, torso pitches over the obstacle. climb: arms reach high, legs draw up.
+	local vaultAt = character:GetAttribute("GF_VaultAt")
+	local vaultKind = character:GetAttribute("GF_VaultKind") or "vault"
+	local vaultT = vaultAt and (os.clock() - vaultAt) or 99
+	local vaultDur = vaultKind == "climb" and 0.6 or 0.42
+	if vaultT < vaultDur then
+		local f = vaultT / vaultDur
+		if vaultKind == "climb" then
+			-- climb: arms overhead pulling, knees drawn high, torso upright against the face
+			local pull = math.sin(f * math.pi)
+			setJoint("LeftShoulder", CFrame.Angles(-2.6 + f * 0.8, 0, math.rad(12)))
+			setJoint("RightShoulder", CFrame.Angles(-2.6 + f * 0.8, 0, math.rad(-12)))
+			setJoint("LeftElbow", CFrame.Angles(-0.4 - pull * 1.2, 0, 0))
+			setJoint("RightElbow", CFrame.Angles(-0.4 - pull * 1.2, 0, 0))
+			setJoint("LeftHip", CFrame.Angles(1.4 * pull, 0, 0))
+			setJoint("RightHip", CFrame.Angles(1.2 * pull, 0, 0))
+			setJoint("LeftKnee", CFrame.Angles(-1.8 * pull, 0, 0))
+			setJoint("RightKnee", CFrame.Angles(-1.6 * pull, 0, 0))
+			setJoint("Waist", CFrame.Angles(-0.15 * pull, 0, 0))
+		else
+			-- vault: legs sweep forward through the middle of the window, torso leans over
+			local sweep = math.sin(f * math.pi)
+			setJoint("LeftHip", CFrame.Angles(1.1 * sweep, 0, 0))
+			setJoint("RightHip", CFrame.Angles(1.3 * sweep, 0, 0))
+			setJoint("LeftKnee", CFrame.Angles(-1.5 * sweep, 0, 0))
+			setJoint("RightKnee", CFrame.Angles(-1.3 * sweep, 0, 0))
+			setJoint("Waist", CFrame.Angles(0.4 * sweep, 0, 0))
+			setJoint("LeftShoulder", CFrame.Angles(-0.6 * sweep, 0, math.rad(8)))
+			setJoint("RightShoulder", CFrame.Angles(-0.7 * sweep, 0, math.rad(-8)))
+		end
+		return
+	end
+
 	-- revival rise: after downed clears, blend up from the kneel over 1.1s
 	local reviveT = reviveClock and (os.clock() - reviveClock) or 99
 	if reviveT < 1.1 then
