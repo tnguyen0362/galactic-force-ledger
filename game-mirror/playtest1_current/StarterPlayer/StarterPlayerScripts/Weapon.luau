@@ -402,7 +402,7 @@ local function updateViewmodel(dt: number?)
 	local cam = workspace.CurrentCamera
 	local aimPitch = cam and math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1)) or 0
 	local sprinting = char:GetAttribute("Sprinting") == true
-	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5, nil, aimPitch, sprinting, nil, state.switchBlend or 0, state.lastShotAt))
+	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5, nil, aimPitch, sprinting, nil, state.switchBlend or 0, state.lastShotAt, state.weaponId))
 	-- aim-state uplink: the server animator has no camera — pitch must replicate for the
 	-- torso decomposition and remote-observer correctness. throttled: only while aiming,
 	-- max ~8Hz, only on meaningful change.
@@ -508,7 +508,7 @@ local function updateRemoteViewmodels()
 		if vm and root then
 			-- shared transform with the server IK — remote players' weapons stay in their hands
 			local WeaponPose = require(game:GetService("ReplicatedStorage"):WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("WeaponPose"))
-			vm:PivotTo(WeaponPose.weaponWorld(root.CFrame, char:GetAttribute("Aiming") == true, nil, nil, char:GetAttribute("Sprinting") == true, char:GetAttribute("GF_Reloading") == true, nil, char:GetAttribute("GF_LastShotAt")))
+			vm:PivotTo(WeaponPose.weaponWorld(root.CFrame, char:GetAttribute("Aiming") == true, nil, nil, char:GetAttribute("Sprinting") == true, char:GetAttribute("GF_Reloading") == true, nil, char:GetAttribute("GF_LastShotAt"), wid))
 		end
 	end
 	-- cleanup for characters that left

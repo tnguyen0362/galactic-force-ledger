@@ -54,6 +54,14 @@ local POSES = {
 	sprint = {
 		cf = CFrame.new(0.45, -0.35, -0.45) * CFrame.Angles(0, math.rad(30), 0) * CFrame.Angles(math.rad(-35), 0, 0),
 	},
+	-- heavy weapons (LMG/GL/RL): carried lower and tighter to the body — visible weight management
+	sprintHeavy = {
+		cf = CFrame.new(0.38, -0.5, -0.35) * CFrame.Angles(0, math.rad(22), 0) * CFrame.Angles(math.rad(-48), 0, 0),
+	},
+	-- pistols/compact: high relaxed carry, minimal interference with the run
+	sprintCompact = {
+		cf = CFrame.new(0.5, -0.15, -0.5) * CFrame.Angles(0, math.rad(38), 0) * CFrame.Angles(math.rad(-20), 0, 0),
+	},
 	-- low-ready: numerically solved for two-arm reachability (offline reach study):
 	-- weapon yawed 15 deg cross-body, pitched 10 deg down, receiver at chest-right.
 	-- REQUIRES the bladed torso stance (25 deg waist yaw when armed) — without it the
@@ -70,12 +78,15 @@ end
 -- Compute the weapon world transform.
 -- rootCf: HumanoidRootPart world CFrame. aiming: posture selector.
 -- aimYaw/aimPitch: optional torso-independent aim angles (rad) for upper-body aim decomposition.
-function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?, reloading: boolean?, switchBlend: number?, lastShotAt: number?): CFrame
+function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?, reloading: boolean?, switchBlend: number?, lastShotAt: number?, weaponId: string?): CFrame
 	local pose = POSES.ready
 	if aiming then
 		pose = POSES.aim
 	elseif sprinting then
-		pose = POSES.sprint
+		-- spec sec.53: sprint carry differs by weight class — visibly managing equipment weight
+		local heavy = weaponId and (weaponId:find("LMG") or weaponId:find("GL") or weaponId:find("RL"))
+		local compact = weaponId and (weaponId:find("P0") or weaponId:find("SMG"))
+		pose = heavy and POSES.sprintHeavy or (compact and POSES.sprintCompact or POSES.sprint)
 	end
 	local cf = rootCf * pose.cf
 	if switchBlend and switchBlend > 0 then

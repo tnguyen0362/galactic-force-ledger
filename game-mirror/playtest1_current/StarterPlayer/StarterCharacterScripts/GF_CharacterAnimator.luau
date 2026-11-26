@@ -140,7 +140,7 @@ local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: bo
 	if switchT < 0.55 then
 		switchBlend = switchT < 0.27 and (switchT / 0.27) or (1 - (switchT - 0.27) / 0.28)
 	end
-	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming, nil, aimPitch, sprinting, reloading, switchBlend, character:GetAttribute("GF_LastShotAt"))
+	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming, nil, aimPitch, sprinting, reloading, switchBlend, character:GetAttribute("GF_LastShotAt"), character:GetAttribute("GF_EquippedWeapon"))
 	local profile = WeaponPose.gripProfile(character:GetAttribute("GF_EquippedWeapon") or "")
 	local primaryTarget = WeaponPose.gripWorld(weaponCf, profile.primaryGrip)
 	local supportTarget = WeaponPose.gripWorld(weaponCf, profile.supportGrip)
