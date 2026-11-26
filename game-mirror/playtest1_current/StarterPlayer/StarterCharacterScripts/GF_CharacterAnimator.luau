@@ -119,7 +119,7 @@ local function ccdPass(inner: string, outer: string, endPart: BasePart, targetPo
 end
 
 -- Compute grip targets and solve both arms. Called from the heartbeat when a weapon is equipped.
-local function solveWeaponArms(aiming: boolean)
+local function solveWeaponArms(aiming: boolean, aimPitch: number?, sprinting: boolean?)
 	local torso = character:FindFirstChild("UpperTorso")
 	local rua = character:FindFirstChild("RightUpperArm")
 	local rla = character:FindFirstChild("RightLowerArm")
@@ -128,7 +128,7 @@ local function solveWeaponArms(aiming: boolean)
 	local lla = character:FindFirstChild("LeftLowerArm")
 	local lhand = character:FindFirstChild("LeftHand")
 	if not (torso and rua and rla and rhand and lua and lla and lhand) then return end
-	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming)
+	local weaponCf = WeaponPose.weaponWorld(root.CFrame, aiming, nil, aimPitch, sprinting)
 	local profile = WeaponPose.gripProfile(character:GetAttribute("GF_EquippedWeapon") or "")
 	local primaryTarget = WeaponPose.gripWorld(weaponCf, profile.primaryGrip)
 	local supportTarget = WeaponPose.gripWorld(weaponCf, profile.supportGrip)
@@ -236,7 +236,12 @@ RunService.Heartbeat:Connect(function(dt)
 		if hasWeapon then
 			-- Phase 12: weapon leads, arms solve onto grip points via two-bone IK.
 			-- Replaces both the old free-swing and the static aim pose whenever armed.
-			solveWeaponArms(aiming)
+			local cam = workspace.CurrentCamera
+			local pitch = 0
+			if aiming and cam then
+				pitch = math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1))
+			end
+			solveWeaponArms(aiming, pitch, sprinting)
 		elseif aiming then
 			setJoint("RightShoulder", CFrame.Angles(-1.35, 0, math.rad(-8)))
 			setJoint("RightElbow", CFrame.Angles(-0.35, 0, 0))
@@ -253,6 +258,12 @@ RunService.Heartbeat:Connect(function(dt)
 		-- Bladed stance when armed (Phase 12): torso yawed 25 deg brings the left shoulder
 		-- forward so the support grip is reachable — solved offline with the pose constants.
 		local stanceYaw = hasWeapon and math.rad(-25) or 0
+		if aiming then
+			local cam2 = workspace.CurrentCamera
+			if cam2 then
+				lean = lean - math.asin(math.clamp(cam2.CFrame.LookVector.Y, -1, 1)) * 0.3
+			end
+		end
 		setJoint("Waist", CFrame.Angles(math.rad(2) * moveBlend - lean, stanceYaw - strafeBlend * 0.18, strafeBlend * 0.06))
 		if crouching then
 			-- Crouch: hips and knees fold, torso pitches forward, arms tuck in.

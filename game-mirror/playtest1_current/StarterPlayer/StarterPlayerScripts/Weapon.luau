@@ -370,7 +370,10 @@ local function updateViewmodel(dt: number?)
 	-- Phase 12: placement derives from the shared WeaponPose module — the SAME transform the
 	-- server animator uses for arm-IK grip targets, so hands and weapon cannot diverge.
 	local WeaponPose = require(game:GetService("ReplicatedStorage"):WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("WeaponPose"))
-	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5))
+	local cam = workspace.CurrentCamera
+	local aimPitch = cam and math.asin(math.clamp(cam.CFrame.LookVector.Y, -1, 1)) or 0
+	local sprinting = char:GetAttribute("Sprinting") == true
+	viewmodel:PivotTo(WeaponPose.weaponWorld(root.CFrame, viewmodelAimLerp > 0.5, nil, aimPitch, sprinting))
 	char:SetAttribute("GF_WeaponGrip", viewmodel.PrimaryPart.Position)
 	char:SetAttribute("GF_ViewmodelAimLerp", viewmodelAimLerp)
 end

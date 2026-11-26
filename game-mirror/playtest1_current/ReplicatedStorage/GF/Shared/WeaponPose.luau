@@ -31,6 +31,11 @@ local POSES = {
 	aim = {
 		cf = CFrame.new(0.38, 0.12, -0.58) * CFrame.Angles(0, math.rad(15), 0),
 	},
+	-- sprint: weapon tucked low and inward, muzzle down — one-hand carry illusion,
+	-- both grips still technically reachable but arms mostly relax (CCD handles it)
+	sprint = {
+		cf = CFrame.new(0.45, -0.35, -0.45) * CFrame.Angles(0, math.rad(30), 0) * CFrame.Angles(math.rad(-35), 0, 0),
+	},
 	-- low-ready: numerically solved for two-arm reachability (offline reach study):
 	-- weapon yawed 15 deg cross-body, pitched 10 deg down, receiver at chest-right.
 	-- REQUIRES the bladed torso stance (25 deg waist yaw when armed) — without it the
@@ -48,12 +53,18 @@ end
 -- Compute the weapon world transform.
 -- rootCf: HumanoidRootPart world CFrame. aiming: posture selector.
 -- aimYaw/aimPitch: optional torso-independent aim angles (rad) for upper-body aim decomposition.
-function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?): CFrame
-	local pose = aiming and POSES.aim or POSES.ready
+function WeaponPose.weaponWorld(rootCf: CFrame, aiming: boolean, aimYaw: number?, aimPitch: number?, sprinting: boolean?): CFrame
+	local pose = POSES.ready
+	if aiming then
+		pose = POSES.aim
+	elseif sprinting then
+		pose = POSES.sprint
+	end
 	local cf = rootCf * pose.cf
 	if aiming and aimPitch then
-		-- weapon follows vertical aim; horizontal follows the root for v1 (torso yaw layered later)
-		cf = cf * CFrame.Angles(-(aimPitch or 0), 0, 0)
+		-- weapon follows vertical aim exactly (authoritative); the torso carries ~30%
+		-- of the pitch via the waist joint so the arms absorb only the remainder.
+		cf = cf * CFrame.Angles(aimPitch, 0, 0)
 	end
 	return cf
 end
