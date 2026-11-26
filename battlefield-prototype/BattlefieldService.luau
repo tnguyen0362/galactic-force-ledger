@@ -47,42 +47,97 @@ local function nodeSpecs()
 	}
 end
 
--- Rejection-sampling upgrade: rather than uniform random, primary placement is biased far from
--- LZ by retrying candidates that are too close euclideanly (navigable distance verified later).
-local function placeTopology(grid, rng): any
-	-- LZ first: preferentially near-ish a map edge quadrant so the mission crosses territory.
+-- Feature-anchored mission topology. Visual evidence (test/mapdump renders) showed the old
+-- uniform-random placement dropped primaries in terrain irrelevant to the archetype — never on
+-- the plateau, never in the valley — and clustered the whole mission footprint in one quadrant.
+-- Now: archetypes with a dominant feature anchor the primary AT that feature; the LZ is then
+-- placed across the map so traversal crosses the macro geography. Anchorless archetypes keep
+-- sampling but must place the primary on the opposing half of the map from the LZ.
+local function featureAnchor(hints: any): (number?, number?)
+	if not hints then return nil, nil end
+	if hints.kind == "plateau" and hints.center then
+		return hints.center[1], hints.center[2]
+	end
+	if hints.kind == "industrial" and hints.excavations and #hints.excavations > 0 then
+		local sx, sz, n = 0, 0, 0
+		for _, s in hints.excavations do sx += s.x sz += s.z n += 1 end
+		return sx / n, sz / n
+	end
+	if hints.kind == "valley" and hints.axis then
+		-- axis is a flat waypoint list; use its midpoint
+		local n = math.floor(#hints.axis / 2)
+		local mid = math.max(1, math.floor(n / 2)) * 2 - 1
+		return hints.axis[mid], hints.axis[mid + 1]
+	end
+	return nil, nil
+end
+
+local function placeTopology(grid, rng, hints: any): any
+	local half = grid.nx * grid.step / 2
+	local ax, az = featureAnchor(hints)
+
+	local primary = nil
+	if ax then
+		-- anchored: jitter around the feature so orientation varies per seed
+		for _ = 1, 60 do
+			local x = ax + (rng() - 0.5) * 130
+			local z = az + (rng() - 0.5) * 130
+			if math.abs(x) < half * 0.82 and math.abs(z) < half * 0.82
+				and RegionAnalysis.slope(grid, x, z) <= 16 then
+				primary = { x = x, z = z, kind = "primary" }
+				break
+			end
+		end
+		-- anchor terrain may legitimately be steep (plateau rim) — fall back to the exact center
+		if not primary and RegionAnalysis.slope(grid, ax, az) <= 20 then
+			primary = { x = ax, z = az, kind = "primary" }
+		end
+	end
+
+	-- LZ: outer band, and when a primary anchor exists, on the FAR side of the map from it
+	-- so traversal crosses the battlefield rather than hugging one corner.
 	local lz = nil
-	for _ = 1, 100 do
+	for _ = 1, 140 do
 		local x = grid.originX + rng() * (grid.nx - 1) * grid.step
 		local z = grid.originZ + rng() * (grid.nz - 1) * grid.step
-		local half = grid.nx * grid.step / 2
 		local r = math.sqrt(x * x + z * z)
-		-- LZ in outer middle band: not cornered, not central
 		if r > half * 0.55 and r < half * 0.85 and RegionAnalysis.slope(grid, x, z) <= 18 then
+			if primary then
+				local d = math.sqrt((x - primary.x) ^ 2 + (z - primary.z) ^ 2)
+				if d < 620 or d > 950 then continue end
+			end
 			lz = { x = x, z = z, kind = "lz" }
 			break
 		end
 	end
 	if not lz then return nil end
 
-	-- primary: opposite-ish side of the map, euclidean 600-950 away — navigable distance is
-	-- enforced after routing since terrain can stretch the path substantially
-	local primary = nil
-	for _ = 1, 160 do
-		local ang = rng() * math.pi * 2
-		local dist = 620 + rng() * 300
-		local x = lz.x + math.cos(ang) * dist
-		local z = lz.z + math.sin(ang) * dist
-		local half = grid.nx * grid.step / 2
-		if math.abs(x) < half * 0.82 and math.abs(z) < half * 0.82
-			and RegionAnalysis.slope(grid, x, z) <= 16 then
-			primary = { x = x, z = z, kind = "primary" }
-			break
+	-- anchorless primary: sample far from LZ AND biased to the opposing half of the map —
+	-- kills the single-quadrant mission footprint visible in the pre-fix renders.
+	if not primary then
+		local lzLen = math.sqrt(lz.x ^ 2 + lz.z ^ 2)
+		for _ = 1, 160 do
+			local ang = rng() * math.pi * 2
+			local dist = 620 + rng() * 300
+			local x = lz.x + math.cos(ang) * dist
+			local z = lz.z + math.sin(ang) * dist
+			if math.abs(x) < half * 0.82 and math.abs(z) < half * 0.82
+				and RegionAnalysis.slope(grid, x, z) <= 16 then
+				-- opposing-half test: normalized positions must have negative-ish dot product
+				local pLen = math.sqrt(x * x + z * z)
+				if lzLen > 1 and pLen > 1 then
+					local dot = (lz.x * x + lz.z * z) / (lzLen * pLen)
+					if dot > 0.1 then continue end
+				end
+				primary = { x = x, z = z, kind = "primary" }
+				break
+			end
 		end
 	end
 	if not primary then return nil end
 
-	-- extraction: 220-480 from primary, not colinear with lz-primary within ~15 degrees
+	-- extraction: 220-480 from primary, clearly off the lz-primary axis (35+ degrees —
+	-- was 15, which let extractions sit nearly on the backtrack line).
 	local extraction = nil
 	local dxp, dzp = primary.x - lz.x, primary.z - lz.z
 	local dpLen = math.sqrt(dxp * dxp + dzp * dzp)
@@ -91,15 +146,13 @@ local function placeTopology(grid, rng): any
 		local dist = 220 + rng() * 260
 		local x = primary.x + math.cos(ang) * dist
 		local z = primary.z + math.sin(ang) * dist
-		local half = grid.nx * grid.step / 2
 		if math.abs(x) < half * 0.84 and math.abs(z) < half * 0.84
 			and RegionAnalysis.slope(grid, x, z) <= 18 then
-			-- colinearity test: angle between primary->lz and primary->extraction
 			local ex, ez = x - primary.x, z - primary.z
 			local eLen = math.sqrt(ex * ex + ez * ez)
 			if eLen > 1 and dpLen > 1 then
 				local cosA = (ex * -dxp + ez * -dzp) / (eLen * dpLen)
-				if math.deg(math.acos(math.clamp(cosA, -1, 1))) > 15 then
+				if math.deg(math.acos(math.clamp(cosA, -1, 1))) > 35 then
 					extraction = { x = x, z = z, kind = "extraction" }
 					break
 				end
@@ -123,14 +176,14 @@ function BattlefieldService.tryGenerate(masterSeed: number, template: string, di
 	local grid = RegionAnalysis.build(sampler0, EXTENT, GRID_STEP)
 
 	local layoutRng = SeedStream.stream(masterSeed, "layout")
-	local nodes = placeTopology(grid, layoutRng)
+	local nodes = placeTopology(grid, layoutRng, hints)
 	if not nodes then
 		return nil, "topology_placement_failed"
 	end
 
 	-- preliminary routing on the UNSHAPED field: small-position anchoring needs route geometry
 	-- before installations exist to shape anything. Final routing re-runs on the shaped field.
-	local prelimRoutes = Topology.redundantRoutes(grid, nodes.lz.x, nodes.lz.z, nodes.primary.x, nodes.primary.z, MAX_SLOPE)
+	local prelimRoutes = Topology.redundantRoutes(grid, nodes.lz.x, nodes.lz.z, nodes.primary.x, nodes.primary.z, MAX_SLOPE, 110)
 	if not prelimRoutes then
 		return nil, "no_route_lz_primary"
 	end
@@ -211,7 +264,7 @@ function BattlefieldService.tryGenerate(masterSeed: number, template: string, di
 	local shapedSampler = MacroGeography.applyFlattening(sampler, flattenSites)
 	local shapedGrid = RegionAnalysis.build(shapedSampler, EXTENT, GRID_STEP)
 	-- final routing over shaped terrain
-	routes = Topology.redundantRoutes(shapedGrid, nodes.lz.x, nodes.lz.z, nodes.primary.x, nodes.primary.z, MAX_SLOPE)
+	routes = Topology.redundantRoutes(shapedGrid, nodes.lz.x, nodes.lz.z, nodes.primary.x, nodes.primary.z, MAX_SLOPE, 110)
 	if not routes then
 		return nil, "no_route_shaped"
 	end
@@ -244,7 +297,7 @@ function BattlefieldService.tryGenerate(masterSeed: number, template: string, di
 		primary = nodes.primary,
 		minRoute = 620,
 		maxRoute = 1150,
-		minSeparation = 50,
+		minSeparation = 80,
 		minTactical = 2,
 	}, valRng)
 	-- cover density validation against placed cover near the objective

@@ -73,3 +73,28 @@ no spawns inside quiet zone.
   or finer tile batching. Do NOT ship a 30s loading stall silently.
 - The 30° slope constant vs real locomotion: pull alpha's validated step-height/slope numbers
   from their handback before finalizing MAX_SLOPE.
+
+
+## Addendum 2026-11-26 — offline validation infrastructure now exceeds the original plan
+
+Step 3's in-Studio visualization is partially front-run: an OFFLINE top-down render harness now
+exists (gf-battlefield-build/test/dumpmap.lua + render.py) producing 900px shaded heightmaps
+with routes/installations/nodes overlaid, no Studio needed. It already drove two critique
+iterations Studio would have been wasted on — see evidence BATTLEFIELD_VISUAL_CRITIQUE.md.
+In-Studio rendering remains necessary only for validating RUNTIME terrain fidelity (voxel
+sampling artifacts, foundation carving, slope reality) — rescope step 3 to that.
+
+Generator state entering integration (all validated offline, 150-seed batch):
+- Feature-anchored topology: primaries sit on archetype features, missions span the map.
+- Route separation mean-interior floor 80 with 110-stud penalty radius — corridor pairs dead.
+- Dendritic spline-carved canyon network (voronoi foam removed).
+- Tactical-diversity metric measures elevation structure in both directions.
+- splitmix32 portable streams — bit-identical CLI/Roblox, no Random.new anywhere.
+- Per-seed parameter jitter for within-archetype macro variety.
+
+Integration hazards discovered since the spec was written:
+- The retry loop re-rolls archetype per attempt: integration must expose WHICH attempt/seed
+  produced a shipped map, or runtime debugging becomes guesswork. Log seed+archetype to
+  server console at generation time (dev attribute too).
+- plan() cost in the Roblox VM unknown; offline ~1.5-2s. Runtime generation happens at mission
+  start — budget the loading screen accordingly, or pre-generate during lobby countdown.

@@ -197,7 +197,51 @@ function Topology.redundantRoutes(grid, ax, az, bx, bz, maxSlope, separationRadi
 	local extra = function(i, j)
 		return penalized[i * 100000 + j] and 25 or 0
 	end
-	local p2, c2 = Topology.route(grid, ax, az, bx, bz, maxSlope, extra)
+	-- Via-point differentiated alternate: in flat terrain the penalty radius alone produces
+	-- corridor pairs, because uniform cost means every route converges on the same optimal line.
+	-- Real alternate approaches swing through DIFFERENT midfield geography. Detect which side of
+	-- the direct line p1 naturally bulges toward, then route the alternate through a via point
+	-- on the OPPOSITE side. Fall back to penalty-only routing when via routing fails or overruns.
+	local directLen = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2)
+	local p2, c2 = nil, math.huge
+	if directLen > 200 then
+		-- midpoint deviation of p1 from the direct line (signed perpendicular at path midpoint)
+		local dxn, dzn = (bx - ax) / directLen, (bz - az) / directLen
+		local midIdx = math.floor(#p1 / 4) * 2 + 1
+		local mx, mz = p1[midIdx] or ((ax + bx) / 2), p1[midIdx + 1] or ((az + bz) / 2)
+		local relx, relz = mx - ax, mz - az
+		-- perpendicular (left normal): (-dzn, dxn); sign of p1's lateral offset
+		local lat = relx * -dzn + relz * dxn
+		local side = lat >= 0 and -1 or 1 -- opposite side for the alternate
+		local viaDist = math.clamp(directLen * 0.22, 80, 240)
+		local vx = (ax + bx) / 2 + -dzn * viaDist * side
+		local vz = (az + bz) / 2 + dxn * viaDist * side
+		local leg1 = Topology.route(grid, ax, az, vx, vz, maxSlope, extra)
+		if leg1 then
+			local leg2 = Topology.route(grid, vx, vz, bx, bz, maxSlope, extra)
+			if leg2 then
+				-- concatenate legs (drop duplicated joint point)
+				local pts = {}
+				local l1pts = leg1
+				for k = 1, #l1pts - 2, 2 do
+					table.insert(pts, l1pts[k])
+					table.insert(pts, l1pts[k + 1])
+				end
+				for k = 1, #leg2 - 1, 2 do
+					table.insert(pts, leg2[k])
+					table.insert(pts, leg2[k + 1])
+				end
+				local viaLen = Topology.pathLength(pts)
+				if viaLen <= Topology.pathLength(p1) * 1.45 then
+					p2 = pts
+					c2 = viaLen
+				end
+			end
+		end
+	end
+	if not p2 then
+		p2, c2 = Topology.route(grid, ax, az, bx, bz, maxSlope, extra)
+	end
 	local sep = p2 and Topology.pathSeparation(p1, p2) or 0
 	return {
 		primary = { points = p1, cost = c1, length = Topology.pathLength(p1) },

@@ -84,22 +84,108 @@ composers.highland_valley = function(seed: number, def: any, extent: number)
 	return sampler, { axis = axis, axisAngle = angle, kind = "valley" }
 end
 
--- CANYON NETWORK: voronoi border channels carved into a plateau — branching ravines with
--- elevated inter-channel plateaus. f2-f1 small => near a border => carve down.
-composers.canyon_network = function(seed: number, def: any, extent: number)
-	local cellScale = 300
-	local function sampler(x: number, z: number): number
-		local wx, wz = NoiseKit.warp2(x, z, def.warpScale, def.warpAmp * 0.7, seed)
-		local f1, f2 = NoiseKit.voronoi(wx, wz, cellScale, seed + 31)
-		local border = 1 - math.clamp((f2 - f1) / 0.75, 0, 1) -- 1 at channel centerline
-		local channel = border ^ 2.2
-		-- plateau tops at cell interiors, warped ridged noise gives rim character
-		local interior = 1 - channel
-		local crest = NoiseKit.ridged(wx, wz, 90, seed + 37) ^ 2
-		local macro = interior * def.relief * 0.62 + crest * 8 * interior - channel * def.relief * 0.38
-		return def.baseHeight + macro + detailLayer(x, z, seed, def) * (0.4 + 0.6 * interior)
+
+-- Random-walk polyline with momentum: natural drainage-line meander. Returns flat x,z list.
+local function walkLine(rng: any, x0: number, z0: number, angle: number, stepLen: number, steps: number, bend: number): { number }
+	local pts = { x0, z0 }
+	local a = angle
+	local x, z = x0, z0
+	for _ = 1, steps do
+		a += (rng:NextNumber() - 0.5) * bend
+		x += math.cos(a) * stepLen
+		z += math.sin(a) * stepLen
+		table.insert(pts, x)
+		table.insert(pts, z)
 	end
-	return sampler, { cellScale = cellScale, kind = "canyon" }
+	return pts
+end
+
+-- Min distance from point to polyline segments (flat x,z list).
+local function distToPolyline(pts: { number }, x: number, z: number): number
+	local best = math.huge
+	for k = 1, #pts - 2, 2 do
+		local x1, z1, x2, z2 = pts[k], pts[k + 1], pts[k + 2], pts[k + 3]
+		local dx, dz = x2 - x1, z2 - z1
+		local len2 = dx * dx + dz * dz
+		local tt = 0
+		if len2 > 0 then
+			tt = math.clamp(((x - x1) * dx + (z - z1) * dz) / len2, 0, 1)
+		end
+		local px, pz = x1 + dx * tt, z1 + dz * tt
+		local d = math.sqrt((x - px) ^ 2 + (z - pz) ^ 2)
+		if d < best then best = d end
+	end
+	return best
+end
+
+-- CANYON NETWORK: spline-carved dendritic ravines (see composer notes).
+composers.canyon_network = function(seed: number, def: any, extent: number)
+	local rng = SeedStream.fromSeed(seed + 29)
+	-- dendritic structure: 2-3 trunk drainages crossing the map in loosely consistent directions,
+	-- 4-6 tributaries branching off at 30-70 degrees. Voronoi foam produced isotropic turtle-shell;
+	-- real canyon networks are branching systems with hierarchy — wide deep trunks, narrow shallow feeders.
+	local baseAngle = rng:NextNumber() * math.pi
+	local channels = {}
+	local trunkCount = 2 + math.floor(rng:NextNumber() * 2.4)
+	for i = 1, trunkCount do
+		local ang = baseAngle + (rng:NextNumber() - 0.5) * 0.7
+		-- trunks enter through one edge band and cross the map
+		local sx = (rng:NextNumber() - 0.5) * extent * 0.8 - math.cos(ang) * extent * 0.55
+		local sz = (rng:NextNumber() - 0.5) * extent * 0.8 - math.sin(ang) * extent * 0.55
+		local pts = walkLine(rng, sx, sz, ang, 110, math.ceil(extent * 1.2 / 110), 0.55)
+		table.insert(channels, {
+			pts = pts,
+			width = 72 + rng:NextNumber() * 46,
+			depth = 21 + rng:NextNumber() * 13,
+		})
+	end
+	local tribCount = 6 + math.floor(rng:NextNumber() * 3.99)
+	for i = 1, tribCount do
+		local trunk = channels[1 + math.floor(rng:NextNumber() * #channels * 0.999)]
+		local tp = trunk.pts
+		local segCount = math.floor(#tp / 2) - 1
+		local seg = 2 + math.floor(rng:NextNumber() * math.max(1, segCount - 3))
+		local bx, bz = tp[seg * 2 - 1], tp[seg * 2]
+		-- branch direction: trunk direction +/- 30-70 degrees
+		local nx, nz = tp[seg * 2 + 1], tp[seg * 2 + 2]
+		local trunkAng = math.atan2(nz - bz, nx - bx)
+		local side = rng:NextNumber() < 0.5 and -1 or 1
+		local branchAng = trunkAng + side * (0.52 + rng:NextNumber() * 0.7)
+		local len = 300 + rng:NextNumber() * 400
+		local pts = walkLine(rng, bx, bz, branchAng, 85, math.ceil(len / 85), 0.6)
+		table.insert(channels, {
+			pts = pts,
+			width = 34 + rng:NextNumber() * 30,
+			depth = 10 + rng:NextNumber() * 9,
+		})
+	end
+	local function sampler(x: number, z: number): number
+		local wx, wz = NoiseKit.warp2(x, z, def.warpScale, def.warpAmp * 0.55, seed)
+		-- deepest carve wins at confluences (correct junction behavior)
+		local carve = 0
+		for _, ch in channels do
+			local d = distToPolyline(ch.pts, wx, wz)
+			local u = d / ch.width
+			if u < 1 then
+				-- flat floor inside 45% of width, smoothstep walls beyond; floor carries a
+				-- gentle longitudinal undulation so channels read as dry riverbeds, not trenches
+				local wall = smoothstep(math.clamp((u - 0.45) / 0.55, 0, 1))
+				local c = ch.depth * (1 - wall)
+				if c > carve then carve = c end
+			end
+		end
+		-- mesa surface between channels: rolling ridged character, suppressed inside channels
+		-- stratified mesa country: broad elevation provinces at differing heights (sigma was 6-12,
+		-- far below the 12 floor with uniform-level mesas) + mid-scale rolling + rim crests
+		local provinces = NoiseKit.fbm(wx, wz, 460, seed + 35, 2) * def.relief * 1.05
+		local mesa = NoiseKit.warpedFbm(wx, wz, 230, seed + 33, 3, def.warpScale, def.warpAmp) * def.relief * 0.5
+		local crest = NoiseKit.ridged(wx, wz, 110, seed + 37) ^ 2 * 9
+		mesa += provinces
+		local floorNoise = NoiseKit.n2(wx, wz, 60, seed + 39) * 3
+		local macro = mesa + crest - carve + (carve > 4 and floorNoise * 0.6 or 0)
+		return def.baseHeight + macro + detailLayer(x, z, seed, def) * 0.7
+	end
+	return sampler, { channelCount = #channels, kind = "canyon", trunkAngle = baseAngle }
 end
 
 -- FORTIFIED PLATEAU: a dominant elevated bench/mesa occupying a broad region, terraced slopes,

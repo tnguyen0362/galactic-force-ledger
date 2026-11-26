@@ -175,14 +175,38 @@ end
 -- Tactical position diversity: count distinct high-ground positions near `target` that have LOS
 -- to it — the defender/attacker vantage metric.
 function Metrics.tacticalPositions(grid, tx: number, tz: number, radius: number, minAdvantage: number): number
+	-- Elevation-structure diversity around the objective. The original counted only positions
+	-- ABOVE the target — blind by construction once primaries anchor onto high ground (plateau
+	-- tops), which is exactly where fortified objectives belong. Engagement-relevant structure
+	-- exists in both directions: overlooks matter for attackers approaching a low objective;
+	-- benches/terraces below matter when assaulting an elevated one (they are the attacker's
+	-- cover progression and the defender's fall-back lines).
 	local th = RegionAnalysis.height(grid, tx, tz)
-	local landmarks = RegionAnalysis.highGround(grid, th + minAdvantage, 2)
+	local above = RegionAnalysis.highGround(grid, th + minAdvantage, 2)
 	local count = 0
-	for _, lm in landmarks do
+	local seen = {}
+	for _, lm in above do
 		local d = math.sqrt((lm.x - tx) ^ 2 + (lm.z - tz) ^ 2)
 		if d <= radius and d >= 30 then
 			if RegionAnalysis.losClear(grid, lm.x, lm.z, tx, tz, 8) then
 				count += 1
+				seen[math.floor(lm.x / 40) * 1000 + math.floor(lm.z / 40)] = true
+			end
+		end
+	end
+	-- depression/bench structure: sample the ring, count cells meaningfully BELOW the objective
+	-- with LOS — they shape assault cover on elevated objectives
+	for angle = 0, 15 do
+		local a = angle / 16 * math.pi * 2
+		for rr = 60, radius, 60 do
+			local x, z = tx + math.cos(a) * rr, tz + math.sin(a) * rr
+			local h = RegionAnalysis.height(grid, x, z)
+			local key = math.floor(x / 40) * 1000 + math.floor(z / 40)
+			if not seen[key] and math.abs(h - th) >= minAdvantage then
+				if RegionAnalysis.losClear(grid, x, z, tx, tz, 8) then
+					count += 1
+					seen[key] = true
+				end
 			end
 		end
 	end
@@ -247,7 +271,7 @@ function Metrics.validate(grid, def, ctx, rng): (boolean, any)
 		if ctx.routes.primary.length > (ctx.maxRoute or 1150) then
 			table.insert(reasons, "route_too_long:" .. string.format("%.0f", ctx.routes.primary.length))
 		end
-		if not ctx.routes.alternate or ctx.routes.separation < (ctx.minSeparation or 50) then
+		if not ctx.routes.alternate or ctx.routes.separation < (ctx.minSeparation or 80) then
 			table.insert(reasons, "no_redundant_route:" .. string.format("%.0f", ctx.routes.separation))
 		end
 	end
