@@ -254,10 +254,11 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	-- spec sec.71: aim at the ACTUAL legitimate target when the server replicates it;
 	-- nearest-player remains only the fallback for unreplicated edge cases
 	local legit = model:GetAttribute("GFLegitTarget")
+	local bestD = 70
 	if legit then
 		targetPos = legit
+		bestD = (legit - myPos).Magnitude  -- proximity measures the real target, not the nearest-player proxy
 	else
-		local bestD = 70
 		for _, plr in Players:GetPlayers() do
 			local char = plr.Character
 			local hrp = char and char:FindFirstChild("HumanoidRootPart")
