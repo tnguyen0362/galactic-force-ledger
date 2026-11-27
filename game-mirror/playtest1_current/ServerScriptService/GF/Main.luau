@@ -18,9 +18,9 @@ print(string.format("[GF] boot: %d remotes ensured", created))
 local check = require(ServerScriptService.GF.Test.CheckRunner)
 local result = check.run()
 if result.ok then
-	print(string.format("[GF] boot: config check PASS (%d assertions)", result.passed))
+	print(string.format("[GF] boot: config check PASS (%d assertions)", result.passed or 0))
 else
-	warn(string.format("[GF] boot: config check FAIL (%d failed)", result.failed))
+	warn(string.format("[GF] boot: config check FAIL (%d failed)", result.failed or 0))
 	for _, e in result.errors do warn("  - " .. e) end
 end
 

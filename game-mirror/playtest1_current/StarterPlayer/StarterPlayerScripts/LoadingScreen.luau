@@ -127,7 +127,17 @@ end)
 -- GF_TerrainReady flips true at the end of TerrainService.build — covers the multi-second
 -- battlefield write instead of letting players watch voxel tiles pop in. Terrain replication
 -- to the client trails the server write slightly, so a short grace follows the ready signal.
-frame.Visible = true
+-- place-split: the lobby has no planetary survey — terrain generation is mission-side now.
+-- showing the survey screen in the lobby is nonsense copy AND it holds for the full 30s cap
+-- because GF_TerrainReady never fires there. detect lobby context and skip the hold entirely.
+local amLobby = false
+do
+	local mp = workspace:GetAttribute("GF_MissionPlaceId")
+	if workspace:GetAttribute("GF_PlaceSplitLive") == true and type(mp) == "number" and mp ~= game.PlaceId then
+		amLobby = true
+	end
+end
+frame.Visible = not amLobby
 status.Text = "SURVEYING PLANETARY SURFACE"
 print(string.format("GFLOAD shown clock=%.2f readyAttr=%s", os.clock(), tostring(workspace:GetAttribute("GF_TerrainReady"))))
 local initialDone = false
