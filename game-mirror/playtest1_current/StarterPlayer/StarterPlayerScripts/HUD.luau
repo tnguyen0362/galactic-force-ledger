@@ -11,7 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local Debris = game:GetService("Debris")
 local RunService = game:GetService("RunService")
 
-local Input = require(script.Parent.Input)
+local Input = require(script.Parent:WaitForChild("Input"))
 
 local HUD = {}
 
@@ -690,7 +690,7 @@ function HUD.init()
 	remotes.ShieldBroken.OnClientEvent:Connect(function()
 		-- distinct shield-break cue (S04-058): sharper than a hit, audible over combat
 		pcall(function()
-			require(script.Parent.GFAudio).play("shield_break")
+			require(script.Parent:WaitForChild("GFAudio")).play("shield_break")
 		end)
 		shieldLabel.TextColor3 = WARN
 		task.delay(1.2, function()

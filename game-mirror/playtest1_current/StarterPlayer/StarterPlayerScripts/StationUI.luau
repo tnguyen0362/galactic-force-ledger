@@ -842,7 +842,7 @@ local lastTerminalRegions: string? = nil
 -- beacon priority: oldest first (the SortedMap ordering is urgency), seats open, public to
 -- this player. feedback is honest — a join failure says why, never silent nothing.
 -- ---------------------------------------------------------------------------
-local Input = require(script.Parent.Input)
+local Input = require(script.Parent:WaitForChild("Input"))
 local quickResponseStatus = label(body, "", UDim2.new(1, -8, 0, 16), UDim2.fromOffset(0, 0), MUTED, 11)
 quickResponseStatus.LayoutOrder = 30
 Input.onPress("QuickResponse", function()
@@ -1070,7 +1070,7 @@ end)
 
 -- interact-to-open wiring: press E/X at a terminal, the theatre surface opens. no auto-pop.
 do
-	local Input = require(script.Parent.Input)
+	local Input = require(script.Parent:WaitForChild("Input"))
 	Input.onPress('Interact', function()
 		if nearTerminalNow then
 			local MenuController = require(game:GetService('ReplicatedStorage').GF.Shared.UI.MenuController)

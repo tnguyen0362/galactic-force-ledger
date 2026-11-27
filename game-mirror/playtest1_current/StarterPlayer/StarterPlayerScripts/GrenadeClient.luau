@@ -7,8 +7,8 @@ local UserInputService = game:GetService("UserInputService")
 
 local Remotes = require(ReplicatedStorage.GF.Shared.Remotes)
 local Economy = require(ReplicatedStorage.GF.Shared.Configs.Economy)
-local Audio = require(script.Parent.GFAudio)
-local VFX = require(script.Parent.VFX)
+local Audio = require(script.Parent:WaitForChild("GFAudio"))
+local VFX = require(script.Parent:WaitForChild("VFX"))
 local remotes = ReplicatedStorage:WaitForChild("GF"):WaitForChild("Remotes")
 local player = Players.LocalPlayer
 local throwRemote = remotes:WaitForChild("ThrowGrenade") :: RemoteEvent

@@ -7,7 +7,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 
-local Audio = require(script.Parent.GFAudio)
+local Audio = require(script.Parent:WaitForChild("GFAudio"))
 
 local player = Players.LocalPlayer
 local STRIDE_STUDS = 3.0

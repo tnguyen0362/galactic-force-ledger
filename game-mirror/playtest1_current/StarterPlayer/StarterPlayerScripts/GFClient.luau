@@ -3,10 +3,10 @@ local UserInputService = game:GetService("UserInputService")
 
 local Client = script.Parent
 
-local Input = require(Client.Input)
-local HUD = require(Client.HUD)
-local Weapon = require(Client.Weapon)
-local Camera = require(Client.CameraCtl)
+local Input = require(Client:WaitForChild("Input"))
+local HUD = require(Client:WaitForChild("HUD"))
+local Weapon = require(Client:WaitForChild("Weapon"))
+local Camera = require(Client:WaitForChild("CameraCtl"))
 
 Input.init()
 HUD.init()

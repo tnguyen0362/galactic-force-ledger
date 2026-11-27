@@ -6,8 +6,8 @@
 -- boots the two authoritative controllers exactly once.
 local Players = game:GetService("Players")
 
-local CameraController = require(script.Parent.CameraController)
-local PlayerController = require(script.Parent.PlayerController)
+local CameraController = require(script.Parent:WaitForChild("CameraController"))
+local PlayerController = require(script.Parent:WaitForChild("PlayerController"))
 
 local CameraCtl = {}
 

@@ -1801,7 +1801,7 @@ end)
 -- quick-deploy path stays live during migration. keyboard shortcut for kbm, and the
 -- browser closes on B/esc per the semantic input layer.
 -- ---------------------------------------------------------------------------
-local Input = require(script.Parent.Input)
+local Input = require(script.Parent:WaitForChild("Input"))
 
 local function toggleBrowser()
 	if shell.visible then

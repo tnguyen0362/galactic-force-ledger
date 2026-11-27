@@ -8,8 +8,8 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
-local PlayerController = require(script.Parent.PlayerController)
-local CameraController = require(script.Parent.CameraController)
+local PlayerController = require(script.Parent:WaitForChild("PlayerController"))
+local CameraController = require(script.Parent:WaitForChild("CameraController"))
 
 local gui: ScreenGui? = nil
 local label: TextLabel? = nil

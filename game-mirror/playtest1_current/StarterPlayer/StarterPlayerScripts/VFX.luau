@@ -1,5 +1,5 @@
 --!strict
-local Audio = require(script.Parent.GFAudio)
+local Audio = require(script.Parent:WaitForChild("GFAudio"))
 -- Client-side combat VFX. Visual only: never authoritative, never touches gameplay state.
 -- Everything is pooled because the target is 30 FPS on an original Xbox One.
 local VFX = {}
@@ -457,7 +457,7 @@ function VFX.explosion(position: Vector3, kind: string)
 	-- falloff radius. deferred require matches the established pattern (load-order safe).
 	task.defer(function()
 		pcall(function()
-			local ctl = require(script.Parent.CameraCtl)
+			local ctl = require(script.Parent:WaitForChild("CameraCtl"))
 			local intensity = kind == "EMP" and 0.5 or (kind == "RL09" and 0.85 or 0.65)
 			ctl.shakeAt(intensity, position, kind == "EMP" and 46 or 60)
 		end)
@@ -621,7 +621,7 @@ do
 			local amount = tonumber(payload.amount) or 10
 			task.defer(function()
 				pcall(function()
-					local ctl = require(script.Parent.CameraCtl)
+					local ctl = require(script.Parent:WaitForChild("CameraCtl"))
 					ctl.shake(math.clamp(amount / 80, 0.08, 0.4))
 				end)
 			end)

@@ -3347,7 +3347,7 @@
  },
  {
   "path": "StarterPlayer.StarterPlayerScripts.CameraController",
-  "className": "LocalScript",
+  "className": "ModuleScript",
   "file": "StarterPlayer/StarterPlayerScripts/CameraController.luau",
   "lines": 675,
   "chars": 25167
@@ -3494,7 +3494,7 @@
  },
  {
   "path": "StarterPlayer.StarterPlayerScripts.MovementDiagnostics",
-  "className": "LocalScript",
+  "className": "ModuleScript",
   "file": "StarterPlayer/StarterPlayerScripts/MovementDiagnostics.luau",
   "lines": 99,
   "chars": 3197
@@ -3515,7 +3515,7 @@
  },
  {
   "path": "StarterPlayer.StarterPlayerScripts.PlayerController",
-  "className": "LocalScript",
+  "className": "ModuleScript",
   "file": "StarterPlayer/StarterPlayerScripts/PlayerController.luau",
   "lines": 565,
   "chars": 18584

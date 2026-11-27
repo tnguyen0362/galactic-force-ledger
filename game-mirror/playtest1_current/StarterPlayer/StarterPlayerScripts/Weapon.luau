@@ -1,14 +1,14 @@
 --!strict
-local Audio = require(script.Parent.GFAudio)
+local Audio = require(script.Parent:WaitForChild("GFAudio"))
 -- Client-side weapon feel. The server owns ammo, rate and damage; this module owns responsiveness.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
-local Input = require(script.Parent.Input)
-local HUD = require(script.Parent.HUD)
-local VFX = require(script.Parent.VFX)
+local Input = require(script.Parent:WaitForChild("Input"))
+local HUD = require(script.Parent:WaitForChild("HUD"))
+local VFX = require(script.Parent:WaitForChild("VFX"))
 
 local Weapon = {}
 
@@ -158,7 +158,7 @@ local function tryFire()
 		-- Horizontal is burst-shaped rather than white noise: each burst picks a slight lean
 		-- (mean-reverting random walk), so a mag-dump reads as climb-with-a-drift instead of
 		-- in-place vibration, while any single shot still carries a small random fraction for life.
-		local ctl = require(script.Parent.CameraCtl)
+		local ctl = require(script.Parent:WaitForChild("CameraCtl"))
 		local r = tonumber(weapon.recoil) or 1
 		if now - (state.lastShotAt or 0) > 0.3 then
 			-- burst start: reseed the lean. first-shot bias stays small so tap fire never

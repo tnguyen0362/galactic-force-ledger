@@ -1701,7 +1701,7 @@ local function playCacheReveal(tierText)
 	local col = RARITY_COLORS[rarity] or RARITY_COLORS.Common
 	ui.revealGlow.BackgroundColor3 = col
 	pcall(function()
-		require(script.Parent.GFAudio).play(rarity == "Legendary" and "ui_click" or "ui_click")
+		require(script.Parent:WaitForChild("GFAudio")).play(rarity == "Legendary" and "ui_click" or "ui_click")
 	end)
 	local t0 = os.clock()
 	while os.clock() - t0 < 2.0 and not ui.revealSkip do

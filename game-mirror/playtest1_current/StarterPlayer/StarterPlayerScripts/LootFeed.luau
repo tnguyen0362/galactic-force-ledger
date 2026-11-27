@@ -10,7 +10,7 @@ local Tokens = require(ReplicatedStorage:WaitForChild("GF"):WaitForChild("Shared
 local Audio: any = nil
 do
 	local ok, result = pcall(function()
-		return require(script.Parent.GFAudio)
+		return require(script.Parent:WaitForChild("GFAudio"))
 	end)
 	if ok then
 		Audio = result

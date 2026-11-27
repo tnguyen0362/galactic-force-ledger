@@ -9,7 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Constants = require(ReplicatedStorage.GF.Shared.Constants)
-local Input = require(script.Parent.Input)
+local Input = require(script.Parent:WaitForChild("Input"))
 
 local M = Constants.Movement
 local CAM = Constants.Camera
