@@ -136,6 +136,25 @@ def h_gunship(k):
     # ---- hull belly + rear lip
     k.wedge((0, 3.9), 3.4, 0.5, 1.2, 1.3, 1.5, ST)
     k.box((0, 4.0, 1.38), (3.0, 0.3, 0.1), GO)                         # hinge strip (ramp attaches here)
+    # ---- silhouette / read-at-distance pass (v2): armour, weapons, spine, framed bay opening
+    for sx in (-1, 1):
+        k.wedge((sx * 1.95, -2.0), 0.28, 2.8, 1.6, 3.2, 3.9, G)         # nose cheek armour plates
+        k.box((sx * 2.1, -2.0, 2.55), (0.04, 2.4, 0.08), CY)            # cheek light seam
+        k.box((sx * 2.45, 0.6, 2.38), (0.55, 2.2, 0.42), N)             # underwing weapon pod
+        k.box((sx * 2.45, 0.6, 2.62), (0.45, 1.9, 0.06), ST)
+        k.loft((sx * 2.45, -0.5, 2.38), (sx * 2.45, -0.72, 2.38), 0.2, 0.09, 6, RB)   # pod muzzle
+        k.loft((sx * 2.45, -0.72, 2.38), (sx * 2.45, -0.78, 2.38), 0.08, 0.08, 6, CY)
+        k.box((sx * 1.8, 4.1, 2.75), (0.24, 0.22, 2.75), ST)              # bay door frame posts
+        k.box((sx * 1.8, 4.12, 4.2), (0.28, 0.26, 0.12), CY)             # frame light caps
+        k.box((sx * 1.55, 3.5, 5.38), (0.14, 0.14, 0.14), CY)            # tail-fin nav light
+    for i in range(6):                                                    # hazard chevron strip, bay lintel
+        k.box((-1.5 + i * 0.6, 4.1, 4.04), (0.3, 0.1, 0.24), GO if i % 2 == 0 else G)
+    k.box((0, 0.8, 4.48), (0.35, 3.6, 0.2), ST)                          # dorsal spine
+    k.box((0, 0.8, 4.6), (0.1, 3.2, 0.04), CY)
+    k.cyl(0, -3.1, 0.88, 0.38, 0.32, 8, ST)                              # chin gun turret
+    for sx in (-1, 1):
+        k.beam((sx * 0.17, -3.1, 1.0), (sx * 0.17, -4.5, 1.0), 0.11, G)
+        k.box((sx * 0.17, -4.52, 1.0), (0.16, 0.1, 0.16), CY)
 
 
 def h_gunship_ramp(k):

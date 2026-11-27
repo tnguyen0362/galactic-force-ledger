@@ -87,51 +87,57 @@ def rock_cluster(k):  # group of 5 for scatter
         blob(k, (x, y, r * 0.6), r * 1.1, r, r * 0.8, sd, [T3, T2, T2, T1, T0])
 
 
-def _col(k, x, y, r, h, rnd, sides=6, shade=0):
-    """Sheer faceted rock column: near-vertical sides with a banded strata colour, slanted chisel top."""
-    rot = rnd.uniform(0, 1.0)
-    lean = (rnd.uniform(-0.12, 0.12) * h, rnd.uniform(-0.12, 0.12) * h)
-    bands = [T4, T2, T6, T1, T3, T2]
-    z = 0.0
-    n = max(2, int(h / 2.2))
-    for i in range(n):
-        z1 = h * (i + 1) / n
-        z0 = h * i / n
-        t0, t1 = z0 / h, z1 / h
-        r0 = r * (1 - 0.18 * t0)
-        r1 = r * (1 - 0.18 * t1)
-        k.loft((x + lean[0] * t0, y + lean[1] * t0, z0), (x + lean[0] * t1, y + lean[1] * t1, z1), r0, r1, sides,
-               bands[(i + shade) % len(bands)], rot0=rot, cap=False)
-    # slanted cap
-    top = (x + lean[0], y + lean[1], h)
-    k.loft(top, (top[0] + r * 0.15, top[1], h + r * 0.35), r * (1 - 0.18), r * 0.45, sides, T3, rot0=rot)
+def _mass(k, x, y, rx, ry, h, seed, cols, sides=7, rings=6, jitter=0.2):
+    """Big faceted rock mass standing on z=0 (spans z 0..h): lumpy ellipsoid, flat base, strata colour per ring."""
+    rz = h / 1.18
+    rows = sphere_rows(k, (x, y, rz * 0.4), rx, ry, rz, rings, sides, random.Random(seed), jitter, 0.6)
+    for ring in rows:  # plateau top: clamp the crown flat so summits read as buttes, not needles
+        for v in ring:
+            v.co.z = min(v.co.z, h * random.Random(seed + 5).uniform(0.97, 1.0))
+    skin_rows(k, rows, sides, lambda r: cols[min(r, len(cols) - 1)])
 
 
-def _cliff(k, w, d, h, seed, n, hmin=0.55):
+_STRATA = [[T3, T4, T2, T6, T1, T0], [T3, T2, T4, T1, T6, T0], [T6, T4, T2, T2, T1, T0], [T3, T6, T2, T4, T1, T1]]
+
+
+def _wall(k, x0, y0, ang, w, d, h, seed, n, hmin=0.55):
+    """Massed cliff wall along direction `ang`: n overlapping rock masses (tallest in the middle-ish), a setback
+    summit mass on the tall ones, jutting strata ledges on the face, and a scree apron. Front face is local -Y."""
     rnd = random.Random(seed)
-    cols = []
+    ca, sa = math.cos(ang), math.sin(ang)
+    P = lambda u, v: (x0 + u * ca - v * sa, y0 + u * sa + v * ca)
     for i in range(n):
-        u = (i + 0.5) / n
-        x = (u - 0.5) * w + rnd.uniform(-0.5, 0.5)
-        y = rnd.uniform(-d * 0.3, d * 0.3)
-        r = (w / n) * rnd.uniform(0.62, 0.85)
-        hh = h * rnd.uniform(hmin, 1.0)
-        cols.append((x, y, r, hh))
-    cols.sort(key=lambda c: -c[2])
-    for x, y, r, hh in cols:
-        _col(k, x, y, r, hh, rnd, sides=rnd.choice((5, 6, 7)), shade=rnd.randint(0, 3))
-    # rubble apron
-    for i in range(max(2, n // 2)):
-        blob(k, (rnd.uniform(-w * 0.5, w * 0.5), rnd.uniform(-d * 0.55, -d * 0.2), 0.5), rnd.uniform(0.9, 1.5), rnd.uniform(0.8, 1.2),
-             rnd.uniform(0.6, 1.0), seed * 7 + i, [T3, T2, T1, T1, T0])
+        u = ((i + 0.5) / n - 0.5) * w + rnd.uniform(-0.4, 0.4)
+        v = rnd.uniform(-d * 0.12, d * 0.12)
+        rx = (w / n) * rnd.uniform(0.78, 1.0)
+        ry = d * rnd.uniform(0.38, 0.5)
+        hh = h * (hmin + (1 - hmin) * rnd.random() ** 0.7)
+        px, py = P(u, v)
+        _mass(k, px, py, rx, ry, hh, seed * 13 + i, rnd.choice(_STRATA), sides=rnd.choice((6, 7, 8)))
+        if hh > h * 0.8:  # setback summit
+            sx, sy = P(u + rnd.uniform(-0.3, 0.3) * rx, v + d * 0.08)
+            _mass(k, sx, sy, rx * 0.55, ry * 0.6, hh * rnd.uniform(1.12, 1.28), seed * 17 + i, [T3, T6, T4, T2, T1, T0], sides=6, jitter=0.25)
+        # jutting strata ledge on the front face
+        if rnd.random() < 0.85:
+            lz = hh * rnd.uniform(0.28, 0.6)
+            lx, ly = P(u + rnd.uniform(-0.2, 0.2) * rx, v - ry * 0.85)
+            k.box((lx, ly, lz), (rx * 1.05, 0.8, 0.38), rnd.choice((T6, T4, T3)), (rnd.uniform(-0.06, 0.06), 0, ang + rnd.uniform(-0.12, 0.12)))
+    for i in range(max(3, n)):  # scree apron + fallen blocks
+        u = rnd.uniform(-w * 0.5, w * 0.5)
+        v = rnd.uniform(-d * 0.7, -d * 0.35)
+        px, py = P(u, v)
+        if i % 3 == 0:
+            k.box((px, py, 0.35), (rnd.uniform(0.9, 1.5), rnd.uniform(0.8, 1.3), 0.8), rnd.choice((T2, T6)), (0.12, 0.1, rnd.uniform(0, 3)))
+        else:
+            blob(k, (px, py, 0.4), rnd.uniform(0.7, 1.3), rnd.uniform(0.6, 1.1), rnd.uniform(0.5, 0.8), seed * 7 + i, [T3, T2, T1, T1, T0])
 
 
 def cliff_a(k):  # broad cliff face ~14 x 6 x 9 m
-    _cliff(k, 14, 6, 9, 100, 6)
+    _wall(k, 0, 0, 0.0, 14, 6, 9, 100, 5)
 
 
-def cliff_b(k):  # narrow bluff ~8 x 6 x 11 m
-    _cliff(k, 8, 6, 11, 200, 4, 0.7)
+def cliff_b(k):  # narrow tall bluff ~8 x 6 x 11 m
+    _wall(k, 0, 0, 0.0, 8, 6, 11, 210, 3, 0.7)
 
 
 def cliff_c(k):  # low mesa ~16 x 10 x 5 m (broad stacked slabs)
@@ -141,18 +147,20 @@ def cliff_c(k):  # low mesa ~16 x 10 x 5 m (broad stacked slabs)
     for i, th in enumerate((1.8, 1.6, 1.4)):
         k.loft((0, 0, z), (0, 0, z + th), r, r * 0.93, 9, [T4, T2, T6][i], rot0=0.2 + i * 0.35, cap=(i == 2))
         k.loft((0, 0, z + th), (0, 0, z + th + 0.12), r * 0.93, r * 0.86, 9, T3, rot0=0.2 + i * 0.35, cap=(i == 2))
-        z += th + 0.1
+        z += th + 0.12
         r *= 0.86
-    for i in range(4):
-        a = i * 1.6 + 0.4
-        blob(k, (math.cos(a) * 7.0, math.sin(a) * 5.5, 0.5), 1.4, 1.1, 0.9, 310 + i, [T3, T2, T1, T1, T0])
+    for i in range(5):
+        a = i * 1.3 + 0.4
+        blob(k, (math.cos(a) * 7.0, math.sin(a) * 5.5, 0.5), rnd.uniform(1.2, 1.7), rnd.uniform(1.0, 1.4), rnd.uniform(0.8, 1.1), 310 + i, [T3, T2, T1, T1, T0])
+    for i in range(4):  # chipped slab edges
+        a = i * 1.7 + 0.9
+        k.box((math.cos(a) * 6.3, math.sin(a) * 4.9, 1.1), (1.8, 0.8, 0.5), [T6, T4][i % 2], (0.1, 0.1, a + 1.57))
 
 
-def cliff_d(k):  # sheer wall corner ~10 x 10 x 12 m
-    _cliff(k, 10, 4, 12, 400, 5, 0.6)
-    rnd = random.Random(401)
-    for i in range(3):
-        _col(k, 4.5 + rnd.uniform(-0.3, 0.3), 2.0 + i * 1.6, 1.4, 12 * rnd.uniform(0.6, 1.0), rnd, 6, i)
+def cliff_d(k):  # sheer wall corner ~10 x 10 x 12 m (two walls meeting at 90 deg)
+    _wall(k, 0, 0, 0.0, 10, 4, 12, 400, 4, 0.6)
+    _wall(k, 5.0, 4.5, math.pi / 2, 9, 4, 11, 410, 3, 0.6)
+    _mass(k, 4.6, -0.6, 2.4, 2.2, 13.5, 420, [T3, T6, T4, T2, T1, T0], sides=6, jitter=0.24)  # corner buttress tower
 
 
 # ----------------------------------------------------------------- war table (Human palette)

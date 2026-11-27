@@ -138,22 +138,60 @@ def _cap(k, R, phi_max, rings, sides, colfun, seed):
                 k._quad([a[s], a[s2], b[s2], b[s]], cc)
 
 
+def _patch(k, R, pol, azi, a, b, rot, lift, rings, sides, cols, seed, jitter=0.18):
+    """Low-poly landmass/cloud draped on a sphere of radius R: a jittered polygon disc of half-extent (a, b) radians
+    around the surface point (polar angle `pol`, azimuth `azi`), lifted `lift` m above the surface. cols = (rim, mid, core)."""
+    rnd = random.Random(seed)
+    cen = Vector((math.sin(pol) * math.cos(azi), math.sin(pol) * math.sin(azi), math.cos(pol)))
+    e1 = Vector((-math.sin(azi), math.cos(azi), 0.0))           # east
+    e2 = cen.cross(e1)                                           # north-ish tangent
+    cr, sr = math.cos(rot), math.sin(rot)
+    jit = [1.0 + rnd.uniform(-jitter, jitter) for _ in range(sides)]
+    rows = [[k.bm.verts.new(cen * (R + lift + 0.05))]]
+    for i in range(1, rings + 1):
+        t = i / rings
+        ring = []
+        for s in range(sides):
+            th = 2 * math.pi * s / sides
+            u, v = math.cos(th) * a * t * jit[s], math.sin(th) * b * t * jit[s]
+            uu, vv = u * cr - v * sr, u * sr + v * cr
+            d = (cen + e1 * uu + e2 * vv).normalized()
+            ring.append(k.bm.verts.new(d * (R + lift + (0.05 if i < rings else 0.0))))
+        rows.append(ring)
+    for i in range(rings):
+        c = cols[2] if i == 0 else (cols[1] if i < rings - 1 else cols[0])
+        A, B = rows[i], rows[i + 1]
+        for s in range(sides):
+            s2 = (s + 1) % sides
+            if i == 0:
+                k._quad([A[0], B[s2], B[s]], c)
+            else:
+                k._quad([A[s], A[s2], B[s2], B[s]], c)
+
+
 def p_limb(k):
-    """Planet surface cap R=40 m, ~29 deg half-angle. Pivot = planet centre. Neutral palette: ocean T7/T0, land T4/T5,
-    ice/cloud T6. Tint with MeshPart.Color; place with sphere centre at the desired planet centre."""
-    def col(r, s, rnd):
-        v = rnd.random() + 0.5 * math.sin(s * 0.9 + r * 0.7)
-        if r >= 8 and rnd.random() < 0.7:
-            return T6                                                    # cloud/ice toward the limb
-        if v > 0.95:
-            return T4 if v < 1.25 else T5
-        return T7 if v > 0.35 else T0
-    _cap(k, 40.0, 0.55, 11, 36, col, 7)
+    """Planet limb (R=40 m, ~29 deg half-angle, pivot = planet centre). Stylised: a clean ocean dome, plus separate
+    low-poly continents (sand rim -> land) and cloud wisps draped on it. Neutral palette: tint with MeshPart.Color.
+    Ocean T0/T1, coast T4, land T5/T7, cloud T6."""
+    R = 40.0
+    _cap(k, R, 0.55, 12, 48, lambda r, s, rnd: T1, 7)
+    rnd = random.Random(21)
+    # continents: (polar, azimuth, a, b, rot)
+    for i, (pol, azi, a, b, rot) in enumerate([(0.16, 0.5, 0.10, 0.065, 0.4), (0.30, 2.2, 0.12, 0.07, -0.5),
+                                               (0.24, 3.9, 0.09, 0.06, 1.0), (0.38, 5.2, 0.11, 0.075, 0.2),
+                                               (0.10, 5.9, 0.05, 0.04, 0.0), (0.42, 1.0, 0.06, 0.04, 0.7),
+                                               (0.34, 3.2, 0.05, 0.035, -0.2)]):
+        _patch(k, R, pol, azi, a * 1.9, b * 1.9, rot, 0.12, 3, 10, (T4, T5, T7), 100 + i, 0.22)
+    # cloud wisps toward the limb
+    for i in range(7):
+        pol = rnd.uniform(0.15, 0.52)
+        azi = rnd.uniform(0, 2 * math.pi)
+        _patch(k, R, pol, azi, rnd.uniform(0.07, 0.12), rnd.uniform(0.02, 0.035), rnd.uniform(0, 3.1), 0.55, 2, 8, (T6, T6, T6), 200 + i, 0.15)
 
 
 def p_atmo(k):
     """Atmosphere shell: same pivot, 0.9 m larger radius; use Neon/Transparency ~0.6 with a blue Color."""
-    _cap(k, 40.9, 0.62, 10, 36, lambda r, s, rnd: T6, 8)
+    _cap(k, 40.9, 0.62, 12, 64, lambda r, s, rnd: T6, 8)
 
 
 PLANET = [("PlanetLimb", p_limb, {"origin": "keep"}), ("PlanetAtmo", p_atmo, {"origin": "keep"})]

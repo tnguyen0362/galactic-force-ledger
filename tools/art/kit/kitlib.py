@@ -21,9 +21,10 @@ PAL = {
     "Human": [ramp(hexc("#252D35"), 0.85, 1.7), ramp(hexc("#3B4D60")), ramp(hexc("#83909B"), 0.6, 1.1),
               ramp(hexc("#D8DCD9"), 0.62, 1.0), ramp(hexc("#58C8F0"), 0.5, 1.1),
               ramp((150, 124, 70), 0.55, 1.05), ramp((38, 40, 44), 0.7, 1.4), ramp((112, 114, 112), 0.6, 1.1)],
-    "Ascendancy": [ramp(hexc("#24212A"), 1.0, 2.1), ramp(hexc("#51465E"), 0.75, 1.3), ramp(hexc("#967854"), 0.55, 1.1),
+    # cold obsidian/slate: the only violet left is the glow-line column (VI); stone reads charcoal, not lavender
+    "Ascendancy": [ramp(hexc("#1B1D22"), 1.0, 2.1), ramp(hexc("#3E434D"), 0.75, 1.3), ramp(hexc("#967854"), 0.55, 1.1),
                    ramp(hexc("#D6CBB4"), 0.6, 1.0), ramp(hexc("#A963E9"), 0.45, 0.9),
-                   ramp((62, 58, 66), 0.9, 1.6), ramp((104, 84, 58), 0.55, 1.0), ramp((92, 90, 94), 0.6, 1.1)],
+                   ramp((54, 57, 63), 0.9, 1.6), ramp((104, 84, 58), 0.55, 1.0), ramp((88, 91, 97), 0.6, 1.1)],
 }
 # Terrain: neutral rock tones; biome colour comes from MeshPart.Color tinting (multiplies the texture).
 PAL["Terrain"] = [ramp(hexc("#4A4E52"), 0.7, 1.25), ramp(hexc("#6B7075"), 0.7, 1.2), ramp(hexc("#8D8A84"), 0.7, 1.15),
