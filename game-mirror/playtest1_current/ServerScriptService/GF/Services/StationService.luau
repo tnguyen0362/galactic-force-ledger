@@ -928,7 +928,19 @@ function StationService.start()
 				require(script.Parent.SquadService).join(player)
 				return { ok = true, local_ = true }
 			end
-			return { ok = true, hostJobId = listing.leaderJobId }
+			-- cross-server: the seat is already theirs (claims carry their userId — the host
+			-- server recognizes them on arrival). teleport server-side to the host's jobId;
+			-- failure leaves the claim to expire harmlessly with the listing TTL and the
+			-- player exactly where they were
+			local okTp, err = pcall(function()
+				game:GetService("TeleportService"):TeleportToJobId(game.PlaceId, listing.leaderJobId, player)
+			end)
+			if not okTp then
+				warn("[GF] squad join teleport failed: " .. tostring(err))
+				require(script.Parent.MatchmakingService).reconcileFailedTeleport(player)
+				return { ok = false, reason = "teleport failed — retry offered" }
+			end
+			return { ok = true, teleporting = true }
 		end
 	end
 	local returnRequest = ensureRemote("RequestReturn", "RemoteEvent")

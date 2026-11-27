@@ -177,12 +177,25 @@ function MatchmakingService.start()
 				local s = store()
 				if s then
 					pcall(function()
+						-- refresh claims/seats from the store before republishing: cross-server
+						-- reservations mutate the authoritative record, and a blind heartbeat
+						-- republish would clobber them back to stale values
+						local fresh = s:GetAsync(hostedSquadId)
+						if type(fresh) == "table" then
+							hostedListing.claims = fresh.claims
+							hostedListing.openSeats = fresh.openSeats
+							hostedListing.taken = fresh.taken
+						end
 						hostedListing.leaderJobId = game.JobId
-						hostedListing.openSeats = math.max(0, (hostedListing.capacity or 4) - (hostedListing.taken or 1))
 						s:SetAsync(hostedSquadId, hostedListing, LISTING_TTL)
 					end)
 				end
 			end
+			-- cross-server arrival recognition: players present with claims on the hosted
+			-- listing get joined — uniform with the dispatch arrival pattern
+			pcall(function()
+				MatchmakingService.scanArrivals()
+			end)
 		end
 	end)
 	-- quick-deploy matching drain: scan the global queue, group compatible entries,
@@ -207,6 +220,11 @@ function MatchmakingService.reserveSeat(listingKey: string, plr: Player): boolea
 	pcall(function()
 		s:UpdateAsync(listingKey, function(listing)
 			if listing and (listing.openSeats or 0) > 0 and listing.state == "forming" then
+				-- the claim carries the userId: it IS the cross-server handshake. the host
+				-- server scans its hosted listing for claims of present players and joins
+				-- them — no message channel, no teleport data needed
+				listing.claims = listing.claims or {}
+				listing.claims[tostring(plr.UserId)] = os.time()
 				listing.openSeats -= 1
 				listing.taken = (listing.taken or 1) + 1
 				success = true
@@ -229,6 +247,29 @@ function MatchmakingService.getListing(squadId: string): Listing?
 		return result
 	end
 	return nil
+end
+
+-- cross-server arrival recognition for squad joins: a claimed userId present in this server
+-- is a squad joiner. processed exactly once per claim; local joins never carry claims so
+-- there is no double-processing path.
+local processedJoinClaims: { [string]: boolean } = {}
+function MatchmakingService.scanArrivals()
+	if not hostedListing or not hostedSquadId then return end
+	local claims = hostedListing.claims
+	if type(claims) ~= "table" then return end
+	local SquadService = require(script.Parent.SquadService)
+	for userIdStr, _t in pairs(claims) do
+		local claimKey = hostedSquadId .. ":" .. userIdStr
+		if not processedJoinClaims[claimKey] then
+			local userId = tonumber(userIdStr)
+			local player = userId and Players:GetPlayerByUserId(userId)
+			if player then
+				processedJoinClaims[claimKey] = true
+				SquadService.join(player)
+				player:SetAttribute("GF_SquadJoinArrived", os.time())
+			end
+		end
+	end
 end
 
 -- ---------------------------------------------------------------------------
