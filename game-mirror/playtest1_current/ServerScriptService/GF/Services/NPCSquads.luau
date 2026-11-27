@@ -11,6 +11,9 @@
 --   coordination LIMITS produce coherent pressure: not everyone flanks, not everyone advances
 --   Commander influence falls off with distance and dies with the Commander
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local EncounterHierarchy = require(ReplicatedStorage.GF.Shared.Configs.EncounterHierarchy)
+
 local NPCSquads = {}
 
 local SQUAD_JOIN_RADIUS = 55 -- spawn-time clustering: members within this distance join one squad
@@ -327,6 +330,172 @@ function NPCSquads.lossPressure(sq: SquadBlackboard?): number
 	local age = os.clock() - sq.lossTimer
 	local decay = math.exp(-age / 45)
 	return math.min(1, sq.recentLosses * 0.3) * decay
+end
+
+-- ---------------------------------------------------------------------------
+-- reinforcement composition (encounter-pacing layer): compose a wave as ONE squad,
+-- not a bag of independent single spawns. EncounterDirector chooses when and where;
+-- this module owns the infantry-core/support/command/heavy shape and formation offsets.
+-- ---------------------------------------------------------------------------
+export type WaveRequest = {
+	phase: string?,
+	escalation: number?,
+	difficulty: string?,
+	maxCost: number?,
+	maxMembers: number?,
+	playerCount: number?,
+	sizeHint: number?,
+	seed: number?,
+}
+
+export type WaveMember = {
+	id: string,
+	role: string,
+	offset: Vector3,
+}
+
+local ROLE_BY_ID = {
+	Rifleman = "infantry",
+	Scout = "infantry",
+	Marksman = "support",
+	Heavy = "heavy",
+	Officer = "command",
+}
+
+local function rand01(rng: Random?): number
+	return rng and rng:NextNumber() or math.random()
+end
+
+local function pick(ids: { string }, rng: Random?): string
+	if #ids == 0 then
+		return "Rifleman"
+	end
+	if rng then
+		return ids[rng:NextInteger(1, #ids)]
+	end
+	return ids[math.random(1, #ids)]
+end
+
+function NPCSquads.costOf(enemyId: string): number
+	return EncounterHierarchy.enemyPressureCost(enemyId)
+end
+
+function NPCSquads.roleForEnemy(enemyId: string): string
+	return ROLE_BY_ID[enemyId] or "infantry"
+end
+
+local function formationOffset(role: string, index: number): Vector3
+	-- The commander anchors the center, infantry form a tight wedge, support hangs back,
+	-- heavies take a forward shoulder. Spawn clustering then naturally puts them in one squad.
+	if role == "command" then
+		return Vector3.new(0, 0, 0)
+	end
+	if role == "support" then
+		return Vector3.new(index % 2 == 0 and -7 or 7, 0, 11)
+	end
+	if role == "heavy" then
+		return Vector3.new(index % 2 == 0 and -8 or 8, 0, -3)
+	end
+	local angle = (index / 6) * math.pi * 2
+	local radius = 5 + (index % 2) * 2
+	return Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+end
+
+-- Returns (members, pressureCost). The composition is budget-shaped before any spawn happens:
+-- infantry first, support second, elite slots last; if the economy cannot pay for elite flavor
+-- the squad still arrives as a coherent infantry unit rather than a random singleton.
+function NPCSquads.composeWave(request: WaveRequest): ({ WaveMember }, number)
+	local phase = request.phase or "contact"
+	local doctrine = EncounterHierarchy.waveDoctrine(phase)
+	local escalation = math.clamp(math.floor(request.escalation or 0), 0, 3)
+	local difficulty = request.difficulty or "Normal"
+	local maxCost = math.max(0, request.maxCost or 4)
+	local maxMembers = math.max(1, math.min(request.maxMembers or doctrine.maxMembers or 4, SQUAD_MAX_SIZE))
+	local rng = request.seed and Random.new(request.seed) or nil
+	local eliteFrequency = EncounterHierarchy.DifficultyEliteFrequency[difficulty] or 0.10
+	-- Easy keeps elite flavor scarce, Normal is the doctrine baseline, Hard/Extreme receive
+	-- visibly combined arms. HP never inflates here — frequency and composition carry difficulty.
+	local eliteScale = 0.25 + eliteFrequency * 3 + escalation * 0.10
+
+	local ids: { string } = {}
+	local cost = 0
+	local function tryAdd(enemyId: string): boolean
+		local c = NPCSquads.costOf(enemyId)
+		if #ids >= maxMembers or cost + c > maxCost + 0.001 then
+			return false
+		end
+		table.insert(ids, enemyId)
+		cost += c
+		return true
+	end
+
+	local coreRange = doctrine.core or { 2, 3 }
+	local coreMin = math.max(1, coreRange[1] or 2)
+	local coreMax = math.max(coreMin, coreRange[2] or coreMin)
+	local desiredCore = coreMin
+	if coreMax > coreMin then
+		desiredCore = coreMin + math.floor(rand01(rng) * (coreMax - coreMin + 1))
+	end
+	if request.sizeHint then
+		desiredCore = math.clamp((request.sizeHint or desiredCore) - 1, coreMin, coreMax)
+	end
+	if (request.playerCount or 1) >= 3 then
+		desiredCore = math.min(coreMax, desiredCore + 1)
+	end
+	desiredCore = math.min(desiredCore, maxMembers)
+	for _ = 1, desiredCore do
+		tryAdd(pick(doctrine.infantry or { "Rifleman" }, rng))
+	end
+
+	-- Support is the readability layer: Marksman overwatch or Scout pressure/flank beacon.
+	local supportChance = (doctrine.supportChance or 0) * (phase == "recon" and 0.7 or 1)
+	if rand01(rng) < supportChance then
+		tryAdd(pick(doctrine.support or { "Marksman" }, rng))
+	end
+
+	-- Elite slots are escalation-dependent and deliberately occasional. Officer first in objective
+	-- assaults (coordination), Heavy first in extraction (visible hold-or-die pressure).
+	local commandChance = (doctrine.commandChance or 0) * eliteScale
+	local heavyChance = (doctrine.heavyChance or 0) * eliteScale
+	if phase == "extraction" and escalation >= 2 then
+		heavyChance += 0.12 * eliteScale
+	end
+	if phase == "assault" and escalation >= 2 then
+		commandChance += 0.12 * eliteScale
+	end
+	local wantCommand = rand01(rng) < commandChance
+	local wantHeavy = rand01(rng) < heavyChance
+	if phase == "extraction" then
+		if wantHeavy then tryAdd("Heavy") end
+		if wantCommand then tryAdd("Officer") end
+	else
+		if wantCommand then tryAdd("Officer") end
+		if wantHeavy then tryAdd("Heavy") end
+	end
+
+	-- Spend leftover seats on the infantry core. This keeps timing/composition readable without
+	-- inflating concurrent population beyond the existing cap.
+	while #ids < maxMembers do
+		local before = #ids
+		tryAdd(pick(doctrine.infantry or { "Rifleman" }, rng))
+		if #ids == before then
+			break
+		end
+	end
+
+	if #ids < 2 then
+		return {}, 0
+	end
+	local members: { WaveMember } = {}
+	for i, enemyId in ipairs(ids) do
+		local role = NPCSquads.roleForEnemy(enemyId)
+		table.insert(members, {
+			id = enemyId,
+			role = role,
+			offset = formationOffset(role, i),
+		})
+	end
+	return members, cost
 end
 
 function NPCSquads.debugCount(): number

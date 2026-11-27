@@ -200,6 +200,81 @@ EncounterHierarchy.WarMachines = {
 	},
 }
 
+-- Per-enemy pressure costs used by the encounter director's reinforcement economy. These are
+-- deliberately separate from encounter-class costs above: a Spectre ENCOUNTER costs 4 as a rare
+-- operation event, while each spawned operator still occupies infantry seats in the live budget.
+-- Ordinary infantry remains the 1-cost baseline (spec section 11/66).
+EncounterHierarchy.EnemyPressure = {
+	Rifleman = 1,
+	Scout = 1,
+	Marksman = 1.5,
+	Heavy = 2.5,
+	Officer = 2,
+	SpectreAssault = 1.8,
+	SpectreWeapons = 2.4,
+	SpectrePrecision = 1.9,
+	SpectreLeader = 2.2,
+	SpectreSupport = 1.8,
+	RevenantLeader = 2.8,
+	RevenantAssault = 2.2,
+	RevenantWeapons = 2.7,
+	RevenantPrecision = 2.3,
+	RevenantDefense = 2.4,
+	BastionWalker = 6,
+	HighMarshalVeyr = 6,
+}
+
+-- Difficulty-shaped elite frequency for ordinary reinforcement composition. This mirrors the
+-- launch difficulty fantasy (scarce elites low, combined arms high) without scaling hit points.
+EncounterHierarchy.DifficultyEliteFrequency = {
+	Easy = 0.0,
+	Normal = 0.10,
+	Hard = 0.22,
+	Extreme = 0.34,
+}
+
+-- Wave doctrine data. The director owns timing/target selection; NPCSquads owns conversion of
+-- these roles into a formation. Waves are squads: an infantry core first, then support, command
+-- and heavy slots only when escalation/difficulty justifies them.
+EncounterHierarchy.WaveDoctrine = {
+	recon = {
+		core = { 2, 2 },
+		infantry = { "Rifleman", "Scout" },
+		support = { "Marksman" },
+		supportChance = 0.20,
+		commandChance = 0,
+		heavyChance = 0,
+		maxMembers = 3,
+	},
+	contact = {
+		core = { 2, 3 },
+		infantry = { "Rifleman", "Rifleman", "Scout" },
+		support = { "Marksman", "Scout" },
+		supportChance = 0.55,
+		commandChance = 0.10,
+		heavyChance = 0.04,
+		maxMembers = 4,
+	},
+	assault = {
+		core = { 3, 4 },
+		infantry = { "Rifleman", "Rifleman", "Scout" },
+		support = { "Marksman", "Scout" },
+		supportChance = 0.80,
+		commandChance = 0.24,
+		heavyChance = 0.16,
+		maxMembers = 5,
+	},
+	extraction = {
+		core = { 3, 4 },
+		infantry = { "Rifleman", "Rifleman", "Scout" },
+		support = { "Marksman", "Scout" },
+		supportChance = 0.90,
+		commandChance = 0.34,
+		heavyChance = 0.34,
+		maxMembers = 5,
+	},
+}
+
 function EncounterHierarchy.classOf(encounterType: string): any
 	return EncounterHierarchy.Class[encounterType]
 end
@@ -207,6 +282,14 @@ end
 function EncounterHierarchy.pressureCost(encounterType: string): number
 	local c = EncounterHierarchy.Class[encounterType]
 	return c and c.pressureCost or 1
+end
+
+function EncounterHierarchy.enemyPressureCost(enemyId: string): number
+	return EncounterHierarchy.EnemyPressure[enemyId] or 1
+end
+
+function EncounterHierarchy.waveDoctrine(phase: string): any
+	return EncounterHierarchy.WaveDoctrine[phase] or EncounterHierarchy.WaveDoctrine.contact
 end
 
 return EncounterHierarchy
