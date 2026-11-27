@@ -87,8 +87,8 @@ export type Loadout = {
 	primary: string,
 	secondary: string,
 	grenade: string,
-	ability1: string,
-	ability2: string,
+	-- one support ability slot (Counteroffensive contract revision)
+	ability: string,
 	classId: string,
 	weaponAugments: { [string]: string },
 	abilityAugment: string?,

@@ -79,12 +79,10 @@ function ArmoryService.state(player: Player)
 		end
 		catalogRows[#catalogRows + 1] = row
 	end
-	workspace:SetAttribute("GF_Ability1", profile.selectedLoadout.ability1)
-	workspace:SetAttribute("GF_Ability2", profile.selectedLoadout.ability2)
+	workspace:SetAttribute("GF_Ability", profile.selectedLoadout.ability)
 	-- per-player truth: workspace globals are shared across every client in the session, so one
 	-- player's armory visit used to overwrite the ability bindings everyone else read.
-	player:SetAttribute("GF_Ability1", profile.selectedLoadout.ability1)
-	player:SetAttribute("GF_Ability2", profile.selectedLoadout.ability2)
+	player:SetAttribute("GF_Ability", profile.selectedLoadout.ability)
 	local requisitionState = RequisitionService.stateFor(player)
 	return {
 		weapons = rows,
@@ -400,16 +398,14 @@ function ArmoryService.equipAbility(player: Player, slot: any, id: string)
 	if not (profile.ownedAbilities and profile.ownedAbilities[def.id]) then
 		return fail(player, "ability not owned")
 	end
-	local key = index == 1 and "ability1" or "ability2"
-	local otherKey = index == 1 and "ability2" or "ability1"
-	if profile.selectedLoadout[otherKey] == def.id then
-		return fail(player, "ability already in the other slot")
-	end
-	profile.selectedLoadout[key] = def.id
-	workspace:SetAttribute("GF_AbilityEquipped", string.format("%d:%s", index, def.id))
-	-- The client reads these to decide which ability a slot fires; the ids were hardcoded before.
-	workspace:SetAttribute("GF_Ability" .. index, def.id)
-	player:SetAttribute("GF_Ability" .. index, def.id)
+	-- one support ability slot (Counteroffensive contract revision): the index argument is
+	-- legacy wire-compat — there is exactly one slot now, so any slot index equips the same
+	-- single ability. owned abilities are never lost; this is purely the equipment contract.
+	profile.selectedLoadout.ability = def.id
+	workspace:SetAttribute("GF_AbilityEquipped", def.id)
+	-- The client reads these to decide which ability the slot fires.
+	workspace:SetAttribute("GF_Ability", def.id)
+	player:SetAttribute("GF_Ability", def.id)
 	ProfileService.markDirty(player)
 	pcall(function()
 		require(script.Parent.AbilityService).apply(player)

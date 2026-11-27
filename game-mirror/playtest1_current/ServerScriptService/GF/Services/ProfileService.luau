@@ -51,8 +51,9 @@ function ProfileService.defaults(userId: number)
 			primary = "AR01",
 			secondary = "P01",
 			grenade = "Frag",
-			ability1 = "Airstrike",
-			ability2 = "DomeShield",
+			-- one support ability slot (Counteroffensive contract revision); owned abilities
+			-- are never lost — the equipment contract collapsed, not the collection
+			ability = "Airstrike",
 			armor = "Standard",
 			weaponAugments = {},
 			abilityAugment = nil,
@@ -102,6 +103,26 @@ local function migrate(raw: any, userId: number)
 					raw[k][k2] = v2
 				end
 			end
+		end
+	end
+	-- one-slot support ability migration (Counteroffensive contract): collapse legacy
+	-- ability1/ability2 into the single slot. rule: slot 1 wins when set — owned abilities
+	-- are unaffected, and the freed choice is re-equippable in seconds, so no player-facing
+	-- migration prompt is warranted. saved loadouts transform identically.
+	local function collapseAbilities(loadout)
+		if type(loadout) ~= "table" then
+			return
+		end
+		if loadout.ability == nil then
+			loadout.ability = loadout.ability1 or loadout.ability2 or "Airstrike"
+		end
+		loadout.ability1 = nil
+		loadout.ability2 = nil
+	end
+	collapseAbilities(raw.selectedLoadout)
+	if type(raw.savedLoadouts) == "table" then
+		for _, loadout in raw.savedLoadouts do
+			collapseAbilities(loadout)
 		end
 	end
 	raw.schemaVersion = SCHEMA_VERSION

@@ -53,3 +53,14 @@ Lobby, matchmaking, teleport flow, war contribution routing, UI architecture, in
 
 ## Sequencing with Stage 3
 Independent — can proceed in parallel with war-service implementation. Both must land before the planetary UI (Stage 7) reads live contract shapes.
+
+---
+
+## EXECUTION LOG (beta, 2026-11-28 — Stage 1 Part A in progress)
+**Completed before this log:** Stage 3 core landed — WarStateService + WarModel + WarOperations + contribution seam, headless-verified, committed. Diff-test passes.
+**Key implementation facts (gathered, do not re-derive):**
+- ProfileService: SCHEMA_VERSION=1, migrate() is idempotent defaults-fill. Defaults: selectedLoadout.ability1="Airstrike", ability2="DomeShield". Types.luau Loadout type has ability1/ability2 fields.
+- ArmoryService.equipAbility(player, index, abilityId): index 1/2 keying, writes workspace+player attrs GF_Ability1/2 + GF_AbilityEquipped. Publish also writes GF_Ability1/2 attrs.
+- commitPrimary hardcodes pqualified=1 — participant counting untracked (noted in seam).
+- WarStateService committed in mirror; WarModel diff-tested. Harness: gf-research/strategic/build_harness.py → harness_bundle.luau (all checks pass).
+**Execution order:** (1) ProfileService schema+transform (2) Types (3) ArmoryService single-slot (4) AbilityService/input read-path (5) HUD/UI minimal (6) luau-compile verify all (7) commit.
