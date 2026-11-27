@@ -4,7 +4,19 @@
 -- assets, no server cost, no replication.
 
 local SoundService = game:GetService("SoundService")
+local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+
+-- ---------------------------------------------------------------------------
+-- AMBIENT BED ASSET SLOTS
+-- No authored ambient-loop uploads exist anywhere in this repository. These
+-- constants intentionally reuse engine-bundled sounds already referenced by
+-- the combat/UI mix; drop approved ambient asset ids into these slots when they exist.
+-- Do not invent numeric ids — unloaded audio fails silently in production.
+-- ---------------------------------------------------------------------------
+local STATION_OPS_BED_ID = "rbxasset://sounds/bass.wav"
+local STATION_CONSOLE_BED_ID = "rbxasset://sounds/electronicpingshort.wav"
+local MISSION_WIND_BED_ID = "rbxasset://sounds/bass.wav"
 
 local GFAudio = {}
 
@@ -48,17 +60,26 @@ local EVENTS = {
 	ui_click       = { id = "rbxasset://sounds/button.wav",              pitch = { 1.00, 1.00 }, volume = 0.35, range = 0 },
 	shield_break   = { id = "rbxasset://sounds/glassbreak.wav",           pitch = { 1.30, 1.50 }, volume = 0.55, range = 0 },
 	ui_confirm     = { id = "rbxasset://sounds/electronicpingshort.wav", pitch = { 0.70, 0.75 }, volume = 0.38, range = 0 },
+	rare_loot      = { id = "rbxasset://sounds/electronicpingshort.wav", pitch = { 0.92, 1.04 }, volume = 0.30, range = 0 },
 	objective_done = { id = "rbxasset://sounds/bass.wav",                pitch = { 0.80, 0.85 }, volume = 0.45, range = 0 },
 	mission_fail   = { id = "rbxasset://sounds/glassbreak.wav",          pitch = { 0.60, 0.65 }, volume = 0.40, range = 0 },
 }
 
 local LOOPS = {
-	ambient_wind    = { id = "rbxasset://sounds/bass.wav",         pitch = 0.35, volume = 0.07 },
-	extraction_hum  = { id = "rbxasset://sounds/bass.wav",         pitch = 0.22, volume = 0.10 },
-	relay_hum       = { id = "rbxasset://sounds/electronicpingshort.wav", pitch = 0.30, volume = 0.05 },
+	-- Scene beds. The lobby is a low operations-room hum with an almost imperceptible
+	-- console detail layer; the mission surface is a separate open-air low wind bed.
+	station_ops       = { id = STATION_OPS_BED_ID,      pitch = 0.18, volume = 0.055, channel = "music", eq = { low = 4, mid = -14, high = -30 } },
+	station_console   = { id = STATION_CONSOLE_BED_ID,  pitch = 0.14, volume = 0.014, channel = "music", eq = { low = -18, mid = -4, high = -8 } },
+	mission_wind      = { id = MISSION_WIND_BED_ID,     pitch = 0.34, volume = 0.075, channel = "music", eq = { low = -6, mid = 1, high = -10 } },
+	-- Backwards-compatible name retained for older callers; new scene direction uses mission_wind.
+	ambient_wind      = { id = MISSION_WIND_BED_ID,     pitch = 0.35, volume = 0.070, channel = "music" },
+	extraction_hum    = { id = "rbxasset://sounds/bass.wav", pitch = 0.22, volume = 0.10, channel = "sfx" },
+	relay_hum         = { id = "rbxasset://sounds/electronicpingshort.wav", pitch = 0.30, volume = 0.05, channel = "sfx" },
 }
 
 local loopVoices: { [string]: Sound } = {}
+local loopLevels: { [string]: number } = {}
+local loopTweens: { [string]: Tween } = {}
 
 local function takeVoice(): Sound
 	if #pool < MAX_VOICES then
@@ -99,6 +120,70 @@ end
 GFAudio.channelVolume = channelVolume
 
 GFAudio.masterVolume = masterVolume
+
+local function loopLevel(name: string): number
+	local level = loopLevels[name]
+	if level == nil then
+		return 1
+	end
+	return math.clamp(level, 0, 1)
+end
+
+local function targetLoopVolume(name: string): number
+	local cfg = LOOPS[name]
+	if not cfg then
+		return 0
+	end
+	return cfg.volume * loopLevel(name) * masterVolume() * channelVolume(cfg.channel or "sfx")
+end
+
+local function cancelLoopTween(name: string)
+	local tween = loopTweens[name]
+	if tween then
+		tween:Cancel()
+		loopTweens[name] = nil
+	end
+end
+
+local function applyLoopVolume(name: string, fadeTime: number?)
+	local voice = loopVoices[name]
+	if not voice then
+		return
+	end
+	cancelLoopTween(name)
+	local target = targetLoopVolume(name)
+	local duration = math.max(0, fadeTime or 0)
+	if duration <= 0 then
+		voice.Volume = target
+		return
+	end
+	local tween = TweenService:Create(voice, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Volume = target })
+	loopTweens[name] = tween
+	tween.Completed:Connect(function()
+		if loopTweens[name] == tween then
+			loopTweens[name] = nil
+		end
+	end)
+	tween:Play()
+end
+
+-- Scene direction API: level 0 keeps a bed allocated but silent, level 1 is its authored
+-- volume. Runtime uses this for station/mission crossfades; proximity loops can ignore it.
+function GFAudio.setLoopLevel(name: string, level: number, fadeTime: number?)
+	if not LOOPS[name] then
+		return
+	end
+	loopLevels[name] = math.clamp(level, 0, 1)
+	applyLoopVolume(name, fadeTime or 0.25)
+end
+
+-- Settings are player attributes, not events. The runtime calls this when any volume
+-- attribute changes so long-running beds track the settings panel immediately.
+function GFAudio.refreshLoopVolumes()
+	for name in loopVoices do
+		applyLoopVolume(name, 0.12)
+	end
+end
 
 function GFAudio.play(eventName: string, position: Vector3?, volumeScale: number?, pitchScale: number?)
 	local cfg = EVENTS[eventName]
@@ -160,12 +245,23 @@ function GFAudio.startLoop(name: string, parent: Instance?): Sound?
 	if current then
 		return current
 	end
+	if loopLevels[name] == nil then
+		loopLevels[name] = 1
+	end
 	local s = Instance.new("Sound")
 	s.Name = "Loop_" .. name
 	s.SoundId = cfg.id
 	s.PlaybackSpeed = cfg.pitch
-	s.Volume = cfg.volume * masterVolume() * channelVolume("sfx")
+	s.Volume = targetLoopVolume(name)
 	s.Looped = true
+	if cfg.eq then
+		local eq = Instance.new("EqualizerSoundEffect")
+		eq.Name = "AmbienceEQ"
+		eq.LowGain = cfg.eq.low or 0
+		eq.MidGain = cfg.eq.mid or 0
+		eq.HighGain = cfg.eq.high or 0
+		eq.Parent = s
+	end
 	s.Parent = parent or SoundService
 	s:Play()
 	loopVoices[name] = s
@@ -173,6 +269,7 @@ function GFAudio.startLoop(name: string, parent: Instance?): Sound?
 end
 
 function GFAudio.stopLoop(name: string)
+	cancelLoopTween(name)
 	local s = loopVoices[name]
 	if s then
 		s:Destroy()

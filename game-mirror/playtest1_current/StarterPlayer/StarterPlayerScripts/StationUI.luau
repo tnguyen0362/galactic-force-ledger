@@ -9,20 +9,26 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local remotes = ReplicatedStorage:WaitForChild("GF"):WaitForChild("Remotes")
 
-local CYAN = Color3.fromRGB(96, 200, 255)
-local AMBER = Color3.fromRGB(255, 176, 64)
-local PANEL = Color3.fromRGB(26, 30, 38)
-local TEXT = Color3.fromRGB(226, 232, 240)
-local MUTED = Color3.fromRGB(150, 160, 176)
+local Tokens = require(ReplicatedStorage:WaitForChild("GF"):WaitForChild("Shared"):WaitForChild("UI"):WaitForChild("Tokens"))
+
+local CYAN = Tokens.Color.techCyan
+local AMBER = Tokens.Color.warning
+local PANEL = Tokens.Color.panel
+local PANEL_RAISED = Tokens.Color.panelRaised
+local PANEL_INSET = Tokens.Color.panelInset
+local BORDER = Tokens.Color.border
+local TEXT = Tokens.Color.textPrimary
+local MUTED = Tokens.Color.textSecondary
+local BUTTON_SELECTED = Tokens.Color.navy
 
 local selectedDifficulty = "Normal"
 local difficultyButtons: { [string]: TextButton } = {}
 
 local function newGui(name: string): ScreenGui
 	local gui = Instance.new("ScreenGui")
-gui:GetPropertyChangedSignal("Enabled"):Connect(function()
-	workspace:SetAttribute("GF_UIOpen", gui.Enabled)
-end)
+	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+		workspace:SetAttribute("GF_UIOpen", gui.Enabled)
+	end)
 	gui.Name = name
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
@@ -31,23 +37,70 @@ end)
 	return gui
 end
 
+-- Angular frame detail: controlled bevels are represented as small square corner brackets
+-- and inset rules, never rounded mobile-app chrome. Decorative only; input flow is unchanged.
+local function cornerBrackets(frame: Frame, color: Color3, transparency: number?)
+	for _, x in ipairs({ 0, 1 }) do
+		for _, y in ipairs({ 0, 1 }) do
+			local horizontal = Instance.new("Frame")
+			horizontal.Name = "FrameCornerH"
+			horizontal.AnchorPoint = Vector2.new(x, y)
+			horizontal.Position = UDim2.fromScale(x, y)
+			horizontal.Size = UDim2.fromOffset(20, 2)
+			horizontal.BackgroundColor3 = color
+			horizontal.BackgroundTransparency = transparency or 0.22
+			horizontal.BorderSizePixel = 0
+			horizontal.Parent = frame
+
+			local vertical = Instance.new("Frame")
+			vertical.Name = "FrameCornerV"
+			vertical.AnchorPoint = Vector2.new(x, y)
+			vertical.Position = UDim2.fromScale(x, y)
+			vertical.Size = UDim2.fromOffset(2, 20)
+			vertical.BackgroundColor3 = color
+			vertical.BackgroundTransparency = transparency or 0.22
+			vertical.BorderSizePixel = 0
+			vertical.Parent = frame
+		end
+	end
+end
+
 local function panel(parent: Instance, size: UDim2, position: UDim2): Frame
 	local frame = Instance.new("Frame")
 	frame.Size = size
 	frame.Position = position
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.BackgroundColor3 = PANEL
-	frame.BackgroundTransparency = 0.12
+	frame.BackgroundTransparency = 0.04
 	frame.BorderSizePixel = 0
 	frame.Parent = parent
+
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = CYAN
+	stroke.Color = BORDER
 	stroke.Thickness = 1
-	stroke.Transparency = 0.55
+	stroke.Transparency = 0.22
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	stroke.Parent = frame
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
-	corner.Parent = frame
+
+	local topRule = Instance.new("Frame")
+	topRule.Name = "CommandTopRule"
+	topRule.Size = UDim2.new(1, 0, 0, 2)
+	topRule.BackgroundColor3 = CYAN
+	topRule.BackgroundTransparency = 0.42
+	topRule.BorderSizePixel = 0
+	topRule.Parent = frame
+
+	local lowerRule = Instance.new("Frame")
+	lowerRule.Name = "CommandLowerRule"
+	lowerRule.AnchorPoint = Vector2.new(0, 1)
+	lowerRule.Position = UDim2.new(0, 0, 1, 0)
+	lowerRule.Size = UDim2.new(1, 0, 0, 1)
+	lowerRule.BackgroundColor3 = BORDER
+	lowerRule.BackgroundTransparency = 0.48
+	lowerRule.BorderSizePixel = 0
+	lowerRule.Parent = frame
+
+	cornerBrackets(frame, CYAN, 0.18)
 	return frame
 end
 
@@ -57,13 +110,27 @@ local function label(parent: Instance, text: string, size: UDim2, position: UDim
 	l.Size = size
 	l.Position = position
 	l.BackgroundTransparency = 1
-	l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+	l.Font = bold and Tokens.Type.fontBold or Tokens.Type.font
 	l.TextSize = textSize
 	l.TextWrapped = true
+	l.TextTruncate = Enum.TextTruncate.AtEnd
 	l.TextColor3 = color
 	l.TextXAlignment = Enum.TextXAlignment.Left
 	l.Parent = parent
 	return l
+end
+
+local function paintButtonState(b: TextButton, selected: boolean)
+	b:SetAttribute("GFSelected", selected)
+	b.BackgroundColor3 = selected and BUTTON_SELECTED or PANEL_RAISED
+	local stroke = b:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Transparency = selected and 0.12 or 0.62
+	end
+	local accentBar = b:FindFirstChild("AccentBar")
+	if accentBar and accentBar:IsA("Frame") then
+		accentBar.BackgroundTransparency = selected and 0 or 0.42
+	end
 end
 
 local function button(parent: Instance, text: string, size: UDim2, position: UDim2, accent: Color3): TextButton
@@ -71,22 +138,60 @@ local function button(parent: Instance, text: string, size: UDim2, position: UDi
 	b.Text = text
 	b.Size = size
 	b.Position = position
-	b.BackgroundColor3 = Color3.fromRGB(38, 44, 54)
+	b.BackgroundColor3 = PANEL_RAISED
 	b.BorderSizePixel = 0
-	b.AutoButtonColor = true
-	b.Font = Enum.Font.GothamBold
-	b.TextSize = 18
+	b.AutoButtonColor = false
+	b.Font = Tokens.Type.fontBold
+	b.TextSize = Tokens.Type.sizeBody
 	b.TextColor3 = TEXT
+	b.TextTruncate = Enum.TextTruncate.AtEnd
 	b.Selectable = true
 	b.Parent = parent
+
 	local stroke = Instance.new("UIStroke")
 	stroke.Color = accent
 	stroke.Thickness = 1
-	stroke.Transparency = 0.4
+	stroke.Transparency = 0.62
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	stroke.Parent = b
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 4)
-	corner.Parent = b
+
+	local accentBar = Instance.new("Frame")
+	accentBar.Name = "AccentBar"
+	accentBar.Size = UDim2.new(0, 3, 1, -8)
+	accentBar.Position = UDim2.fromOffset(0, 4)
+	accentBar.BackgroundColor3 = accent
+	accentBar.BackgroundTransparency = 0.42
+	accentBar.BorderSizePixel = 0
+	accentBar.Parent = b
+
+	local statusTick = Instance.new("Frame")
+	statusTick.Name = "StatusTick"
+	statusTick.AnchorPoint = Vector2.new(1, 0)
+	statusTick.Position = UDim2.new(1, -6, 0, 5)
+	statusTick.Size = UDim2.fromOffset(10, 3)
+	statusTick.BackgroundColor3 = MUTED
+	statusTick.BorderSizePixel = 0
+	statusTick.Visible = false
+	statusTick.Parent = b
+
+	b.MouseEnter:Connect(function()
+		stroke.Transparency = 0.08
+		accentBar.BackgroundTransparency = 0
+	end)
+	b.MouseLeave:Connect(function()
+		local selected = b:GetAttribute("GFSelected") == true
+		stroke.Transparency = selected and 0.12 or 0.62
+		accentBar.BackgroundTransparency = selected and 0 or 0.42
+	end)
+	b.SelectionGained:Connect(function()
+		stroke.Transparency = 0.08
+		accentBar.BackgroundTransparency = 0
+	end)
+	b.SelectionLost:Connect(function()
+		local selected = b:GetAttribute("GFSelected") == true
+		stroke.Transparency = selected and 0.12 or 0.62
+		accentBar.BackgroundTransparency = selected and 0 or 0.42
+	end)
 	return b
 end
 
@@ -95,10 +200,21 @@ local table_ = panel(stationGui, UDim2.fromOffset(420, 672), UDim2.new(1, -24, 1
 table_.AnchorPoint = Vector2.new(1, 1)
 table_.Visible = false
 
-label(table_, "GALACTIC WAR TABLE", UDim2.new(1, -40, 0, 30), UDim2.fromOffset(24, 18), TEXT, 22, true)
-label(table_, "VEYRA-7  ·  ASCENDANCY FRONTIER", UDim2.new(1, -40, 0, 20), UDim2.fromOffset(24, 50), MUTED, 14)
+local headerRail = Instance.new("Frame")
+headerRail.Name = "HeaderRail"
+headerRail.Size = UDim2.fromOffset(3, 58)
+headerRail.Position = UDim2.fromOffset(14, 18)
+headerRail.BackgroundColor3 = CYAN
+headerRail.BackgroundTransparency = 0.18
+headerRail.BorderSizePixel = 0
+headerRail.Parent = table_
 
-label(table_, tostring(workspace:GetAttribute("GF_WarSector") or "SECTOR CONTESTED"), UDim2.new(1, -40, 0, 18), UDim2.fromOffset(24, 72), AMBER, 13)
+label(table_, "GALACTIC WAR TABLE", UDim2.new(1, -40, 0, 30), UDim2.fromOffset(24, 18), TEXT, Tokens.Type.sizeTitle, true)
+label(table_, "VEYRA-7  //  ASCENDANCY FRONTIER", UDim2.new(1, -40, 0, 18), UDim2.fromOffset(24, 50), MUTED, Tokens.Type.sizeSmall)
+
+label(table_, tostring(workspace:GetAttribute("GF_WarSector") or "SECTOR CONTESTED"), UDim2.new(1, -40, 0, 18), UDim2.fromOffset(24, 72), AMBER, Tokens.Type.sizeSmall)
+local terminalCode = label(table_, "GF-CMD // LOCAL LINK", UDim2.fromOffset(132, 14), UDim2.new(1, -156, 0, 22), MUTED, 11)
+terminalCode.TextXAlignment = Enum.TextXAlignment.Right
 
 -- The sector line is the shared campaign, not fixed copy: it changes when operations are won or lost.
 task.spawn(function()
@@ -119,10 +235,18 @@ end)
 local divider = Instance.new("Frame")
 divider.Size = UDim2.new(1, -48, 0, 1)
 divider.Position = UDim2.fromOffset(24, 100)
-divider.BackgroundColor3 = CYAN
-divider.BackgroundTransparency = 0.7
+divider.BackgroundColor3 = BORDER
+divider.BackgroundTransparency = 0.28
 divider.BorderSizePixel = 0
 divider.Parent = table_
+
+local dividerAccent = Instance.new("Frame")
+dividerAccent.Size = UDim2.fromOffset(72, 2)
+dividerAccent.Position = UDim2.fromOffset(24, 99)
+dividerAccent.BackgroundColor3 = CYAN
+dividerAccent.BackgroundTransparency = 0.32
+dividerAccent.BorderSizePixel = 0
+dividerAccent.Parent = table_
 
 -- Body is a single flowing column. Every collision in this panel came from absolute offsets, so new rows
 -- simply append here instead of being hand-fitted on top of something else.
@@ -132,9 +256,12 @@ body.Size = UDim2.new(1, -24, 1, -146)
 body.Position = UDim2.fromOffset(12, 112)
 body.BackgroundTransparency = 1
 body.BorderSizePixel = 0
-body.ScrollBarThickness = 3
+body.ScrollBarThickness = 4
+body.ScrollBarImageColor3 = BORDER
+body.ScrollBarImageTransparency = 0.2
 body.CanvasSize = UDim2.new()
 body.AutomaticCanvasSize = Enum.AutomaticSize.Y
+body.ScrollingDirection = Enum.ScrollingDirection.Y
 body.Parent = table_
 local bodyLayout = Instance.new("UIListLayout")
 bodyLayout.Padding = UDim.new(0, 6)
@@ -144,9 +271,17 @@ bodyLayout.Parent = body
 local function row(order: number): Frame
 	local holder = Instance.new("Frame")
 	holder.Size = UDim2.new(1, -8, 0, 34)
-	holder.BackgroundTransparency = 1
+	holder.BackgroundColor3 = PANEL_INSET
+	holder.BackgroundTransparency = 0.18
+	holder.BorderSizePixel = 0
 	holder.LayoutOrder = order
 	holder.Parent = body
+	local rowStroke = Instance.new("UIStroke")
+	rowStroke.Color = BORDER
+	rowStroke.Transparency = 0.68
+	rowStroke.Thickness = 1
+	rowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	rowStroke.Parent = holder
 	return holder
 end
 
@@ -160,11 +295,11 @@ local WarModel = require(ReplicatedStorage.GF.Shared.WarModel)
 local Campaign = require(ReplicatedStorage.GF.Shared.Configs.Campaign)
 
 local STATUS_COLORS = {
-	ascendancy_dominance = Color3.fromRGB(120, 44, 44),
-	contested_theater = Color3.fromRGB(140, 104, 40),
-	human_infiltration = Color3.fromRGB(70, 90, 110),
-	gf_offensive = Color3.fromRGB(36, 100, 128),
-	established_superiority = Color3.fromRGB(48, 120, 80),
+	ascendancy_dominance = Tokens.StatusColor.ascendancy_dominance,
+	contested_theater = Tokens.StatusColor.contested_theater,
+	human_infiltration = Tokens.StatusColor.human_infiltration,
+	gf_offensive = Tokens.StatusColor.gf_offensive,
+	established_superiority = Tokens.StatusColor.established_superiority,
 }
 local STATUS_LABEL = {
 	ascendancy_dominance = "ASCENDANCY",
@@ -178,23 +313,39 @@ local function regionStatus(rid: string): string
 	return type(s) == "string" and s or "ascendancy_dominance"
 end
 
-local headLabel = label(body, "THEATER OF WAR — SELECT REGION", UDim2.new(1, -8, 0, 18), UDim2.fromOffset(0, 0), MUTED, 13)
+local headLabel = label(body, "// THEATER OF WAR — SELECT REGION", UDim2.new(1, -8, 0, 18), UDim2.fromOffset(0, 0), MUTED, 12)
 headLabel.LayoutOrder = 0
 
 local regionRow = row(1)
-local regionLayout = Instance.new("UIListLayout")
-regionLayout.FillDirection = Enum.FillDirection.Horizontal
-regionLayout.Padding = UDim.new(0, 6)
+regionRow.Size = UDim2.new(1, -8, 0, 66)
+local regionLayout = Instance.new("UIGridLayout")
+regionLayout.CellSize = UDim2.fromOffset(92, 30)
+regionLayout.CellPadding = UDim2.fromOffset(6, 6)
+regionLayout.SortOrder = Enum.SortOrder.LayoutOrder
 regionLayout.Parent = regionRow
 
 local opRow = row(2)
-local opLayout = Instance.new("UIListLayout")
-opLayout.FillDirection = Enum.FillDirection.Horizontal
-opLayout.Padding = UDim.new(0, 8)
+local opLayout = Instance.new("UIGridLayout")
+opLayout.CellSize = UDim2.fromOffset(120, 30)
+opLayout.CellPadding = UDim2.fromOffset(6, 6)
+opLayout.SortOrder = Enum.SortOrder.LayoutOrder
 opLayout.Parent = opRow
 
-local missionDesc = label(body, "", UDim2.new(1, -8, 0, 34), UDim2.fromOffset(0, 0), MUTED, 13)
+local missionDesc = label(body, "", UDim2.new(1, -8, 0, 34), UDim2.fromOffset(0, 0), MUTED, 12)
 missionDesc.LayoutOrder = 3
+missionDesc.BackgroundColor3 = PANEL_INSET
+missionDesc.BackgroundTransparency = 0.18
+missionDesc.TextYAlignment = Enum.TextYAlignment.Center
+local missionDescStroke = Instance.new("UIStroke")
+missionDescStroke.Color = BORDER
+missionDescStroke.Transparency = 0.72
+missionDescStroke.Thickness = 1
+missionDescStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+missionDescStroke.Parent = missionDesc
+local missionDescPadding = Instance.new("UIPadding")
+missionDescPadding.PaddingLeft = UDim.new(0, 8)
+missionDescPadding.PaddingRight = UDim.new(0, 8)
+missionDescPadding.Parent = missionDesc
 
 -- operations grouped by region, in the config's canonical order
 local opsByRegion: { [string]: { string } } = {}
@@ -220,10 +371,11 @@ local function refreshOpRow()
 		b:Destroy()
 	end
 	opButtons = {}
-	for _, opId in opsByRegion[selectedRegion] do
+	for opIndex, opId in ipairs(opsByRegion[selectedRegion]) do
 		local name = WarOperations.DisplayName[opId] or opId
-		local b = button(opRow, string.upper(name), UDim2.fromOffset(150, 30), UDim2.fromOffset(0, 0), CYAN)
-		b.TextSize = 12
+		local b = button(opRow, string.upper(name), UDim2.fromOffset(120, 30), UDim2.fromOffset(0, 0), CYAN)
+		b.TextSize = 11
+		b.LayoutOrder = opIndex
 		table.insert(opButtons, b)
 		b.Activated:Connect(function()
 			selectedOperation = opId
@@ -232,16 +384,16 @@ local function refreshOpRow()
 				name, string.lower(WarModel.OPERATIONS[opId].family), selectedRegion,
 				STATUS_LABEL[status] or status)
 			for _, other in opButtons do
-				other.BackgroundColor3 = Color3.fromRGB(38, 44, 54)
+				paintButtonState(other, false)
 			end
-			b.BackgroundColor3 = Color3.fromRGB(28, 92, 128)
+			paintButtonState(b, true)
 		end)
 	end
 	-- auto-select the first operation so deploy is never pressed with nothing chosen
 	if #opButtons > 0 then
 		local first = opsByRegion[selectedRegion][1]
 		selectedOperation = first
-		opButtons[1].BackgroundColor3 = Color3.fromRGB(28, 92, 128)
+		paintButtonState(opButtons[1], true)
 		local status = regionStatus(selectedRegion)
 		local name = WarOperations.DisplayName[first] or first
 		missionDesc.Text = string.format("%s — %s operation in %s  ·  theatre: %s",
@@ -250,13 +402,17 @@ local function refreshOpRow()
 	end
 end
 
-for _, territory in ipairs(Campaign.Territories) do
+for regionIndex, territory in ipairs(Campaign.Territories) do
 	local rid = territory.id
-	local b = button(regionRow, string.upper(rid), UDim2.fromOffset(112, 30), UDim2.fromOffset(0, 0), CYAN)
+	local b = button(regionRow, string.upper(rid), UDim2.fromOffset(92, 30), UDim2.fromOffset(0, 0), CYAN)
 	b.TextSize = 11
+	b.LayoutOrder = regionIndex
 	regionButtons[rid] = b
 	b.Activated:Connect(function()
 		selectedRegion = rid
+		for key, other in pairs(regionButtons) do
+			paintButtonState(other, key == rid)
+		end
 		refreshOpRow()
 	end)
 end
@@ -265,13 +421,12 @@ end
 local function tintRegions()
 	for rid, b in regionButtons do
 		local status = regionStatus(rid)
-		b.BackgroundColor3 = STATUS_COLORS[status] or Color3.fromRGB(38, 44, 54)
-		if rid == selectedRegion then
-			b.BorderSizePixel = 2
-			b.BorderColor3 = Color3.fromRGB(240, 240, 240)
-		else
-			b.BorderSizePixel = 0
+		local tick = b:FindFirstChild("StatusTick")
+		if tick and tick:IsA("Frame") then
+			tick.Visible = true
+			tick.BackgroundColor3 = STATUS_COLORS[status] or MUTED
 		end
+		paintButtonState(b, rid == selectedRegion)
 	end
 end
 task.spawn(function()
@@ -283,29 +438,32 @@ end)
 tintRegions()
 refreshOpRow()
 
-local diffLabel = label(body, "DIFFICULTY", UDim2.new(0, 200, 0, 18), UDim2.fromOffset(0, 0), MUTED, 13)
+local diffLabel = label(body, "// DIFFICULTY", UDim2.new(0, 200, 0, 18), UDim2.fromOffset(0, 0), MUTED, 12)
 diffLabel.LayoutOrder = 4
 local diffRow = row(5)
-local diffLayout = Instance.new("UIListLayout")
-diffLayout.FillDirection = Enum.FillDirection.Horizontal
-diffLayout.Padding = UDim.new(0, 8)
+local diffLayout = Instance.new("UIGridLayout")
+diffLayout.CellSize = UDim2.fromOffset(90, 32)
+diffLayout.CellPadding = UDim2.fromOffset(6, 6)
+diffLayout.SortOrder = Enum.SortOrder.LayoutOrder
 diffLayout.Parent = diffRow
 local difficulties = { "Easy", "Normal", "Hard", "Extreme" }
 for i, name in difficulties do
-	local b = button(diffRow, string.upper(name), UDim2.fromOffset(120, 32), UDim2.fromOffset(0, 0), CYAN)
+	local b = button(diffRow, string.upper(name), UDim2.fromOffset(90, 32), UDim2.fromOffset(0, 0), CYAN)
+	b.TextSize = 11
+	b.LayoutOrder = i
 	difficultyButtons[name] = b
 	b.Activated:Connect(function()
 		selectedDifficulty = name
 		for key, other in difficultyButtons do
-			other.BackgroundColor3 = if key == selectedDifficulty then Color3.fromRGB(28, 92, 128) else Color3.fromRGB(38, 44, 54)
+			paintButtonState(other, key == selectedDifficulty)
 		end
 	end)
 end
-difficultyButtons.Normal.BackgroundColor3 = Color3.fromRGB(28, 92, 128)
+paintButtonState(difficultyButtons.Normal, true)
 
-local deploy = button(body, "DEPLOY TO VEYRA-7", UDim2.new(1, -8, 0, 50), UDim2.fromOffset(0, 0), CYAN)
-deploy.LayoutOrder = 6
-deploy.TextSize = 20
+local deploy = button(body, "DEPLOY TO VEYRA-7", UDim2.new(1, -8, 0, 52), UDim2.fromOffset(0, 0), CYAN)
+deploy.LayoutOrder = 7
+deploy.TextSize = 18
 local requestDeploy = remotes:WaitForChild("RequestDeploy") :: RemoteEvent
 -- Honest deploy states: the spinner ends when the server answers, not on a fixed timer, and a refusal is
 -- shown with its reason plus a retry. Before this a refused launch looked exactly like a slow one.
@@ -320,14 +478,25 @@ status.LayoutOrder = 8
 -- pixel offsets and have collided five times this session; anything added from here flows instead.
 local squadBody = body
 
-local dispatchList = label(squadBody, "NO ACTIVE DISPATCH REQUESTS", UDim2.new(1, -110, 0, 22), UDim2.fromOffset(0, 0), MUTED, 11)
-	dispatchList.LayoutOrder = 8
-	dispatchList.LayoutOrder = 1
-local dispatchJoin = button(squadBody, "JOIN — LISTED OPERATION", UDim2.new(1, -8, 0, 24), UDim2.fromOffset(0, 0), CYAN)
-	dispatchJoin.LayoutOrder = 9
+local dispatchList = label(squadBody, "NO ACTIVE DISPATCH REQUESTS", UDim2.new(1, -8, 0, 62), UDim2.fromOffset(0, 0), MUTED, 11)
+dispatchList.LayoutOrder = 10
+local dispatchJoin = button(squadBody, "JOIN — LISTED OPERATION", UDim2.new(1, -8, 0, 34), UDim2.fromOffset(0, 0), CYAN)
+dispatchJoin.LayoutOrder = 11
 dispatchJoin.Visible = false
-	dispatchJoin.LayoutOrder = 2
 dispatchJoin.TextSize = 12
+dispatchList.TextYAlignment = Enum.TextYAlignment.Top
+dispatchList.BackgroundColor3 = PANEL_INSET
+dispatchList.BackgroundTransparency = 0.18
+local dispatchStroke = Instance.new("UIStroke")
+dispatchStroke.Color = BORDER
+dispatchStroke.Transparency = 0.72
+dispatchStroke.Thickness = 1
+dispatchStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+dispatchStroke.Parent = dispatchList
+local dispatchPadding = Instance.new("UIPadding")
+dispatchPadding.PaddingLeft = UDim.new(0, 8)
+dispatchPadding.PaddingTop = UDim.new(0, 5)
+dispatchPadding.Parent = dispatchList
 local listedId = nil
 local function renderDispatch(list)
 	local entry = type(list) == "table" and list[1] or nil
@@ -365,8 +534,8 @@ end)
 
 -- Quick Deploy: one button, no queue. Joins a listed public operation when one exists, otherwise launches solo.
 -- Its own row: side by side it ran off the panel edge, above it collided with the difficulty buttons.
-	local quickButton = button(body, "QUICK DEPLOY", UDim2.new(1, -8, 0, 30), UDim2.fromOffset(0, 0), CYAN)
-quickButton.LayoutOrder = 7
+local quickButton = button(body, "QUICK DEPLOY", UDim2.new(1, -8, 0, 36), UDim2.fromOffset(0, 0), CYAN)
+quickButton.LayoutOrder = 8
 quickButton.TextSize = 12
 quickButton.Activated:Connect(function()
 	status.Text = "Finding an operation…"
@@ -379,21 +548,19 @@ quickButton.Activated:Connect(function()
 	end)
 end)
 
-local dispatchButton = button(squadBody, "REQUEST SUPPORT", UDim2.new(1, -8, 0, 34), UDim2.fromOffset(0, 0), AMBER)
-	dispatchButton.LayoutOrder = 12
-	dispatchButton.LayoutOrder = 7
+local dispatchButton = button(squadBody, "REQUEST SUPPORT", UDim2.new(1, -8, 0, 38), UDim2.fromOffset(0, 0), AMBER)
+dispatchButton.LayoutOrder = 14
 dispatchButton.TextSize = 13
 -- Privacy selector. The protocol supported public / friends / private but nothing in the UI could choose.
 local privacyModes = { "public", "friends", "private" }
 local selectedPrivacy = "public"
 local privacyButtons = {}
-local chipLabel = label(squadBody, "LISTING VISIBILITY", UDim2.fromOffset(160, 16), UDim2.fromOffset(0, 0), MUTED, 11)
-	chipLabel.LayoutOrder = 10
-chipLabel.LayoutOrder = 3
+local chipLabel = label(squadBody, "// LISTING VISIBILITY", UDim2.fromOffset(180, 16), UDim2.fromOffset(0, 0), MUTED, 11)
+chipLabel.LayoutOrder = 12
 local function selectPrivacy(mode)
 	selectedPrivacy = mode
 	for key, other in pairs(privacyButtons) do
-		other.BackgroundColor3 = key == selectedPrivacy and Color3.fromRGB(28, 92, 128) or Color3.fromRGB(38, 44, 54)
+		paintButtonState(other, key == selectedPrivacy)
 	end
 	status.Text = string.format("Listing visibility: %s", mode)
 	status.TextColor3 = MUTED
@@ -401,17 +568,25 @@ end
 
 local chipRow = Instance.new("Frame")
 chipRow.Name = "ChipRow"
-chipRow.Size = UDim2.new(1, -8, 0, 24)
-chipRow.BackgroundTransparency = 1
-chipRow.LayoutOrder = 11
+chipRow.Size = UDim2.new(1, -8, 0, 32)
+chipRow.BackgroundColor3 = PANEL_INSET
+chipRow.BackgroundTransparency = 0.18
+chipRow.BorderSizePixel = 0
+chipRow.LayoutOrder = 13
 chipRow.Parent = squadBody
+local chipStroke = Instance.new("UIStroke")
+chipStroke.Color = BORDER
+chipStroke.Transparency = 0.68
+chipStroke.Thickness = 1
+chipStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+chipStroke.Parent = chipRow
 local chipLayout = Instance.new("UIListLayout")
 chipLayout.FillDirection = Enum.FillDirection.Horizontal
 chipLayout.Padding = UDim.new(0, 6)
 chipLayout.Parent = chipRow
 
 for index, mode in ipairs(privacyModes) do
-		local chip = button(chipRow, mode:upper(), UDim2.fromOffset(96, 24), UDim2.fromOffset(0, 0), CYAN)
+		local chip = button(chipRow, mode:upper(), UDim2.fromOffset(96, 28), UDim2.fromOffset(0, 0), CYAN)
 	chip.TextSize = 11
 	chip.LayoutOrder = index
 	privacyButtons[mode] = chip
@@ -419,7 +594,7 @@ for index, mode in ipairs(privacyModes) do
 		selectPrivacy(mode)
 	end)
 end
-privacyButtons.public.BackgroundColor3 = Color3.fromRGB(28, 92, 128)
+paintButtonState(privacyButtons.public, true)
 workspace:GetAttributeChangedSignal("GF_DispatchPrivacy"):Connect(function()
 	local want = tostring(workspace:GetAttribute("GF_DispatchPrivacy") or "")
 	if privacyButtons[want] then
@@ -484,16 +659,16 @@ deploy.Activated:Connect(function()
 	end)
 end)
 
-label(table_, "WASD move  ·  LMB fire  ·  RMB aim  ·  CTRL dodge  ·  R reload  ·  Q / F abilities",
-	UDim2.new(1, -40, 0, 18), UDim2.new(0, 24, 1, -26), MUTED, 12)
+label(table_, "WASD MOVE  //  LMB FIRE  //  RMB AIM  //  CTRL DODGE  //  R RELOAD  //  Q/F ABILITIES",
+	UDim2.new(1, -40, 0, 18), UDim2.new(0, 24, 1, -26), MUTED, 10)
 
 -- Final ordering pass, after every widget exists: display order is declared once, here, instead of being
 -- smeared through the construction code where each new row collided with the previous one.
 local function orderColumn()
 	local column = {
-		{ headLabel, 1 }, { missionRow, 2 }, { missionDesc, 3 }, { diffLabel, 4 }, { diffRow, 5 },
-		{ deploy, 6 }, { quickButton, 7 }, { status, 8 },
-		{ dispatchList, 9 }, { dispatchJoin, 10 }, { chipLabel, 11 }, { chipRow, 12 }, { dispatchButton, 13 },
+		{ headLabel, 1 }, { regionRow, 2 }, { opRow, 3 }, { missionDesc, 4 }, { diffLabel, 5 }, { diffRow, 6 },
+		{ deploy, 7 }, { quickButton, 8 }, { status, 9 },
+		{ dispatchList, 10 }, { dispatchJoin, 11 }, { chipLabel, 12 }, { chipRow, 13 }, { dispatchButton, 14 },
 	}
 	for _, entry in ipairs(column) do
 		if entry[1] then
@@ -506,10 +681,39 @@ task.defer(orderColumn)
 local debriefGui = newGui("GFDebrief")
 local debrief = panel(debriefGui, UDim2.fromOffset(520, 380), UDim2.new(1, -276, 0.5, 0))
 debrief.Visible = false
-local debriefTitle = label(debrief, "OPERATION COMPLETE", UDim2.new(1, -40, 0, 30), UDim2.fromOffset(24, 20), CYAN, 22, true)
-local debriefBody = label(debrief, "", UDim2.new(1, -48, 0, 180), UDim2.fromOffset(24, 64), TEXT, 16)
+
+local debriefRail = Instance.new("Frame")
+debriefRail.Name = "HeaderRail"
+debriefRail.Size = UDim2.fromOffset(3, 34)
+debriefRail.Position = UDim2.fromOffset(14, 20)
+debriefRail.BackgroundColor3 = CYAN
+debriefRail.BackgroundTransparency = 0.18
+debriefRail.BorderSizePixel = 0
+debriefRail.Parent = debrief
+
+local debriefTitle = label(debrief, "OPERATION COMPLETE", UDim2.new(1, -40, 0, 30), UDim2.fromOffset(24, 20), CYAN, Tokens.Type.sizeTitle, true)
+local debriefCode = label(debrief, "// AFTER ACTION REPORT", UDim2.fromOffset(160, 14), UDim2.new(1, -184, 0, 25), MUTED, 11)
+debriefCode.TextXAlignment = Enum.TextXAlignment.Right
+
+local reportWell = Instance.new("Frame")
+reportWell.Name = "ReportWell"
+reportWell.Size = UDim2.new(1, -48, 0, 204)
+reportWell.Position = UDim2.fromOffset(24, 64)
+reportWell.BackgroundColor3 = PANEL_INSET
+reportWell.BackgroundTransparency = 0.08
+reportWell.BorderSizePixel = 0
+reportWell.Parent = debrief
+local reportStroke = Instance.new("UIStroke")
+reportStroke.Color = BORDER
+reportStroke.Transparency = 0.45
+reportStroke.Thickness = 1
+reportStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+reportStroke.Parent = reportWell
+
+local debriefBody = label(debrief, "", UDim2.new(1, -64, 0, 188), UDim2.fromOffset(32, 72), TEXT, Tokens.Type.sizeBody)
 debriefBody.TextYAlignment = Enum.TextYAlignment.Top
-local back = button(debrief, "RETURN TO STATION", UDim2.new(1, -48, 0, 48), UDim2.new(0, 24, 1, -72), CYAN)
+debriefBody.ZIndex = 2
+local back = button(debrief, "RETURN TO STATION", UDim2.new(1, -48, 0, 52), UDim2.new(0, 24, 1, -76), CYAN)
 local requestReturn = remotes:WaitForChild("RequestReturn") :: RemoteEvent
 back.Activated:Connect(function()
 	debrief.Visible = false

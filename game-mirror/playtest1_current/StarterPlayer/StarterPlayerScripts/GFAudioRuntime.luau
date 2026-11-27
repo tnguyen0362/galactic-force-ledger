@@ -16,7 +16,62 @@ local frames, movingFrames, groundedFrames, stepPlays = 0, 0, 0, 0
 local lastHealth: number? = nil
 local connected: { [Instance]: boolean } = {}
 
-Audio.startLoop("ambient_wind")
+-- Scene ambience direction. Beds stay allocated at level zero so zone changes crossfade
+-- instead of clicking in and out. The lobby bed is station_ops + a very faint console
+-- detail layer; mission_wind is the surface bed. Asset slots live at the top of GFAudio.
+local AMBIENCE_FADE_SECONDS = 1.15
+for _, loopName in ipairs({ "station_ops", "station_console", "mission_wind" }) do
+	Audio.setLoopLevel(loopName, 0, 0)
+	Audio.startLoop(loopName)
+end
+
+local ambienceScene: string? = nil
+local zoneInMission: boolean? = nil
+local function applySceneAmbience(inMission: boolean, instant: boolean?)
+	local scene = inMission and "mission" or "station"
+	if ambienceScene == scene then
+		return
+	end
+	ambienceScene = scene
+	local fade = instant == true and 0 or AMBIENCE_FADE_SECONDS
+	Audio.setLoopLevel("station_ops", inMission and 0 or 1, fade)
+	Audio.setLoopLevel("station_console", inMission and 0 or 0.75, fade)
+	Audio.setLoopLevel("mission_wind", inMission and 1 or 0, fade)
+	script:SetAttribute("gf_ambience_scene", scene)
+end
+
+local function refreshSceneAmbience(instant: boolean?)
+	-- Before the first zone publish, GF_InMission is the only context available. After that,
+	-- the player's zone wins: extraction/debrief can lower the global mission flag while the
+	-- player is still physically on the surface, and another squadmate's mission must not set
+	-- the lobby ambience for someone who already returned.
+	local inMission = if zoneInMission ~= nil then zoneInMission else workspace:GetAttribute("GF_InMission") == true
+	applySceneAmbience(inMission, instant)
+end
+
+refreshSceneAmbience(true)
+workspace:GetAttributeChangedSignal("GF_InMission"):Connect(function()
+	refreshSceneAmbience(false)
+end)
+
+-- Zone payloads are more precise than the global mission flag near extraction/debrief.
+local deployStateForAudio = game:GetService("ReplicatedStorage").GF.Remotes:FindFirstChild("DeployStateChanged")
+if deployStateForAudio then
+	deployStateForAudio.OnClientEvent:Connect(function(payload)
+		if type(payload) == "table" and type(payload.zone) == "string" then
+			zoneInMission = payload.zone == "Mission"
+			refreshSceneAmbience(false)
+		end
+	end)
+end
+
+-- Long-running loops are mixed once when created; these listeners make the settings panel
+-- affect them immediately rather than after a respawn or zone change.
+for _, attr in ipairs({ "GF_Setting_Volume", "GF_Setting_MusicVolume", "GF_Setting_SfxVolume", "GF_Setting_VoiceVolume" }) do
+	player:GetAttributeChangedSignal(attr):Connect(function()
+		Audio.refreshLoopVolumes()
+	end)
+end
 
 -- Roblox injects legacy character sounds locally, including the old uuhhh death cue. Those copies do
 -- not exist in the server datamodel, so they must be sanitized client-side as soon as they appear.
