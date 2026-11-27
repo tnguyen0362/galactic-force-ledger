@@ -1,7 +1,10 @@
 -- Phase 15: run in Studio EDIT datamodel (execute_luau) when a Studio claim is held. Idempotent. NOT YET RUN.
 -- Installs each uploaded kit asset as ServerStorage.GF.Art.<Kit_Faction_Piece> (Model with PrimaryPart "Mesh").
 -- Import facts (same as veg): 1 m = 1 stud, TextureID palette set. Kit meshes are authored at game scale
--- (metres x 3.57), so NO ScaleTo is needed. Pieces are origin-at-bottom-centre EXCEPT Kit_Human_GunshipRamp (bbox centre), BlastDoorLeaf (hinge edge), TurretGun (yaw axis). ArtService.reskin() must NOT be applied to kit pieces (strips palette).
+-- (metres x 3.57), so NO ScaleTo is needed. Blender origin is bottom-centre, BUT Roblox recentres the mesh on its
+-- bbox centre; normalize() below restores a bottom-centre pivot (verified in-engine 2026-11-28: raw PivotOffset = 0).
+-- Exceptions keep their pivots (see PIVOT_KEEP). ArtService.reskin() must NOT be applied to kit pieces (strips palette).
+-- Already-installed models: run tools/art/kit/normalize_installed.luau once (this installer skips existing models).
 local IS = game:GetService("InsertService")
 local SS = game:GetService("ServerStorage")
 local gf = SS:FindFirstChild("GF") or Instance.new("Folder", SS)
@@ -76,6 +79,26 @@ local IDS = {
 	Kit_Ascendancy_Crate = 140107669419232,
 }
 
+-- Per-piece normalisation (perf + placement). Roblox recentres an uploaded mesh on its bounding-box centre, so
+-- PivotOffset is identity = bbox centre. For ground pieces we move the pivot to bottom-centre so PivotTo(CFrame
+-- at ground) just works. Exceptions keep their authored pivots: GunshipRamp (bbox centre), BlastDoorLeaf (hinge
+-- edge), TurretGun (yaw axis), Planet* (centre-anchored). Idempotent: only touches an identity pivot.
+local PIVOT_KEEP = { Kit_Human_GunshipRamp = true, Kit_Human_BlastDoorLeaf = true, Kit_Human_TurretGun = true,
+	Kit_Terrain_PlanetLimb = true, Kit_Terrain_PlanetAtmo = true, Kit_Human_HoloPlanet = true, Kit_Ascendancy_TurretHead = true }
+local function normalize(mesh: MeshPart, name: string)
+	if not PIVOT_KEEP[name] and mesh.PivotOffset == CFrame.new() then
+		mesh.PivotOffset = CFrame.new(0, -mesh.Size.Y / 2, 0)
+	end
+	mesh.RenderFidelity = Enum.RenderFidelity.Automatic -- engine-generated LODs
+	local scatter = name:find("^Kit_Terrain_") ~= nil
+	local small = mesh.Size.Magnitude < 12
+	if scatter and not name:find("Planet") then
+		-- rocks/cliffs: hull collision is plenty and far cheaper than the default per-triangle mesh
+		mesh.CollisionFidelity = small and Enum.CollisionFidelity.Box or Enum.CollisionFidelity.Hull
+	end
+	if small then mesh.CastShadow = false end -- tiny props: shadow cost > visual value
+end
+
 local installed, failed = 0, {}
 for name, id in IDS do
 	if art:FindFirstChild(name) then continue end
@@ -92,6 +115,7 @@ for name, id in IDS do
 	mesh.Name = "Mesh"
 	mesh.Parent = model
 	model.PrimaryPart = mesh
+	normalize(mesh, name)
 	model:SetAttribute("GF_AssetId", id)
 	model:SetAttribute("GF_ArtSource", "Blender gen_kit.py")
 	model.Parent = art
