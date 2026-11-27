@@ -51,6 +51,21 @@ workspace:SetAttribute("GF_GeneratorVersion", GENERATOR_VERSION)
 -- poisoned the first ticket count published after deploy.
 workspace:SetAttribute("GF_ReinforcementTickets", 0)
 
+-- Memory directive (owner 2026-11-28): the place carries a 5000-stud terrain + thousands of
+-- vegetation instances, and nothing anywhere enabled streaming — every client downloaded and
+-- held the entire world (measured 3.4GB+ in Studio before generation even ran). Streaming is
+-- mandatory for the Counteroffensive player counts. Set at the earliest boot line so it applies
+-- before clients finish joining; radii bias large because sightlines matter in a shooter, but
+-- bounded so low-end devices actually shed memory. Persistent models (objective/extraction/
+-- enemies) replicate regardless of distance where the gameplay contract demands it.
+pcall(function()
+	workspace.StreamingEnabled = true
+	workspace.StreamingMinRadius = 512
+	workspace.StreamingTargetRadius = 1024
+	workspace.StreamingPauseMode = Enum.StreamingPauseMode.Default
+	print("Streaming: enabled min=512 target=1024 (memory directive)")
+end)
+
 require(Services.ProfileService).start()
 LootService.start()
 ObjectiveService.start()
