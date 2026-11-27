@@ -14,6 +14,21 @@ local AppearanceService = {}
 local Armor = require(game:GetService("ReplicatedStorage").GF.Shared.Configs.Armor)
 local DEFAULT_SUIT = Armor.get("STANDARD")
 
+-- Armor ids are uppercase canon, but the legacy fresh-profile default was the title-case
+-- string "Standard". Treat input as case-insensitive here rather than letting every new
+-- soldier bounce back to STANDARD while the retry loop compares unlike strings.
+local function canonicalSuitId(suitId: string?): string
+	local raw = tostring(suitId or "")
+	if raw == "" then
+		return "STANDARD"
+	end
+	return string.upper(raw)
+end
+
+local function suitFor(suitId: string?)
+	return Armor.get(canonicalSuitId(suitId)) or DEFAULT_SUIT
+end
+
 -- Whole-body scale applied after the reset. Classic R15 is ~5.3 studs; the old avatar bundle stood ~6.9, and
 -- hit volumes / camera / cover heights were tuned for that, so keep the same presence.
 local PLAYER_SCALE = 1.28
@@ -130,7 +145,7 @@ local function recolor(character: Model, partName: string, color: Color3, materi
 end
 
 function AppearanceService.dress(character: Model, suitId: string?)
-	local suit = Armor.get(tostring(suitId or "")) or DEFAULT_SUIT
+	local suit = suitFor(suitId)
 	for _, existing in ipairs(character:GetDescendants()) do
 		if existing:IsA("BasePart") and (existing:GetAttribute("GF_KitPart") == true) then
 			existing:Destroy()
@@ -197,20 +212,32 @@ function AppearanceService.dress(character: Model, suitId: string?)
 		if not tmpl:IsA("MeshPart") then
 			continue
 		end
-		local limb = tmpl:GetAttribute("GF_Limb") :: string
-		local side = tmpl:GetAttribute("GF_Side") :: string
+		local limb = tmpl:GetAttribute("GF_Limb")
+		local side = tmpl:GetAttribute("GF_Side")
+		if type(limb) ~= "string" or type(side) ~= "string" then
+			continue
+		end
 		local partName = LIMB_PART[limb .. side]
 		local target = partName and character:FindFirstChild(partName)
-		local ref = folder:GetAttribute("Ref_" .. limb) :: Vector3?
-		if not (target and target:IsA("BasePart") and ref) then
+		local ref = folder:GetAttribute("Ref_" .. limb)
+		if not (target and target:IsA("BasePart") and typeof(ref) == "Vector3") then
+			continue
+		end
+		if math.abs(ref.X) < 0.0001 or math.abs(ref.Y) < 0.0001 or math.abs(ref.Z) < 0.0001 then
 			continue
 		end
 		local ratio = Vector3.new(target.Size.X / ref.X, target.Size.Y / ref.Y, target.Size.Z / ref.Z)
 		if limb == "UpperTorso" or limb == "LowerTorso" then
 			ratio = ratio * Vector3.new(shape.x, 1, shape.z)
 		end
-		local center = tmpl:GetAttribute("GF_Center") :: Vector3
-		local group = tmpl:GetAttribute("GF_Group") :: string
+		local center = tmpl:GetAttribute("GF_Center")
+		if typeof(center) ~= "Vector3" then
+			continue
+		end
+		local group = tmpl:GetAttribute("GF_Group")
+		if type(group) ~= "string" then
+			group = "carrier"
+		end
 		local part = tmpl:Clone()
 		part.Name = tmpl.Name
 		part:SetAttribute("GF_KitPart", true)
@@ -261,14 +288,27 @@ local function equippedSuit(player: Player): (boolean, string)
 		local profile = require(script.Parent.ProfileService).get(player)
 		local armorId = profile and profile.selectedLoadout and profile.selectedLoadout.armor
 		if type(armorId) == "string" then
-			suitId = armorId
+			suitId = canonicalSuitId(armorId)
 			ready = true
 		end
 	end)
 	return ready, suitId
 end
 
+local appearanceStarted = false
+
 function AppearanceService.start()
+	if appearanceStarted then
+		return
+	end
+	appearanceStarted = true
+	-- AppearanceService is one of the few player-facing services started by both the lobby boot
+	-- branch and the legacy shared-place boot. Use that reliable boot point to bring the dialogue
+	-- service online; DialogueService itself is idempotent and guards lobby-only ambience by the
+	-- physical station/zone state.
+	pcall(function()
+		require(script.Parent.DialogueService).start()
+	end)
 	local function hook(player: Player)
 		local function onCharacter(character: Model)
 			task.defer(function()
