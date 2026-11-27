@@ -60,28 +60,43 @@ local function plate(parent: Instance, position: Vector3, size: Vector3, yaw: nu
 end
 
 -- Places an art model on the ground, falling back to a plain slab so the compound never
--- loses its silhouette if an asset is missing.
-local function piece(id: string, parent: Instance, position: Vector3, yaw: number, height: number, fallback: Vector3): Model
-	local placed = ArtService.place(id, position, {
-		height = height,
-		yaw = yaw,
-		parent = workspace.ActiveActors,
-	})
-	if placed then
-		placed.Parent = parent
-		for _, d in placed:GetDescendants() do
-			if d:IsA("BasePart") then
-				d.Anchored = true
-				d.CanCollide = true
+-- loses its silhouette if an asset is missing. Accepts a preference list of candidate ids:
+-- authored Kit_* pieces (Blender, palette-textured, bottom-centre pivots) are placed via
+-- placeKit and NEVER reskinned — reskin strips the baked palette, which is what made wired
+-- art read as flat grey plastic. Legacy un-prefixed assets keep the old reskin behaviour.
+local function piece(ids: any, parent: Instance, position: Vector3, yaw: number, height: number, fallback: Vector3): Model
+	local list: { string } = if type(ids) == "string" then { ids } else ids
+	local id = ArtService.firstExists(list)
+	if id then
+		if string.sub(id, 1, 4) == "Kit_" then
+			local placed = ArtService.placeKit(id, position, {
+				height = height,
+				yaw = yaw,
+				parent = parent,
+				collide = true,
+			})
+			if placed then return placed end
+		else
+			local placed = ArtService.place(id, position, {
+				height = height,
+				yaw = yaw,
+				parent = parent,
+			})
+			if placed then
+				placed.Parent = parent
+				for _, d in placed:GetDescendants() do
+					if d:IsA("BasePart") then
+						d.Anchored = true
+						d.CanCollide = true
+					end
+				end
+				ArtService.reskin(placed, HULL, Enum.Material.Metal)
+				return placed
 			end
 		end
-		-- One authored palette for every Ascendancy structure; imported meshes keep
-		-- their geometry but lose their baked artwork.
-		ArtService.reskin(placed, HULL, Enum.Material.Metal)
-		return placed
 	end
 	local model = Instance.new("Model")
-	model.Name = id .. "_fallback"
+	model.Name = list[1] .. "_fallback"
 	model.Parent = parent
 	local slab = plate(model, position + Vector3.new(0, fallback.Y * 0.5, 0), fallback, yaw, HULL, Enum.Material.Slate)
 	model.PrimaryPart = slab
@@ -122,22 +137,89 @@ function OutpostService.build(center: Vector3, seed: number?): Model
 	terrain:FillCylinder(CFrame.new(padCenter + Vector3.new(0, 8, 0)), 40, padRadius, Enum.Material.Air)
 	terrain:FillCylinder(CFrame.new(padCenter - Vector3.new(0, 18, 0)), 36, padRadius, Enum.Material.Rock)
 
-	-- Perimeter: battered wall modules on a ring, two gaps left open for approach and extraction.
-	for i = 1, WALL_COUNT do
-		if not GATE_SEGMENTS[i] then
-			local angle = (i - 1) / WALL_COUNT * math.pi * 2
-			local radial = Vector3.new(math.cos(angle), 0, math.sin(angle))
-			-- three modules per bay, each yawed tangent to the ring at its own angle, so the
-			-- modules meet edge to edge instead of leaving sight-line gaps
-			local arc = math.pi * 2 / WALL_COUNT
-			for _, bias in { -0.333, 0, 0.333 } do
-				local theta = angle + arc * bias
+	-- Perimeter: authored masonry walls chained edge-to-edge along the ring's wall arcs, with
+	-- monumental gates closing the two entrance sockets. Piece length is measured at runtime
+	-- and pieces are uniformly scaled so each contiguous arc closes exactly — joints overlap
+	-- slightly rather than opening sight-line gaps. Slab modules remain the fallback.
+	local wallId = ArtService.firstExists({ "Kit_Ascendancy_Wall", "AscendancyOutpostWall" })
+	local wallSize = if wallId then ArtService.measure(wallId :: string) else nil
+	local useKitWall = wallId ~= nil and string.sub(wallId :: string, 1, 4) == "Kit_" and wallSize ~= nil
+
+	if useKitWall and wallSize then
+		local segAng = math.pi * 2 / WALL_COUNT
+		-- contiguous runs of non-gate segments; a trailing run wraps into a leading one
+		local runs: { { number } } = {}
+		local run: { number } = {}
+		for i = 1, WALL_COUNT do
+			if not GATE_SEGMENTS[i] then
+				table.insert(run, i)
+			elseif #run > 0 then
+				table.insert(runs, run)
+				run = {}
+			end
+		end
+		if #run > 0 then
+			if #runs > 0 and not GATE_SEGMENTS[1] then
+				local merged = table.clone(run)
+				for _, s in ipairs(runs[1]) do table.insert(merged, s) end
+				runs[1] = merged
+			else
+				table.insert(runs, run)
+			end
+		end
+		-- wall length axis: the long horizontal dimension, chained tangent to the ring
+		local lenAxisX = wallSize.X >= wallSize.Z
+		local nativeLen = math.max(wallSize.X, wallSize.Z)
+		local nativeH = wallSize.Y
+		for _, segs in ipairs(runs) do
+			local arcSpan = #segs * segAng
+			local arcLen = arcSpan * WALL_RADIUS
+			local nPieces = math.max(1, math.round(arcLen / nativeLen))
+			local scaledLen = arcLen / nPieces
+			local factor = scaledLen / nativeLen
+			local targetH = nativeH * factor
+			local startAng = (segs[1] - 1) * segAng - segAng * 0.5
+			for j = 1, nPieces do
+				local theta = startAng + (j - 0.5) / nPieces * arcSpan
 				local dir = Vector3.new(math.cos(theta), 0, math.sin(theta))
 				local wallPos = base + dir * WALL_RADIUS
-				piece("AscendancyOutpostWall", folder, Vector3.new(wallPos.X, base.Y, wallPos.Z), theta + math.pi * 0.5, 9,
-					Vector3.new(9, 9, 8))
+				-- tangent alignment: length axis along the ring; axis-dependent yaw
+				local yaw = if lenAxisX then -theta - math.pi * 0.5 else -theta
+				piece({ wallId :: string }, folder, Vector3.new(wallPos.X, base.Y, wallPos.Z), yaw, targetH,
+					Vector3.new(scaledLen, targetH, 6))
 				pieces += 1
 			end
+		end
+	else
+		for i = 1, WALL_COUNT do
+			if not GATE_SEGMENTS[i] then
+				local angle = (i - 1) / WALL_COUNT * math.pi * 2
+				-- three modules per bay, each yawed tangent to the ring at its own angle, so the
+				-- modules meet edge to edge instead of leaving sight-line gaps
+				local arc = math.pi * 2 / WALL_COUNT
+				for _, bias in { -0.333, 0, 0.333 } do
+					local theta = angle + arc * bias
+					local dir = Vector3.new(math.cos(theta), 0, math.sin(theta))
+					local wallPos = base + dir * WALL_RADIUS
+					piece({ "AscendancyOutpostWall" }, folder, Vector3.new(wallPos.X, base.Y, wallPos.Z), theta + math.pi * 0.5, 9,
+						Vector3.new(9, 9, 8))
+					pieces += 1
+				end
+			end
+		end
+	end
+
+	-- Monumental gates close the two entrance sockets — the compound's approach reads from
+	-- across the field instead of being an unmarked gap in the ring. Kit-only: without the
+	-- authored piece the sockets stay open (a fallback slab here would wall off the entrance).
+	if ArtService.exists("Kit_Ascendancy_Gate") then
+		for i in pairs(GATE_SEGMENTS) do
+			local angle = (i - 1) / WALL_COUNT * math.pi * 2
+			local dir = Vector3.new(math.cos(angle), 0, math.sin(angle))
+			local gatePos = base + dir * WALL_RADIUS
+			piece({ "Kit_Ascendancy_Gate" }, folder, Vector3.new(gatePos.X, base.Y, gatePos.Z), -angle - math.pi * 0.5, 20,
+				Vector3.new(14, 12, 4))
+			pieces += 1
 		end
 	end
 
@@ -146,7 +228,7 @@ function OutpostService.build(center: Vector3, seed: number?): Model
 		local angle = math.pi * 0.25 + i * math.pi * 0.5
 		local radial = Vector3.new(math.cos(angle), 0, math.sin(angle))
 		local towerPos = base + radial * TOWER_RADIUS
-		piece("AscendancyWatchtower", folder, Vector3.new(towerPos.X, base.Y, towerPos.Z), -angle + math.pi, 30,
+		piece({ "Kit_Ascendancy_Tower", "AscendancyWatchtower" }, folder, Vector3.new(towerPos.X, base.Y, towerPos.Z), -angle + math.pi, 30,
 			Vector3.new(9, 30, 9))
 		pieces += 1
 	end
@@ -159,9 +241,9 @@ function OutpostService.build(center: Vector3, seed: number?): Model
 		plate(folder, Vector3.new(base.X, y + 0.35, z), Vector3.new(14, 0.7, 7.2), 0, DECK, Enum.Material.DiamondPlate)
 	end
 	for _, side in { -1, 1 } do
-		piece("AscendancyBarricade", folder, Vector3.new(base.X + side * 9, groundY(Vector3.new(base.X + side * 9, base.Y, base.Z + 34), ignore), base.Z + 34), approachYaw, 4.5,
+		piece({ "Kit_Ascendancy_Barricade", "AscendancyBarricade" }, folder, Vector3.new(base.X + side * 9, groundY(Vector3.new(base.X + side * 9, base.Y, base.Z + 34), ignore), base.Z + 34), approachYaw, 4.5,
 			Vector3.new(2.5, 4.5, 9))
-		piece("AscendancyBarricade", folder, Vector3.new(base.X + side * 9, groundY(Vector3.new(base.X + side * 9, base.Y, base.Z + 48), ignore), base.Z + 48), approachYaw, 4.5,
+		piece({ "Kit_Ascendancy_Barricade", "AscendancyBarricade" }, folder, Vector3.new(base.X + side * 9, groundY(Vector3.new(base.X + side * 9, base.Y, base.Z + 48), ignore), base.Z + 48), approachYaw, 4.5,
 			Vector3.new(2.5, 4.5, 9))
 		pieces += 2
 	end
@@ -172,14 +254,8 @@ function OutpostService.build(center: Vector3, seed: number?): Model
 		local radial = Vector3.new(math.cos(angle), 0, math.sin(angle))
 		local spot = base + radial * (20 + random() * 7)
 		local y = groundY(Vector3.new(spot.X, base.Y, spot.Z), ignore)
-		local crate = ArtService.place("HumanCrate", Vector3.new(spot.X, y, spot.Z), {
-			height = 3.4,
-			yaw = random() * math.pi,
-			parent = folder,
-		})
-		if not crate then
-			plate(folder, Vector3.new(spot.X, y + 1.7, spot.Z), Vector3.new(3, 3.4, 3), 0, HULL, Enum.Material.Metal)
-		end
+		piece({ "Kit_Ascendancy_Crate", "Kit_Human_Crate", "HumanCrate" }, folder, Vector3.new(spot.X, y, spot.Z), random() * math.pi, 3.4,
+			Vector3.new(3, 3.4, 3))
 		pieces += 1
 	end
 
@@ -192,7 +268,7 @@ function OutpostService.build(center: Vector3, seed: number?): Model
 	end
 
 	folder.PrimaryPart = folder:FindFirstChildWhichIsA("BasePart", true)
-	folder.Parent = workspace.ActiveActors
+	folder.Parent = ArtService.actorsFolder()
 	folder:SetAttribute("OutpostPieces", pieces)
 	-- S07-030/032 functional props: the compound reads as a military installation — a power switch
 	-- feeding the relay shield, an ammo depot of stacked sealed crates, and the split-spire relay
@@ -212,15 +288,27 @@ function OutpostService.build(center: Vector3, seed: number?): Model
 			crate.Name = "AmmoCrate" .. i
 			crate:SetAttribute("AmmoDepot", true)
 		end
-		-- split-spire relay emitter: two tall angled spires with a crackling gap — the outpost's
-		-- dominant silhouette so players read "this is the relay site" from across the field
-		for _, side in ipairs({ -1, 1 }) do
-			local spire = plate(folder, base + Vector3.new(side * 3.5, 9, -2), Vector3.new(1.2, 18, 1.2), 0, Color3.fromRGB(70, 80, 96), Enum.Material.Metal)
-			spire.Name = "RelaySpire" .. (side == -1 and "L" or "R")
-			spire.CFrame = spire.CFrame * CFrame.Angles(0, 0, math.rad(side * -8))
+		-- split-spire relay emitter: two tall spires flanking the relay — the outpost's dominant
+		-- silhouette so players read "this is the relay site" from across the field. Authored kit
+		-- spires taper to ivory tips and echo the relay's own split shafts; slab spires + arc
+		-- remain the fallback.
+		if workspace:GetAttribute("GF_RelayKitPlaced") == true then
+			-- the authored relay is itself the dominant split-shaft silhouette; flanking
+			-- spires would clip into it, so the composition stays clean
+		elseif ArtService.exists("Kit_Ascendancy_Spire") then
+			for _, side in ipairs({ -1, 1 }) do
+				piece({ "Kit_Ascendancy_Spire" }, folder, base + Vector3.new(side * 5, 0, -3), math.rad(side * 8), 20,
+					Vector3.new(1.2, 18, 1.2))
+			end
+		else
+			for _, side in ipairs({ -1, 1 }) do
+				local spire = plate(folder, base + Vector3.new(side * 3.5, 9, -2), Vector3.new(1.2, 18, 1.2), 0, Color3.fromRGB(70, 80, 96), Enum.Material.Metal)
+				spire.Name = "RelaySpire" .. (side == -1 and "L" or "R")
+				spire.CFrame = spire.CFrame * CFrame.Angles(0, 0, math.rad(side * -8))
+			end
+			local arc = plate(folder, base + Vector3.new(0, 17.5, -2), Vector3.new(0.5, 2.2, 0.5), 0, Color3.fromRGB(140, 220, 255), Enum.Material.Neon)
+			arc.Name = "RelayArc"
 		end
-		local arc = plate(folder, base + Vector3.new(0, 17.5, -2), Vector3.new(0.5, 2.2, 0.5), 0, Color3.fromRGB(140, 220, 255), Enum.Material.Neon)
-		arc.Name = "RelayArc"
 	end
 
 	return folder

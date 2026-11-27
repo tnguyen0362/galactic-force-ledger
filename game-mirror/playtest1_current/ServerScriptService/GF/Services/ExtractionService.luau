@@ -115,7 +115,16 @@ local function buildDropship(position: Vector3)
 		return p
 	end
 
-	local ship = ArtService.place("Dropship", position + Vector3.new(0, 11, 0), { scale = 1.7, sink = 0 })
+	-- authored gunship first (kit pieces keep their baked palette); legacy Dropship art next;
+	-- box hull last. The kit hull hovers at native scale — gear struts and the articulated
+	-- ramp below carry the grounded read.
+	local ship = nil
+	if ArtService.exists("Kit_Human_Gunship") then
+		ship = ArtService.placeKit("Kit_Human_Gunship", position + Vector3.new(0, 6, 0), { parent = model, collide = false })
+	end
+	if not ship then
+		ship = ArtService.place("Dropship", position + Vector3.new(0, 11, 0), { scale = 1.7, sink = 0 })
+	end
 	if ship then
 		ship.Name = "Hull"
 		ship.Parent = model

@@ -90,6 +90,8 @@ function ScatterBuilder.buildAll(plan: any, groundY: (number, number) -> number,
 	local root = Instance.new("Folder")
 	root.Name = "BFScatter"
 	root.Parent = parent
+	local ArtService = require(script.Parent.Parent:WaitForChild("ArtService"))
+	local kitRockSmall = ArtService.firstExists({ "Kit_Terrain_RockSmall" })
 	local maxInst = budget or 900
 	local extent = 720
 	local step = 34 -- scatter sampling lattice
@@ -124,7 +126,17 @@ function ScatterBuilder.buildAll(plan: any, groundY: (number, number) -> number,
 							buildShrub(root, jx, jz, gy, s)
 							built += 1
 						elseif kindRoll < 0.2 * treeD + 0.45 * shrubD + 0.35 * stoneD then
-							buildStone(root, jx, jz, gy, s)
+							-- authored rock geometry when the kit is installed; slab pebble fallback
+							if kitRockSmall then
+								ArtService.placeKit(kitRockSmall, Vector3.new(jx, gy, jz), {
+									height = 1.1 * s,
+									yaw = hash01(jx, jz, 21) * math.pi * 2,
+									parent = root,
+									collide = false,
+								})
+							else
+								buildStone(root, jx, jz, gy, s)
+							end
 							built += 1
 						end
 					end

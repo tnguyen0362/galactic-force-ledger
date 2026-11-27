@@ -152,15 +152,29 @@ local function buildRelay(position)
 	base.Transparency = 1
 	local plinth = partOf(model, Vector3.new(15, 1.4, 15), Vector3.new(0, 0.7, 0), Color3.fromRGB(44, 43, 50), Enum.Material.Slate, position)
 	plinth.Name = "Plinth"
-	local tower = ArtService.place("AscendancyRelay", position + Vector3.new(0, 0.9, 0), { height = 30 })
-	if tower then
-		tower.Name = "RelayTower"
-		tower.Parent = model
-		ArtService.reskin(tower, Color3.fromRGB(58, 54, 70), Enum.Material.Metal)
-		for _, d in tower:GetDescendants() do if d:IsA("BasePart") then d.CanCollide = true end end
+	-- Authored kit relay first: split-shaft obsidian tower with bronze inlay and violet seams.
+	-- Kit pieces keep their baked palette (never reskin); legacy art keeps the old tint path;
+	-- box columns remain the last-resort silhouette.
+	workspace:SetAttribute("GF_RelayKitPlaced", false)
+	local kitTower = ArtService.placeKit("Kit_Ascendancy_Relay", position + Vector3.new(0, 0.9, 0), {
+		height = 30,
+		parent = model,
+		collide = true,
+	})
+	if kitTower then
+		kitTower.Name = "RelayTower"
+		workspace:SetAttribute("GF_RelayKitPlaced", true)
 	else
-		partOf(model, Vector3.new(4, 18, 4), Vector3.new(0, 10, 0), Color3.fromRGB(52, 50, 58), Enum.Material.Metal, position)
-		partOf(model, Vector3.new(2.5, 8, 2.5), Vector3.new(0, 22, 0), Color3.fromRGB(60, 56, 66), Enum.Material.Metal, position)
+		local tower = ArtService.place("AscendancyRelay", position + Vector3.new(0, 0.9, 0), { height = 30 })
+		if tower then
+			tower.Name = "RelayTower"
+			tower.Parent = model
+			ArtService.reskin(tower, Color3.fromRGB(58, 54, 70), Enum.Material.Metal)
+			for _, d in tower:GetDescendants() do if d:IsA("BasePart") then d.CanCollide = true end end
+		else
+			partOf(model, Vector3.new(4, 18, 4), Vector3.new(0, 10, 0), Color3.fromRGB(52, 50, 58), Enum.Material.Metal, position)
+			partOf(model, Vector3.new(2.5, 8, 2.5), Vector3.new(0, 22, 0), Color3.fromRGB(60, 56, 66), Enum.Material.Metal, position)
+		end
 	end
 	local core = partOf(model, Vector3.new(2.2, 2.2, 2.2), Vector3.new(0, 16, 0), Color3.fromRGB(96, 214, 232), Enum.Material.Neon, position)
 	core.Name = "CoreGlow"
@@ -205,7 +219,7 @@ local function buildRelay(position)
 		lamp.CanCollide = false
 	end
 	model.PrimaryPart = base
-	model.Parent = workspace.ActiveActors
+	model.Parent = ArtService.actorsFolder()
 	workspace:SetAttribute("GF_RelayDressing", #model:GetChildren())
 	OutpostService.build(position)
 	-- S07-030: small outposts carry 2-4 defenders staggered in cover positions — a garrison, not a
@@ -241,7 +255,7 @@ local function buildBlackBox(position)
 	terminal:SetAttribute("GFInteract", "BlackBox")
 	terminal:SetAttribute("InteractPrompt", "Extract Black Box")
 	model.PrimaryPart = crate
-	model.Parent = workspace.ActiveActors
+	model.Parent = ArtService.actorsFolder()
 	OutpostService.build(position)
 	-- S07-030: small outposts carry 2-4 defenders staggered in cover positions — a garrison, not a
 	-- wave. Site-locked inside the spawn cap, distinct from director waves.
@@ -274,7 +288,7 @@ local function buildBeacon(position)
 	terminal:SetAttribute("GFInteract", "Beacon")
 	terminal:SetAttribute("InteractPrompt", "Activate Beacon")
 	model.PrimaryPart = base
-	model.Parent = workspace.ActiveActors
+	model.Parent = ArtService.actorsFolder()
 	OutpostService.build(position)
 	-- S07-030: small outposts carry 2-4 defenders staggered in cover positions — a garrison, not a
 	-- wave. Site-locked inside the spawn cap, distinct from director waves.

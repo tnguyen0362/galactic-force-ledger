@@ -74,6 +74,18 @@ function CoverBuilder.buildAll(cover: { any }, groundY: (number, number) -> numb
 	root.Parent = parent
 	local maxCount = budget or 240
 	local built = 0
+	-- Authored kit pieces first: real rock geometry with baked strata palettes instead of
+	-- stacked grey slabs. Cover heights stay scale-to-fit — they are a gameplay contract
+	-- (crouch/stand cover), so pieces scale uniformly to the same target heights the slabs
+	-- had. Slab construction remains the fallback when the kit is not installed.
+	local ArtService = require(script.Parent.Parent:WaitForChild("ArtService"))
+	local kitRocks = {}
+	for _, id in { "Kit_Terrain_RockMid", "Kit_Terrain_RockBig", "Kit_Terrain_RockCluster" } do
+		if ArtService.exists(id) then table.insert(kitRocks, id) end
+	end
+	local kitSlab = ArtService.firstExists({ "Kit_Terrain_RockSlab", "Kit_Terrain_RockMid" })
+	local kitRubble = ArtService.firstExists({ "Kit_Ascendancy_Rubble" })
+	local useKit = #kitRocks > 0
 	for i, c in cover do
 		if built >= maxCount then
 			break
@@ -81,12 +93,27 @@ function CoverBuilder.buildAll(cover: { any }, groundY: (number, number) -> numb
 		local gy = groundY(c.x, c.z)
 		if gy and gy > -100 then
 			local s = 0.9 + hash01(c.x, c.z, 7) * 0.8 -- 0.9-1.7 scale jitter
-			if c.kind == "wreck" then
-				buildWreck(root, c.x, c.z, gy, s)
-			elseif c.kind == "terrain_form" then
-				buildForm(root, c.x, c.z, gy, s)
-			else
-				buildRock(root, c.x, c.z, gy, s)
+			local yaw = hash01(c.x, c.z, 11) * math.pi * 2
+			local pos = Vector3.new(c.x, gy, c.z)
+			local placed = nil
+			if useKit then
+				if c.kind == "wreck" and kitRubble then
+					placed = ArtService.placeKit(kitRubble, pos, { height = 2.6 * s, yaw = yaw, parent = root, collide = true })
+				elseif c.kind == "terrain_form" and kitSlab then
+					placed = ArtService.placeKit(kitSlab, pos, { height = 2.4 * s, yaw = yaw, parent = root, collide = true })
+				elseif c.kind ~= "wreck" and c.kind ~= "terrain_form" then
+					local pick = kitRocks[1 + math.floor(hash01(c.x, c.z, 13) * #kitRocks) % #kitRocks]
+					placed = ArtService.placeKit(pick, pos, { height = 3.0 * s, yaw = yaw, parent = root, collide = true })
+				end
+			end
+			if not placed then
+				if c.kind == "wreck" then
+					buildWreck(root, c.x, c.z, gy, s)
+				elseif c.kind == "terrain_form" then
+					buildForm(root, c.x, c.z, gy, s)
+				else
+					buildRock(root, c.x, c.z, gy, s)
+				end
 			end
 			built += 1
 		end
