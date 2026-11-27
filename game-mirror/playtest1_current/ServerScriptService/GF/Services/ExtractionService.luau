@@ -1,5 +1,5 @@
 --!strict
--- Extraction: squad consensus → validated LZ → inbound gunship → committed boarding → settlement → return.
+-- Extraction: squad consensus â†’ validated LZ â†’ inbound gunship â†’ committed boarding â†’ settlement â†’ return.
 --
 -- Authority rules implemented here:
 --   * strict-majority vote of active eligible participants (1/1, 2/2, 2/3, 3/4), 20s window;
@@ -37,7 +37,7 @@ local CABIN_HEIGHT = 14
 local HARD_DEADLINE = 240
 local FIRST_BOARD_GRACE = 30
 local EMERGENCY_FIRST_BOARD_GRACE = 20
-local EMERGENCY_GRACE = 150 -- soft-limit protocol allows roughly 2–3 minutes to board
+local EMERGENCY_GRACE = 150 -- soft-limit protocol allows roughly 2â€“3 minutes to board
 local DEPART_TIME = 6
 local SQUAD_WARNING = 2
 local VOTE_WINDOW = 20
@@ -769,7 +769,7 @@ local function evaluateVote()
 		ExtractionService.call(caller)
 	elseif no >= needed or yes + math.max(0, #pool - yes - no) < needed then
 		-- A no vote does not need to be a majority to end the request when it makes the required
-		-- strict yes-majority mathematically impossible (the duo 1�1 deadlock is the important case).
+		-- strict yes-majority mathematically impossible (the duo 1–1 deadlock is the important case).
 		failVote("rejected")
 	elseif os.clock() >= vote.endsAt then
 		failVote("expired")
@@ -836,7 +836,7 @@ function ExtractionService.requestVote(player: Player): boolean
 	}
 	Workspace:SetAttribute("GF_ExtractionVote", string.format("%s:1/%d", player.Name, math.floor(#pool / 2) + 1))
 	publishVote()
-	missionEvent(string.format("%s requested extraction — approve or decline.", tostring(player.DisplayName)), "vote")
+	missionEvent(string.format("%s requested extraction â€” approve or decline.", tostring(player.DisplayName)), "vote")
 	return true
 end
 
@@ -946,7 +946,7 @@ function ExtractionService.emergency(): boolean
 	Workspace:SetAttribute("GF_EmergencyExtraction", true)
 	Workspace:SetAttribute("GF_Emergency", true)
 	Workspace:SetAttribute("GF_EmergencyAt", os.clock())
-	missionEvent("Support window closed. Emergency evacuation authorized — board the transport.", "fail")
+	missionEvent("Support window closed. Emergency evacuation authorized â€” board the transport.", "fail")
 	beginCountdown(position, tonumber(Workspace:GetAttribute("GF_EmergencyArrivalOverride")) or 10)
 	return true
 end
@@ -1212,7 +1212,7 @@ local function recoverFailedReturn(players: { Player }, reason: string)
 			end
 		end
 	end
-	missionEvent("TRANSFER DELAYED — results are secured. Use RETURN TO STATION to retry.", "fail")
+	missionEvent("TRANSFER DELAYED â€” results are secured. Use RETURN TO STATION to retry.", "fail")
 end
 
 local function scheduleSplitReturn(delaySeconds: number)
@@ -1766,7 +1766,7 @@ local function watchdog()
 					if approaching then
 						graceExtended = true
 						firstBoardAt = os.clock() - boardingGrace() + 12
-						missionEvent("Teammate in the approach zone � final boarding extension.", "extraction")
+						missionEvent("Teammate in the approach zone — final boarding extension.", "extraction")
 					else
 						ExtractionService.commitDeparture("boarding_grace")
 					end
@@ -1903,7 +1903,7 @@ function ExtractionService.start()
 				if row then
 					DebriefService.publishLocal(player, row)
 				end
-				missionEvent("TRANSFER DELAYED � results are secured. Use RETURN TO STATION to retry.", "fail")
+				missionEvent("TRANSFER DELAYED — results are secured. Use RETURN TO STATION to retry.", "fail")
 			end
 		end)
 	end)
