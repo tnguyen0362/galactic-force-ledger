@@ -3373,3 +3373,9 @@ NEXT: (1) get kit patch through C1 with beta; (2) author palette/material librar
 - NOT verified: collision fidelity (Default), in-mission lighting/fog look, LOD/perf, gunship integration with ExtractionService, relay height=30 with neon core, tint across biomes.
 - Side observations (not mine): console flooded with EnemyAnimClient poseRig error (EnemyAnimClient:309 nil < number); Workspace.GF_ArtStage (dark floor at Y~3000) and WedgeTest belong to someone else.
 - Studio released; edit datamodel changes are NOT saved to the place.
+
+## Phase 15 — Stage 5: creative reset (2026-11-28)
+- SkyWar LocalScript deployed to Studio (Edit, StarterPlayerScripts); normalize_installed run (74 kit models, 67 pivots to bottom-centre). Verified in Play (18 parts, no errors). **Studio has UNSAVED changes; no save_place done.**
+- Play on High preset (via workspace attr GF_PlayerGraphicsChoice): dense forest, but 2 lollipop tree species, no rocks/ruins/landmarks. Stray `Workspace.WeaponEval.Part` slab hovers over spawn (flagged to alpha/beta); `Workspace.DistantMoon` is a station-sky leftover.
+- Owner verdict: Ascendancy + Bastion Walker look bad; target "2.5 AAA"; creative control delegated. New direction: ART_DIRECTION_HD2.md. Primitive kit = blockout. gen_trooper.py (box armour, out_trooper/) shelved, not uploaded.
+- Open bugs for alpha/beta: ArtService:56 "ActiveActors is not a valid member of Workspace"; config check "enemy BastionTank: bad tier Vehicle".
