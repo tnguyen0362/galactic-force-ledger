@@ -30,17 +30,17 @@ local function makeLabel(text, position, colour, size)
 	return label
 end
 
-local timerLabel = makeLabel("MISSION --:--", UDim2.new(1, -196, 0, 12 + 156 + 6), Color3.fromRGB(220, 230, 240), Vector2.new(196, 24))
-local grenadeLabel = makeLabel("GRENADE -", UDim2.new(1, -196, 0, 12 + 156 + 34), Color3.fromRGB(180, 220, 255), Vector2.new(196, 24))
+local timerLabel = makeLabel("MISSION --:--", UDim2.new(1, -196, 0, 12 + 108 + 6), Color3.fromRGB(220, 230, 240), Vector2.new(196, 24))
+local grenadeLabel = makeLabel("GRENADE -", UDim2.new(1, -196, 0, 12 + 108 + 34), Color3.fromRGB(180, 220, 255), Vector2.new(196, 24))
 
 -- Loot feed: stacking deltas from SalvageChanged (LootCollected carries the same payload), plus a squad
 -- count. Both were invisible before: the HUD had a running total and nothing else.
-local squadLabel = makeLabel("SQUAD 1", UDim2.new(1, -196, 0, 12 + 156 + 62), Color3.fromRGB(200, 220, 240), Vector2.new(196, 22))
+local squadLabel = makeLabel("SQUAD 1", UDim2.new(1, -196, 0, 12 + 108 + 62), Color3.fromRGB(200, 220, 240), Vector2.new(196, 22))
 local feedRows = {}
 for index = 1, 4 do
 	local row = Instance.new("TextLabel")
 	row.Size = UDim2.fromOffset(196, 18)
-	row.Position = UDim2.new(1, -196, 0, 12 + 156 + 88 + (index - 1) * 19)
+	row.Position = UDim2.new(1, -196, 0, 12 + 108 + 88 + (index - 1) * 19)
 	row.BackgroundTransparency = 1
 	row.Font = Enum.Font.GothamMedium
 	row.TextSize = 12
@@ -113,7 +113,9 @@ task.spawn(function()
 		end
 		local squad = workspace:GetAttribute("GF_SquadCount")
 		local tickets = tonumber(workspace:GetAttribute("GF_ReinforcementTickets")) or 0
-		squadLabel.Text = string.format("SQUAD %d · TICKETS %d", tonumber(squad) or 1, tickets)
+		-- plain language (owner report: "wtf is a ticket"): the number is the squad's shared
+		-- respawn budget — when it hits zero, death is final this operation
+		squadLabel.Text = string.format("SQUAD %d · RESPAWNS %d", tonumber(squad) or 1, tickets)
 		gui:SetAttribute("GF_SquadText", squadLabel.Text)
 	end
 end)

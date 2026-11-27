@@ -66,25 +66,103 @@ local function newLabel(parent: Instance, text: string, size: UDim2, position: U
 	return l
 end
 
-local function buildTouchButton(action: string, text: string, size: UDim2, position: UDim2)
+-- touch combat icons: drawn geometry, not text labels. a mobile shooter reads shapes at
+-- thumb-glance distance — the word FIRE inside a circle is desktop UI wearing a costume.
+-- every icon is simple frame composition inside the button, centered, ~40% of button radius.
+local ICON_INK = Color3.fromRGB(210, 228, 240)
+local function iconPart(parent: Instance, w: number, h: number, cx: number, cy: number, rot: number?): Frame
+	local f = Instance.new("Frame")
+	f.Size = UDim2.fromOffset(w, h)
+	f.Position = UDim2.new(0.5, cx - w / 2, 0.5, cy - h / 2)
+	f.BackgroundColor3 = ICON_INK
+	f.BorderSizePixel = 0
+	if rot then f.Rotation = rot end
+	f.Parent = parent
+	return f
+end
+local function iconRound(f: Frame, radius: number)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius)
+	c.Parent = f
+end
+local function drawIcon(b: TextButton, action: string)
+	if action == "Fire" then
+		-- bullet: vertical body + rounded tip
+		local body = iconPart(b, 9, 22, 0, 2)
+		iconRound(body, 3)
+		local tip = iconPart(b, 9, 8, 0, -11)
+		iconRound(tip, 4)
+	elseif action == "Aim" then
+		-- crosshair: center dot + four cardinal ticks
+		local dot = iconPart(b, 6, 6, 0, 0)
+		iconRound(dot, 3)
+		iconPart(b, 3, 10, 0, -14)
+		iconPart(b, 3, 10, 0, 14)
+		iconPart(b, 10, 3, -14, 0)
+		iconPart(b, 10, 3, 14, 0)
+	elseif action == "Jump" then
+		-- up chevron pair
+		iconPart(b, 16, 5, -6, -2, -45)
+		iconPart(b, 16, 5, 6, -2, 45)
+		iconPart(b, 16, 5, -6, 10, -45)
+		iconPart(b, 16, 5, 6, 10, 45)
+	elseif action == "Dodge" then
+		-- lateral dash: two fast chevrons pointing left
+		iconPart(b, 14, 5, -5, -6, 135)
+		iconPart(b, 14, 5, -5, 6, -135)
+		iconPart(b, 14, 5, 6, -6, 135)
+		iconPart(b, 14, 5, 6, 6, -135)
+	elseif action == "Reload" then
+		-- magazine insert: tray + downward arrow feeding it
+		iconPart(b, 16, 12, 0, 6) -- tray body
+		iconPart(b, 5, 12, 0, -8) -- arrow shaft
+		iconPart(b, 11, 5, 0, -2) -- arrow head bar
+	elseif action == "Grenade" then
+		-- round body + stem
+		local body = iconPart(b, 16, 16, 0, 2)
+		iconRound(body, 8)
+		iconPart(b, 4, 6, 4, -10, -20)
+	elseif action == "SupportAbility" then
+		-- strike diamond: rotated square + center pip — the support call-in reads as a marker
+		local d = iconPart(b, 15, 15, 0, 0, 45)
+		iconRound(d, 2)
+		local pip = iconPart(b, 5, 5, 0, 0)
+		iconRound(pip, 2)
+	elseif action == "SwapWeapon" then
+		-- two weapons side by side
+		iconPart(b, 5, 18, -6, 0)
+		iconPart(b, 5, 18, 6, 0)
+	elseif action == "Interact" then
+		-- keycap: rounded square outline effect via inset dot
+		local cap = iconPart(b, 16, 16, 0, 0)
+		iconRound(cap, 4)
+		local dot2 = iconPart(b, 6, 6, 0, 0)
+		dot2.BackgroundColor3 = Color3.fromRGB(18, 24, 34)
+		iconRound(dot2, 3)
+	end
+end
+
+local function buildTouchButton(action: string, radius: number, centerX: number, centerY: number)
+	-- positions are CENTER coordinates in px measured inward from the bottom-right corner;
+	-- converted to top-left anchoring here. layout is computed, not eyeballed: centers and
+	-- radii are checked pairwise so no two buttons can ever overlap at any resolution.
 	local b = Instance.new("TextButton")
 	b.Name = action
-	b.Size = size
-	b.Position = position
+	b.Size = UDim2.fromOffset(radius * 2, radius * 2)
+	b.Position = UDim2.new(1, -(centerX + radius), 1, -(centerY + radius))
 	b.BackgroundColor3 = Color3.fromRGB(18, 24, 34)
 	b.BackgroundTransparency = 0.35
 	b.TextColor3 = INK
-	b.Text = text
-	b.TextSize = 20
-	b.Font = Enum.Font.GothamBold
+	b.Text = ""
 	b.BorderSizePixel = 0
-	b.AutoButtonColor = true
+	b.AutoButtonColor = false
 	b.Visible = false
 	b.Parent = touchLayer
 
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0.5, 0)
 	corner.Parent = b
+	drawIcon(b, action)
 
 	b.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.Touch then
@@ -124,7 +202,9 @@ function HUD.init()
 	local vitals = newFrame(gui, {
 		Name = "Vitals",
 		Size = UDim2.fromOffset(260, 54),
-		Position = UDim2.fromOffset(28, 26),
+		-- below the Roblox topbar: IgnoreGuiInset puts y=0 under the system icons, and the
+		-- vitals spent their whole life hidden behind the menu cluster (owner report)
+		Position = UDim2.fromOffset(28, 70),
 		-- the label sat directly on sky and vanished against the pale mission horizon
 		BackgroundColor3 = Color3.fromRGB(8, 12, 18),
 		BackgroundTransparency = 0.35,
@@ -341,15 +421,19 @@ function HUD.init()
 		BackgroundTransparency = 1,
 		Visible = false,
 	})
-	buildTouchButton("Fire", "FIRE", UDim2.fromOffset(96, 96), UDim2.new(1, -136, 1, -220))
-	buildTouchButton("Aim", "ADS", UDim2.fromOffset(72, 72), UDim2.new(1, -226, 1, -180))
-	buildTouchButton("Jump", "JUMP", UDim2.fromOffset(72, 72), UDim2.new(1, -136, 1, -300))
-	buildTouchButton("Dodge", "ROLL", UDim2.fromOffset(72, 72), UDim2.new(1, -226, 1, -270))
-	-- Reload overlapped Aim by 10x12 px at every resolution: the offsets are absolute pixels, so this collision
-	-- was not a small-screen problem, it was always there.
-	buildTouchButton("Reload", "RELOAD", UDim2.fromOffset(84, 56), UDim2.new(1, -320, 1, -134))
-	-- one support ability touch button (Counteroffensive contract revision)
-	buildTouchButton("SupportAbility", "SUPPORT", UDim2.fromOffset(72, 64), UDim2.new(1, -330, 1, -320))
+	-- the right-thumb arc: frequency-ordered, pairwise overlap-checked by construction.
+	-- centers are (px from right edge, px from bottom edge); radius in px.
+	-- fire dominates the primary rest position; aim sits in thumb-curl range; the upper arc
+	-- carries the tactical kit the old layout simply did not have (mandate mobile parity).
+	buildTouchButton("Fire", 46, 84, 100)
+	buildTouchButton("Aim", 34, 180, 66)
+	buildTouchButton("Jump", 32, 168, 150)
+	buildTouchButton("Dodge", 30, 250, 100)
+	buildTouchButton("Reload", 26, 244, 178)
+	buildTouchButton("Grenade", 26, 318, 148)
+	buildTouchButton("SupportAbility", 28, 316, 66)
+	buildTouchButton("SwapWeapon", 24, 388, 110)
+	buildTouchButton("Interact", 28, 84, 190)
 
 	-- remote wiring
 	remotes.VitalsUpdated.OnClientEvent:Connect(function(v)

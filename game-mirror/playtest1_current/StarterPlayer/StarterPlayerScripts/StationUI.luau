@@ -704,6 +704,7 @@ Input.onPress("QuickResponse", function()
 	end)
 end)
 
+local terminalOpenedMenu = false
 task.spawn(function()
 	while true do
 		task.wait(0.2)
@@ -738,6 +739,24 @@ task.spawn(function()
 				refreshOpRow()
 			end
 		end
+		-- the deploy screen rework (owner directive): terminal proximity opens the full-screen
+		-- theatre surface, not the legacy cramped panel. close-ownership is tracked so a
+		-- manually summoned menu (P / DpadLeft) is never yanked away by walking off a pad.
+		do
+			local MenuController = require(game:GetService("ReplicatedStorage").GF.Shared.UI.MenuController)
+			if near then
+				if type(nearTerminalRegions) == "string" then
+					MenuController.setRegionFilter(nearTerminalRegions)
+				end
+				if not MenuController.isOpen() then
+					MenuController.open("DEPLOY")
+					terminalOpenedMenu = true
+				end
+			elseif terminalOpenedMenu then
+				terminalOpenedMenu = false
+				MenuController.close()
+			end
+		end
 		-- A server-set attribute force-shows the panel, so the war table can be driven and photographed.
 		-- NOTE: this pair of lines is the ONLY place `show` is computed. An earlier patch replaced them with
 		-- the comment alone, leaving show == nil: the panel was then set to nil every 0.2s (never visible) and
@@ -745,7 +764,9 @@ task.spawn(function()
 		local forced = workspace:GetAttribute("GF_StationPanel") == true
 		-- The debrief owns the screen when it is open: the heartbeat must not re-show the war table underneath it.
 		local debriefOpen = debrief.Visible
-		local show = (forced or (onStation and near)) and not debriefOpen
+		-- legacy panel no longer opens at terminals: the full-screen deploy surface owns
+		-- terminal interaction now. forced still drives it for diagnostics/photography.
+		local show = forced and not debriefOpen
 		if table_.Visible ~= show then
 			table_.Visible = show
 			setFocus(if show then deploy else nil)

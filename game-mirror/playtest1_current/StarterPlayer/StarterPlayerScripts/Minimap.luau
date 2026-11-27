@@ -4,7 +4,7 @@
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
-local RADIUS = 78
+local RADIUS = 54 -- tactical readout, not a screen hijack: the 156px disc dominated mobile
 local gui = Instance.new("ScreenGui")
 gui.Name = "GF_Minimap"
 gui.ResetOnSpawn = false

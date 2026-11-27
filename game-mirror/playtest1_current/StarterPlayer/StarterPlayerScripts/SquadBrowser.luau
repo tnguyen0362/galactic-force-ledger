@@ -14,6 +14,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local remotes = ReplicatedStorage:WaitForChild("GF"):WaitForChild("Remotes")
 
 local shell = MenuShell.new("GF_SquadBrowser", 10)
+require(game:GetService("ReplicatedStorage").GF.Shared.UI.MenuController).register(shell)
+
+-- war roster for the deploy/form pickers
+local WarModel = require(game:GetService("ReplicatedStorage").GF.Shared.WarModel)
+local WarOperations = require(game:GetService("ReplicatedStorage").GF.Shared.Configs.WarOperations)
 
 -- ---------------------------------------------------------------------------
 -- squads section: global listings, most urgent beacons pinned on top
@@ -36,14 +41,172 @@ shell:registerSection("SQUADS", "◈", function(page)
 end)
 
 -- ---------------------------------------------------------------------------
+-- DEPLOY section: the mission screen rework (owner directive — the legacy cramped panel is
+-- replaced, not reskinned). full-screen theatre-first layout: regions with live war status
+-- down the left, the region's operations center-stage, difficulty + deploy at the bottom.
+-- fires the exact wire payload the legacy panel did — server behavior unchanged.
+-- ---------------------------------------------------------------------------
+local deployState = {
+	region = "VerdantReach",
+	operationId = nil :: string?,
+	difficulty = "Normal",
+	opButtons = {} :: { [string]: TextButton },
+	regionButtons = {} :: { [string]: TextButton },
+	diffButtons = {} :: { [string]: TextButton },
+	statusLine = nil :: TextLabel?,
+	opList = nil :: ScrollingFrame?,
+}
+
+shell:registerSection("DEPLOY", "▼", function(page)
+	Components.text(page, "DEPLOY — SELECT THEATRE OF WAR", "title",
+		UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 0, 0))
+	local statusLine = Components.text(page, "", "caption",
+		UDim2.new(1, 0, 0, 18), UDim2.new(0, 0, 0, 34))
+	deployState.statusLine = statusLine
+
+	-- left column: the regions, sorted deterministically
+	local regionCol = Components.list(page,
+		UDim2.new(0, 230, 1, -170), UDim2.new(0, 0, 0, 58))
+	local regions = {}
+	for _opId, def in pairs(WarModel.OPERATIONS) do
+		local r = def.region or "?"
+		if not table.find(regions, r) then
+			table.insert(regions, r)
+		end
+	end
+	table.sort(regions)
+
+	-- region selection is one callable function: buttons and initial population share it,
+	-- so the operation list is never empty-on-open and terminal preselection is identical
+	local selectRegion
+	selectRegion = function(rid: string)
+		if not deployState.opList then return end
+		deployState.region = rid
+		deployState.operationId = nil
+		deployState.opButtons = {}
+		for _, child in ipairs(deployState.opList:GetChildren()) do
+			if child:IsA("Frame") then child:Destroy() end
+		end
+		local ops = {}
+		for opId, def in pairs(WarModel.OPERATIONS) do
+			if (def.region or "?") == rid then
+				table.insert(ops, opId)
+			end
+		end
+		table.sort(ops)
+		for order, opId in ipairs(ops) do
+			local def = WarModel.OPERATIONS[opId]
+			local name = WarOperations.DisplayName[opId] or opId
+			local row = Components.row(deployState.opList, name,
+				string.format("%s operation", string.lower(def.family or "combat")))
+			row.LayoutOrder = order
+			local pick = Components.button(row, "SELECT", "ghost")
+			pick.Size = UDim2.new(0, 96, 0, Tokens.Size.buttonHeight - 12)
+			pick.Position = UDim2.new(1, -Tokens.Space.sm, 0.5, 0)
+			pick.AnchorPoint = Vector2.new(1, 0.5)
+			pick.TextSize = Tokens.Type.sizeSmall
+			deployState.opButtons[opId] = pick
+			pick.Activated:Connect(function()
+				deployState.operationId = opId
+				for id, b in pairs(deployState.opButtons) do
+					b.BackgroundColor3 = id == opId and Tokens.Color.navy or Tokens.Color.panelRaised
+				end
+				statusLine.Text = string.format("%s — %s theatre", name, rid)
+				statusLine.TextColor3 = Tokens.Color.textSecondary
+			end)
+		end
+		for id, b in pairs(deployState.regionButtons) do
+			b.BackgroundColor3 = id == rid and Tokens.Color.navy or Tokens.Color.panelInset
+		end
+		-- live theater status at the decision point: the war is legible before you commit
+		local warStatus = workspace:GetAttribute("GF_WarState_" .. rid .. "_Status")
+		if type(warStatus) == "string" then
+			statusLine.Text = string.format("%s — theater status: %s", string.upper(rid), string.upper(string.gsub(warStatus, "_", " ")))
+			statusLine.TextColor3 = Tokens.StatusColor[warStatus] or Tokens.Color.textSecondary
+		end
+	end
+
+	for i, rid in ipairs(regions) do
+		local btn = Components.button(regionCol, string.upper(rid), "ghost")
+		btn.LayoutOrder = i
+		btn.Size = UDim2.new(1, 0, 0, Tokens.Size.buttonHeight)
+		btn.TextSize = Tokens.Type.sizeSmall
+		deployState.regionButtons[rid] = btn
+		btn.Activated:Connect(function()
+			selectRegion(rid)
+		end)
+	end
+
+	-- center: operations for the selected region
+	deployState.opList = Components.list(page,
+		UDim2.new(1, -250, 1, -170), UDim2.new(0, 246, 0, 58))
+
+	-- bottom: difficulty chips + the deploy action, thumb-sized
+	local diffRow = Instance.new("Frame")
+	diffRow.Size = UDim2.new(1, 0, 0, Tokens.Size.chipHeight + 8)
+	diffRow.Position = UDim2.new(0, 0, 1, -100)
+	diffRow.BackgroundTransparency = 1
+	diffRow.Parent = page
+	local diffLayout = Instance.new("UIListLayout")
+	diffLayout.FillDirection = Enum.FillDirection.Horizontal
+	diffLayout.Padding = UDim.new(0, Tokens.Space.sm)
+	diffLayout.Parent = diffRow
+	Components.text(diffRow, "DIFFICULTY", "caption",
+		UDim2.new(0, 110, 1, 0), UDim2.new(0, 0, 0, 0))
+	for _, diff in ipairs({ "Easy", "Normal", "Hard", "Extreme" }) do
+		local chip = Components.button(diffRow, string.upper(diff), "ghost")
+		chip.Size = UDim2.new(0, 120, 0, Tokens.Size.chipHeight)
+		chip.TextSize = Tokens.Type.sizeSmall
+		deployState.diffButtons[diff] = chip
+		chip.Activated:Connect(function()
+			deployState.difficulty = diff
+			for d, b in pairs(deployState.diffButtons) do
+				b.BackgroundColor3 = d == diff and Tokens.Color.navy or Tokens.Color.panelInset
+			end
+		end)
+	end
+	deployState.diffButtons["Normal"].BackgroundColor3 = Tokens.Color.navy
+
+	local deployBtn = Components.button(page, "DEPLOY", "primary")
+	deployBtn.Size = UDim2.new(1, 0, 0, 64)
+	deployBtn.Position = UDim2.new(0, 0, 1, -64)
+	deployBtn.TextSize = Tokens.Type.sizeTitle
+	deployBtn.Activated:Connect(function()
+		if not deployState.operationId then
+			statusLine.Text = "select an operation — the theatre list is center-screen"
+			statusLine.TextColor3 = Tokens.Color.warning
+			return
+		end
+		statusLine.Text = "DEPLOYING…"
+		statusLine.TextColor3 = Tokens.Color.textAccent
+		-- the exact legacy wire contract
+		local requestDeploy = remotes:FindFirstChild("RequestDeploy")
+		if requestDeploy then
+			requestDeploy:FireServer({ difficulty = deployState.difficulty, operationId = deployState.operationId })
+		end
+		shell:close()
+	end)
+
+	-- initial population: terminal arc preselection if present, default region otherwise
+	task.defer(function()
+		local startRegion = deployState.region
+		local terminalRegions = (shell :: any)._terminalRegions
+		if type(terminalRegions) == "string" then
+			local first = string.split(terminalRegions, ",")[1]
+			if first and deployState.regionButtons[first] then
+				startRegion = first
+			end
+		end
+		selectRegion(startRegion)
+	end)
+end)
+
+-- ---------------------------------------------------------------------------
 -- FORM section: declare an operation publicly and the listing goes fleet-wide.
 -- operation picker is region-grouped from the shared war roster — the same source the
 -- deploy terminals use, so what you form is exactly what you deploy. after forming, the
 -- leader physically reports to their region's terminal to launch when the squad fills.
 -- ---------------------------------------------------------------------------
-local WarModel = require(game:GetService("ReplicatedStorage").GF.Shared.WarModel)
-local WarOperations = require(game:GetService("ReplicatedStorage").GF.Shared.Configs.WarOperations)
-local Difficulties = require(game:GetService("ReplicatedStorage").GF.Shared.Configs.Difficulties)
 
 local formState = {
 	operationId = nil :: string?,
