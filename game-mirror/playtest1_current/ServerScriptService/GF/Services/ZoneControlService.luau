@@ -57,7 +57,21 @@ local function buildRing(zone): Model
 		seg.CanCollide = false
 		seg.CanQuery = false
 		seg.CastShadow = false
-		local pos = Vector3.new(center.X + math.cos(a) * radius, y + 0.4, center.Z + math.sin(a) * radius)
+		-- ground-conform each segment: zone radii (30-55 studs) cross slopes well outside the
+		-- flattened objective pad, and a fixed-height ring reads broken the moment it buries
+		-- in a hillside or floats off a slope edge
+		local sx = center.X + math.cos(a) * radius
+		local sz = center.Z + math.sin(a) * radius
+		local sy = y
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Include
+		params.FilterDescendantsInstances = { workspace.Terrain }
+		params.IgnoreWater = true
+		local hit = workspace:Raycast(Vector3.new(sx, y + 60, sz), Vector3.new(0, -160, 0), params)
+		if hit then
+			sy = hit.Position.Y
+		end
+		local pos = Vector3.new(sx, sy + 0.4, sz)
 		seg.CFrame = CFrame.new(pos) * CFrame.Angles(0, -a, math.pi / 2)
 		seg.Parent = model
 	end
