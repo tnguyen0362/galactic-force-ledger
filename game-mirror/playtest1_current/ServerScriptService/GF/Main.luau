@@ -83,6 +83,11 @@ ArmoryService.start()
 		if not ok then warn("[GF] crew build failed: " .. tostring(err)) end
 	end)
 DispatchService.start()
+-- hybrid matchmaking (Counteroffensive Stage 4): heartbeat keeps listings alive, the
+-- quick-deploy drain forms cross-server matches on a 5s cadence
+pcall(function()
+	require(ServerScriptService.GF.Services.MatchmakingService).start()
+end)
 GalacticWarService.start()
 -- Theater of War authoritative layer: coexists with the legacy scalar campaign during
 -- cutover, building multidimensional regional state in parallel (mandate Stage 3)

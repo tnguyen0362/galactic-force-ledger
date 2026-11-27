@@ -198,6 +198,66 @@ function StationService.build()
 		local a = (i / 6) * math.pi * 2
 		neon(station, "WarPin", Vector3.new(1.2, 1.2, 1.2), tableCF * CFrame.new(math.cos(a) * 11, 5.4, math.sin(a) * 11), AMBER)
 	end
+
+	-- ---------------------------------------------------------------------------
+	-- four deployment terminals (Counteroffensive mandate §72): the central war table is now
+	-- theater DISPLAY only — deployment interaction happens at physical terminals, one per
+	-- theater arc. players distribute across the room by theater interest. art-pass geometry
+	-- is coordinated with claude later; these are functional consoles in the same idiom as
+	-- the rest of the room.
+	-- ---------------------------------------------------------------------------
+	local TERMINALS = {
+		{ id = "T1", arc = "VERDANT ARC", regions = "VerdantReach,ThornBasin", offset = CFrame.new(-30, 0, -34), accent = Color3.fromRGB(90, 200, 130) },
+		{ id = "T2", arc = "ASHEN ARC", regions = "AshenDivide,RedMesa", offset = CFrame.new(-24, 0, 6), accent = Color3.fromRGB(220, 150, 80) },
+		{ id = "T3", arc = "FROST ARC", regions = "Frostline,WhiteRidge", offset = CFrame.new(30, 0, -34), accent = Color3.fromRGB(130, 200, 240) },
+		{ id = "T4", arc = "IRON ARC", regions = "IronMarch,FoundryBelt", offset = CFrame.new(24, 0, 6), accent = Color3.fromRGB(200, 110, 110) },
+	}
+	for _, term in ipairs(TERMINALS) do
+		local tcf = base * term.offset
+		local console = part(station, "DeployTerminal_" .. term.id, Vector3.new(8, 4.2, 5), tcf * CFrame.new(0, 2.1, 0), DARK, Enum.Material.Metal)
+		console:SetAttribute("TerminalArc", term.arc)
+		console:SetAttribute("TerminalRegions", term.regions)
+		-- angled console top in the arc's accent color: readable from across the room
+		local top = part(station, "TerminalTop_" .. term.id, Vector3.new(8.4, 0.5, 5.4), tcf * CFrame.new(0, 4.35, 0), term.accent, Enum.Material.Neon)
+		top.Transparency = 0.45
+		-- status screen facing outward from the table side
+		local screen = part(station, "TerminalScreen_" .. term.id, Vector3.new(6.5, 3.5, 0.3), tcf * CFrame.new(0, 6.2, 2.2), Color3.fromRGB(10, 16, 22), Enum.Material.SmoothPlastic)
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "TerminalGui"
+		gui.Face = Enum.NormalId.Front
+		gui.CanvasSize = Vector2.new(650, 350)
+		gui.Parent = screen
+		local title = Instance.new("TextLabel")
+		title.Size = UDim2.fromScale(1, 0.28)
+		title.BackgroundTransparency = 1
+		title.TextColor3 = term.accent
+		title.Text = term.arc .. " DEPLOYMENT"
+		title.Font = Enum.Font.RobotoMono
+		title.TextSize = 34
+		title.Parent = gui
+		local regions = Instance.new("TextLabel")
+		regions.Size = UDim2.fromScale(1, 0.2)
+		regions.Position = UDim2.fromScale(0, 0.3)
+		regions.BackgroundTransparency = 1
+		regions.TextColor3 = Color3.fromRGB(160, 170, 185)
+		regions.Text = string.gsub(term.regions, ",", "  ·  ")
+		regions.Font = Enum.Font.RobotoMono
+		regions.TextSize = 20
+		regions.Parent = gui
+		-- live theater status line per region pair, refreshed by the war state publisher —
+		-- the terminal face shows the war before the player even interacts
+		local statusLine = Instance.new("TextLabel")
+		statusLine.Name = "TheaterStatus"
+		statusLine.Size = UDim2.fromScale(1, 0.4)
+		statusLine.Position = UDim2.fromScale(0, 0.55)
+		statusLine.BackgroundTransparency = 1
+		statusLine.TextColor3 = Color3.fromRGB(120, 210, 255)
+		statusLine.Text = ""
+		statusLine.Font = Enum.Font.RobotoMono
+		statusLine.TextSize = 16
+		statusLine.TextWrapped = true
+		statusLine.Parent = gui
+	end
 	local light = Instance.new("PointLight")
 	light.Shadows = false
 	light.Color = CYAN
@@ -798,6 +858,78 @@ function StationService.start()
 			local operationId = type(options) == "table" and options.operationId or nil
 			StationService.deploy(player, type(chosen) == "string" and chosen or nil, type(template) == "string" and template or nil, type(operationId) == "string" and operationId or nil)
 		end)
+	end
+	-- squad browser data (Counteroffensive Stage 4): global listings + live dispatch beacons
+	-- in one query. difficulty filtering uses the caller's unlocked tiers server-side.
+	local browser = ensureRemote("RequestSquadBrowser", "RemoteFunction")
+	if browser then
+		browser.OnServerInvoke = function(player)
+			local out = { squads = {}, beacons = {}, estimatedWait = nil }
+			pcall(function()
+				local ms = require(script.Parent.MatchmakingService)
+				out.squads = ms.list(nil, true)
+				out.estimatedWait = ms.estimatedWait()
+			end)
+			pcall(function()
+				out.beacons = require(script.Parent.DispatchService).listGlobal()
+			end)
+			return out
+		end
+	end
+	-- squad formation: the leader declares operation+difficulty+privacy and the listing
+	-- publishes globally. formation joins the leader into the server-local squad.
+	local form = ensureRemote("FormSquad", "RemoteEvent")
+	if form then
+		form.OnServerEvent:Connect(function(player, options)
+			if not require(script.Parent.NetGuard).allow(player, "default") then
+				return
+			end
+			if type(options) ~= "table" then return end
+			pcall(function()
+				local ms = require(script.Parent.MatchmakingService)
+				local listing = ms.createSquad(
+					player,
+					type(options.operationId) == "string" and options.operationId or nil,
+					type(options.difficulty) == "string" and options.difficulty or "Normal",
+					tonumber(options.capacity) or 4,
+					options.public ~= false,
+					type(options.region) == "string" and options.region or nil
+				)
+				if listing then
+					require(script.Parent.SquadService).join(player)
+				end
+			end)
+		end)
+	end
+	-- cross-server join: atomically reserve a seat, then hand the caller the host jobId.
+	-- the teleport itself is client-invoked (TeleportService client call patterns vary);
+	-- the seat is already theirs — a failed teleport releases nothing but also loses nothing,
+	-- since the claim expires with the listing TTL and reconcileFailedTeleport covers retry.
+	local join = ensureRemote("JoinSquad", "RemoteFunction")
+	if join then
+		join.OnServerInvoke = function(player, squadId)
+			if not require(script.Parent.NetGuard).allow(player, "queue") then
+				return { ok = false, reason = "rate limited" }
+			end
+			if type(squadId) ~= "string" then
+				return { ok = false, reason = "bad id" }
+			end
+			local ms = require(script.Parent.MatchmakingService)
+			local reserved = ms.reserveSeat(squadId, player)
+			if not reserved then
+				return { ok = false, reason = "squad filled or expired" }
+			end
+			local listing = ms.getListing(squadId)
+			if not listing then
+				return { ok = false, reason = "listing vanished" }
+			end
+			if listing.leaderJobId == game.JobId then
+				-- same server: no teleport needed, join locally right now
+				require(script.Parent.SquadService).join(player)
+				return { ok = true, local_ = true }
+			end
+			return { ok = true, hostJobId = listing.leaderJobId }
+		end
 	end
 	local returnRequest = ensureRemote("RequestReturn", "RemoteEvent")
 	if returnRequest then

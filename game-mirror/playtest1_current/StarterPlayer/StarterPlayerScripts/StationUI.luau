@@ -629,6 +629,7 @@ deployState.OnClientEvent:Connect(function(state)
 end)
 
 local PLAYER = game:GetService("Players").LocalPlayer
+local lastTerminalRegions: string? = nil
 
 task.spawn(function()
 	while true do
@@ -636,10 +637,33 @@ task.spawn(function()
 		local character = PLAYER.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local station = workspace:FindFirstChild("Station")
-		local anchor = station and station:FindFirstChild("WarTableBase") :: BasePart?
-		local near = false
-		if root and anchor then
-			near = (root.Position - anchor.Position).Magnitude <= 36
+		-- deployment interaction lives at the four physical terminals (Counteroffensive §72) —
+		-- the war table is theater display only. proximity to a terminal opens the panel
+		-- pre-selected to that terminal's theater arc.
+		local anchor = nil
+		local nearTerminalRegions = nil
+		if station then
+			local bestD = 36
+			for _, inst in ipairs(station:GetChildren()) do
+				if inst:IsA("BasePart") and string.find(inst.Name, "^DeployTerminal_") and root then
+					local d = (root.Position - inst.Position).Magnitude
+					if d < bestD then
+						bestD = d
+						anchor = inst
+						nearTerminalRegions = inst:GetAttribute("TerminalRegions")
+					end
+				end
+			end
+		end
+		local near = anchor ~= nil
+		-- arc pre-selection: approaching a different terminal re-filters the operation list
+		if near and type(nearTerminalRegions) == "string" and nearTerminalRegions ~= lastTerminalRegions then
+			lastTerminalRegions = nearTerminalRegions
+			local first = string.split(nearTerminalRegions, ",")[1]
+			if first and opsByRegion[first] and first ~= selectedRegion then
+				selectedRegion = first
+				refreshOpRow()
+			end
 		end
 		-- A server-set attribute force-shows the panel, so the war table can be driven and photographed.
 		-- NOTE: this pair of lines is the ONLY place `show` is computed. An earlier patch replaced them with

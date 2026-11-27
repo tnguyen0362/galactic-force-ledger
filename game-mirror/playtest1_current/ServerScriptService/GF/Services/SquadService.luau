@@ -56,6 +56,14 @@ function SquadService.join(player: Player)
 	local count = 0
 	for _ in pairs(members) do count += 1 end
 	workspace:SetAttribute("GF_SquadCount", count)
+	-- listing truth (Counteroffensive Stage 4): open seats in the global browser track reality
+	pcall(function()
+		local ms = require(script.Parent.MatchmakingService)
+		local squadId = ms.hostedSquad()
+		if squadId then
+			ms.updateTaken(squadId, count)
+		end
+	end)
 	broadcast()
 	return true
 end
@@ -65,6 +73,17 @@ function SquadService.leave(player: Player)
 	local count = 0
 	for _ in pairs(members) do count += 1 end
 	workspace:SetAttribute("GF_SquadCount", count)
+	pcall(function()
+		local ms = require(script.Parent.MatchmakingService)
+		local squadId = ms.hostedSquad()
+		if squadId then
+			if count == 0 then
+				ms.unpublish(squadId)
+			else
+				ms.updateTaken(squadId, count)
+			end
+		end
+	end)
 end
 
 function SquadService.add(kind: string, amount: number): boolean
@@ -213,6 +232,15 @@ local deployState = {
 function SquadService.startDeploy(plr: Player): boolean
 	if plr ~= leader then return false end
 	if deployState.active then return false end
+	-- the squad is leaving the forming state: delist before the countdown so a cross-server
+	-- joiner never teleports into a mission that already left
+	pcall(function()
+		local ms = require(script.Parent.MatchmakingService)
+		local squadId = ms.hostedSquad()
+		if squadId then
+			ms.unpublish(squadId)
+		end
+	end)
 	deployState.active = true
 	deployState.ready = {}
 	local count = 0
