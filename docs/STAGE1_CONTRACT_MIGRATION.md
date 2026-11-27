@@ -64,3 +64,24 @@ Independent — can proceed in parallel with war-service implementation. Both mu
 - commitPrimary hardcodes pqualified=1 — participant counting untracked (noted in seam).
 - WarStateService committed in mirror; WarModel diff-tested. Harness: gf-research/strategic/build_harness.py → harness_bundle.luau (all checks pass).
 **Execution order:** (1) ProfileService schema+transform (2) Types (3) ArmoryService single-slot (4) AbilityService/input read-path (5) HUD/UI minimal (6) luau-compile verify all (7) commit.
+
+
+## PART B economy quantification (beta, 2026-11-28 — owner-visible decision)
+Reward ledger (Normal base): primary_complete 300cr/350xp, extraction_success 100/100,
+optional_task **50cr/65xp each**. Fixed contract income per successful mission: 400cr/450xp.
+Missions typically spawn 2-3 optional POIs.
+
+**Optional share of contract income (excluding kills):**
+- 2 POIs: +100cr/+130xp vs 400/450 base = **20% credits, 22% xp uplift**
+- 3 POIs: +150cr/+195xp = **27% credits, 30% xp uplift**
+
+**Verdict: removal is a 20-30% contract-income nerf — well outside the ±10% band.**
+Per the migration design this must not be silently absorbed. Options:
+  (a) raise primary_complete base ~25% (300→375cr, 350→440xp) — over-compensates average players
+      who skip some POIs today;
+  (b) raise primary ~15% (300→345, 350→400) — calibrated to typical partial completion;
+  (c) accept the nerf as intended progression pacing.
+The DAG migration partially offsets: relay/generator completions folded into mandatory chains
+are inside the primary reward. Recommended: (b) pending owner decision. DECISION REQUIRED
+before Part B implementation lands. Difficulty multipliers scale all events uniformly, so
+percentages hold across difficulties.
