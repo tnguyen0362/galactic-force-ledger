@@ -135,7 +135,7 @@ hum.RigType = Enum.HumanoidRigType.R15
 hum.Parent = rig
 rig.PrimaryPart = hrp
 rig:SetAttribute("GF_AssetId", ASSET_ID)
-rig:SetAttribute("GF_ArtSource", "Blender hero_wip asc_rifleman_v8 anatomical + baked PBR atlas (BC/N/RM)")
+rig:SetAttribute("GF_ArtSource", "Blender hero_wip asc_rifleman_v10 (thicker arms, no pauldrons) + baked PBR atlas (BC/N/RM)")
 rig.Parent = art
 loaded:Destroy()
 
