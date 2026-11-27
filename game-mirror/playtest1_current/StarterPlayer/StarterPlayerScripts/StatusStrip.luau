@@ -2,6 +2,8 @@
 -- Mission clock and grenade charges. Both existed in server state and neither was on screen: the timer
 -- only lived inside mission state, and grenade charges were an invisible player attribute.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Tokens = require(ReplicatedStorage.GF.Shared.UI.Tokens)
 local player = Players.LocalPlayer
 
 local gui = Instance.new("ScreenGui")
@@ -11,40 +13,75 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 4
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local function makeLabel(text, position, colour, size)
+-- Hard-edged readout plate: graphite ground, steel rule, cyan rail, and a small angled
+-- end mark. The strip is compact, but every state line clears console-distance readability.
+local function applyStripChrome(label, accent)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Tokens.Color.border
+	stroke.Transparency = 0.36
+	stroke.Thickness = 1
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = label
+	local rail = Instance.new("Frame")
+	rail.Name = "AccentRail"
+	rail.Size = UDim2.new(0, 3, 1, -8)
+	rail.Position = UDim2.fromOffset(0, 4)
+	rail.BackgroundColor3 = accent or Tokens.Color.techCyan
+	rail.BorderSizePixel = 0
+	rail.Parent = label
+	local endMark = Instance.new("Frame")
+	endMark.Name = "EndMark"
+	endMark.Size = UDim2.fromOffset(13, 2)
+	endMark.Position = UDim2.new(1, -17, 0, 4)
+	endMark.Rotation = -32
+	endMark.BackgroundColor3 = accent or Tokens.Color.techCyan
+	endMark.BackgroundTransparency = 0.15
+	endMark.BorderSizePixel = 0
+	endMark.Parent = label
+end
+
+local function setStripAccent(label, color)
+	for _, child in label:GetChildren() do
+		if child:IsA("Frame") and (child.Name == "AccentRail" or child.Name == "EndMark") then
+			child.BackgroundColor3 = color
+		end
+	end
+end
+
+local function makeLabel(text, position, colour, size, accent)
 	local label = Instance.new("TextLabel")
 	label.Text = text
 	label.Size = UDim2.fromOffset(size.X, size.Y)
 	label.Position = position
-	label.BackgroundColor3 = Color3.fromRGB(10, 16, 22)
-	label.BackgroundTransparency = 0.35
+	label.BackgroundColor3 = Tokens.Color.panelInset
+	label.BackgroundTransparency = 0.2
 	label.BorderSizePixel = 0
-	label.Font = Enum.Font.GothamBold
-	label.TextSize = 14
+	label.Font = Tokens.Type.fontBold
+	label.TextSize = 15
 	label.TextColor3 = colour
+	label.TextStrokeTransparency = 0.68
 	label.TextXAlignment = Enum.TextXAlignment.Center
 	label.Parent = gui
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 3)
-	corner.Parent = label
+	applyStripChrome(label, accent)
 	return label
 end
 
-local timerLabel = makeLabel("MISSION --:--", UDim2.new(1, -196, 0, 12 + 108 + 6), Color3.fromRGB(220, 230, 240), Vector2.new(196, 24))
-local grenadeLabel = makeLabel("GRENADE -", UDim2.new(1, -196, 0, 12 + 108 + 34), Color3.fromRGB(180, 220, 255), Vector2.new(196, 24))
+local timerLabel = makeLabel("MISSION --:--", UDim2.new(1, -236, 0, 12 + 108 + 6), Tokens.Color.textPrimary, Vector2.new(220, 28), Tokens.Color.warning)
+local grenadeLabel = makeLabel("GRENADE -", UDim2.new(1, -236, 0, 12 + 108 + 34), Tokens.Color.textAccent, Vector2.new(220, 28), Tokens.Color.techCyan)
 
 -- Loot feed: stacking deltas from SalvageChanged (LootCollected carries the same payload), plus a squad
 -- count. Both were invisible before: the HUD had a running total and nothing else.
-local squadLabel = makeLabel("SQUAD 1", UDim2.new(1, -196, 0, 12 + 108 + 62), Color3.fromRGB(200, 220, 240), Vector2.new(196, 22))
+local squadLabel = makeLabel("SQUAD 1", UDim2.new(1, -236, 0, 12 + 108 + 62), Tokens.Color.textPrimary, Vector2.new(220, 26), Tokens.Color.steel)
 local feedRows = {}
 for index = 1, 4 do
 	local row = Instance.new("TextLabel")
-	row.Size = UDim2.fromOffset(196, 18)
-	row.Position = UDim2.new(1, -196, 0, 12 + 108 + 88 + (index - 1) * 19)
+	row.Size = UDim2.fromOffset(220, 19)
+	row.Position = UDim2.new(1, -236, 0, 12 + 108 + 92 + (index - 1) * 20)
 	row.BackgroundTransparency = 1
-	row.Font = Enum.Font.GothamMedium
-	row.TextSize = 12
-	row.TextColor3 = Color3.fromRGB(190, 226, 250)
+	row.Font = Tokens.Type.font
+	row.TextSize = 13
+	row.TextColor3 = Tokens.Color.textAccent
+	row.TextStrokeTransparency = 0.68
 	row.TextXAlignment = Enum.TextXAlignment.Right
 	row.Text = ""
 	row.Parent = gui
@@ -87,9 +124,12 @@ local function pushLoot(kind, amount)
 	redrawFeed()
 end
 
-game:GetService("ReplicatedStorage").GF.Remotes.LootCollected.OnClientEvent:Connect(function(payload)
+game:GetService("ReplicatedStorage").GF.Remotes.LootCollected.OnClientEvent:Connect(function(payload, amount)
 	if type(payload) == "table" then
 		pushLoot(payload.kind or "salvage", tonumber(payload.amount) or 0)
+	else
+		-- LootService fires (kind, amount, position) as positional remote arguments.
+		pushLoot(payload, tonumber(amount) or 0)
 	end
 end)
 
@@ -116,13 +156,16 @@ task.spawn(function()
 		-- plain language (owner report: "wtf is a ticket"): the number is the squad's shared
 		-- respawn budget — when it hits zero, death is final this operation
 		squadLabel.Text = string.format("SQUAD %d · RESPAWNS %d", tonumber(squad) or 1, tickets)
+		local squadColor = tickets <= 0 and Tokens.Color.danger or (tickets <= 2 and Tokens.Color.warning or Tokens.Color.textPrimary)
+		squadLabel.TextColor3 = squadColor
+		setStripAccent(squadLabel, squadColor)
 		gui:SetAttribute("GF_SquadText", squadLabel.Text)
 	end
 end)
 
-local AMBER = Color3.fromRGB(255, 200, 90)
-local RED = Color3.fromRGB(255, 110, 100)
-local NORMAL = Color3.fromRGB(220, 230, 240)
+local AMBER = Tokens.Color.warning
+local RED = Tokens.Color.danger
+local NORMAL = Tokens.Color.textPrimary
 
 task.spawn(function()
 	while true do
@@ -134,20 +177,25 @@ task.spawn(function()
 		if participant and remaining and remaining > 0 then
 			local minutes = math.floor(remaining / 60)
 			local seconds = remaining % 60
+			local timerColor = (remaining <= 60 and RED) or (remaining <= 300 and AMBER) or NORMAL
 			timerLabel.Text = string.format("MISSION %d:%02d", minutes, seconds)
-			timerLabel.TextColor3 = (remaining <= 60 and RED) or (remaining <= 300 and AMBER) or NORMAL
+			timerLabel.TextColor3 = timerColor
+			setStripAccent(timerLabel, timerColor)
 			timerLabel.Visible = true
 		elseif participant then
 			timerLabel.Text = "MISSION --:--"
 			timerLabel.TextColor3 = NORMAL
+			setStripAccent(timerLabel, AMBER)
 			timerLabel.Visible = true
 		else
 			timerLabel.Visible = false
 		end
 		local charges = player:GetAttribute("GrenadeCharges")
+		local chargeCount = tonumber(charges) or 0
 		grenadeLabel.Visible = participant
-		grenadeLabel.Text = string.format("GRENADE x%d", tonumber(charges) or 0)
-		grenadeLabel.TextColor3 = (tonumber(charges) or 0) > 0 and Color3.fromRGB(180, 220, 255) or Color3.fromRGB(150, 150, 150)
+		grenadeLabel.Text = string.format("GRENADE x%d", chargeCount)
+		grenadeLabel.TextColor3 = chargeCount > 0 and Tokens.Color.textAccent or Tokens.Color.textDisabled
+		setStripAccent(grenadeLabel, chargeCount > 0 and Tokens.Color.techCyan or Tokens.Color.textDisabled)
 		gui:SetAttribute("GF_TimerText", timerLabel.Text)
 		gui:SetAttribute("GF_TimerColor", math.floor(timerLabel.TextColor3.R * 255) .. "," .. math.floor(timerLabel.TextColor3.G * 255) .. "," .. math.floor(timerLabel.TextColor3.B * 255))
 		gui:SetAttribute("GF_GrenadeText", grenadeLabel.Text)

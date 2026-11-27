@@ -17,12 +17,15 @@ local HUD = {}
 
 local player = Players.LocalPlayer
 local remotes = ReplicatedStorage.GF.Remotes
+local Tokens = require(ReplicatedStorage.GF.Shared.UI.Tokens)
 
 local gui: ScreenGui
 local shieldFill: Frame
 local healthFill: Frame
 local shieldLabel: TextLabel
+local healthLabel: TextLabel
 local ammoLabel: TextLabel
+local ammoDetailLabel: TextLabel
 local weaponLabel: TextLabel
 local crosshair: Frame
 local hitMarker: Frame
@@ -30,16 +33,25 @@ local downedFrame: Frame
 local dodgeLabel: TextLabel
 local abilityLabels: { [string]: TextLabel } = {}
 
-local abilityTitles: { [string]: any } = {}local abilityFills: { [string]: Frame } = {}
+local abilityTitles: { [string]: any } = {}
+local abilityFills: { [string]: Frame } = {}
 local promptLabel: TextLabel
 local killLabel: TextLabel
 local touchLayer: Frame
 local cooldownEnds: { [string]: number } = {}
+local cooldownDurations: { [string]: number } = {}
 local touchButtons: { [string]: TextButton } = {}
 
-local ACCENT = Color3.fromRGB(96, 200, 255)
-local WARN = Color3.fromRGB(255, 120, 90)
-local INK = Color3.fromRGB(232, 238, 246)
+-- Combat HUD chrome is token-locked to the Galactic Force palette: graphite structure,
+-- ceramic information, cyan active technology, amber warning. Red is reserved for damage.
+local ACCENT = Tokens.Color.techCyan
+local WARN = Tokens.Color.danger
+local AMBER = Tokens.Color.warning
+local INK = Tokens.Color.textPrimary
+local MUTED = Tokens.Color.textSecondary
+local PANEL = Tokens.Color.panelInset
+local PANEL_RAISED = Tokens.Color.panelRaised
+local EDGE = Tokens.Color.border
 
 local function newFrame(parent: Instance, props: { [string]: any }): Frame
 	local f = Instance.new("Frame")
@@ -51,17 +63,87 @@ local function newFrame(parent: Instance, props: { [string]: any }): Frame
 	return f
 end
 
+local function addStroke(parent: Instance, color: Color3?, transparency: number?, thickness: number?): UIStroke
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color or EDGE
+	stroke.Transparency = transparency or 0.3
+	stroke.Thickness = thickness or 1
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = parent
+	return stroke
+end
+
+-- Precision brackets replace rounded chrome. Four independent L-shaped corners give the
+-- panel a manufactured hard-surface read while leaving the center visually quiet.
+local function addCornerBrackets(parent: Instance, color: Color3?, inset: number?, length: number?, thickness: number?)
+	local c = color or ACCENT
+	local i = inset or 3
+	local len = length or 14
+	local t = thickness or 2
+	local specs = {
+		{ UDim2.fromOffset(i, i), UDim2.fromOffset(len, t) },
+		{ UDim2.fromOffset(i, i), UDim2.fromOffset(t, len) },
+		{ UDim2.new(1, -(i + len), 0, i), UDim2.fromOffset(len, t) },
+		{ UDim2.new(1, -(i + t), 0, i), UDim2.fromOffset(t, len) },
+		{ UDim2.new(0, i, 1, -(i + len)), UDim2.fromOffset(t, len) },
+		{ UDim2.new(0, i, 1, -(i + t)), UDim2.fromOffset(len, t) },
+		{ UDim2.new(1, -(i + len), 1, -(i + t)), UDim2.fromOffset(len, t) },
+		{ UDim2.new(1, -(i + t), 1, -(i + len)), UDim2.fromOffset(t, len) },
+	}
+	for index, spec in ipairs(specs) do
+		local part = newFrame(parent, {
+			Name = "Corner" .. index,
+			Position = spec[1],
+			Size = spec[2],
+			BackgroundColor3 = c,
+			BackgroundTransparency = 0.08,
+		})
+		part.ZIndex = 4
+	end
+end
+
+local function finishPanel(frame: Frame, accent: Color3?): UIStroke
+	local stroke = addStroke(frame, EDGE, 0.28, 1)
+	addCornerBrackets(frame, accent or ACCENT, 3, 14, 2)
+	local rail = newFrame(frame, {
+		Name = "AccentRail",
+		Size = UDim2.new(0, 3, 1, -16),
+		Position = UDim2.fromOffset(0, 8),
+		BackgroundColor3 = accent or ACCENT,
+		BackgroundTransparency = 0.08,
+	})
+	rail.ZIndex = 3
+	return stroke
+end
+
+-- Segment separators sit over the fill. Length remains the primary read; the divisions
+-- supply the color-independent shape language required for shield state.
+local function addSegments(back: Frame, count: number)
+	for index = 1, count - 1 do
+		local divider = newFrame(back, {
+			Name = "Segment" .. index,
+			Size = UDim2.new(0, 1, 1, 0),
+			Position = UDim2.fromScale(index / count, 0),
+			BackgroundColor3 = PANEL,
+			BackgroundTransparency = 0.05,
+		})
+		divider.ZIndex = 3
+	end
+end
+
 local function newLabel(parent: Instance, text: string, size: UDim2, position: UDim2, textSize: number): TextLabel
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
 	l.Text = text
 	l.Size = size
 	l.Position = position
-	l.TextSize = textSize
-	l.Font = Enum.Font.GothamMedium
+	l.TextSize = math.max(13, textSize)
+	l.Font = Tokens.Type.font
 	l.TextColor3 = INK
+	l.TextStrokeTransparency = 0.72
 	l.TextXAlignment = Enum.TextXAlignment.Left
 	l.TextYAlignment = Enum.TextYAlignment.Center
+	l.TextTruncate = Enum.TextTruncate.AtEnd
 	l.Parent = parent
 	return l
 end
@@ -69,33 +151,29 @@ end
 -- touch combat icons: drawn geometry, not text labels. a mobile shooter reads shapes at
 -- thumb-glance distance — the word FIRE inside a circle is desktop UI wearing a costume.
 -- every icon is simple frame composition inside the button, centered, ~40% of button radius.
-local ICON_INK = Color3.fromRGB(210, 228, 240)
+local ICON_INK = Tokens.Color.textPrimary
 local function iconPart(parent: Instance, w: number, h: number, cx: number, cy: number, rot: number?): Frame
 	local f = Instance.new("Frame")
 	f.Size = UDim2.fromOffset(w, h)
 	f.Position = UDim2.new(0.5, cx - w / 2, 0.5, cy - h / 2)
 	f.BackgroundColor3 = ICON_INK
 	f.BorderSizePixel = 0
+	f.ZIndex = 5
 	if rot then f.Rotation = rot end
 	f.Parent = parent
 	return f
 end
-local function iconRound(f: Frame, radius: number)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, radius)
-	c.Parent = f
-end
+
+-- Every touch glyph is hard-edged geometry. Even nominally round objects (grenade, bullet)
+-- are drawn as diamonds/facets so the mobile layer speaks the same angular military language.
 local function drawIcon(b: TextButton, action: string)
 	if action == "Fire" then
-		-- bullet: vertical body + rounded tip
-		local body = iconPart(b, 9, 22, 0, 2)
-		iconRound(body, 3)
-		local tip = iconPart(b, 9, 8, 0, -11)
-		iconRound(tip, 4)
+		-- angular bullet: rectangular body + diamond tip
+		iconPart(b, 8, 21, 0, 3)
+		iconPart(b, 10, 10, 0, -11, 45)
 	elseif action == "Aim" then
-		-- crosshair: center dot + four cardinal ticks
-		local dot = iconPart(b, 6, 6, 0, 0)
-		iconRound(dot, 3)
+		-- square reticle: center pip + four cardinal ticks
+		iconPart(b, 5, 5, 0, 0)
 		iconPart(b, 3, 10, 0, -14)
 		iconPart(b, 3, 10, 0, 14)
 		iconPart(b, 10, 3, -14, 0)
@@ -113,32 +191,29 @@ local function drawIcon(b: TextButton, action: string)
 		iconPart(b, 14, 5, 6, -6, 135)
 		iconPart(b, 14, 5, 6, 6, -135)
 	elseif action == "Reload" then
-		-- magazine insert: tray + downward arrow feeding it
-		iconPart(b, 16, 12, 0, 6) -- tray body
-		iconPart(b, 5, 12, 0, -8) -- arrow shaft
-		iconPart(b, 11, 5, 0, -2) -- arrow head bar
+		-- magazine insert: tray + downward feed arrow
+		iconPart(b, 16, 11, 0, 7) -- tray body
+		iconPart(b, 4, 13, 0, -8) -- arrow shaft
+		iconPart(b, 10, 4, -3, -1, 45)
+		iconPart(b, 10, 4, 3, -1, -45)
 	elseif action == "Grenade" then
-		-- round body + stem
-		local body = iconPart(b, 16, 16, 0, 2)
-		iconRound(body, 8)
-		iconPart(b, 4, 6, 4, -10, -20)
+		-- faceted body + stem
+		iconPart(b, 15, 15, 0, 3, 45)
+		iconPart(b, 4, 7, 4, -10, -20)
 	elseif action == "SupportAbility" then
-		-- strike diamond: rotated square + center pip — the support call-in reads as a marker
-		local d = iconPart(b, 15, 15, 0, 0, 45)
-		iconRound(d, 2)
+		-- strike diamond + center pip — the support call-in reads as a marker
+		iconPart(b, 16, 16, 0, 0, 45)
 		local pip = iconPart(b, 5, 5, 0, 0)
-		iconRound(pip, 2)
+		pip.BackgroundColor3 = PANEL
 	elseif action == "SwapWeapon" then
-		-- two weapons side by side
-		iconPart(b, 5, 18, -6, 0)
-		iconPart(b, 5, 18, 6, 0)
+		-- two canted weapon profiles
+		iconPart(b, 5, 18, -6, 0, -10)
+		iconPart(b, 5, 18, 6, 0, 10)
 	elseif action == "Interact" then
-		-- keycap: rounded square outline effect via inset dot
-		local cap = iconPart(b, 16, 16, 0, 0)
-		iconRound(cap, 4)
+		-- square keycap with an inset command pip
+		iconPart(b, 16, 16, 0, 0)
 		local dot2 = iconPart(b, 6, 6, 0, 0)
-		dot2.BackgroundColor3 = Color3.fromRGB(18, 24, 34)
-		iconRound(dot2, 3)
+		dot2.BackgroundColor3 = PANEL
 	end
 end
 
@@ -150,8 +225,7 @@ local function buildTouchButton(action: string, radius: number, centerX: number,
 	b.Name = action
 	b.Size = UDim2.fromOffset(radius * 2, radius * 2)
 	b.Position = UDim2.new(1, -(centerX + radius), 1, -(centerY + radius))
-	b.BackgroundColor3 = Color3.fromRGB(18, 24, 34)
-	b.BackgroundTransparency = 0.35
+	b.BackgroundTransparency = 1 -- the input footprint stays generous; only the angular plate is visible
 	b.TextColor3 = INK
 	b.Text = ""
 	b.BorderSizePixel = 0
@@ -159,9 +233,30 @@ local function buildTouchButton(action: string, radius: number, centerX: number,
 	b.Visible = false
 	b.Parent = touchLayer
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0.5, 0)
-	corner.Parent = b
+	-- Diamond hard-plate: a rotating square reads as a machined control surface, not a
+	-- rounded mobile button. Fire is cyan-framed as the primary action; kit stays steel.
+	local plate = Instance.new("Frame")
+	plate.Name = "Plate"
+	plate.AnchorPoint = Vector2.new(0.5, 0.5)
+	plate.Position = UDim2.fromScale(0.5, 0.5)
+	plate.Size = UDim2.fromOffset(math.floor(radius * 1.34), math.floor(radius * 1.34))
+	plate.Rotation = 45
+	plate.BackgroundColor3 = PANEL
+	plate.BackgroundTransparency = action == "Fire" and 0.12 or 0.22
+	plate.BorderSizePixel = 0
+	plate.ZIndex = 2
+	plate.Parent = b
+	addStroke(plate, action == "Fire" and ACCENT or Tokens.Color.steel, action == "Fire" and 0.05 or 0.35, 1)
+	local inner = Instance.new("Frame")
+	inner.Name = "InnerBevel"
+	inner.AnchorPoint = Vector2.new(0.5, 0.5)
+	inner.Position = UDim2.fromScale(0.5, 0.5)
+	inner.Size = UDim2.fromOffset(math.floor(radius * 0.92), math.floor(radius * 0.92))
+	inner.Rotation = 45
+	inner.BackgroundTransparency = 1
+	inner.ZIndex = 3
+	inner.Parent = b
+	addStroke(inner, action == "Fire" and ACCENT or EDGE, 0.55, 1)
 	drawIcon(b, action)
 
 	b.InputBegan:Connect(function(input)
@@ -198,62 +293,111 @@ function HUD.init()
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = playerGui
 
-	-- vitals, top-left
+	-- vitals, top-left: a graphite armor plate with segmented cyan shield over amber health.
+	-- Position logic is unchanged (below the Roblox topbar); the panel is larger so the numbers
+	-- survive a 1080p television at console distance.
 	local vitals = newFrame(gui, {
 		Name = "Vitals",
-		Size = UDim2.fromOffset(260, 54),
-		-- below the Roblox topbar: IgnoreGuiInset puts y=0 under the system icons, and the
-		-- vitals spent their whole life hidden behind the menu cluster (owner report)
+		Size = UDim2.fromOffset(276, 82),
 		Position = UDim2.fromOffset(28, 70),
-		-- the label sat directly on sky and vanished against the pale mission horizon
-		BackgroundColor3 = Color3.fromRGB(8, 12, 18),
-		BackgroundTransparency = 0.35,
+		BackgroundColor3 = PANEL,
+		BackgroundTransparency = 0.16,
 	})
+	local vitalsStroke = finishPanel(vitals, ACCENT)
+	local lowHealthIndicator = newLabel(vitals, "VITALS CRITICAL", UDim2.fromOffset(130, 16), UDim2.new(1, -146, 0, 7), 13)
+	lowHealthIndicator.TextXAlignment = Enum.TextXAlignment.Right
+	lowHealthIndicator.TextColor3 = WARN
+	lowHealthIndicator.Visible = false
+
+	local shieldIcon = newFrame(vitals, {
+		Name = "ShieldIcon",
+		Size = UDim2.fromOffset(9, 9),
+		Position = UDim2.fromOffset(17, 11),
+		BackgroundColor3 = ACCENT,
+		BackgroundTransparency = 0.05,
+	})
+	shieldIcon.Rotation = 45
+	shieldLabel = newLabel(vitals, "SHIELD 100", UDim2.fromOffset(126, 17), UDim2.fromOffset(32, 7), 14)
+	shieldLabel.TextColor3 = ACCENT
 	local shieldBack = newFrame(vitals, {
 		Name = "ShieldBack",
-		Size = UDim2.fromOffset(240, 12),
-		Position = UDim2.fromOffset(0, 0),
-		BackgroundColor3 = Color3.fromRGB(24, 34, 46),
+		Size = UDim2.fromOffset(244, 12),
+		Position = UDim2.fromOffset(16, 27),
+		BackgroundColor3 = Tokens.Color.navy,
+		BackgroundTransparency = 0.2,
 	})
-	local sc = Instance.new("UICorner"); sc.CornerRadius = UDim.new(0, 2); sc.Parent = shieldBack
+	addStroke(shieldBack, EDGE, 0.58, 1)
 	shieldFill = newFrame(shieldBack, {
 		Name = "Fill",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = ACCENT,
+		BackgroundTransparency = 0.03,
 	})
-	shieldLabel = newLabel(vitals, "SHIELD 100", UDim2.fromOffset(240, 16), UDim2.fromOffset(0, 16), 13)
-	shieldLabel.TextColor3 = Color3.fromRGB(226, 238, 248)
+	addSegments(shieldBack, 7)
 
+	local healthIconV = newFrame(vitals, {
+		Name = "HealthIconV",
+		Size = UDim2.fromOffset(3, 11),
+		Position = UDim2.fromOffset(20, 46),
+		BackgroundColor3 = AMBER,
+	})
+	local healthIconH = newFrame(vitals, {
+		Name = "HealthIconH",
+		Size = UDim2.fromOffset(11, 3),
+		Position = UDim2.fromOffset(16, 50),
+		BackgroundColor3 = AMBER,
+	})
+	healthIconV.ZIndex = 2
+	healthIconH.ZIndex = 2
+	healthLabel = newLabel(vitals, "HEALTH 100", UDim2.fromOffset(150, 16), UDim2.fromOffset(32, 43), 14)
+	healthLabel.TextColor3 = INK
 	local healthBack = newFrame(vitals, {
 		Name = "HealthBack",
-		Size = UDim2.fromOffset(200, 8),
-		Position = UDim2.fromOffset(0, 36),
-		BackgroundColor3 = Color3.fromRGB(40, 26, 26),
+		Size = UDim2.fromOffset(244, 11),
+		Position = UDim2.fromOffset(16, 62),
+		BackgroundColor3 = PANEL_RAISED,
+		BackgroundTransparency = 0.12,
 	})
-	local hc = Instance.new("UICorner"); hc.CornerRadius = UDim.new(0, 2); hc.Parent = healthBack
+	addStroke(healthBack, EDGE, 0.58, 1)
 	healthFill = newFrame(healthBack, {
 		Name = "Fill",
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(226, 92, 84),
+		BackgroundColor3 = AMBER,
+		BackgroundTransparency = 0.02,
 	})
 
-	-- ammo, bottom-right
+	-- ammo, bottom-right: weapon name small, current magazine dominant, reserve subordinate.
 	local ammoBox = newFrame(gui, {
 		Name = "Ammo",
-		Size = UDim2.fromOffset(200, 70),
-		Position = UDim2.new(1, -228, 1, -110),
-		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(252, 90),
+		Position = UDim2.new(1, -280, 1, -124),
+		BackgroundColor3 = PANEL,
+		BackgroundTransparency = 0.16,
 	})
-	weaponLabel = newLabel(ammoBox, "AR01", UDim2.fromOffset(200, 20), UDim2.fromOffset(0, 0), 15)
+	finishPanel(ammoBox, ACCENT)
+	local ammoCaption = newLabel(ammoBox, "WEAPON", UDim2.fromOffset(70, 16), UDim2.fromOffset(16, 7), 13)
+	ammoCaption.TextColor3 = MUTED
+	weaponLabel = newLabel(ammoBox, "AR01", UDim2.fromOffset(150, 17), UDim2.new(1, -166, 0, 7), 15)
 	weaponLabel.TextXAlignment = Enum.TextXAlignment.Right
-	weaponLabel.TextColor3 = Color3.fromRGB(150, 170, 190)
-	ammoLabel = newLabel(ammoBox, "28 / 28", UDim2.fromOffset(200, 40), UDim2.fromOffset(0, 18), 34)
+	weaponLabel.TextColor3 = INK
+	local ammoRule = newFrame(ammoBox, {
+		Name = "Rule",
+		Size = UDim2.fromOffset(220, 1),
+		Position = UDim2.fromOffset(16, 28),
+		BackgroundColor3 = EDGE,
+		BackgroundTransparency = 0.35,
+	})
+	ammoRule.ZIndex = 2
+	ammoLabel = newLabel(ammoBox, "28", UDim2.fromOffset(220, 40), UDim2.fromOffset(16, 29), 40)
+	ammoLabel.Font = Tokens.Type.fontBold
 	ammoLabel.TextXAlignment = Enum.TextXAlignment.Right
+	ammoDetailLabel = newLabel(ammoBox, "/ 28 MAG", UDim2.fromOffset(220, 18), UDim2.fromOffset(16, 68), 14)
+	ammoDetailLabel.TextXAlignment = Enum.TextXAlignment.Right
+	ammoDetailLabel.TextColor3 = MUTED
 
-	-- Helldivers-inspired compact military reticle (owner spec section 6): tiny central dot,
-	-- small hollow circle, two short horizontal lines outside the circle. No vertical ticks, no
-	-- oversized crosshair envelope. Lines track weapon dispersion dynamically — the geometry is
-	-- driven per-frame by the reticle updater further down; construction here is static only.
+	-- Compact military reticle: square center pip, precision reference frame, and two short
+	-- horizontal dispersion ticks. No vertical ticks, no oversized crosshair envelope. Lines
+	-- track weapon dispersion dynamically — the geometry is driven per-frame further down.
 	crosshair = newFrame(gui, {
 		Name = "Crosshair",
 		Size = UDim2.fromOffset(64, 64),
@@ -270,7 +414,7 @@ function HUD.init()
 			BackgroundColor3 = INK,
 			BackgroundTransparency = 0,
 		})
-		local dc = Instance.new("UICorner"); dc.CornerRadius = UDim.new(0.5, 0); dc.Parent = dot
+		dot.BackgroundColor3 = ACCENT
 		-- two horizontal lines only, 5x1.5 logical px (spec: 4-6 long, 1-1.5 thick). Positions are
 		-- driven per-frame — construction parks them at the zero-bloom aimed spacing.
 		for _, side in ipairs({ "L", "R" }) do
@@ -281,17 +425,15 @@ function HUD.init()
 				BackgroundColor3 = INK,
 				BackgroundTransparency = 0.1,
 			})
-			local tc = Instance.new("UICorner"); tc.CornerRadius = UDim.new(0, 1); tc.Parent = tick
 		end
-		-- hollow circle: 10px logical diameter (spec: 8-12), ~1px stroke, fixed size — the moving
-		-- lines carry the accuracy readout, the circle stays a stable precision reference.
+		-- hollow square reference: 10px logical width (spec scale preserved), ~1px stroke.
+		-- The moving lines carry the accuracy readout; the hard-edged frame stays stable.
 		local ring = Instance.new("Frame")
 		ring.Name = "ReticleRing"
 		ring.Size = UDim2.fromOffset(10, 10)
 		ring.Position = UDim2.fromOffset(27, 27)
 		ring.BackgroundTransparency = 1
 		ring.Parent = crosshair
-		local rc = Instance.new("UICorner"); rc.CornerRadius = UDim.new(1, 0); rc.Parent = ring
 		local stroke = Instance.new("UIStroke")
 		stroke.Name = "RingStroke"
 		stroke.Color = INK
@@ -304,27 +446,31 @@ function HUD.init()
 	-- attributes so every client renders the same fight state without per-frame replication spam.
 	local bossBar = newFrame(gui, {
 		Name = "BossBar",
-		Size = UDim2.new(0.4, 0, 0, 18),
-		Position = UDim2.new(0.3, 0, 0, 12),
-		BackgroundColor3 = Color3.fromRGB(16, 18, 22),
-		BackgroundTransparency = 0.3,
+		Size = UDim2.new(0.42, 0, 0, 26),
+		Position = UDim2.new(0.29, 0, 0, 4),
+		BackgroundColor3 = PANEL,
+		BackgroundTransparency = 0.16,
 		Visible = false,
 	})
+	finishPanel(bossBar, AMBER)
 	local bossFill = newFrame(bossBar, {
 		Name = "Fill",
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(255, 96, 72),
-		BackgroundTransparency = 0.1,
+		BackgroundColor3 = Tokens.Color.danger,
+		BackgroundTransparency = 0.24,
 	})
+	bossFill.ZIndex = 1
+	addSegments(bossBar, 10)
 	local bossLabel = Instance.new("TextLabel")
 	bossLabel.Name = "Label"
 	bossLabel.BackgroundTransparency = 1
 	bossLabel.Size = UDim2.fromScale(1, 1)
-	bossLabel.Font = Enum.Font.GothamBold
-	bossLabel.TextSize = 13
-	bossLabel.TextColor3 = Color3.fromRGB(240, 235, 230)
-	bossLabel.TextStrokeTransparency = 0.5
+	bossLabel.Font = Tokens.Type.fontBold
+	bossLabel.TextSize = 15
+	bossLabel.TextColor3 = INK
+	bossLabel.TextStrokeTransparency = 0.55
 	bossLabel.Text = ""
+	bossLabel.ZIndex = 5
 	bossLabel.Parent = bossBar
 
 	-- hitmarker: an X of two rotated bars. The old implementation relied on frame borders over a
@@ -343,76 +489,121 @@ function HUD.init()
 			Name = "Bar" .. tostring(rot),
 			Size = UDim2.fromOffset(14, 2),
 			Position = UDim2.new(0.5, -7, 0.5, -1),
-			BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+			BackgroundColor3 = INK,
 			BackgroundTransparency = 0,
 			BorderSizePixel = 0,
 		})
 		bar.Rotation = rot
-		local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 1); bc.Parent = bar
+		bar.ZIndex = 8
 	end
 
-	killLabel = newLabel(gui, "", UDim2.fromOffset(240, 26), UDim2.new(0.5, -120, 0.5, 30), 16)
+	killLabel = newLabel(gui, "", UDim2.fromOffset(280, 28), UDim2.new(0.5, -140, 0.5, 34), 17)
+	killLabel.Font = Tokens.Type.fontBold
 	killLabel.TextXAlignment = Enum.TextXAlignment.Center
-	killLabel.TextColor3 = Color3.fromRGB(255, 214, 150)
+	killLabel.TextColor3 = AMBER
 
-	-- abilities, bottom-centre
+	-- abilities, bottom-centre: one compact hard-plated support slot.
 	local abilityBar = newFrame(gui, {
 		Name = "Abilities",
-		Size = UDim2.fromOffset(260, 64),
-		Position = UDim2.new(0.5, -130, 1, -104),
+		Size = UDim2.fromOffset(182, 70),
+		Position = UDim2.new(0.5, -91, 1, -112),
 		BackgroundTransparency = 1,
 	})
 	local function abilitySlot(id: string, label: string, offsetX: number)
 		local slot = newFrame(abilityBar, {
 			Name = id,
-			Size = UDim2.fromOffset(118, 56),
+			Size = UDim2.fromOffset(182, 70),
 			Position = UDim2.fromOffset(offsetX, 0),
-			BackgroundColor3 = Color3.fromRGB(14, 20, 28),
-			BackgroundTransparency = 0.25,
+			BackgroundColor3 = PANEL,
+			BackgroundTransparency = 0.16,
 		})
-		local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = slot
-		local name = newLabel(slot, label, UDim2.fromOffset(118, 18), UDim2.fromOffset(0, 6), 13)
+		finishPanel(slot, ACCENT)
+		local name = newLabel(slot, label, UDim2.fromOffset(164, 17), UDim2.fromOffset(9, 7), 14)
 		name.TextXAlignment = Enum.TextXAlignment.Center
-		local status = newLabel(slot, "READY", UDim2.fromOffset(118, 22), UDim2.fromOffset(0, 26), 16)
+		name.TextColor3 = INK
+		local status = newLabel(slot, "READY", UDim2.fromOffset(164, 22), UDim2.fromOffset(9, 29), 17)
+		status.Font = Tokens.Type.fontBold
 		status.TextXAlignment = Enum.TextXAlignment.Center
 		status.TextColor3 = ACCENT
 		abilityLabels[id] = status
 		abilityTitles[id] = name
 		local fill = newFrame(slot, {
 			Name = "Cooldown",
-			Size = UDim2.new(1, 0, 0, 3),
-			Position = UDim2.new(0, 0, 1, -3),
+			Size = UDim2.new(1, -18, 0, 4),
+			Position = UDim2.new(0, 9, 1, -7),
 			BackgroundColor3 = ACCENT,
+			BackgroundTransparency = 0.05,
 		})
+		fill.ZIndex = 3
 		abilityFills[id] = fill
 	end
 	-- one support ability slot (Counteroffensive contract revision). the slot label shows the
 	-- equipped ability id once published; AIRSTRIKE is the pre-publish default
 	abilitySlot("Airstrike", "SUPPORT [" .. Input.glyph("SupportAbility") .. "]", 0)
 
-	dodgeLabel = newLabel(gui, "DODGE 2/2", UDim2.fromOffset(160, 18), UDim2.new(0.5, -80, 1, -34), 13)
+	dodgeLabel = newLabel(gui, "DODGE 2/2", UDim2.fromOffset(170, 26), UDim2.new(0.5, -85, 1, -34), 14)
 	dodgeLabel.TextXAlignment = Enum.TextXAlignment.Center
+	dodgeLabel.BackgroundColor3 = PANEL
+	dodgeLabel.BackgroundTransparency = 0.28
+	addStroke(dodgeLabel, EDGE, 0.55, 1)
+	local dodgeRail = newFrame(dodgeLabel, {
+		Name = "AccentRail",
+		Size = UDim2.new(0, 3, 1, -8),
+		Position = UDim2.fromOffset(0, 4),
+		BackgroundColor3 = ACCENT,
+	})
+	dodgeRail.ZIndex = 2
 
-	promptLabel = newLabel(gui, "", UDim2.fromOffset(560, 22), UDim2.new(0.5, -280, 1, -158), 15)
+	promptLabel = newLabel(gui, "", UDim2.fromOffset(640, 28), UDim2.new(0.5, -320, 1, -164), 14)
 	promptLabel.TextXAlignment = Enum.TextXAlignment.Center
-	promptLabel.TextColor3 = Color3.fromRGB(190, 210, 230)
+	promptLabel.TextColor3 = Tokens.Color.textSecondary
+	promptLabel.BackgroundColor3 = PANEL
+	promptLabel.BackgroundTransparency = 0.42
+	addStroke(promptLabel, EDGE, 0.72, 1)
 
-	-- downed overlay
+	-- downed overlay: a restrained red theater dim plus a central angular casualty plate.
 	downedFrame = newFrame(gui, {
 		Name = "Downed",
 		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(60, 8, 8),
-		BackgroundTransparency = 0.72,
+		BackgroundColor3 = Color3.fromRGB(52, 13, 16),
+		BackgroundTransparency = 0.48,
 		Visible = false,
 	})
-	local downedText = newLabel(downedFrame, "DOWNED", UDim2.fromScale(1, 0.72), UDim2.fromScale(0, 0), 48)
+	local downedPlate = newFrame(downedFrame, {
+		Name = "CasualtyPlate",
+		Size = UDim2.fromOffset(640, 152),
+		Position = UDim2.new(0.5, -320, 0.5, -76),
+		BackgroundColor3 = PANEL,
+		BackgroundTransparency = 0.12,
+	})
+	finishPanel(downedPlate, WARN)
+	for index = 0, 2 do
+		local leftSlash = newFrame(downedPlate, {
+			Name = "LeftSlash" .. index,
+			Size = UDim2.fromOffset(34, 3),
+			Position = UDim2.fromOffset(18, 34 + index * 34),
+			BackgroundColor3 = WARN,
+			BackgroundTransparency = 0.28,
+		})
+		leftSlash.Rotation = -32
+		local rightSlash = newFrame(downedPlate, {
+			Name = "RightSlash" .. index,
+			Size = UDim2.fromOffset(34, 3),
+			Position = UDim2.new(1, -52, 0, 34 + index * 34),
+			BackgroundColor3 = WARN,
+			BackgroundTransparency = 0.28,
+		})
+		rightSlash.Rotation = 32
+	end
+	local downedText = newLabel(downedPlate, "DOWNED", UDim2.new(1, 0, 0, 72), UDim2.fromOffset(0, 24), 52)
 	downedText.TextXAlignment = Enum.TextXAlignment.Center
-	downedText.Font = Enum.Font.GothamBlack
+	downedText.Font = Tokens.Type.fontBold
 	downedText.TextColor3 = WARN
-	local downedDetail = newLabel(downedFrame, "Awaiting revive", UDim2.new(1, 0, 0, 42), UDim2.new(0, 0, 0.58, 0), 20)
+	downedText.TextStrokeTransparency = 0.45
+	local downedDetail = newLabel(downedPlate, "AWAITING REVIVE", UDim2.new(1, 0, 0, 28), UDim2.fromOffset(0, 102), 18)
 	downedDetail.TextXAlignment = Enum.TextXAlignment.Center
-	downedDetail.Font = Enum.Font.GothamBold
-	downedDetail.TextColor3 = Color3.fromRGB(255, 214, 170)
+	downedDetail.Font = Tokens.Type.font
+	downedDetail.TextColor3 = AMBER
 
 	-- touch layer
 	touchLayer = newFrame(gui, {
@@ -438,15 +629,22 @@ function HUD.init()
 	-- remote wiring
 	remotes.VitalsUpdated.OnClientEvent:Connect(function(v)
 		if type(v) ~= "table" then return end
-	downedFrame.Visible = v.downed == true
-	crosshair.Visible = v.downed ~= true
+		downedFrame.Visible = v.downed == true
+		crosshair.Visible = v.downed ~= true
 		local shield = tonumber(v.shield) or 0
 		local shieldMax = tonumber(v.shieldMax) or 100
 		local health = tonumber(v.health) or 0
 		local healthMax = tonumber(v.healthMax) or 100
+		local healthFraction = math.clamp(health / math.max(1, healthMax), 0, 1)
 		shieldFill.Size = UDim2.fromScale(math.clamp(shield / math.max(1, shieldMax), 0, 1), 1)
-		healthFill.Size = UDim2.fromScale(math.clamp(health / math.max(1, healthMax), 0, 1), 1)
+		healthFill.Size = UDim2.fromScale(healthFraction, 1)
 		shieldLabel.Text = string.format("SHIELD %d", math.floor(shield + 0.5))
+		healthLabel.Text = string.format("HEALTH %d", math.floor(health + 0.5))
+		local critical = healthFraction <= 0.3 and v.downed ~= true
+		lowHealthIndicator.Visible = critical
+		healthFill.BackgroundColor3 = critical and WARN or AMBER
+		healthLabel.TextColor3 = critical and WARN or INK
+		vitalsStroke.Color = critical and WARN or EDGE
 	end)
 	-- S04-058 directional damage: a brief red arc on the reticle edge showing the hit direction.
 	local dirIndicator = newFrame(gui, {
@@ -458,12 +656,26 @@ function HUD.init()
 	})
 	local dirArc = newFrame(dirIndicator, {
 		Name = "Arc",
-		Size = UDim2.fromOffset(26, 6),
-		Position = UDim2.new(0.5, -13, 0, 0),
-		BackgroundColor3 = Color3.fromRGB(255, 70, 60),
-		BackgroundTransparency = 0.15,
+		Size = UDim2.fromOffset(38, 5),
+		Position = UDim2.new(0.5, -19, 0, 0),
+		BackgroundColor3 = WARN,
+		BackgroundTransparency = 0.08,
 	})
-	local dac = Instance.new("UICorner"); dac.CornerRadius = UDim.new(0, 3); dac.Parent = dirArc
+	dirArc.ZIndex = 8
+	for _, spec in ipairs({
+		{ -29, 6, -30 },
+		{ 29, 6, 30 },
+	}) do
+		local wing = newFrame(dirIndicator, {
+			Name = "ArcWing",
+			Size = UDim2.fromOffset(20, 5),
+			Position = UDim2.new(0.5, spec[1] - 10, 0, spec[2]),
+			BackgroundColor3 = WARN,
+			BackgroundTransparency = 0.16,
+		})
+		wing.Rotation = spec[3]
+		wing.ZIndex = 8
+	end
 	remotes.DirectionalHit.OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" then
 			return
@@ -495,7 +707,9 @@ function HUD.init()
 	end)
 	remotes.AbilityStateChanged.OnClientEvent:Connect(function(payload)
 		if type(payload) ~= "table" or type(payload.abilityId) ~= "string" then return end
-		cooldownEnds[payload.abilityId] = os.clock() + (tonumber(payload.duration) or 0)
+		local duration = tonumber(payload.duration) or 0
+		cooldownEnds[payload.abilityId] = os.clock() + duration
+		cooldownDurations[payload.abilityId] = math.max(0.1, duration)
 	end)
 
 	HUD.setDevice(UserInputService:GetLastInputType())
@@ -554,7 +768,7 @@ function HUD.init()
 						local maxHp = workspace:GetAttribute("BossMaxHealth") or 3600
 						if fill then
 							fill.Size = UDim2.fromScale(math.clamp(hp / maxHp, 0, 1), 1)
-							fill.BackgroundColor3 = phase >= 3 and Color3.fromRGB(255, 60, 48) or (phase == 2 and Color3.fromRGB(255, 140, 64) or Color3.fromRGB(255, 96, 72))
+							fill.BackgroundColor3 = phase >= 3 and Tokens.Color.danger or (phase == 2 and Tokens.Color.warning or Tokens.Color.ascendancy)
 						end
 						local label = bossBar:FindFirstChild("Label")
 						if label then
@@ -570,14 +784,20 @@ function HUD.init()
 				local fill = abilityFills[id]
 				if label then
 					local remaining = endsAt - now
+					local duration = cooldownDurations[id] or 1
 					if remaining > 0 then
 						label.Text = string.format("%.1fs", remaining)
-						label.TextColor3 = Color3.fromRGB(150, 160, 175)
-						if fill then fill.Size = UDim2.fromScale(remaining / math.max(1, (endsAt - (endsAt - remaining))), 0) end
+						label.TextColor3 = MUTED
+						if fill then
+							local fraction = math.clamp(remaining / duration, 0, 1)
+							fill.Size = UDim2.new(fraction, -18 * fraction, 0, 4)
+						end
 					else
 						label.Text = "READY"
 						label.TextColor3 = ACCENT
-						if fill then fill.Size = UDim2.fromScale(1, 0) end
+						if fill then
+							fill.Size = UDim2.new(1, -18, 0, 4)
+						end
 					end
 				end
 			end
@@ -608,14 +828,22 @@ end
 
 function HUD.setAmmo(ammo: number, magazine: number, reserve: number?)
 	if ammoLabel then
-		-- S04-027: reserve is now tracked, so show it. Without this the player cannot see that ammunition
-		-- is finite, which makes the whole reserve economy invisible in play.
+		-- S04-027: reserve is finite and visible. The hierarchy is deliberately military:
+		-- current magazine dominates; capacity/reserve stay subordinate but readable.
+		local legacyText
 		if type(reserve) == "number" then
-			ammoLabel.Text = string.format("%d / %d  ·  %d", ammo, magazine, reserve)
+			legacyText = string.format("%d / %d  ·  %d", ammo, magazine, reserve)
+			ammoDetailLabel.Text = string.format("/ %d MAG  ·  RES %d", magazine, reserve)
 		else
-			ammoLabel.Text = string.format("%d / %d", ammo, magazine)
+			legacyText = string.format("%d / %d", ammo, magazine)
+			ammoDetailLabel.Text = string.format("/ %d MAG", magazine)
 		end
+		ammoLabel.Text = tostring(ammo)
 		ammoLabel.TextColor3 = ammo == 0 and WARN or INK
+		ammoDetailLabel.TextColor3 = ammo == 0 and WARN or MUTED
+		if gui then
+			gui:SetAttribute("GF_AmmoText", legacyText)
+		end
 	end
 end
 
@@ -624,14 +852,14 @@ function HUD.setWeapon(weaponId: string)
 	if weaponLabel then
 		local Weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
 		local def = Weapons.get(weaponId)
-		weaponLabel.Text = (def and def.displayName) or weaponId
+		weaponLabel.Text = string.upper(tostring((def and def.displayName) or weaponId))
 	end
 end
 
 function HUD.showHitMarker(weak: boolean, killed: boolean)
 	if not hitMarker then return end
-	local color = killed and Color3.fromRGB(255, 110, 90)
-		or (weak and Color3.fromRGB(255, 214, 130) or Color3.fromRGB(255, 255, 255))
+	local color = killed and WARN
+		or (weak and AMBER or INK)
 	local size = weak and 30 or 22
 	hitMarker.Size = UDim2.fromOffset(size, size)
 	hitMarker.Position = UDim2.new(0.5, -size / 2, 0.5, -size / 2)
@@ -676,9 +904,9 @@ function HUD.showDamageNumber(amount: number, position: Vector3?, weakPoint: boo
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
-	label.Font = Enum.Font.GothamBold
+	label.Font = Tokens.Type.fontBold
 	label.TextSize = weakPoint and 20 or 15
-	label.TextColor3 = weakPoint and Color3.fromRGB(255, 200, 90) or Color3.fromRGB(240, 240, 235)
+	label.TextColor3 = weakPoint and AMBER or INK
 	label.TextStrokeTransparency = 0.4
 	label.Text = tostring(math.floor(amount + 0.5))
 	label.Parent = bb
