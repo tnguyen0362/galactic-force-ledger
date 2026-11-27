@@ -680,6 +680,14 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 	end
 	-- Battlefield mode: deploy at the generated plan LZ instead of the legacy fixed spawn.
 	local spawnTarget = MISSION_SPAWN
+	-- place-split migration: when terrain analysis picked valley-floor anchors (mission-server
+	-- boot path), the LZ anchor overrides the legacy fixed spawn. Absent = legacy behavior.
+	do
+		local lzAnchor = workspace:GetAttribute("GF_AnchorLZ")
+		if typeof(lzAnchor) == "Vector3" then
+			spawnTarget = lzAnchor
+		end
+	end
 	do
 		local bfOk, bfTerrain = pcall(require, script.Parent.TerrainService)
 		local plan = bfOk and bfTerrain.currentPlan or nil

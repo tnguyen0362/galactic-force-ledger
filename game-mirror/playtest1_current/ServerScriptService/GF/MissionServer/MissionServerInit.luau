@@ -29,6 +29,14 @@ export type DeployIntent = {
 -- Deploy intent crosses the teleport boundary as join data; a pinned-attribute path exists for
 -- deterministic validation runs in Studio. Anything missing falls back to random/Normal/SABOTAGE.
 function MissionServerInit.readIntent(): DeployIntent
+	-- place-split: deploy intent arrives inside the first joining player's teleport data.
+	-- Attributes remain the Studio-validation path; join data wins when present.
+	do
+		local ok, DeployContract = pcall(require, game:GetService("ReplicatedStorage").GF.Shared.DeployContract)
+		if ok and DeployContract then
+			workspace:SetAttribute("GF_DeployContractLive", true)
+		end
+	end
 	local seed = Workspace:GetAttribute("GF_DeploySeed")
 	if type(seed) ~= "number" or seed == 0 then
 		seed = (os.time() * 997 + math.random(1, 99999)) % 900000 + 1
