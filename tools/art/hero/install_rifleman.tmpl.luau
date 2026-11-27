@@ -136,6 +136,7 @@ hum.Parent = rig
 rig.PrimaryPart = hrp
 rig:SetAttribute("GF_AssetId", ASSET_ID)
 rig:SetAttribute("GF_ArtSource", "Blender hero_wip asc_rifleman_v10 (thicker arms, no pauldrons) + baked PBR atlas (BC/N/RM)")
+rig:SetAttribute("GF_HeroBaked", true) -- TroopVisuals.restyle skips baked hero rigs; EnemyService scales them with ScaleTo
 rig.Parent = art
 loaded:Destroy()
 
