@@ -208,6 +208,10 @@ end
 
 -- logical look orientation: updated EXACTLY ONCE per frame, here and nowhere else.
 -- Runs at Input priority (before movement) so movement uses current-frame logical direction.
+-- hoisted above first use: reads before these declarations previously resolved to nil globals
+local aimAssistActive = false
+local assistFrictionActive = false
+
 local function consumeInput(dt: number)
 	local sensitivity
 	if diagMode() then
@@ -313,8 +317,8 @@ local function assistedTargetPoint(camPos: Vector3, look: Vector3): Vector3?
 	return best
 end
 
-local aimAssistActive = false
-local assistFrictionActive = false
+aimAssistActive = false
+assistFrictionActive = false
 local function applyAimAssist(dt: number)
 	-- platform gate: mouse never receives assistance
 	local gamepad = UserInputService.GamepadEnabled and not UserInputService.MouseEnabled
