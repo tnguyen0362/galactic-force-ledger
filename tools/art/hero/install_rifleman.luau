@@ -147,9 +147,13 @@ joint("RootJoint", "HumanoidRootPart", "LowerTorso", P("LowerTorso"))
 joint("Waist", "LowerTorso", "UpperTorso", P("UpperTorso"))
 joint("Neck", "UpperTorso", "Head", P("Head"))
 for _, s in { "L", "R" } do
-	joint("Shoulder" .. s, "UpperTorso", "UpperArm" .. s, P("UpperArm" .. s))
-	joint("Elbow" .. s, "UpperArm" .. s, "LowerArm" .. s, P("LowerArm" .. s))
-	joint("Wrist" .. s, "LowerArm" .. s, "Hand" .. s, P("Hand" .. s))
+	-- ARM JOINTS ARE DELIBERATELY NOT NAMED Shoulder/Elbow/Wrist: EnemyAnimClient indexes Motor6Ds by those names and applies
+	-- ABSOLUTE hold rotations (ShoulderR pitch -0.85 etc.) which, with forward = -Z, swing ANY arm backward (verified on the stock
+	-- AscendancyTrooper too: forearm z +0.73). The hero's arms are authored rifle-ready, so they stay in the bind pose.
+	-- Rename to Shoulder/Elbow/Wrist only once the client has a rifle-ready profile (needs alpha/beta ack).
+	joint("HoldShoulder" .. s, "UpperTorso", "UpperArm" .. s, P("UpperArm" .. s))
+	joint("HoldElbow" .. s, "UpperArm" .. s, "LowerArm" .. s, P("LowerArm" .. s))
+	joint("HoldWrist" .. s, "LowerArm" .. s, "Hand" .. s, P("Hand" .. s))
 	joint("Hip" .. s, "LowerTorso", "UpperLeg" .. s, P("UpperLeg" .. s))
 	joint("Knee" .. s, "UpperLeg" .. s, "LowerLeg" .. s, P("LowerLeg" .. s))
 	joint("Ankle" .. s, "LowerLeg" .. s, "Foot" .. s, P("Foot" .. s))
