@@ -8,6 +8,10 @@ with contextlib.redirect_stdout(log):
     sc = ns["VAR"]["scale"]
     exec(open(B + r"\hero_uv.py", encoding="utf-8").read())
     exec(open(B + r"\hero_bake.py", encoding="utf-8").read())
+    _div = ns["VAR"].get("div")
+    if _div:
+        for _k, _v in ns["ELITE_SPEC"][_div].items():
+            SPEC[_k].update(_v)
     setup()
     for p_ in ("albedo", "ao", "rough", "height", "mask", "metal"):
         run_pass(p_)

@@ -220,6 +220,16 @@ end
 
 -- Baked hero squad templates (ServerStorage.GF.Art), one per Ascendancy role. Anything not listed keeps AscendancyTrooper.
 local HERO_TEMPLATE = {
+	SpectreLeader = "Hero_Asc_SpectreLeader",
+	SpectreAssault = "Hero_Asc_SpectreAssault",
+	SpectreWeapons = "Hero_Asc_SpectreWeapons",
+	SpectrePrecision = "Hero_Asc_SpectrePrecision",
+	SpectreSupport = "Hero_Asc_SpectreSupport",
+	RevenantLeader = "Hero_Asc_RevenantLeader",
+	RevenantAssault = "Hero_Asc_RevenantAssault",
+	RevenantWeapons = "Hero_Asc_RevenantWeapons",
+	RevenantPrecision = "Hero_Asc_RevenantPrecision",
+	RevenantDefense = "Hero_Asc_RevenantDefense",
 	Rifleman = "Hero_Asc_Rifleman",
 	Scout = "Hero_Asc_Scout",
 	Marksman = "Hero_Asc_Marksman",

@@ -5,7 +5,7 @@ Builds collection HERO8_SRC with one object per rig part (names = Roblox rig par
 import bpy, bmesh, math, json, os, sys, importlib
 from mathutils import Vector, Matrix, Euler
 
-sys.path.insert(0, r"C:\gf-art-build\blender")
+sys.path.insert(0, r"C:\Users\tnguy\gf-art-build\blender")
 import hero_lib as H
 importlib.reload(H)
 from hero_lib import *
@@ -37,6 +37,17 @@ VARIANTS = {
     "Marksman": dict(head="angular",   shoulder=0.62, wing=False, torso="light2",  rifle="long", rank=2, scale=1.00),
     "Heavy":    dict(head="fullvisor", shoulder=1.45, wing=False, torso="heavy",   rifle="std",  rank=3, scale=1.10),
     "Officer":  dict(head="dome",      shoulder=1.20, wing=True,  torso="harness", rifle="std",  rank=4, scale=1.05),
+    # ---- elites: Spectre (Halo ODST special-ops) / Revenant (Warframe-style). head builders live in elite_parts.py
+    "SpectreLeader":    dict(head="spectre", div="spectre", role="leader",    shoulder=1.50, wing=True,  torso="elite", rifle="std",  rank=3, scale=1.17),
+    "SpectreAssault":   dict(head="spectre", div="spectre", role="assault",   shoulder=1.55, wing=False, torso="elite", rifle="std",  rank=2, scale=1.12),
+    "SpectreWeapons":   dict(head="spectre", div="spectre", role="weapons",   shoulder=1.80, wing=False, torso="elite", rifle="lmg",  rank=2, scale=1.20),
+    "SpectrePrecision": dict(head="spectre", div="spectre", role="precision", shoulder=1.10, wing=False, torso="elite", rifle="long", rank=2, scale=1.13),
+    "SpectreSupport":   dict(head="spectre", div="spectre", role="support",   shoulder=1.45, wing=False, torso="elite", rifle="std",  rank=2, scale=1.10),
+    "RevenantLeader":    dict(head="revenant", div="revenant", role="leader",    shoulder=1.30, wing=True,  blade=True, torso="elite", rifle="std",  rank=3, scale=1.20),
+    "RevenantAssault":   dict(head="revenant", div="revenant", role="assault",   shoulder=1.15, wing=False, blade=True, torso="elite", rifle="std",  rank=2, scale=1.14),
+    "RevenantWeapons":   dict(head="revenant", div="revenant", role="weapons",   shoulder=1.60, wing=False, blade=True, torso="elite", rifle="lmg",  rank=2, scale=1.20),
+    "RevenantPrecision": dict(head="revenant", div="revenant", role="precision", shoulder=0.90, wing=False, blade=True, torso="elite", rifle="long", rank=2, scale=1.16),
+    "RevenantDefense":   dict(head="revenant", div="revenant", role="defense",   shoulder=1.70, wing=False, blade=True, torso="elite", rifle="std",  rank=2, scale=1.20),
 }
 VAR = dict(VARIANTS["Rifleman"])
 
@@ -53,12 +64,13 @@ PAL = {   # v11: matte charcoal / near-black (owner references), thin amber acce
 
 def get_mats():
     out = []
+    pal = ELITE_PAL.get(VAR.get("div")) or PAL
     for k in ("suit", "plate", "trim", "strap", "skin", "dark"):
         nm = "H8_" + k
         m = bpy.data.materials.get(nm) or bpy.data.materials.new(nm)
         m.use_nodes = True
         b = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
-        b.inputs["Base Color"].default_value = (*PAL[k], 1)
+        b.inputs["Base Color"].default_value = (*pal[k], 1)
         b.inputs["Roughness"].default_value = {"suit": 0.85, "plate": 0.45, "trim": 0.35, "strap": 0.8, "skin": 0.6, "dark": 0.6}[k]
         b.inputs["Metallic"].default_value = {"plate": 0.25, "trim": 0.7}.get(k, 0.0)
         out.append(m)
@@ -280,6 +292,8 @@ def part_torso():
             cyl(bm, V((sx * 0.136, 0.060, 1.470)), V((sx * 0.146, 0.060, 1.470)), 0.033, segs=8, mat=2)
         rbox(bm, V((0, 0.150, 1.248)), (0.160, 0.030, 0.030), bevel=0.005, mat=1)
         rbox(bm, V((0, 0.168, 1.248)), (0.120, 0.004, 0.010), bevel=0.001, mat=2)
+    if T == "elite":
+        elite_torso(bm, VAR)
     parts["UpperTorso"] = bm
     # glow panel (chest)
     bm = new_bm()
@@ -314,6 +328,9 @@ def part_arm(side, elbow, wrist, f):
         if VAR["wing"]:   # officer: flared shoulder wing (ref 1)
             rbox(bm, sh + V((s * 0.115 * k, 0.0, 0.050)), (0.085, 0.150, 0.014), rot=(0, s * 0.30, 0), bevel=0.006, mat=1)
             rbox(bm, sh + V((s * 0.150 * k, 0.0, 0.040)), (0.012, 0.150, 0.016), rot=(0, s * 0.30, 0), bevel=0.003, mat=2)
+    if VAR.get("blade") and k > 0:   # revenant: swept pauldron blade
+        rbox(bm, sh + V((s * 0.060 * k, -0.040, 0.075 * k)), (0.020, 0.200 * k, 0.016), rot=(0.35, 0, s * -0.55), bevel=0, mat=1)
+        rbox(bm, sh + V((s * 0.075 * k, -0.040, 0.082 * k)), (0.008, 0.200 * k, 0.010), rot=(0.35, 0, s * -0.55), bevel=0, mat=2)
     # rank bars (amber) on the outer upper arm: 1 standard .. 4 officer
     for i in range(VAR["rank"]):
         rbox(bm, sh.lerp(elbow, 0.40) + V((s * 0.080, 0.0, 0.0 - i * 0.021)), (0.010, 0.056, 0.012), bevel=0, mat=2)
@@ -416,6 +433,12 @@ def part_rifle():
     cyl(tmp, V((0.046, 0.30, 0.004)), V((0.046, 0.37, 0.004)), 0.014, segs=6, mat=5)                           # light
     rbox(tmp, V((0, 0.046, -0.152)), (0.032, 0.040, 0.016), rot=(math.radians(8), 0, 0), bevel=0.002, mat=2)   # mag stripe
     rbox(tmp, V((0.033, 0.03, 0.012)), (0.006, 0.060, 0.030), bevel=0.002, mat=5)                              # ejection port
+    if VAR["rifle"] == "lmg":   # elite weapons: shrouded heavy barrel, drum mag, bipod
+        cyl(tmp, V((0, 0.40, 0.0)), V((0, 0.70, 0.0)), 0.026, segs=8, mat=1)
+        cyl(tmp, V((0, 0.70, 0.0)), V((0, 0.76, 0.0)), 0.034, segs=8, mat=5)
+        cyl(tmp, V((-0.030, 0.050, -0.110)), V((0.030, 0.050, -0.110)), 0.060, segs=10, mat=3)
+        for sx in (-1, 1):
+            cyl(tmp, V((sx * 0.020, 0.50, -0.020)), V((sx * 0.060, 0.62, -0.090)), 0.006, segs=5, mat=5)
     if VAR["rifle"] == "long":   # marksman: long barrel + big scope
         cyl(tmp, V((0, 0.62, 0.0)), V((0, 0.95, 0.0)), 0.010, segs=8, mat=5)
         cyl(tmp, V((0, 0.90, 0.0)), V((0, 1.00, 0.0)), 0.018, segs=8, mat=1)
@@ -670,7 +693,15 @@ def head_dome():
     return _finish({"Head": bm, "Glow_Head": g}, k=1.42)
 
 
+exec(open(os.path.join(os.path.dirname(H.__file__), "elite_parts.py"), encoding="utf-8").read(), globals())
+ring = lambda z, rx, ry, oy=0: dict(c=V((0, oy, z)), rx=rx, ry=ry)
+
+
 def part_head():
+    if VAR["head"] == "spectre":
+        return head_spectre(VAR["role"])
+    if VAR["head"] == "revenant":
+        return head_revenant(VAR["role"])
     return {"helmet6": head_tactical, "goggles": head_goggles, "angular": head_angular,
             "fullvisor": head_fullvisor, "dome": head_dome}[VAR["head"]]()
 

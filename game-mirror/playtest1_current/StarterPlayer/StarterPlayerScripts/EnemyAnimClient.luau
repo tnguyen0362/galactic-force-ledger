@@ -155,10 +155,25 @@ local HERO_STANCE = {
 	Marksman = { crouch = 0.15, hunch = -0.1, kneelWhenPlanted = true },
 	Heavy = { crouch = 0.1, hunch = 0.25 }, -- braced, weight forward
 	Officer = { crouch = -0.1, hunch = -0.2 }, -- upright, commanding
+	-- Elite squads (Spectre = ODST special ops, Revenant = Warframe-style)
+	SpectreLeader = { crouch = -0.1, hunch = -0.2 },
+	SpectreAssault = { crouch = 0.05, hunch = 0.2 },
+	SpectreWeapons = { crouch = 0.1, hunch = 0.3 },
+	SpectrePrecision = { crouch = 0.15, hunch = -0.1, kneelWhenPlanted = true },
+	SpectreSupport = { crouch = 0.0, hunch = 0.05 },
+	RevenantLeader = { crouch = -0.1, hunch = -0.2 },
+	RevenantAssault = { crouch = 0.05, hunch = 0.2 },
+	RevenantWeapons = { crouch = 0.1, hunch = 0.3 },
+	RevenantPrecision = { crouch = 0.15, hunch = -0.1, kneelWhenPlanted = true },
+	RevenantDefense = { crouch = 0.05, hunch = 0.15 },
 }
 -- thigh/shin length (studs) of the Rifleman rig, scaled per role by body height
 local THIGH, SHIN = 1.72, 1.68
-local LEG_SCALE = { Rifleman = 1.0, Scout = 0.96, Marksman = 1.05, Heavy = 1.09, Officer = 1.05 }
+local LEG_SCALE = {
+	Rifleman = 1.0, Scout = 0.96, Marksman = 1.05, Heavy = 1.09, Officer = 1.05,
+	SpectreLeader = 1.16, SpectreAssault = 1.11, SpectreWeapons = 1.19, SpectrePrecision = 1.12, SpectreSupport = 1.09,
+	RevenantLeader = 1.19, RevenantAssault = 1.13, RevenantWeapons = 1.19, RevenantPrecision = 1.15, RevenantDefense = 1.19,
+}
 -- sign of pelvis roll toward the swing side (verify in Play: hip should drop on the swing-leg side)
 local ROLL_SIGN = 1
 

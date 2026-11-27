@@ -333,6 +333,8 @@ function TroopVisuals.restyle(model: Model)
 	end
 	if not rig then return end
 	model:SetAttribute("GFVisualStyled", true)
+	-- Blender-baked hero rigs (Hero_Asc_*) carry their own armor/helmet; primitive restyle would double-dress them
+	if rig:GetAttribute("GF_HeroBaked") == true then return end
 
 	local scale = (tier == "Elite") and 1.25 or 1
 	local enemyId = model:GetAttribute("EnemyId") or "Rifleman"
