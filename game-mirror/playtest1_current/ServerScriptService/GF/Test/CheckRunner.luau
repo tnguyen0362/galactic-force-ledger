@@ -13,7 +13,7 @@ local ALLOWED_STATS = {
 	ReloadSpeed = true, MaxShield = true, DodgeRecharge = true, MoveSpeed = true,
 	ReviveSpeed = true, HealthRegen = true,
 }
-local ALLOWED_TIERS = { Standard = true, Specialist = true, Elite = true, Boss = true }
+local ALLOWED_TIERS = { Standard = true, Specialist = true, Elite = true, Boss = true, Vehicle = true }
 local ALLOWED_TARGETING = { Ground = true, Self = true }
 local ALLOWED_DURATION = { Short = true, Standard = true, Extended = true }
 local ALLOWED_AUG_SLOTS = { Core = true, Auxiliary = true, Ability = true }
