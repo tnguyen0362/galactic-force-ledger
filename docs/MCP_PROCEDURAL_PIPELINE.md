@@ -114,3 +114,17 @@ For anything the owner will look at: render the generator output in Blender firs
 - A procedural generator is the default for characters, kit pieces and props. `generate_mesh` is for one-off organic assets. Hand-placed Part blockouts are a last resort.
 - Keep the per-troop triangle budget and the Xbox One-class performance target; check instance and triangle counts after installing.
 - Report faithfully: if a bake, upload, install or Play check fails, say which and show the error.
+
+## Hero locomotion (EnemyAnimClient.heroPose, gait v2)
+
+Procedural, no keyframes. Cadence and stride derive from measured speed and leg length, and each leg is solved with
+closed-form two-bone IK so the stance foot moves backwards at exactly body speed (measured foot slip ~1 stud/s while
+the body moves 6-19).
+
+- `f = (0.75 + 0.07*v) * freqMul` cycles/s, `D = v/f` studs per cycle (the old `speed/2.4` stride ran ~5 Hz and flailed).
+- Duty factor 0.60 walk -> 0.36 run; stance: ankle slides +sD/2 -> -sD/2 under the hip; swing: eased return with knee lift.
+- Pelvis height falls out of the stance leg geometry; flight phase while running; pelvis yaw + torso counter-yaw keep the rifle on target.
+- Speed/direction are measured across each *actual* position change (replicated positions arrive in network steps), then smoothed.
+- Travel direction vs facing drives backpedal (phase reversed) and strafe (pelvis turns toward the travel line).
+- QA harness trick: drive the container root client-side each Heartbeat and `rig:PivotTo(container pivot)` first (hub crew rigs are
+  placed 90 deg off the container); bind the camera at Camera priority + 5 or screenshots show nothing.

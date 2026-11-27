@@ -137,8 +137,17 @@ end
 --   combat aim  shouldered, hunched forward, knees bent  -> engage (head tracks, torso bladed to target)
 --   cover crouch deep crouch, torso up, muzzle on target -> take-cover
 --   kneel       marksman holds low when planted
--- crouch c: hip flex h=c, knee flex 2h, ankle k-h keeps foot flat and under the hip; the pelvis drops
--- 2T(1-cos h) (T ~1.7 studs thigh) so feet stay on the ground.  hunch u: Waist forward + Neck counter.
+--
+-- LOCOMOTION (v2, planted-foot gait).  The old gait ran a 2.4-stud stride at ~5 Hz, so legs flailed.  Here
+-- cadence and stride come from speed and leg length, and every leg is posed by closed-form two-bone IK so
+-- the stance foot travels backwards at exactly body speed (no foot skating):
+--   * f(v)  = (0.75 + 0.07 v) * freqMul cycles/s,  D = v / f studs per cycle,  duty factor 0.60 walk -> 0.36 run
+--   * stance: ankle slides +sD/2 -> -sD/2 under the hip (heel strike -> toe off), knee loads then pushes off
+--   * swing : ankle returns -sD/2 -> +sD/2 with a knee-lift arc (bigger when running), foot dorsiflexes to clear
+--   * pelvis height falls out of the stance leg geometry (bob), flight phase while running lifts it
+--   * pelvis yaws with the legs and the waist counter-yaws so the rifle shoulders stay on target
+--   * strafe/backpedal: pelvis turns toward the travel line (legs still run "forward"); backwards flips the phase
+-- crouch c: knee flex 2h; solving hip for the same ankle target gives hip flex ~h and drops the pelvis by geometry.
 -- ============================================================================================
 local HERO_STANCE = {
 	Rifleman = { crouch = 0, hunch = 0 },
@@ -147,14 +156,97 @@ local HERO_STANCE = {
 	Heavy = { crouch = 0.1, hunch = 0.25 }, -- braced, weight forward
 	Officer = { crouch = -0.1, hunch = -0.2 }, -- upright, commanding
 }
+-- thigh/shin length (studs) of the Rifleman rig, scaled per role by body height
+local THIGH, SHIN = 1.72, 1.68
+local LEG_SCALE = { Rifleman = 1.0, Scout = 0.96, Marksman = 1.05, Heavy = 1.09, Officer = 1.05 }
+-- sign of pelvis roll toward the swing side (verify in Play: hip should drop on the swing-leg side)
+local ROLL_SIGN = 1
+
+local function smooth01(x: number): number
+	x = math.clamp(x, 0, 1)
+	return x * x * (3 - 2 * x)
+end
+
+-- two-bone IK for a straight-ahead sagittal leg: hip pitch that puts the ankle `x` studs ahead of the hip with knee flex k
+local function solveHip(x: number, k: number, T: number, S: number): number
+	local A = T + S * math.cos(k)
+	local B = S * math.sin(k)
+	local R = math.sqrt(A * A + B * B)
+	return math.atan2(B, A) + math.asin(math.clamp(x / R, -0.92, 0.92))
+end
+
+-- one leg's gait channels at cycle position u (0..1): ankle x offset, knee flex, ankle extra, hip lift, ground weight
+local function legCycle(u: number, s: number, D: number, r: number): (number, number, number, number, number)
+	local kHeel = 0.08 + 0.10 * r
+	local kLoad = 0.12 + 0.20 * r
+	local kPush = 0.25 + 0.35 * r
+	local pushAnkle = -(0.30 + 0.15 * r)
+	if u < s then
+		local w = u / s
+		local x = (s * D * 0.5) * (1 - 2 * w)
+		local k = kHeel + kLoad * math.sin(math.pi * math.min(w / 0.7, 1)) + kPush * smooth01((w - 0.7) / 0.3)
+		local ank = pushAnkle * smooth01((w - 0.72) / 0.28) + 0.08 * (1 - smooth01(w / 0.15))
+		local sw = smooth01(w / 0.20) * smooth01((1 - w) / 0.30)
+		return x, k, ank, 0, sw
+	end
+	local t = (u - s) / (1 - s)
+	local x = -(s * D * 0.5) + s * D * smooth01(t) - (0.15 + 0.90 * r) * math.sin(math.pi * t) -- foot trails under the hip: keeps the thigh low
+	local kToe = kHeel + kPush
+	local k = kToe + (kHeel - kToe) * smooth01(t) + (0.50 + 0.50 * r) * math.sin(math.pi * t ^ 0.8)
+	local ank = pushAnkle + (0.12 - pushAnkle) * smooth01(t)
+	local lift = (0.05 + 0.12 * r) * math.sin(math.pi * t)
+	return x, k, ank, lift, 0
+end
 
 local function heroPose(model: Model, state: RigState, dt: number, c: any)
 	local st: any = state
 	local J = state.joints
 	local cfg = HERO_STANCE[c.enemyId] or HERO_STANCE.Rifleman
-	local moving: boolean = c.moving
+	local prof = state.profile
+	local now = os.clock()
 
-	-- stance targets by authoritative AI state
+	-- ---- velocity from replicated displacement (positions arrive in network-rate steps, so measure
+	-- speed/direction across each ACTUAL position change instead of per frame, then smooth)
+	local pos: Vector3 = c.pos
+	if not st.hLastPos then
+		st.hLastPos, st.hLastT, st.hSpeed, st.hPhase = pos, now, 0, st.phase
+		st.hDir, st.hDirSign, st.pYaw = Vector3.zero, 1, 0
+	end
+	local moved = pos - st.hLastPos
+	local flat = Vector3.new(moved.X, 0, moved.Z)
+	local rawSpeed = nil
+	if flat.Magnitude > 0.02 then
+		local span = now - st.hLastT
+		if span < 0.3 then
+			rawSpeed = flat.Magnitude / math.max(span, 1 / 120)
+			st.hDir = st.hDir:Lerp(flat.Unit, 0.5)
+		else
+			st.hDir = flat.Unit -- first step after standing: no reliable interval yet
+		end
+		st.hLastPos, st.hLastT = pos, now
+	elseif now - st.hLastT > 0.3 then
+		rawSpeed = 0
+	end
+	if rawSpeed then
+		st.hSpeed = blend(st.hSpeed, math.min(rawSpeed, 40), dt, 0.14)
+	end
+	local v: number = st.hSpeed
+	local w = smooth01((v - 0.3) / 1.5) -- locomotion weight: 0 idle .. 1 moving
+	local look, right = c.pivot.LookVector, c.pivot.RightVector
+	local dirU = st.hDir.Magnitude > 0.05 and st.hDir.Unit or Vector3.zero
+	local fwd, lat = dirU:Dot(look), dirU:Dot(right) -- lat > 0: travelling to the troop's right
+	local alpha = math.atan2(lat, fwd) -- travel angle from facing, + = right
+	if st.hDirSign > 0 and math.abs(alpha) > 2.2 then
+		st.hDirSign = -1
+	elseif st.hDirSign < 0 and math.abs(alpha) < 1.9 then
+		st.hDirSign = 1
+	end
+	local dirSign: number = st.hDirSign
+	local alphaFold = dirSign > 0 and alpha or (alpha - math.pi * (alpha > 0 and 1 or -1))
+	local pYawTarget = -math.clamp(alphaFold, -1.2, 1.2) * 0.65 * w
+	st.pYaw = blend(st.pYaw, pYawTarget, dt, 0.18)
+
+	-- ---- stance targets by authoritative AI state
 	local cT, hT, dT = 0, 0, 0
 	if c.relaxed then
 		cT, hT, dT = 0.03, 0.1, -0.45
@@ -165,12 +257,12 @@ local function heroPose(model: Model, state: RigState, dt: number, c: any)
 	elseif c.inCover then
 		cT, hT, dT = 0.85, 0.2, 0
 	else
-		cT, hT, dT = (moving and 0.25 or 0.4), 0.5, 0
+		cT, hT, dT = (v > 1.2 and 0.25 or 0.4), 0.5, 0
 	end
 	if not c.relaxed and c.engaged then
 		dT = state.aimPitch * 0.9
 	end
-	if cfg.kneelWhenPlanted and not moving and not c.relaxed and not c.investigating then
+	if cfg.kneelWhenPlanted and v <= 1.2 and not c.relaxed and not c.investigating then
 		cT = math.max(cT, 0.75)
 	end
 	cT = math.clamp(cT + cfg.crouch, 0, 1)
@@ -180,38 +272,75 @@ local function heroPose(model: Model, state: RigState, dt: number, c: any)
 	st.hunch = blend(st.hunch or 0, hT, dt, 0.3)
 	st.ready = blend(st.ready or dT, dT, dt, 0.15)
 
-	local phase, amp, prof = c.phase, c.amp, state.profile
+	-- ---- gait clock: cadence from speed, direction from travel
+	local ls = LEG_SCALE[c.enemyId] or 1
+	local T, S = THIGH * ls, SHIN * ls
+	local freq = (0.75 + 0.07 * v) * prof.freqMul
+	if v > 0.3 then
+		st.hPhase += dirSign * 2 * math.pi * freq * dt
+	end
+	local cyc = st.hPhase / (2 * math.pi)
+	local uL = cyc - math.floor(cyc)
+	local uR = (cyc + 0.5) - math.floor(cyc + 0.5)
+	local r = smooth01((v - 8) / 7) -- walk -> run
+	local s = 0.60 - 0.24 * r -- duty factor (stance fraction)
+	local D = v / math.max(freq, 0.01) -- studs per full cycle
+
 	local h = st.crouch
 	local kc = 2 * h
-	local drop = 3.4 * (1 - math.cos(h))
-	local swing = 0.5 * amp * (1 - 0.5 * st.crouch)
-	local sinL, sinR = math.sin(phase), math.sin(phase + math.pi)
-	local flexL = math.max(0, math.cos(phase)) * 0.7 * amp
-	local flexR = math.max(0, math.cos(phase + math.pi)) * 0.7 * amp
-	local hipL, hipR = h + sinL * swing, h + sinR * swing
-	local kneeL, kneeR = kc + flexL, kc + flexR
-	setJoint(J, "HipL", CFrame.Angles(hipL, 0, 0))
-	setJoint(J, "HipR", CFrame.Angles(hipR, 0, 0))
-	setJoint(J, "KneeL", CFrame.Angles(-kneeL, 0, 0))
-	setJoint(J, "KneeR", CFrame.Angles(-kneeR, 0, 0))
-	setJoint(J, "AnkleL", CFrame.Angles(kneeL - hipL, 0, 0))
-	setJoint(J, "AnkleR", CFrame.Angles(kneeR - hipR, 0, 0))
+	local lean = ((0.02 + 0.13 * r) + (prof.leanBias or 0) * 0.5) * w
+	local xL, kL, aL, liftL, swL = legCycle(uL, s, D, r)
+	local xR, kR, aR, liftR, swR = legCycle(uR, s, D, r)
+	local kTotL, kTotR = kL * w + kc, kR * w + kc
+	local hipWL = solveHip(xL * w, kTotL, T, S) + liftL * w
+	local hipWR = solveHip(xR * w, kTotR, T, S) + liftR * w
+	setJoint(J, "HipL", CFrame.Angles(hipWL - lean, 0, 0))
+	setJoint(J, "HipR", CFrame.Angles(hipWR - lean, 0, 0))
+	setJoint(J, "KneeL", CFrame.Angles(-kTotL, 0, 0))
+	setJoint(J, "KneeR", CFrame.Angles(-kTotR, 0, 0))
+	setJoint(J, "AnkleL", CFrame.Angles(kTotL - hipWL + aL * w, 0, 0))
+	setJoint(J, "AnkleR", CFrame.Angles(kTotR - hipWR + aR * w, 0, 0))
 
-	local bob = math.abs(math.sin(phase)) * 0.06 * amp * prof.bobMul
-	local lean = amp * 0.05 + (prof.leanBias or 0) * 0.5
-	setJoint(J, "RootJoint", CFrame.new(0, bob - drop, 0) * CFrame.Angles(-lean, 0, prof.stanceRoll or 0))
+	-- ---- pelvis: height from the stance legs (idle: both legs plant), apex while airborne
+	local stanceL = (w < 0.01) and 1 or swL
+	local stanceR = (w < 0.01) and 1 or swR
+	local hL = T * math.cos(hipWL) + S * math.cos(hipWL - kTotL) - (T + S)
+	local hR = T * math.cos(hipWR) + S * math.cos(hipWR - kTotR) - (T + S)
+	local hipC = solveHip(0, kc, T, S)
+	local flightY = T * math.cos(hipC) + S * math.cos(hipC - kc) - (T + S) + (0.05 + 0.15 * r) * w -- crouch height + airborne rise
+	local supported = stanceL + stanceR
+	local stanceY = (stanceL * hL + stanceR * hR) / math.max(supported, 1e-3)
+	local pelvisY = flightY + (stanceY - flightY) * math.min(supported, 1)
+	local side = (swL - swR) * w -- +1 weight on left leg .. -1 on right
+	local gaitPhase = ((xL - xR) / math.max(s * D * 0.5, 0.2)) * 0.5 -- +: left foot ahead
+	local yawGait = -(0.05 + 0.08 * r) * math.clamp(gaitPhase, -1, 1) * w
+	local rollGait = ROLL_SIGN * (0.025 + 0.025 * r) * side
+	local sway = -(0.12 - 0.05 * r) * side -- COM shifts over the stance foot
+	-- idle weight shifting so a standing troop never freezes
+	local idle = 1 - w
+	rollGait += idle * 0.018 * math.sin(now * 0.45 + st.phase)
+	sway += idle * 0.05 * math.sin(now * 0.45 + st.phase)
+	local rootYaw = yawGait + st.pYaw
+	setJoint(J, "RootJoint",
+		CFrame.new(sway, pelvisY, 0)
+			* CFrame.Angles(0, rootYaw, 0)
+			* CFrame.Angles(-lean, 0, (prof.stanceRoll or 0))
+			* CFrame.Angles(0, 0, rollGait))
 
-	-- upper body: hunch folds the spine forward, neck keeps the eyes level on target
-	local breath = math.sin(os.clock() * 1.4 + phase) * 0.012
+	-- ---- upper body: torso counter-rotates the pelvis so the rifle stays on target
+	local breath = math.sin(now * 1.4 + st.hPhase) * 0.012
 	local hunchAng = st.hunch * 0.35
 	local recoil = state.firePulse * state.firePulse
 	local hit = state.hitPulse
-	local waistYaw = state.aimYaw * 0.7 + c.scanYaw * 0.3
-	setJoint(J, "Waist", CFrame.Angles(-hunchAng + breath + recoil * 0.04 + hit * 0.18, waistYaw + hit * 0.12, hit * 0.06))
-	setJoint(J, "Neck", CFrame.Angles(hunchAng * 0.9 + state.aimPitch * 0.4, state.aimYaw * 0.2 + c.scanYaw, 0))
+	local waistYaw = state.aimYaw * 0.7 + c.scanYaw * 0.3 - rootYaw * 0.85
+	setJoint(J, "Waist",
+		CFrame.Angles(-hunchAng + lean * 0.5 + breath + recoil * 0.04 + hit * 0.18, waistYaw + hit * 0.12, hit * 0.06 - rollGait * 0.7))
+	-- head stays level and quiet: undo hunch + lean, soak up the pelvis bob
+	setJoint(J, "Neck", CFrame.Angles(hunchAng * 0.9 + lean * 0.4 + state.aimPitch * 0.4 - pelvisY * 0.12, state.aimYaw * 0.2 + c.scanYaw, 0))
 
-	-- arms: rigid rifle carry. delta pitch = state ready angle + compensation for the hunch rotation
-	local delta = st.ready + hunchAng * 0.8 + breath + recoil * 0.1 + math.sin(phase * 2) * 0.015 * amp
+	-- arms: rigid rifle carry. delta pitch = state ready angle + compensation for the torso's forward pitch
+	local torsoPitch = 0.5 * lean + hunchAng
+	local delta = st.ready + torsoPitch * 0.8 + breath + recoil * 0.1 + math.sin(st.hPhase * 2) * 0.012 * w * (1 + r)
 	setJoint(J, "ShoulderR", CFrame.Angles(delta, 0, 0))
 	setJoint(J, "ShoulderL", CFrame.Angles(delta, 0, 0))
 	setJoint(J, "ElbowR", CFrame.Angles(recoil * 0.12, 0, 0))
@@ -425,6 +554,8 @@ local function poseRig(model: Model, state: RigState, dt: number)
 			inCover = inCover,
 			engaged = targetPos ~= nil and bestD < 60,
 			scanYaw = scanYawH,
+			pos = pos,
+			pivot = pivot,
 		})
 		return
 	end
