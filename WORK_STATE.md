@@ -3365,3 +3365,11 @@ NEXT: (1) get kit patch through C1 with beta; (2) author palette/material librar
 - Still weak: CliffC mesa reads stacked; gunship still blocky.
 - NOT DONE: nothing installed in the Studio datamodel (install_kit.luau not run); beta calibration holds Studio (Play mode seen). claude queued behind it (bus post 0845Z). Wiring into ExtractionService/ObjectiveService/Station*/scatter still pending an alpha-negotiated patch.
 - Ledgers not yet refreshed for this stage: BUILD_MANIFEST.md, VISUAL_REVIEW.md, BLOCKED.md.
+
+## Phase 15 — Stage 4b (claude, Studio window 0915Z-0935Z, no save) — kit INSTALLED in Edit datamodel
+- install_kit.luau run in Edit: 74 installed, 0 failed (ServerStorage.GF.Art.Kit_*, unsaved). All 74 MeshParts carry the palette texture.
+- VERIFIED in engine (Edit, default lighting, temp lineup captured then deleted): sizes match Blender (Gunship 31.4x19.5x31.8, Relay 14.3x28.2x13.1, Tower 20.7x39.2x20.7, Gate 51.4x46.9x12.9); palette textures render; pieces ground correctly when lifted by Size.Y/2; cliffs show strata banding when tinted via Color (150,128,100); Ascendancy reads dark navy-slate under default lighting (bluer than Blender render).
+- FOUND: PrimaryPart.PivotOffset = 0, i.e. pivot is bbox CENTRE, not bottom-centre as the Blender convention note says. install_kit.luau does not correct it; placement code must lift by Size.Y/2 (or the installer should set PivotOffset). NOT yet fixed.
+- NOT verified: collision fidelity (Default), in-mission lighting/fog look, LOD/perf, gunship integration with ExtractionService, relay height=30 with neon core, tint across biomes.
+- Side observations (not mine): console flooded with EnemyAnimClient poseRig error (EnemyAnimClient:309 nil < number); Workspace.GF_ArtStage (dark floor at Y~3000) and WedgeTest belong to someone else.
+- Studio released; edit datamodel changes are NOT saved to the place.
