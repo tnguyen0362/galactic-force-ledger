@@ -104,8 +104,8 @@ local function renderBrowser(data: any)
 		end
 	end
 
-	-- forming squads across all servers
-	for _, squad in ipairs(data.listings or {}) do
+	-- forming squads across all servers (server contract field: `squads`)
+	for _, squad in ipairs(data.squads or {}) do
 		if squad.state == "forming" and (tonumber(squad.openSeats) or 0) > 0 then
 			order += 1
 			count += 1
