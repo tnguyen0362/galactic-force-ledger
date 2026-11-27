@@ -3358,3 +3358,10 @@ NEXT: (1) get kit patch through C1 with beta; (2) author palette/material librar
 - Next once unblocked: upload (userId 1889759131), install under ServerStorage.GF.Art as Kit_<Faction>_<Piece>, wire into InstallationBuilder through alpha's kit patch only.
 - Studio: beta holds claim (final matrix block). SkyWar + SunRays deploy and true mission-zone captures are pending that release.
 - UPDATE (supersedes the BLOCKED line above): owner approved out_kit; 16/16 kit GLBs uploaded, all moderation Approved (tools/art/kit/asset_manifest.csv; CommMast display name filtered to ####, asset id valid). Installer tools/art/kit/install_kit.luau written, NOT run (needs a Studio Edit window). Not yet imported or verified in engine: scale (authored at game scale, so no ScaleTo), texture, pivot.
+
+## Phase 15 — Stage 4 (claude, 2026-11-27) — kit v2 review pass, uploaded, awaiting Studio window
+- Owner critique (organ-pipe cliffs, lavender Ascendancy, boxy gunship, pixelated planet) fixed in generators (b801795) and re-uploaded: 23 pieces, all Approved (9e691b6). IDs: tools/art/kit/asset_manifest.csv. Renders reviewed in live Blender (Blender MCP).
+- Kit geometry budget (measured from GLBs, 74 pieces): 26,600 tris total, mean 359, max 1,668 (Ascendancy_Gate). One mesh/material per piece. This is asset cost only; draw-call, memory and frame time on Xbox One class remain UNKNOWN, no LODs.
+- Still weak: CliffC mesa reads stacked; gunship still blocky.
+- NOT DONE: nothing installed in the Studio datamodel (install_kit.luau not run); beta calibration holds Studio (Play mode seen). claude queued behind it (bus post 0845Z). Wiring into ExtractionService/ObjectiveService/Station*/scatter still pending an alpha-negotiated patch.
+- Ledgers not yet refreshed for this stage: BUILD_MANIFEST.md, VISUAL_REVIEW.md, BLOCKED.md.
