@@ -6,7 +6,7 @@
 --   joints RootJoint Waist Neck ShoulderL/R ElbowL/R WristL/R HipL/R KneeL/R AnkleL/R  (Motor6D, parented to Part0)
 --   C0/C1 = partBind^-1 * pivot, exactly like RigBuilder, so Transform rotates about the real anatomical pivot.
 -- Extra: Rifle (Motor6D RifleGrip on HandR), Glow_* neon accent parts (GlowJoint on their segment).
--- Authored facing -Z, feet at y=0, ~6.9 studs tall (R15 ~5.4): :ScaleTo() to tune. Right-handed shooter (rifle in HandR).
+-- Authored facing -Z, feet at y=0, ~6.6 studs tall (R15 ~5.4): :ScaleTo() to tune. Right-handed shooter (rifle in HandR).
 local ASSET_ID = __ASSET_ID__
 __DATA__
 local IS = game:GetService("InsertService")
@@ -39,7 +39,7 @@ for n, m in meshes do byRig[MAP[n] or n] = m end
 local rig = Instance.new("Model")
 rig.Name = "Hero_Asc_Rifleman"
 local parts = {}
-local report = { missing = {}, sizeDev = {}, tris = 0 }
+local report = { missing = {}, sizeDev = {}, tris = 0, noSA = {} }
 local PARENT_OF_GLOW = { Glow_Head = "Head", Glow_UpperTorso = "UpperTorso", Glow_Rifle = "Rifle" }
 
 for name, def in DATA.parts do
@@ -54,7 +54,14 @@ for name, def in DATA.parts do
 	p.Massless = true
 	p.RenderFidelity = Enum.RenderFidelity.Automatic
 	p.CollisionFidelity = Enum.CollisionFidelity.Box
-	for _, c in p:GetChildren() do c:Destroy() end
+	-- keep baked PBR SurfaceAppearance on body parts; glow parts are plain Neon
+	local isGlow = name:find("^Glow_") ~= nil
+	for _, c in p:GetChildren() do
+		if not (c:IsA("SurfaceAppearance") and not isGlow) then c:Destroy() end
+	end
+	if not isGlow then
+		if p:FindFirstChildOfClass("SurfaceAppearance") then report.sa = (report.sa or 0) + 1 else table.insert(report.noSA, name) end
+	end
 	-- Roblox's glTF importer rotates the mesh 180deg about Y vs the Blender export (loaded positions are (-x,y,-z) of the manifest).
 	-- Keep the loaded mesh, rotate each part about its own centre so the baked geometry faces -Z again.
 	p.CFrame = CFrame.new(def.center) * CFrame.Angles(0, math.pi, 0)
@@ -124,11 +131,12 @@ hum.RigType = Enum.HumanoidRigType.R15
 hum.Parent = rig
 rig.PrimaryPart = hrp
 rig:SetAttribute("GF_AssetId", ASSET_ID)
-rig:SetAttribute("GF_ArtSource", "Blender hero_wip asc_rifleman_v6_nocape")
+rig:SetAttribute("GF_ArtSource", "Blender hero_wip asc_rifleman_v8 anatomical + baked PBR atlas (BC/N/RM)")
 rig.Parent = art
 loaded:Destroy()
 
 local lines = { string.format("Hero_Asc_Rifleman built: parts=%d tris=%d missing=%s posDevSum=%.3f", #rig:GetChildren(), report.tris, table.concat(report.missing, ","), report.posDev or -1) }
 for n, dev in report.sizeDev do if dev > 0.08 then table.insert(lines, string.format("SIZE DEV %s %.3f", n, dev)) end end
+table.insert(lines, string.format("SurfaceAppearance on %d body parts; without: %s", report.sa or 0, table.concat(report.noSA, ",")))
 table.insert(lines, "meshes found in asset: " .. table.concat(seen, ","))
 warn(table.concat(lines, "\n"))
