@@ -281,7 +281,8 @@ local function buildModel(def: any, cframe: CFrame): Model
 	-- S11 exposed weak point: archetypes whose config carries a bonus multiplier grow a visible
 	-- power core — a glowing vulnerable node offset high on the back plate, so flanking or
 	-- precision fire is rewarded per spec. The combat service reads the WeakPoint attribute on hit.
-	if (tonumber(def.weakPointMultiplier) or 1) > 1 then
+	-- Hero troops (Hero_Asc_*): head is the ONLY weak point, so no back-mounted core is built.
+	if not HERO_TEMPLATE[def.id] and (tonumber(def.weakPointMultiplier) or 1) > 1 then
 		local core = part("WeakCore", Vector3.new(0.68, 0.68, 0.42) * scale, palette.light, Enum.Material.Neon)
 		core.CFrame = cframe * CFrame.new(0, 0.55 * scale, 0.82 * scale)
 		core.Transparency = 0
@@ -320,7 +321,8 @@ local function buildModel(def: any, cframe: CFrame): Model
 	if rig then
 		-- Hero squad rigs are authored taller than the 6.87-stud player (7.3-8.4); tier scale is not stacked on them.
 		local rigScale = isHero and 1 or scale
-		rig:PivotTo(cframe * CFrame.Angles(0, math.rad(180), 0))
+		-- Stock AscendancyTrooper is authored facing +Z (needs the 180 turn); Hero_Asc_* rigs face -Z already.
+		rig:PivotTo(isHero and cframe or (cframe * CFrame.Angles(0, math.rad(180), 0)))
 		local hum = rig:FindFirstChildOfClass("Humanoid")
 		if hum then
 			hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
@@ -359,6 +361,58 @@ local function buildModel(def: any, cframe: CFrame): Model
 		rig:SetAttribute("GFEnemyRig", true)
 		for _, p in model:GetChildren() do
 			if p:IsA("BasePart") and p ~= root and p.Name ~= "WeakCore" then p.Transparency = 1 end
+		end
+		if isHero then
+			-- Refit the invisible hit volumes to the authored 7.3-8.4 stud body (they were sized for the old
+			-- 2.4-stud blockout). Head = the ONLY weak point (config multiplier, 1.5x floor like CombatService).
+			local function fit(volName: string, partNames: { string }, pad: number)
+				local vol = model:FindFirstChild(volName)
+				if not (vol and vol:IsA("BasePart")) then return end
+				local lo: Vector3? = nil
+				local hi: Vector3? = nil
+				for _, pn in partNames do
+					local rp = rig:FindFirstChild(pn)
+					if rp and rp:IsA("BasePart") then
+						local h = rp.Size * 0.5
+						for _, sx in { -1, 1 } do
+							for _, sy in { -1, 1 } do
+								for _, sz in { -1, 1 } do
+									local lp = cframe:PointToObjectSpace((rp.CFrame * CFrame.new(h.X * sx, h.Y * sy, h.Z * sz)).Position)
+									lo = lo and Vector3.new(math.min(lo.X, lp.X), math.min(lo.Y, lp.Y), math.min(lo.Z, lp.Z)) or lp
+									hi = hi and Vector3.new(math.max(hi.X, lp.X), math.max(hi.Y, lp.Y), math.max(hi.Z, lp.Z)) or lp
+								end
+							end
+						end
+					end
+				end
+				if not (lo and hi) then return end
+				for _, c in vol:GetChildren() do
+					if c:IsA("WeldConstraint") then c:Destroy() end
+				end
+				vol.Size = (hi - lo) + Vector3.one * pad
+				vol.CFrame = cframe * CFrame.new((lo + hi) * 0.5)
+				local w = Instance.new("WeldConstraint")
+				w.Part0 = root
+				w.Part1 = vol
+				w.Parent = vol
+			end
+			fit("Head", { "Head" }, 0.2)
+			fit("Torso", { "UpperTorso", "LowerTorso" }, 0)
+			fit("ShoulderL", { "UpperArmL", "LowerArmL", "HandL" }, 0)
+			fit("ShoulderR", { "UpperArmR", "LowerArmR", "HandR" }, 0)
+			fit("LegL", { "UpperLegL", "LowerLegL", "FootL" }, 0)
+			fit("LegR", { "UpperLegR", "LowerLegR", "FootR" }, 0)
+			fit("Weapon", { "Rifle" }, 0)
+			-- decorative primitives must not intercept shots (Visor would shadow the head at 1x)
+			for _, n in { "ChestPlate", "Visor" } do
+				local v = model:FindFirstChild(n)
+				if v and v:IsA("BasePart") then v.CanQuery = false end
+			end
+			local headVol = model:FindFirstChild("Head")
+			if headVol then
+				local wpm = tonumber(def.weakPointMultiplier) or 1
+				headVol:SetAttribute("WeakPoint", wpm > 1 and wpm or 1.5)
+			end
 		end
 		model:SetAttribute("HasRig", true)
 	end
@@ -2026,4 +2080,3 @@ end
 require(script.Parent.EnemyAnimation)
 
 return EnemyService
-

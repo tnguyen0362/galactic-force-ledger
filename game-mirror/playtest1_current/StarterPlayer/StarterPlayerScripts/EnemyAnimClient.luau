@@ -38,6 +38,7 @@ type RigState = {
 	firePulse: number,
 	deathT: number?, -- time since death started, nil while alive
 	prevPos: Vector3?,
+	hero: boolean?,
 }
 
 local tracked: { [Model]: RigState } = {}
@@ -122,6 +123,103 @@ local function blend(current: number, target: number, dt: number, tau: number): 
 	return target + (current - target) * math.exp(-dt / tau)
 end
 
+-- ============================================================================================
+-- HERO SQUAD POSE (rigs with GF_HeroBaked): Blender-authored Hero_Asc_* troopers.
+-- Joint sign convention MEASURED on these rigs (forward = -Z): +Hip/+Shoulder/+Elbow swing the limb
+-- forward/up; KNEE FLEXION IS NEGATIVE; +Waist/+RootJoint lean BACK (forward lean = negative);
+-- +Neck looks up; +Ankle = toes up.  Arms are authored in a two-hand rifle-ready bind, so every arm
+-- value below is a DELTA from that bind: both shoulders rotate together about the shoulder line, which
+-- carries the rifle (RifleGrip on HandR) and the left-hand support grip as one rigid unit.
+--
+-- Stances come from standard infantry doctrine (FM 3-22.9 / MCRP 3-01A ready + field positions):
+--   low ready   muzzle ~30-45deg down, upright           -> patrol / return (relaxed carry)
+--   tactical    muzzle slightly down, soft knees, lean   -> investigate / search / guard
+--   combat aim  shouldered, hunched forward, knees bent  -> engage (head tracks, torso bladed to target)
+--   cover crouch deep crouch, torso up, muzzle on target -> take-cover
+--   kneel       marksman holds low when planted
+-- crouch c: hip flex h=c, knee flex 2h, ankle k-h keeps foot flat and under the hip; the pelvis drops
+-- 2T(1-cos h) (T ~1.7 studs thigh) so feet stay on the ground.  hunch u: Waist forward + Neck counter.
+-- ============================================================================================
+local HERO_STANCE = {
+	Rifleman = { crouch = 0, hunch = 0 },
+	Scout = { crouch = 0.05, hunch = 0.15 }, -- athletic forward lean
+	Marksman = { crouch = 0.15, hunch = -0.1, kneelWhenPlanted = true },
+	Heavy = { crouch = 0.1, hunch = 0.25 }, -- braced, weight forward
+	Officer = { crouch = -0.1, hunch = -0.2 }, -- upright, commanding
+}
+
+local function heroPose(model: Model, state: RigState, dt: number, c: any)
+	local st: any = state
+	local J = state.joints
+	local cfg = HERO_STANCE[c.enemyId] or HERO_STANCE.Rifleman
+	local moving: boolean = c.moving
+
+	-- stance targets by authoritative AI state
+	local cT, hT, dT = 0, 0, 0
+	if c.relaxed then
+		cT, hT, dT = 0.03, 0.1, -0.45
+	elseif c.investigating then
+		cT, hT, dT = 0.25, 0.35, -0.15
+	elseif c.guarding then
+		cT, hT, dT = 0.3, 0.3, -0.1
+	elseif c.inCover then
+		cT, hT, dT = 0.85, 0.2, 0
+	else
+		cT, hT, dT = (moving and 0.25 or 0.4), 0.5, 0
+	end
+	if not c.relaxed and c.engaged then
+		dT = state.aimPitch * 0.9
+	end
+	if cfg.kneelWhenPlanted and not moving and not c.relaxed and not c.investigating then
+		cT = math.max(cT, 0.75)
+	end
+	cT = math.clamp(cT + cfg.crouch, 0, 1)
+	hT = math.clamp(hT + cfg.hunch, 0, 1)
+
+	st.crouch = blend(st.crouch or 0, cT, dt, 0.3)
+	st.hunch = blend(st.hunch or 0, hT, dt, 0.3)
+	st.ready = blend(st.ready or dT, dT, dt, 0.15)
+
+	local phase, amp, prof = c.phase, c.amp, state.profile
+	local h = st.crouch
+	local kc = 2 * h
+	local drop = 3.4 * (1 - math.cos(h))
+	local swing = 0.5 * amp * (1 - 0.5 * st.crouch)
+	local sinL, sinR = math.sin(phase), math.sin(phase + math.pi)
+	local flexL = math.max(0, math.cos(phase)) * 0.7 * amp
+	local flexR = math.max(0, math.cos(phase + math.pi)) * 0.7 * amp
+	local hipL, hipR = h + sinL * swing, h + sinR * swing
+	local kneeL, kneeR = kc + flexL, kc + flexR
+	setJoint(J, "HipL", CFrame.Angles(hipL, 0, 0))
+	setJoint(J, "HipR", CFrame.Angles(hipR, 0, 0))
+	setJoint(J, "KneeL", CFrame.Angles(-kneeL, 0, 0))
+	setJoint(J, "KneeR", CFrame.Angles(-kneeR, 0, 0))
+	setJoint(J, "AnkleL", CFrame.Angles(kneeL - hipL, 0, 0))
+	setJoint(J, "AnkleR", CFrame.Angles(kneeR - hipR, 0, 0))
+
+	local bob = math.abs(math.sin(phase)) * 0.06 * amp * prof.bobMul
+	local lean = amp * 0.05 + (prof.leanBias or 0) * 0.5
+	setJoint(J, "RootJoint", CFrame.new(0, bob - drop, 0) * CFrame.Angles(-lean, 0, prof.stanceRoll or 0))
+
+	-- upper body: hunch folds the spine forward, neck keeps the eyes level on target
+	local breath = math.sin(os.clock() * 1.4 + phase) * 0.012
+	local hunchAng = st.hunch * 0.35
+	local recoil = state.firePulse * state.firePulse
+	local hit = state.hitPulse
+	local waistYaw = state.aimYaw * 0.7 + c.scanYaw * 0.3
+	setJoint(J, "Waist", CFrame.Angles(-hunchAng + breath + recoil * 0.04 + hit * 0.18, waistYaw + hit * 0.12, hit * 0.06))
+	setJoint(J, "Neck", CFrame.Angles(hunchAng * 0.9 + state.aimPitch * 0.4, state.aimYaw * 0.2 + c.scanYaw, 0))
+
+	-- arms: rigid rifle carry. delta pitch = state ready angle + compensation for the hunch rotation
+	local delta = st.ready + hunchAng * 0.8 + breath + recoil * 0.1 + math.sin(phase * 2) * 0.015 * amp
+	setJoint(J, "ShoulderR", CFrame.Angles(delta, 0, 0))
+	setJoint(J, "ShoulderL", CFrame.Angles(delta, 0, 0))
+	setJoint(J, "ElbowR", CFrame.Angles(recoil * 0.12, 0, 0))
+	setJoint(J, "ElbowL", CFrame.Angles(recoil * 0.05, 0, 0))
+	setJoint(J, "WristR", CFrame.Angles(0, 0, 0))
+	setJoint(J, "WristL", CFrame.Angles(0, 0, 0))
+end
+
 local function poseRig(model: Model, state: RigState, dt: number)
 	local pivot = model:GetPivot()
 	local pos = pivot.Position
@@ -151,6 +249,21 @@ local function poseRig(model: Model, state: RigState, dt: number)
 		local legE = stage(0.0, 0.45) -- legs buckle immediately
 		local torsoE = stage(0.25, 0.85) -- torso folds through the middle
 		local headE = stage(0.55, 1.1) -- head and arms drop last
+		if state.hero then
+			-- hero collapse (measured signs): knees fold (negative), hips flex, pelvis drops, torso folds forward
+			setJoint(state.joints, "KneeL", CFrame.Angles(-legE * 1.6, 0, 0))
+			setJoint(state.joints, "KneeR", CFrame.Angles(-legE * 1.4, 0, 0))
+			setJoint(state.joints, "HipL", CFrame.Angles(legE * 0.8, 0, 0))
+			setJoint(state.joints, "HipR", CFrame.Angles(legE * 0.7, 0, 0))
+			setJoint(state.joints, "AnkleL", CFrame.Angles(legE * 0.8, 0, 0))
+			setJoint(state.joints, "AnkleR", CFrame.Angles(legE * 0.7, 0, 0))
+			setJoint(state.joints, "RootJoint", CFrame.new(0, -(legE * 1.0 + torsoE * 1.2), 0) * CFrame.Angles(-torsoE * 0.9, 0, torsoE * 0.12))
+			setJoint(state.joints, "Waist", CFrame.Angles(-torsoE * 0.3, 0, 0))
+			setJoint(state.joints, "Neck", CFrame.Angles(headE * 0.4, 0, headE * 0.1))
+			setJoint(state.joints, "ShoulderL", CFrame.Angles(headE * 0.3, 0, headE * 0.2))
+			setJoint(state.joints, "ShoulderR", CFrame.Angles(headE * 0.3, 0, -headE * 0.2))
+			return
+		end
 		setJoint(state.joints, "KneeL", CFrame.Angles(legE * 1.5, 0, 0))
 		setJoint(state.joints, "KneeR", CFrame.Angles(legE * 1.3, 0, 0))
 		setJoint(state.joints, "HipL", CFrame.Angles(-legE * 1.2, 0, 0))
@@ -243,7 +356,8 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	-- spec sec.65 AI-state integration: posture consumes the authoritative replicated state.
 	-- patrol/return are relaxed low-carry with scanning; investigate/search semi-raised alert;
 	-- guard ready-scanning; engage/takecover full combat posture. no independent decisions.
-	local aiState = model:GetAttribute("GFState") or "Engage"
+	-- GFDebugState: client-local art-QA override (set it on the client to preview a stance; the server never writes it)
+	local aiState = model:GetAttribute("GFDebugState") or model:GetAttribute("GFState") or "Engage"
 	local relaxed = aiState == "Patrol" or aiState == "Return" or aiState == "Idle"
 	local investigating = aiState == "Investigate" or aiState == "Search"
 	local guarding = aiState == "Guard"
@@ -292,6 +406,28 @@ local function poseRig(model: Model, state: RigState, dt: number)
 	local sharp = prof.aimSharp
 	state.aimYaw = blend(state.aimYaw, aimYawTarget, dt, TAU_AIM / sharp)
 	state.aimPitch = blend(state.aimPitch, aimPitchTarget, dt, TAU_AIM / sharp)
+
+	if state.hero then
+		local scanYawH = 0
+		if relaxed or guarding then
+			scanYawH = math.sin(os.clock() * 0.7 + state.phase) * 0.35
+		elseif investigating then
+			scanYawH = math.sin(os.clock() * 1.3 + state.phase) * 0.55
+		end
+		heroPose(model, state, dt, {
+			enemyId = enemyId,
+			moving = moving,
+			phase = phase,
+			amp = amp,
+			relaxed = relaxed,
+			investigating = investigating,
+			guarding = guarding,
+			inCover = inCover,
+			engaged = targetPos ~= nil and bestD < 60,
+			scanYaw = scanYawH,
+		})
+		return
+	end
 
 	-- state-dependent head behavior: patrol/return scan the environment; investigate/search
 	-- scan wider and sharper; combat states hold aim-oriented head
@@ -412,6 +548,7 @@ RunService.Heartbeat:Connect(function(dt)
 						firePulse = 0,
 						deathT = nil,
 						prevPos = nil,
+						hero = rig:GetAttribute("GF_HeroBaked") == true,
 					}
 					tracked[model] = state
 				end

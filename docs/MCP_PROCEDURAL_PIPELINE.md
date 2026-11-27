@@ -49,9 +49,12 @@ Another agent deploying files from the repo mirror can silently overwrite edits 
 - Blender units are metres, Z up, character faces +Y, character RIGHT is +X. Export maps `(x, y, z) -> (x, z, -y) * S`. Roblox's importer rotates the model 180 degrees about Y; the installer re-applies the inverse. Do not "fix" orientation in the generator.
 - Material indexes: 0 suit, 1 plate, 2 trim (accent colour), 3 strap, 4 skin, 5 dark. The bake colours come from the `SPEC` table in `hero_bake.py`, so a theme change is one table.
 - `hero_lib.py` helpers: `loft` (ring sections), `arcshell` (curved plates), `rbox` (box; a bevel costs 44 tris, no bevel costs 12), `cyl`, `sphere`, `new_bm`, `tri_count`.
+- Body proportions are R15-style and set by width constants at the top of `gen_hero_v12.py` (`WT` 1.75 torso, `WUA` 1.70 upper arm, `WFA` 1.60 forearm, `WH` 1.25 hands, `WL` 1.50 legs). Thin limbs read as mannequins, so keep them chunky.
+- Head size: each `head_*` function passes its own `k` to `_finish`, so the default is ignored. Change the five explicit `k` values (1.42 to 1.46) to rescale heads. `_finish` scales about the neck base.
 - Variants are rows in the `VARIANTS` dict in `gen_hero_v12.py` (head type, shoulder size, torso kit, rifle, rank, scale). To add a troop: add a row, add or reuse a head function, run `lineup.py` to see it in clay beside the others, critique with `look`, then bake.
 - Helmets: paint the visor and mask faces onto the shell (material index by face angle and height) instead of floating a band on top. Make helmets larger than the bare head, give a thick gorget so there is no thin neck, and keep a distinct silhouette per unit.
 - Triangle budget per troop is 4 to 6.5k, with the head the largest single piece. Detail comes from the baked textures, not from extra geometry.
+- Baked panel grid: the plate material in `hero_bake.py` builds an object-space panel-groove grid. It is intentional on body plates but shows as a cage pattern on curved helmet shells, so it is masked off above z of about 1.46 m. Do the same for any new curved shell.
 - Leftover Blender objects must be renamed or deleted before a rebuild; a name collision produces `.001` suffixes. `exec`'d scripts do not share a namespace between calls, so run one variant per call.
 - Do not re-run `make_v12.py`-style one-shot patchers over a generator that has been edited by hand.
 
@@ -84,13 +87,19 @@ Only `rbxassetid://` meshes are durable and replicate. `rbxruntime://` ids from 
 ## 6. Install and verify
 
 ```
-sh tools/art/hero/make_install.sh <assetId> Hero_Asc_<Name> <name>_data.luau
+sh tools/art/hero/make_install.sh <assetId> Hero_Asc_<Name> <name>_data.luau [artSource]
 ```
+
+`artSource` (optional) is the label stored on the model as `GF_ArtSource`, so each variant records which generator version it came from.
 
 Run the generated `install_Hero_Asc_<Name>.luau` with `execute_luau` in the Edit DM (with a bus claim). It builds the rigged Model at `ServerStorage.GF.Art.Hero_Asc_<Name>`. Then:
 
 - Check the model's height, that the feet are at ground level, and that the Motor6D names are as the rig contract expects.
-- Rig contract: `RootJoint`, `Waist`, `Neck`, hips/knees/ankles; the arms are `HoldShoulder/HoldElbow/HoldWrist` L/R so the client animator ignores them and the arms stay rifle-ready. The model carries the attribute `GF_HeroBaked=true` so `TroopVisuals.restyle` does not stack primitive armour on top.
+- Rig contract: `RootJoint`, `Waist`, `Neck`, `ShoulderL/R`, `ElbowL/R`, `WristL/R`, `HipL/R`, `KneeL/R`, `AnkleL/R`. The arms are real joints: both are authored in a two-hand rifle-ready bind, and `EnemyAnimClient` rotates them together as deltas so the rifle moves as one unit. The model carries the attribute `GF_HeroBaked=true` so `TroopVisuals.restyle` does not stack primitive armour on top, and so `EnemyAnimClient` uses its hero branch (`heroPose`).
+- Facing: hero rigs face -Z already and are NOT given the stock 180 degree turn (`EnemyService` pivots `isHero and cframe or cframe * Angles(0, pi, 0)`). If troops fire with their backs to you, this is the first thing to check.
+- Joint sign convention (forward is -Z): +Hip, +Shoulder, +Elbow swing forward and up; knee flexion is NEGATIVE; forward lean (Waist, RootJoint) is NEGATIVE; +Neck looks up; +Ankle is toes up. Measure on the rig before trusting any sign.
+- Stances (`HERO_STANCE` in `EnemyAnimClient`): low ready on patrol, high ready on investigate or guard, shouldered and hunched on engage, deep crouch in cover, kneel for the Marksman when planted. `GFDebugState` is a client-local attribute that overrides `GFState` for art QA; the server never writes it.
+- Weak point: the head only. `EnemyService` refits the invisible hit volumes to the authored rig (`fit`), sets `WeakPoint` on the Head volume (config multiplier, 1.5x floor), and builds no `WeakCore` for hero troops. `ChestPlate` and `Visor` have `CanQuery=false` so they cannot shadow the head. Crouch is client-only, so the server head volume stays at standing height.
 - Play-verify: spawn each role, capture front and three-quarter views, read `get_console_output`. Capture one image at a time with a unique `capture_id`; in Play the camera arguments are ignored, so steer the camera with `RunService:BindToRenderStep` at Camera priority + 5.
 - `save_place` saves a version only. The owner publishes.
 

@@ -22,12 +22,12 @@ def rbox(bm, center, size, rot=(0, 0, 0), bevel=0.006, mat=1):
 
 V = Vector
 S = 3.57
-WT = 1.14   # torso / shoulder / upper-arm widening (owner call 14%)
+WT = 1.75   # R15-style body width (owner: "body width like an R15 character")
 WA = 1.14   # pauldron only
-WUA = 1.28  # upper-arm thickness (owner: arms as a whole wider)
-WFA = 1.25  # forearm thickness incl. elbow pad + bracer
-WH = 1.10   # hand scale about wrist
-WL = 1.09   # leg spacing + thickness
+WUA = 1.70
+WFA = 1.60
+WH = 1.25
+WL = 1.50
 
 # Squad variants: one shared body/skeleton/theme (charcoal + amber), rank read from silhouette + trim + head.
 VARIANTS = {
@@ -544,7 +544,7 @@ def _ring(z, rx, ry, oy=-0.004, n=2.3):
     return dict(c=V((0, oy, z)), rx=rx, ry=ry, n=n)
 
 
-def _finish(parts, k=1.20, dz=-0.034):
+def _finish(parts, k=1.35, dz=-0.048):
     """Helmets read BIGGER than a bare head in all the refs: scale about the neck base, then seat low on the collar."""
     M = Matrix.Translation(V((0, 0, 1.60)))
     for b_ in parts.values():
@@ -577,7 +577,7 @@ def head_tactical():
     g = new_bm()
     rbox(g, V((0.040, 0.150, 1.872)), (0.014, 0.003, 0.014), bevel=0, mat=5)
     rbox(g, V((-0.116, 0.040, 1.700)), (0.004, 0.012, 0.012), bevel=0, mat=5)
-    return _finish({"Head": bm, "Glow_Head": g}, k=1.20)
+    return _finish({"Head": bm, "Glow_Head": g}, k=1.46)
 
 
 def head_goggles():
@@ -601,7 +601,7 @@ def head_goggles():
     cyl(bm, V((-0.112, 0.004, 1.716)), V((-0.092, 0.116, 1.676)), 0.0045, segs=5, mat=5)
     g = new_bm()
     rbox(g, V((0, 0.143, 1.856)), (0.012, 0.003, 0.012), bevel=0, mat=5)
-    return _finish({"Head": bm, "Glow_Head": g}, k=1.16)
+    return _finish({"Head": bm, "Glow_Head": g}, k=1.42)
 
 
 def head_angular():
@@ -624,7 +624,7 @@ def head_angular():
     g = new_bm()
     for sx in (-1, 1):
         rbox(g, V((sx * 0.034, 0.140, 1.790)), (0.008, 0.004, 0.130), rot=(0, sx * 0.22, 0), bevel=0, mat=5)
-    return _finish({"Head": bm, "Glow_Head": g}, k=1.16)
+    return _finish({"Head": bm, "Glow_Head": g}, k=1.42)
 
 
 def head_fullvisor():
@@ -646,7 +646,7 @@ def head_fullvisor():
         cyl(bm, V((sx * 0.138, 0.0, 1.738)), V((sx * 0.146, 0.0, 1.738)), 0.024, segs=8, mat=2)
     g = new_bm()
     rbox(g, V((0, 0.132, 1.868)), (0.026, 0.003, 0.012), bevel=0, mat=5)
-    return _finish({"Head": bm, "Glow_Head": g}, k=1.18)
+    return _finish({"Head": bm, "Glow_Head": g}, k=1.44)
 
 
 def head_dome():
@@ -667,7 +667,7 @@ def head_dome():
     cyl(bm, V((-0.116, 0.014, 1.690)), V((-0.074, 0.114, 1.644)), 0.0045, segs=5, mat=5)
     g = new_bm()
     rbox(g, V((0, 0.142, 1.700)), (0.050, 0.004, 0.010), bevel=0, mat=5)
-    return _finish({"Head": bm, "Glow_Head": g}, k=1.16)
+    return _finish({"Head": bm, "Glow_Head": g}, k=1.42)
 
 
 def part_head():

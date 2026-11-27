@@ -1,4 +1,4 @@
--- Run in Studio EDIT datamodel (execute_luau) with a Studio claim held. Idempotent (replaces Hero_Asc_Rifleman). NOT YET RUN.
+-- Run in Studio EDIT datamodel (execute_luau) with a Studio claim held. Idempotent (replaces Hero_Asc_Rifleman).
 -- Generated: tools/art/hero/make_install.sh = this template + rifleman_data.luau + asset id.
 -- Builds ServerStorage.GF.Art.Hero_Asc_Rifleman from the uploaded GLB (rigid MeshParts, bind pose from Blender).
 -- Rig contract = RigBuilder.luau (AscendancyTrooper) so EnemyAnimClient v2 can drive it unchanged:
@@ -105,13 +105,10 @@ joint("RootJoint", "HumanoidRootPart", "LowerTorso", P("LowerTorso"))
 joint("Waist", "LowerTorso", "UpperTorso", P("UpperTorso"))
 joint("Neck", "UpperTorso", "Head", P("Head"))
 for _, s in { "L", "R" } do
-	-- ARM JOINTS ARE DELIBERATELY NOT NAMED Shoulder/Elbow/Wrist: EnemyAnimClient indexes Motor6Ds by those names and applies
-	-- ABSOLUTE hold rotations (ShoulderR pitch -0.85 etc.) which, with forward = -Z, swing ANY arm backward (verified on the stock
-	-- AscendancyTrooper too: forearm z +0.73). The hero's arms are authored rifle-ready, so they stay in the bind pose.
-	-- Rename to Shoulder/Elbow/Wrist only once the client has a rifle-ready profile (needs alpha/beta ack).
-	joint("HoldShoulder" .. s, "UpperTorso", "UpperArm" .. s, P("UpperArm" .. s))
-	joint("HoldElbow" .. s, "UpperArm" .. s, "LowerArm" .. s, P("LowerArm" .. s))
-	joint("HoldWrist" .. s, "LowerArm" .. s, "Hand" .. s, P("Hand" .. s))
+	-- Arms use the real rig names; EnemyAnimClient's hero branch (heroPose) drives them with a rifle-ready stance profile.
+	joint("Shoulder" .. s, "UpperTorso", "UpperArm" .. s, P("UpperArm" .. s))
+	joint("Elbow" .. s, "UpperArm" .. s, "LowerArm" .. s, P("LowerArm" .. s))
+	joint("Wrist" .. s, "LowerArm" .. s, "Hand" .. s, P("Hand" .. s))
 	joint("Hip" .. s, "LowerTorso", "UpperLeg" .. s, P("UpperLeg" .. s))
 	joint("Knee" .. s, "UpperLeg" .. s, "LowerLeg" .. s, P("LowerLeg" .. s))
 	joint("Ankle" .. s, "LowerLeg" .. s, "Foot" .. s, P("Foot" .. s))
@@ -135,7 +132,7 @@ hum.RigType = Enum.HumanoidRigType.R15
 hum.Parent = rig
 rig.PrimaryPart = hrp
 rig:SetAttribute("GF_AssetId", ASSET_ID)
-rig:SetAttribute("GF_ArtSource", "Blender hero_wip asc_rifleman_v10 (thicker arms, no pauldrons) + baked PBR atlas (BC/N/RM)")
+rig:SetAttribute("GF_ArtSource", "__ART_SOURCE__")
 rig:SetAttribute("GF_HeroBaked", true) -- TroopVisuals.restyle skips baked hero rigs; EnemyService scales them with ScaleTo
 rig.Parent = art
 loaded:Destroy()

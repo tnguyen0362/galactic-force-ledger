@@ -112,6 +112,8 @@ def build_mat(key, sp, img):
     if sp["panel"] > 0:
         panel = MATH("MAXIMUM", GRID(xyz.outputs["Z"], 0.09, 0.0045), GRID(xyz.outputs["X"], 0.055, 0.0045))
         panel = MATH("MULTIPLY", panel, sp["panel"])
+        # no object-space grid on the helmet (z > ~1.46 m): it reads as a cage pattern on a curved shell
+        panel = MATH("MULTIPLY", panel, MAPR(xyz.outputs["Z"], 1.46, 1.50, 1.0, 0.0))
     else:
         panel = 0.0
 
