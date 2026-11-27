@@ -721,6 +721,42 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 			spawnTarget = Vector3.new(opLZ.X, opLZ.Y, opLZ.Z)
 		end
 	end
+	-- place-split activation (guarded — GF_PlaceSplitLive default off): when live AND a mission
+	-- place exists, deployment teleports the player into a mission server carrying the intent
+	-- contract, instead of repositioning inside this shared place. Everything below is the
+	-- legacy in-place path and stays authoritative until the flag flips.
+	if workspace:GetAttribute("GF_PlaceSplitLive") == true then
+		local missionPlaceId = workspace:GetAttribute("GF_MissionPlaceId")
+		if type(missionPlaceId) == "number" and missionPlaceId > 0 and missionPlaceId ~= game.PlaceId then
+			local intentSeed = (os.time() * 997 + math.random(1, 99999)) % 900000 + 1
+			local payload
+			pcall(function()
+				local DeployContract = require(game:GetService("ReplicatedStorage").GF.Shared.DeployContract)
+				payload = DeployContract.encode({
+					v = 1,
+					seed = intentSeed,
+					difficulty = tostring(missionDifficulty or difficulty or "Normal"),
+					template = template or "SABOTAGE_RELAY",
+					squadUserIds = {},
+					lobbyPlaceId = game.PlaceId,
+				})
+			end)
+			if payload then
+				local tpOk, tpErr = pcall(function()
+					local opts = Instance.new("TeleportOptions")
+					opts.ReservedServerAccessCode = nil
+					pcall(function() (opts :: any).TeleportData = payload end)
+					game:GetService("TeleportService"):TeleportAsync(missionPlaceId, { player }, opts)
+				end)
+				if tpOk then
+					print(string.format("[GF] place-split deploy: %s -> mission place %d", player.Name, missionPlaceId))
+					return true, nil
+				else
+					warn("[GF] place-split deploy teleport failed, falling back in-place:", tpErr)
+				end
+			end
+		end
+	end
 	local spawnPoint = groundPoint(spawnTarget)
 	workspace:SetAttribute("GF_LZ", spawnPoint)
 	workspace:SetAttribute("GF_InMission", true)

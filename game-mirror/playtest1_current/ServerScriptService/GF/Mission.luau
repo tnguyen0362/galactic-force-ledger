@@ -133,6 +133,38 @@ do
 	end
 end
 print("[GF] terrain columns: " .. columns)
+
+-- place-split: when THIS place is the mission place (lobby id set and differs), players arrive
+-- by teleport while generation may still be finishing. Position them at the LZ once the world
+-- is ready; the lobby's spawn brick doesn't exist here so the default spawn is their holding pen.
+do
+	local lobbyId = workspace:GetAttribute("GF_LobbyPlaceId")
+	if type(lobbyId) == "number" and lobbyId ~= game.PlaceId then
+		workspace:SetAttribute("GF_AmMissionPlace", true)
+		game:GetService("Players").PlayerAdded:Connect(function(plr)
+			task.spawn(function()
+				local tWait = os.clock()
+				while workspace:GetAttribute("GF_TerrainReady") ~= true and os.clock() - tWait < 40 do
+					task.wait(0.5)
+				end
+				local char = plr.Character or plr.CharacterAdded:Wait()
+				task.wait(1)
+				local lz = workspace:GetAttribute("GF_LZ")
+				local target = typeof(lz) == "Vector3" and lz or Vector3.new(0, 40, 118)
+				local hit = workspace:Raycast(target + Vector3.new(0, 200, 0), Vector3.new(0, -600, 0))
+				if hit then
+					target = hit.Position + Vector3.new(0, 4, 0)
+				end
+				local root = char and char:FindFirstChild("HumanoidRootPart")
+				if root then
+					root.CFrame = CFrame.new(target)
+					print("[GF] mission-place arrival positioned: " .. plr.Name)
+				end
+			end)
+		end)
+		print("[GF] mission-place boot mode active")
+	end
+end
 -- S07-009: nonhostile alien wildlife at the mission site — 3 ambient creatures that flee gunfire.
 local WildlifeService = require(Services.WildlifeService)
 WildlifeService.clear()
