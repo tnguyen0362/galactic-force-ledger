@@ -276,17 +276,20 @@ creditsLabel.Text = string.format("%d CR   ·   RANK %d   ·   %s", state.credit
 	-- Augment shop: the catalogue with prices, so credits have somewhere to go and an augment can be acquired
 	-- without the Studio hook.
 	-- Abilities and grenades: both existed in config but had no armory surface.
-	for slot = 1, 2 do
+	-- one support ability slot (Counteroffensive contract revision): a single row now. the
+	-- equip wire still passes slot=1 for server-side legacy call-shape compatibility; the
+	-- server ignores the index — there is exactly one slot. Stage 8 rebuilds this surface
+	-- properly; this is the minimal viable migration.
+	do
 		order += 1
 		local abilityRow = newFrame(list, { size = UDim2.fromOffset(516, 40), radius = 3, color = Color3.fromRGB(18, 24, 31) })
-		abilityRow.Name = "Ability" .. slot
-		abilityRow.LayoutOrder = 4 + slot
-		local current = (slot == 1 and (state.loadout and state.loadout.ability1) or (state.loadout and state.loadout.ability2)) or "?"
-		newLabel(abilityRow, string.format("ABILITY %d  ·  %s", slot, current), UDim2.fromOffset(330, 18), UDim2.fromOffset(12, 10), WHITE, 14)
-		local other = (slot == 1 and (state.loadout and state.loadout.ability2) or (state.loadout and state.loadout.ability1)) or "?"
+		abilityRow.Name = "SupportAbility"
+		abilityRow.LayoutOrder = 5
+		local current = (state.loadout and state.loadout.ability) or "?"
+		newLabel(abilityRow, string.format("SUPPORT ABILITY  ·  %s", current), UDim2.fromOffset(330, 18), UDim2.fromOffset(12, 10), WHITE, 14)
 		local nextOwned, nextBuyable = nil, nil
 		for _, ability in ipairs(state.abilities or {}) do
-			if ability.id ~= current and ability.id ~= other then
+			if ability.id ~= current then
 				if ability.owned and not nextOwned then
 					nextOwned = ability
 				elseif not ability.owned and not nextBuyable and (tonumber(ability.rank) or 1) <= (state.rank or 1) then
@@ -296,7 +299,7 @@ creditsLabel.Text = string.format("%d CR   ·   RANK %d   ·   %s", state.credit
 		end
 		if nextOwned then
 			local use = rowButton(abilityRow, "USE " .. nextOwned.id, CYAN, order, function()
-				setLoadout:FireServer({ action = "equipAbility", slot = slot, id = nextOwned.id })
+				setLoadout:FireServer({ action = "equipAbility", slot = 1, id = nextOwned.id })
 			end, 300)
 			use.Name = "UseAbility"
 		elseif nextBuyable then

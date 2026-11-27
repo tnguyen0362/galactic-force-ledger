@@ -89,7 +89,7 @@ local function buildTouchButton(action: string, text: string, size: UDim2, posit
 	b.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.Touch then
 			Input.setDevice("touch")
-			if action == "Ability1" or action == "Ability2" then
+			if action == "SupportAbility" then
 				HUD.castAbility(action)
 			elseif action == "Reload" then
 				Input.setHeld("Reload", true, input)
@@ -99,7 +99,7 @@ local function buildTouchButton(action: string, text: string, size: UDim2, posit
 		end
 	end)
 	b.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.Touch and action ~= "Ability1" and action ~= "Ability2" then
+		if input.UserInputType == Enum.UserInputType.Touch and action ~= "SupportAbility" then
 			Input.setHeld(action, false, input)
 		end
 	end)
@@ -306,8 +306,9 @@ function HUD.init()
 		})
 		abilityFills[id] = fill
 	end
-	abilitySlot("Airstrike", "AIRSTRIKE [" .. Input.glyph("Ability1") .. "]", 0)
-	abilitySlot("DomeShield", "DOME [" .. Input.glyph("Ability2") .. "]", 138)
+	-- one support ability slot (Counteroffensive contract revision). the slot label shows the
+	-- equipped ability id once published; AIRSTRIKE is the pre-publish default
+	abilitySlot("Airstrike", "SUPPORT [" .. Input.glyph("SupportAbility") .. "]", 0)
 
 	dodgeLabel = newLabel(gui, "DODGE 2/2", UDim2.fromOffset(160, 18), UDim2.new(0.5, -80, 1, -34), 13)
 	dodgeLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -347,8 +348,8 @@ function HUD.init()
 	-- Reload overlapped Aim by 10x12 px at every resolution: the offsets are absolute pixels, so this collision
 	-- was not a small-screen problem, it was always there.
 	buildTouchButton("Reload", "RELOAD", UDim2.fromOffset(84, 56), UDim2.new(1, -320, 1, -134))
-	buildTouchButton("Ability1", "AIR", UDim2.fromOffset(64, 64), UDim2.new(1, -330, 1, -320))
-	buildTouchButton("Ability2", "DOME", UDim2.fromOffset(64, 64), UDim2.new(1, -258, 1, -352))
+	-- one support ability touch button (Counteroffensive contract revision)
+	buildTouchButton("SupportAbility", "SUPPORT", UDim2.fromOffset(72, 64), UDim2.new(1, -330, 1, -320))
 
 	-- remote wiring
 	remotes.VitalsUpdated.OnClientEvent:Connect(function(v)
@@ -510,13 +511,14 @@ function HUD.setDevice(kind: any)
 	-- here reset every cooldown readout to READY on any input-family change.
 	for id, title in pairs(abilityTitles) do
 		if title then
-			title.Text = string.format("%s [%s]", id == "Airstrike" and "AIRSTRIKE" or "DOME", Input.glyph(id == "Airstrike" and "Ability1" or "Ability2"))
+			-- one support slot: every ability title carries the same binding glyph
+			title.Text = string.format("%s [%s]", string.upper(tostring(id)), Input.glyph("SupportAbility"))
 		end
 	end
 	if promptLabel then
-		promptLabel.Text = isTouch and "" or string.format("Fire [%s]  Aim [%s]  Dodge [%s]  Reload [%s]  Abilities [%s]/[%s]",
+		promptLabel.Text = isTouch and "" or string.format("Fire [%s]  Aim [%s]  Dodge [%s]  Reload [%s]  Ability [%s]",
 			Input.glyph("Fire"), Input.glyph("Aim"), Input.glyph("Dodge"), Input.glyph("Reload"),
-			Input.glyph("Ability1"), Input.glyph("Ability2"))
+			Input.glyph("SupportAbility"))
 	end
 end
 
@@ -612,8 +614,9 @@ function HUD.showKill()
 end
 
 function HUD.castAbility(action: string)
-	local fallback = action == "Ability1" and "Airstrike" or "DomeShield"
-	local slotAttr = action == "Ability1" and "GF_Ability1" or "GF_Ability2"
+	-- one support ability slot (Counteroffensive contract revision)
+	local fallback = "Airstrike"
+	local slotAttr = "GF_Ability"
 	local published = player:GetAttribute(slotAttr)
 	if type(published) ~= "string" then
 		published = workspace:GetAttribute(slotAttr)

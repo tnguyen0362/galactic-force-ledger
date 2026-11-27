@@ -826,12 +826,13 @@ local function cast(player: Player, payload: any)
 	end
 	-- C1: cast authorization. The remote used to accept any ability id from any client, so an
 	-- exploiter could cast rank-locked or unowned support on demand. The loadout is the only
-	-- legitimate source: the ability must be owned AND occupy one of the player's two slots.
+	-- legitimate source: the ability must be owned AND occupy the player's support slot
+	-- (one slot since the Counteroffensive contract revision).
 	do
 		local armory = script.Parent:FindFirstChild("ArmoryService")
 		local sel = armory and require(armory).selection(player)
 		local equipped = type(sel) == "table"
-			and (sel.ability1 == abilityId or sel.ability2 == abilityId)
+			and sel.ability == abilityId
 		if not equipped then
 			reject("not equipped")
 			return

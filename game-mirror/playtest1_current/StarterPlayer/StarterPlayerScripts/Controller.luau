@@ -32,16 +32,18 @@ end
 -- ability slots are per-player attributes (workspace globals were shared across the whole
 -- session — one player's armory visit overwrote everyone's bindings). Workspace fallback covers
 -- the transition window before ArmoryService writes the player attributes.
-local function abilitySlot(index: number): string
-	local perPlayer = player:GetAttribute("GF_Ability" .. index)
+local function abilitySlot(_index: number?): string
+	-- one support ability slot (Counteroffensive contract revision); the index parameter is
+	-- legacy call-shape, ignored — a single ability is equipped
+	local perPlayer = player:GetAttribute("GF_Ability")
 	if type(perPlayer) == "string" then
 		return perPlayer
 	end
-	local shared = workspace:GetAttribute("GF_Ability" .. index)
+	local shared = workspace:GetAttribute("GF_Ability")
 	if type(shared) == "string" then
 		return shared
 	end
-	return index == 1 and "Airstrike" or "DomeShield"
+	return "Airstrike" -- single-slot default
 end
 
 -- the throw target depends on the ability's configured targeting, not on which slot it sits in:
@@ -58,13 +60,8 @@ local function abilityTarget(abilityId: string): Vector3
 	return aimPoint(220)
 end
 
-Input.onPress("Ability1", function()
-	local id = abilitySlot(1)
-	remotes.UseAbility:FireServer({ abilityId = id, position = abilityTarget(id) })
-	if player.Character then player.Character:SetAttribute("GF_AbilityCastAt", os.clock()) player.Character:SetAttribute("GF_AbilityId", id) end
-end)
-Input.onPress("Ability2", function()
-	local id = abilitySlot(2)
+Input.onPress("SupportAbility", function()
+	local id = abilitySlot()
 	remotes.UseAbility:FireServer({ abilityId = id, position = abilityTarget(id) })
 	if player.Character then player.Character:SetAttribute("GF_AbilityCastAt", os.clock()) player.Character:SetAttribute("GF_AbilityId", id) end
 end)

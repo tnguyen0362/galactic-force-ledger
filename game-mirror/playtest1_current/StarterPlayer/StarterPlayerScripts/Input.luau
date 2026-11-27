@@ -17,8 +17,9 @@ local BINDINGS = {
 	Interact = { kbm = Enum.KeyCode.E, gamepad = Enum.KeyCode.ButtonX, label = { kbm = "E", gamepad = "X" } },
 	SwapWeapon = { kbm = Enum.KeyCode.One, gamepad = Enum.KeyCode.ButtonY, label = { kbm = "1", gamepad = "Y" } },
 	Grenade = { kbm = Enum.KeyCode.G, gamepad = Enum.KeyCode.DPadDown, label = { kbm = "G", gamepad = "Dpad v" } },
-	Ability1 = { kbm = Enum.KeyCode.Q, gamepad = Enum.KeyCode.ButtonL1, label = { kbm = "Q", gamepad = "LB" } },
-	Ability2 = { kbm = Enum.KeyCode.F, gamepad = Enum.KeyCode.ButtonR1, label = { kbm = "F", gamepad = "RB" } },
+	-- one support ability (Counteroffensive contract revision). the freed F/R1 binding is
+	-- RESERVED for Emergency Dispatch quick-response (Stage 6) — do not reassign casually
+	SupportAbility = { kbm = Enum.KeyCode.Q, gamepad = Enum.KeyCode.ButtonL1, label = { kbm = "Q", gamepad = "LB" } },
 	TacticalMap = { kbm = Enum.KeyCode.M, gamepad = Enum.KeyCode.DPadUp, label = { kbm = "M", gamepad = "Dpad ^" } },
 	Ping = { kbm = Enum.UserInputType.MouseButton3, gamepad = Enum.KeyCode.DPadRight, label = { kbm = "MMB", gamepad = "Dpad >" } },
 	ShoulderSwap = { kbm = Enum.KeyCode.V, gamepad = Enum.KeyCode.ButtonR3, label = { kbm = "V", gamepad = "RS" } },
