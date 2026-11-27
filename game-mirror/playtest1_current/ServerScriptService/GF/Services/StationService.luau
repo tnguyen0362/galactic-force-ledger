@@ -771,24 +771,6 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 				-- below run regardless — if the teleport lands the squad is gone and the in-place
 				-- state is irrelevant; if it silently dies they are deployed, not stranded in the
 				-- lobby (verified broken in published game 2026-11-28: return-early stranded players).
-				pcall(function()
-					game:GetService("TeleportService").TeleportInitFailed:Connect(function(plr, result, msg)
-						for _, tp in ipairs(travelling) do
-							if plr == tp then
-								warn(string.format("[GF] place-split teleport FAILED for %s result=%s msg=%s", plr.Name, tostring(result), tostring(msg)))
-								-- surface the exact reason on the deploy console button itself — the
-								-- client already paints DeployStateChanged refusals as REFUSED + reason
-								pcall(function()
-									local rs = game:GetService("ReplicatedStorage")
-									local dsr = rs.GF.Remotes:FindFirstChild("DeployStateChanged")
-									if dsr and plr.Parent then
-										dsr:FireClient(plr, { ok = false, reason = "teleport " .. tostring(result) .. ": " .. tostring(msg) })
-									end
-								end)
-							end
-						end
-					end)
-				end)
 				-- TeleportAsync YIELDS for seconds inside the deploy handler — the client's deploy
 				-- watchdog fires "no response" at 8s while the server is still parked in the call.
 				-- Fire it in its own thread: deploy continues into the in-place path immediately
@@ -977,6 +959,21 @@ function StationService.start()
 		spawnBrick.Transparency = 1
 		spawnBrick.CFrame = CFrame.new(STATION_SPAWN - Vector3.new(0, 6, 0))
 	end
+
+	-- teleport failure reporting, connected ONCE per server (claude handoff note: wiring this
+	-- inside deploy leaked one listener per deploy). any failure surfaces in server logs AND on
+	-- the deploying player's console button via the standard refusal channel.
+	pcall(function()
+		game:GetService("TeleportService").TeleportInitFailed:Connect(function(plr, result, msg)
+			warn(string.format("[GF] teleport FAILED for %s result=%s msg=%s", plr.Name, tostring(result), tostring(msg)))
+			pcall(function()
+				local dsr = ReplicatedStorage.GF.Remotes:FindFirstChild("DeployStateChanged")
+				if dsr and plr.Parent then
+					dsr:FireClient(plr, { ok = false, reason = "teleport " .. tostring(result) .. ": " .. tostring(msg) })
+				end
+			end)
+		end)
+	end)
 
 	local deploy = ensureRemote("RequestDeploy", "RemoteEvent")
 	if deploy then
