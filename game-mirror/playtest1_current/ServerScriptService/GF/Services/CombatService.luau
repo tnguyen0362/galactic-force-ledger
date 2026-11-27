@@ -605,6 +605,9 @@ function CombatService.fire(player: Player, payload: any)
 		note("LastReject", "aboard dropship")
 		return
 	end
+	if player:GetAttribute("GF_MissionParticipant") ~= true then
+		return reject("not-mission-participant")
+	end
 	counters.received += 1
 	note("Received", counters.received)
 	if type(payload) ~= "table" then

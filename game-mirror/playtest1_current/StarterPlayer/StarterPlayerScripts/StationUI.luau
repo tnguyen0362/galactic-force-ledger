@@ -200,6 +200,12 @@ local table_ = panel(stationGui, UDim2.fromOffset(420, 672), UDim2.new(1, -24, 1
 table_.AnchorPoint = Vector2.new(1, 1)
 table_.Visible = false
 
+local interactPrompt = panel(stationGui, UDim2.fromOffset(300, 42), UDim2.new(0.5, 0, 0.78, 0))
+interactPrompt.Name = "TerminalInteractPrompt"
+interactPrompt.Visible = false
+local interactPromptText = label(interactPrompt, "", UDim2.new(1, -20, 1, 0), UDim2.fromOffset(10, 0), TEXT, 14, true)
+interactPromptText.TextXAlignment = Enum.TextXAlignment.Center
+
 local headerRail = Instance.new("Frame")
 headerRail.Name = "HeaderRail"
 headerRail.Size = UDim2.fromOffset(3, 58)
@@ -910,6 +916,7 @@ end)
 
 local nearTerminalNow: any = false
 local terminalOpenedMenu = false
+local Input = require(script.Parent:WaitForChild("Input"))
 task.spawn(function()
 	while true do
 		task.wait(0.2)
@@ -955,6 +962,11 @@ task.spawn(function()
 			if near and type(nearTerminalRegions) == "string" then
 				MenuController.setRegionFilter(nearTerminalRegions)
 			end
+			if near then
+				local arc = anchor and anchor:GetAttribute("TerminalArc")
+				interactPromptText.Text = Input.glyph("Interact") .. "  OPEN " .. tostring(arc or "DEPLOYMENT") .. " TERMINAL"
+			end
+			interactPrompt.Visible = near == true and not MenuController.isOpen()
 			-- no auto-open: hd2 war-table behavior — the player presses the interact key at
 			-- the terminal. a menu that opens itself whenever the player walks past is the
 			-- exact pop-up harassment the owner is rejecting. interact key only.

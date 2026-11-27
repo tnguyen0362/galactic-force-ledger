@@ -92,6 +92,9 @@ function Weapon.getAimDir(): Vector3
 end
 
 local function tryFire()
+	if player:GetAttribute("GF_MissionParticipant") ~= true then
+		return
+	end
 	if state.reloading then
 		return
 	end
