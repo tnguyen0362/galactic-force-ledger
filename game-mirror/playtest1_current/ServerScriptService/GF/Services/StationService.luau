@@ -728,6 +728,22 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 	if workspace:GetAttribute("GF_PlaceSplitLive") == true then
 		local missionPlaceId = workspace:GetAttribute("GF_MissionPlaceId")
 		if type(missionPlaceId) == "number" and missionPlaceId > 0 and missionPlaceId ~= game.PlaceId then
+			-- squad-coherent deploy: every member crosses with ONE shared intent contract —
+			-- same seed (same generated world), same template/difficulty, full squad roster so
+			-- the mission server can reconstruct membership. teleporting the whole squad in a
+			-- single TeleportAsync keeps them in the same server instance.
+			local squad = require(script.Parent.SquadService).memberList()
+			local travelling = {}
+			local userIds = {}
+			for _, member in ipairs(squad) do
+				table.insert(travelling, member)
+				table.insert(userIds, member.UserId)
+			end
+			-- the deployer is always in the manifest even if squad membership lagged
+			if not table.find(userIds, player.UserId) then
+				table.insert(travelling, player)
+				table.insert(userIds, player.UserId)
+			end
 			local intentSeed = (os.time() * 997 + math.random(1, 99999)) % 900000 + 1
 			local payload
 			pcall(function()
@@ -737,19 +753,23 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 					seed = intentSeed,
 					difficulty = tostring(missionDifficulty or difficulty or "Normal"),
 					template = template or "SABOTAGE_RELAY",
-					squadUserIds = {},
+					squadUserIds = userIds,
 					lobbyPlaceId = game.PlaceId,
-				})
+					-- additive contract fields (schema v1 tolerates extras): war contribution
+					-- crediting needs the exact operation/region the squad committed to
+					operationId = workspace:GetAttribute("GF_OperationId"),
+					regionId = workspace:GetAttribute("GF_RegionId"),
+				} :: any)
 			end)
 			if payload then
 				local tpOk, tpErr = pcall(function()
 					local opts = Instance.new("TeleportOptions")
 					opts.ReservedServerAccessCode = nil
 					pcall(function() (opts :: any).TeleportData = payload end)
-					game:GetService("TeleportService"):TeleportAsync(missionPlaceId, { player }, opts)
+					game:GetService("TeleportService"):TeleportAsync(missionPlaceId, travelling, opts)
 				end)
 				if tpOk then
-					print(string.format("[GF] place-split deploy: %s -> mission place %d", player.Name, missionPlaceId))
+					print(string.format("[GF] place-split deploy: squad of %d -> mission place %d", #travelling, missionPlaceId))
 					return true, nil
 				else
 					warn("[GF] place-split deploy teleport failed, falling back in-place:", tpErr)
@@ -839,6 +859,16 @@ function StationService.returnToStation(player: Player)
 end
 
 function StationService.start()
+	-- place-split: this service IS the station. In the mission place there is no station —
+	-- building a spawn brick at station altitude strands arrivals in empty sky (verified: first
+	-- mission-place boot put the player at 0,766,22). Nothing here may run.
+	do
+		local lobbyId = workspace:GetAttribute("GF_LobbyPlaceId")
+		if type(lobbyId) == "number" and lobbyId ~= game.PlaceId then
+			print("[GF] StationService inert — mission place")
+			return
+		end
+	end
 	task.spawn(function()
 		while true do
 			task.wait(1)
@@ -1030,17 +1060,20 @@ function StationService.start()
 				return { ok = false, reason = "bad beacon" }
 			end
 			local ds = require(script.Parent.DispatchService)
-			local claimed, hostJobId = ds.claimSeat(player, beaconKey)
+			local claimed, hostJobId, hostPlaceId = ds.claimSeat(player, beaconKey)
 			if not claimed then
 				return { ok = false, reason = "beacon full or expired" }
 			end
-			if hostJobId == game.JobId then
-				-- same server: the arrival scanner picks the claim up within seconds and runs
-				-- the standard insertion — uniform handling, no special case needed here
+			if hostJobId == game.JobId and (hostPlaceId == nil or hostPlaceId == game.PlaceId) then
+				-- same server AND same place: the arrival scanner picks the claim up within
+				-- seconds — uniform handling, no special case needed here
 				return { ok = true, local_ = true }
 			end
+			-- place-split: the beacon's host place is authoritative (missions live in their own
+			-- place now); fall back to this place only for pre-split records without the field
+			local targetPlace = hostPlaceId or game.PlaceId
 			local okTp, err = pcall(function()
-				game:GetService("TeleportService"):TeleportToJobId(game.PlaceId, hostJobId, player)
+				game:GetService("TeleportService"):TeleportToJobId(targetPlace, hostJobId, player)
 			end)
 			if not okTp then
 				warn("[GF] dispatch response teleport failed: " .. tostring(err))
