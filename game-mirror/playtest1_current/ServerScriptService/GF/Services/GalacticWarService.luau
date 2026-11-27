@@ -183,6 +183,32 @@ function GalacticWarService.commitPrimary(template: string?)
 		end
 	end)
 	GalacticWarService.awardCampaignPoints(missionId, difficulty, family, 1)
+	-- Theater of War contribution feed: exactly-once at primary completion, isolated so a
+	-- war-layer failure can never break mission completion. region resolution uses the
+	-- template's primary binding until the deploy flow is region-aware (WarOperations doc).
+	task.defer(function()
+		local ok, err = pcall(function()
+			local WarOperations = require(ReplicatedStorage.GF.Shared.Configs.WarOperations)
+			local WarModel = require(ReplicatedStorage.GF.Shared.WarModel)
+			local opId = WarOperations.operationFor(template)
+			if not opId then
+				return -- tutorial or unmapped: no war contribution
+			end
+			local opdef = WarModel.OPERATIONS[opId]
+			if not opdef then
+				return
+			end
+			if missionId == "" then
+				return -- no stable id: cannot dedup, skip rather than risk double-count
+			end
+			-- squad multiplier sqrt(P): participant counting is not yet tracked through
+			-- deploy (Stage 1/3 refinement) — 1.0 floor until the ledger lands
+			require(script.Parent.WarStateService).recordOperation(opdef.region, opId, difficulty, missionId, 1.0)
+		end)
+		if not ok then
+			warn("[GF] war contribution feed failed: " .. tostring(err))
+		end
+	end)
 	return true
 end
 function GalacticWarService.snapshot()
