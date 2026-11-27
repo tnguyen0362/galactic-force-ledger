@@ -424,10 +424,10 @@ local function canSeeConsole(from: Vector3, console: Vector3): boolean
 	return hit == nil
 end
 
-function EncounterDirector.spawnPosts(center: Vector3, count: number)
+function EncounterDirector.spawnPosts(center: Vector3, count: number): number
 	if not missionGrounded(center) then
 		return 0
-	end: number
+	end
 	local console = center + Vector3.new(0, 4, 0)
 	local placed = 0
 	local tried = 0
