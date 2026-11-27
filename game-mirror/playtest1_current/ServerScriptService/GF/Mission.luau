@@ -112,8 +112,8 @@ TerrainService.registerFlat(Vector3.new(38, 0, 26), 34)
 -- 1234 every deploy. Seeds are published so clients/probes can verify rotation across missions.
 -- Phase 15: biome is chosen BEFORE terrain/vegetation build so ecology and palette can follow it.
 local biomes = { "Forest", "Arid", "Tundra", "Industrial", "Jungle" } -- Phase 15 + Jungle (owner directive 2026-11-28)
-local biomeIdx = ((workspace:GetAttribute("GF_MissionCount") or 0)) % #biomes + 1
-local biome = biomes[biomeIdx]
+-- owner directive 2026-11-28: everything is jungle — rotation suspended, biome pinned
+local biome = "Jungle"
 workspace:SetAttribute("GF_Biome", biome)
 local missionSeed = (os.time() * 997 + math.floor(os.clock() * 1000) + math.random(1, 99999)) % 900000 + 1
 workspace:SetAttribute("GF_MapSeed", missionSeed)
