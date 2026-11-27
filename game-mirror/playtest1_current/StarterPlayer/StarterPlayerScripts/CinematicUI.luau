@@ -338,7 +338,6 @@ task.defer(function()
 		play()
 	elseif not player:GetAttribute("IntroSeen") then
 		play()
-		persistIntroSeen()
 	end
 end)
 
