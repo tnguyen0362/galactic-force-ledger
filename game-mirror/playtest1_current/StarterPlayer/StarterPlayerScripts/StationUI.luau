@@ -150,52 +150,142 @@ local function row(order: number): Frame
 	return holder
 end
 
-local missionRow = row(1)
-local missionLayout = Instance.new("UIListLayout")
-missionLayout.FillDirection = Enum.FillDirection.Horizontal
-missionLayout.Padding = UDim.new(0, 8)
-missionLayout.Parent = missionRow
+-- Theater of War operation-centric deployment (Counteroffensive): the player picks a REGION,
+-- then one of the fixed geographical operations in it. operations — not templates — are the
+-- deployable unit; the server resolves the mission template from the operation and the
+-- contribution lands in the correct region. region buttons carry live war status colors so
+-- the theatre state is legible at the point of decision.
+local WarOperations = require(ReplicatedStorage.GF.Shared.Configs.WarOperations)
+local WarModel = require(ReplicatedStorage.GF.Shared.WarModel)
+local Campaign = require(ReplicatedStorage.GF.Shared.Configs.Campaign)
 
-local headLabel = label(body, "PRIMARY OPERATION", UDim2.new(1, -8, 0, 18), UDim2.fromOffset(0, 0), MUTED, 13)
-headLabel.LayoutOrder = 0
-local MISSIONS = {
-	{ id = "SABOTAGE_RELAY", short = "SABOTAGE", desc = "Move to the Ascendancy relay, disable it, then hold the landing zone for extraction." },
-	{ id = "RECOVER_TECH", short = "RECOVER", desc = "Reach the downed scientific transport and extract the flight recorder from its black box." },
-	{ id = "DEFEND_BEACON", short = "DEFEND", desc = "Activate the human comm beacon, then hold the position under Ascendancy attack." },
-	{ id = "ELIM_COMMANDER", short = "COMMAND", desc = "Locate the Ascendancy commander and eliminate him and his guards." },
-	{ id = "ELIM_WALKER", short = "WALKER", desc = "Destroy the Bastion Walker siege mech, then secure the battlefield." },
-	{ id = "ELIM_TALON", short = "TALON", desc = "Defeat the three elite Talon operatives in one linked encounter." },
-	{ id = "CONQUEST_DOMINION", short = "DOMINION", desc = "Clear the base, seize the console, then hold it for 45 seconds." },
-	{ id = "CONQUEST_FOUNDRY", short = "FOUNDRY", desc = "Cut turret power, capture the control point, then hold it for 60 seconds." },
-	{ id = "CONQUEST_THRONEFALL", short = "THRONEFALL", desc = "Breach the stronghold, defeat High Marshal Veyr, capture the command node." },
-	{ id = "SABOTAGE_AEGIS", short = "AEGIS", desc = "Disable both shield generators, then destroy the exposed emitter." },
-	{ id = "RECOVERY_CONVOY", short = "CONVOY", desc = "Recover both convoy crates, then defeat the pursuit squad." },
-	{ id = "DEFENSE_UPLINK", short = "UPLINK", desc = "Activate the comms dish, defend the uplink for 75 seconds, then confirm." },
-	{ id = "DEFENSE_POWER", short = "POWER", desc = "Restore the generator, defend it for 90 seconds, then stabilise output." },
-	{ id = "SABOTAGE_ARSENAL", short = "ARSENAL", desc = "Charge both depot pads, clear the depot, and verify the stockpile is destroyed." },
-	{ id = "RECOVERY_ARCHIVE", short = "ARCHIVE", desc = "Reach the intel room, break the data console, and recover the archive." },
+local STATUS_COLORS = {
+	ascendancy_dominance = Color3.fromRGB(120, 44, 44),
+	contested_theater = Color3.fromRGB(140, 104, 40),
+	human_infiltration = Color3.fromRGB(70, 90, 110),
+	gf_offensive = Color3.fromRGB(36, 100, 128),
+	established_superiority = Color3.fromRGB(48, 120, 80),
 }
-local missionButtons = {}
-local selectedTemplate = "SABOTAGE_RELAY"
-local missionDesc = label(body, MISSIONS[1].desc, UDim2.new(1, -8, 0, 34), UDim2.fromOffset(0, 0), MUTED, 13)
-missionDesc.LayoutOrder = 2
-for i, m in ipairs(MISSIONS) do
-	local b = button(missionRow, m.short, UDim2.fromOffset(128, 30), UDim2.fromOffset(0, 0), CYAN)
-	b.TextSize = 13
-	missionButtons[m.id] = b
+local STATUS_LABEL = {
+	ascendancy_dominance = "ASCENDANCY",
+	contested_theater = "CONTESTED",
+	human_infiltration = "INFILTRATION",
+	gf_offensive = "GF OFFENSIVE",
+	established_superiority = "SUPERIORITY",
+}
+local function regionStatus(rid: string): string
+	local s = workspace:GetAttribute("GF_WarState_" .. rid .. "_Status")
+	return type(s) == "string" and s or "ascendancy_dominance"
+end
+
+local headLabel = label(body, "THEATER OF WAR — SELECT REGION", UDim2.new(1, -8, 0, 18), UDim2.fromOffset(0, 0), MUTED, 13)
+headLabel.LayoutOrder = 0
+
+local regionRow = row(1)
+local regionLayout = Instance.new("UIListLayout")
+regionLayout.FillDirection = Enum.FillDirection.Horizontal
+regionLayout.Padding = UDim.new(0, 6)
+regionLayout.Parent = regionRow
+
+local opRow = row(2)
+local opLayout = Instance.new("UIListLayout")
+opLayout.FillDirection = Enum.FillDirection.Horizontal
+opLayout.Padding = UDim.new(0, 8)
+opLayout.Parent = opRow
+
+local missionDesc = label(body, "", UDim2.new(1, -8, 0, 34), UDim2.fromOffset(0, 0), MUTED, 13)
+missionDesc.LayoutOrder = 3
+
+-- operations grouped by region, in the config's canonical order
+local opsByRegion: { [string]: { string } } = {}
+for _, territory in ipairs(Campaign.Territories) do
+	opsByRegion[territory.id] = {}
+end
+for opId, def in WarModel.OPERATIONS do
+	if opsByRegion[def.region] then
+		table.insert(opsByRegion[def.region], opId)
+	end
+end
+for _, list in opsByRegion do
+	table.sort(list)
+end
+
+local selectedRegion = "VerdantReach"
+local selectedOperation: string? = nil
+local regionButtons = {}
+local opButtons = {}
+
+local function refreshOpRow()
+	for _, b in opButtons do
+		b:Destroy()
+	end
+	opButtons = {}
+	for _, opId in opsByRegion[selectedRegion] do
+		local name = WarOperations.DisplayName[opId] or opId
+		local b = button(opRow, string.upper(name), UDim2.fromOffset(150, 30), UDim2.fromOffset(0, 0), CYAN)
+		b.TextSize = 12
+		table.insert(opButtons, b)
+		b.Activated:Connect(function()
+			selectedOperation = opId
+			local status = regionStatus(selectedRegion)
+			missionDesc.Text = string.format("%s — %s operation in %s  ·  theatre: %s",
+				name, string.lower(WarModel.OPERATIONS[opId].family), selectedRegion,
+				STATUS_LABEL[status] or status)
+			for _, other in opButtons do
+				other.BackgroundColor3 = Color3.fromRGB(38, 44, 54)
+			end
+			b.BackgroundColor3 = Color3.fromRGB(28, 92, 128)
+		end)
+	end
+	-- auto-select the first operation so deploy is never pressed with nothing chosen
+	if #opButtons > 0 then
+		local first = opsByRegion[selectedRegion][1]
+		selectedOperation = first
+		opButtons[1].BackgroundColor3 = Color3.fromRGB(28, 92, 128)
+		local status = regionStatus(selectedRegion)
+		local name = WarOperations.DisplayName[first] or first
+		missionDesc.Text = string.format("%s — %s operation in %s  ·  theatre: %s",
+			name, string.lower(WarModel.OPERATIONS[first].family), selectedRegion,
+			STATUS_LABEL[status] or status)
+	end
+end
+
+for _, territory in ipairs(Campaign.Territories) do
+	local rid = territory.id
+	local b = button(regionRow, string.upper(rid), UDim2.fromOffset(112, 30), UDim2.fromOffset(0, 0), CYAN)
+	b.TextSize = 11
+	regionButtons[rid] = b
 	b.Activated:Connect(function()
-		selectedTemplate = m.id
-		missionDesc.Text = m.desc
-		for id, other in missionButtons do
-			other.BackgroundColor3 = if id == selectedTemplate then Color3.fromRGB(28, 92, 128) else Color3.fromRGB(38, 44, 54)
-		end
+		selectedRegion = rid
+		refreshOpRow()
 	end)
 end
-missionButtons.SABOTAGE_RELAY.BackgroundColor3 = Color3.fromRGB(28, 92, 128)
+-- live theatre status tinting, refreshed on a slow cadence — the war must be visible at the
+-- point of decision, not only in a separate interface
+local function tintRegions()
+	for rid, b in regionButtons do
+		local status = regionStatus(rid)
+		b.BackgroundColor3 = STATUS_COLORS[status] or Color3.fromRGB(38, 44, 54)
+		if rid == selectedRegion then
+			b.BorderSizePixel = 2
+			b.BorderColor3 = Color3.fromRGB(240, 240, 240)
+		else
+			b.BorderSizePixel = 0
+		end
+	end
+end
+task.spawn(function()
+	while body.Parent do
+		pcall(tintRegions)
+		task.wait(3)
+	end
+end)
+tintRegions()
+refreshOpRow()
 
 local diffLabel = label(body, "DIFFICULTY", UDim2.new(0, 200, 0, 18), UDim2.fromOffset(0, 0), MUTED, 13)
-diffLabel.LayoutOrder = 3
-local diffRow = row(4)
+diffLabel.LayoutOrder = 4
+local diffRow = row(5)
 local diffLayout = Instance.new("UIListLayout")
 diffLayout.FillDirection = Enum.FillDirection.Horizontal
 diffLayout.Padding = UDim.new(0, 8)
@@ -214,13 +304,13 @@ end
 difficultyButtons.Normal.BackgroundColor3 = Color3.fromRGB(28, 92, 128)
 
 local deploy = button(body, "DEPLOY TO VEYRA-7", UDim2.new(1, -8, 0, 50), UDim2.fromOffset(0, 0), CYAN)
-deploy.LayoutOrder = 5
+deploy.LayoutOrder = 6
 deploy.TextSize = 20
 local requestDeploy = remotes:WaitForChild("RequestDeploy") :: RemoteEvent
 -- Honest deploy states: the spinner ends when the server answers, not on a fixed timer, and a refusal is
 -- shown with its reason plus a retry. Before this a refused launch looked exactly like a slow one.
 local status = label(body, "", UDim2.new(1, -8, 0, 18), UDim2.fromOffset(0, 0), MUTED, 12)
-status.LayoutOrder = 7
+status.LayoutOrder = 8
 
 -- Priority Dispatch is its own action: a distress request that opens a public 3-seat listing, distinct from
 -- a quiet solo launch. Before this, every deploy silently advertised a beacon.
@@ -276,7 +366,7 @@ end)
 -- Quick Deploy: one button, no queue. Joins a listed public operation when one exists, otherwise launches solo.
 -- Its own row: side by side it ran off the panel edge, above it collided with the difficulty buttons.
 	local quickButton = button(body, "QUICK DEPLOY", UDim2.new(1, -8, 0, 30), UDim2.fromOffset(0, 0), CYAN)
-quickButton.LayoutOrder = 6
+quickButton.LayoutOrder = 7
 quickButton.TextSize = 12
 quickButton.Activated:Connect(function()
 	status.Text = "Finding an operation…"
@@ -340,7 +430,7 @@ end)
 dispatchButton.Activated:Connect(function()
 	status.Text = "Listing a distress request…"
 	status.TextColor3 = MUTED
-	requestDeploy:FireServer({ difficulty = selectedDifficulty, template = selectedTemplate, dispatch = true, privacy = selectedPrivacy })
+	requestDeploy:FireServer({ difficulty = selectedDifficulty, operationId = selectedOperation, dispatch = true, privacy = selectedPrivacy })
 	game:GetService("RunService").Heartbeat:Wait()
 	task.delay(1.0, function()
 		status.Text = string.format("DISPATCH LISTED · %s", tostring(workspace:GetAttribute("GF_Dispatch")))
@@ -383,7 +473,7 @@ deploy.Activated:Connect(function()
 	deploy.Active = false
 	status.Text = "Requesting deployment…"
 	status.TextColor3 = MUTED
-	requestDeploy:FireServer({ difficulty = selectedDifficulty, template = selectedTemplate })
+	requestDeploy:FireServer({ difficulty = selectedDifficulty, operationId = selectedOperation })
 	-- Watchdog only: if command never answers, say so instead of spinning forever.
 	task.delay(8, function()
 		if not deploy.Active then

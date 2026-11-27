@@ -511,7 +511,22 @@ end
 -- Difficulty gates and honest failure reporting. The deploy button used to show a 4s fake spinner and
 -- re-enable itself whatever happened, so a refused launch looked identical to a slow one.
 
-function StationService.deploy(player: Player, missionDifficulty: string?, template: string?): (boolean, string?)
+function StationService.deploy(player: Player, missionDifficulty: string?, template: string?, operationId: string?): (boolean, string?)
+	-- operation-centric deployment (Counteroffensive): when an operation instance is chosen it is
+	-- authoritative — the template resolves server-side from the operation definition, so the
+	-- client cannot assert a mismatched template/region pair
+	if type(operationId) == "string" and operationId ~= "" then
+		local resolved = nil
+		pcall(function()
+			local WarOperations = require(ReplicatedStorage.GF.Shared.Configs.WarOperations)
+			resolved = WarOperations.templateFor(operationId)
+		end)
+		if resolved then
+			template = resolved
+		else
+			operationId = nil -- unknown operation: fall back to template semantics, no war tag
+		end
+	end
 	local mission = State.getMission()
 	local stateRemote = ReplicatedStorage.GF.Remotes:FindFirstChild("DeployStateChanged")
 	local function refuse(reason: string)
@@ -617,9 +632,10 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 	workspace:SetAttribute("GF_MissionDifficulty", tostring(missionDifficulty or "Normal"))
 	-- Theater of War operation tagging (Counteroffensive): operations are fixed geographically,
 	-- so the deployed operation instance — not the reusable template — determines which region
-	-- the contribution lands in. callers pass operationId when the war table offered operations;
-	-- nil clears stale tags so a template-only legacy deploy can never credit the wrong region.
-	local operationId = workspace:GetAttribute("GF_PendingOperationId")
+	-- the contribution lands in. when an operationId is supplied it is authoritative: the
+	-- template is resolved server-side from the operation definition and the client cannot
+	-- spoof a mismatch. template-only legacy deploys clear stale tags so they can never
+	-- credit the wrong region.
 	if type(operationId) == "string" and operationId ~= "" then
 		local regionId = nil
 		pcall(function()
@@ -633,7 +649,6 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 		workspace:SetAttribute("GF_OperationId", "")
 		workspace:SetAttribute("GF_RegionId", "")
 	end
-	workspace:SetAttribute("GF_PendingOperationId", "")
 	local activeMission = State.getMission()
 	workspace:SetAttribute("GF_ReinforcementTickets", activeMission and activeMission.tickets or 0)
 	-- per-player participation: reward eligibility begins at server-confirmed arrival (S09-026),
@@ -780,7 +795,8 @@ function StationService.start()
 			end
 			local chosen = type(options) == "table" and options.difficulty or nil
 			local template = type(options) == "table" and options.template or nil
-			StationService.deploy(player, type(chosen) == "string" and chosen or nil, type(template) == "string" and template or nil)
+			local operationId = type(options) == "table" and options.operationId or nil
+			StationService.deploy(player, type(chosen) == "string" and chosen or nil, type(template) == "string" and template or nil, type(operationId) == "string" and operationId or nil)
 		end)
 	end
 	local returnRequest = ensureRemote("RequestReturn", "RemoteEvent")
