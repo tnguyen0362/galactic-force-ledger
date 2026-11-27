@@ -1,7 +1,11 @@
 --!strict
--- Priority Dispatch: a host mission can raise a distress beacon; responders quick-join mid-mission.
--- Seats, expiry and catch-up pay are server-owned. Everything is published as attributes so the
--- join flow can be verified without a second client.
+-- Emergency Dispatch (Counteroffensive Stage 4 globalization): a host mission raises a distress
+-- beacon; responders quick-join mid-mission. beacons publish to a cross-server MemoryStore
+-- SortedMap so responders in ANY lobby can see them — the mandate's player-initiated global
+-- reinforcement. cross-server flow: atomic seat claim via UpdateAsync carries the responder's
+-- userId inside the beacon record (the claim IS the handshake), the responder teleports to the
+-- host jobId, and the host server recognizes the arrival by scanning its own beacons' claims.
+-- Seats, expiry and catch-up pay remain server-owned within the host server.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ProfileService = require(script.Parent.ProfileService)
@@ -9,8 +13,65 @@ local State = require(script.Parent.State)
 local SquadService = require(script.Parent.SquadService)
 local ArmoryService = require(script.Parent.ArmoryService)
 
+local MemoryStoreService = game:GetService("MemoryStoreService")
+
 local DispatchService = {}
 local SEATS = 3
+
+local BEACON_TTL = 150
+local dbeaconStore = nil
+local function dstore()
+	if dbeaconStore then return dbeaconStore end
+	-- SortedMap: hashmaps cannot be scanned, and every lobby must enumerate live beacons.
+	-- key is zero-padded open-time so ascending scans are oldest-first (most urgent first).
+	local ok, result = pcall(function()
+		return MemoryStoreService:GetSortedMap("GF_EmergencyDispatch")
+	end)
+	if ok then
+		dbeaconStore = result
+	end
+	return dbeaconStore
+end
+
+local function beaconKey(openedAtUTC: number, id: string): string
+	return string.format("%014d", openedAtUTC) .. "_" .. id
+end
+
+-- publish/refresh a beacon globally; claims map userId -> claimedAtUTC for cross-server handshakes
+local function publishGlobal(beacon)
+	local s = dstore()
+	if not s then return end
+	if not beacon.openedAtUTC then
+		beacon.openedAtUTC = os.time()
+	end
+	if not beacon.claims then
+		beacon.claims = {}
+	end
+	local record = {
+		id = beacon.id,
+		host = beacon.host,
+		hostUserId = beacon.hostUserId,
+		hostJobId = game.JobId,
+		difficulty = beacon.difficulty,
+		privacy = beacon.privacy,
+		seats = beacon.seats,
+		region = beacon.region,
+		operationId = beacon.operationId,
+		openedAtUTC = beacon.openedAtUTC,
+		claims = beacon.claims,
+	}
+	pcall(function()
+		s:SetAsync(beaconKey(beacon.openedAtUTC, beacon.id), record, BEACON_TTL)
+	end)
+end
+
+local function unpublishGlobal(beacon)
+	local s = dstore()
+	if not s or not beacon.openedAtUTC then return end
+	pcall(function()
+		s:RemoveAsync(beaconKey(beacon.openedAtUTC, beacon.id))
+	end)
+end
 local LIFETIME = 120
 local CATCHUP_CREDITS = 150
 local beacons = {}
@@ -44,6 +105,7 @@ local function dropBeacon(b)
 	for i = #beacons, 1, -1 do
 		if beacons[i] == b then
 			table.remove(beacons, i)
+			unpublishGlobal(b)
 			return
 		end
 	end
@@ -162,8 +224,19 @@ function DispatchService.open(host, difficulty, privacy)
 		openedAt = os.clock(),
 		joiners = {},
 	}
+	if host then
+		beacon.hostUserId = host.UserId
+	end
+	-- war context makes the global listing meaningful: responders see where help is needed
+	pcall(function()
+		local region = workspace:GetAttribute("GF_RegionId")
+		local opId = workspace:GetAttribute("GF_OperationId")
+		if type(region) == "string" and region ~= "" then beacon.region = region end
+		if type(opId) == "string" and opId ~= "" then beacon.operationId = opId end
+	end)
 	table.insert(beacons, beacon)
 	publish()
+	publishGlobal(beacon)
 	local mission = State.getMission()
 	ReplicatedStorage.GF.Remotes.MissionEvent:FireAllClients({
 		kind = "dispatch",
@@ -292,6 +365,122 @@ function DispatchService.close(reason, id)
 	publish()
 	return beacon
 end
+
+-- ---------------------------------------------------------------------------
+-- global layer: cross-server discovery, atomic claiming, arrival recognition
+-- ---------------------------------------------------------------------------
+
+-- enumerate live beacons across every server, oldest-first. privacy filtering happens at
+-- display time per-viewer (friends checks) — the store records carry what filtering needs.
+function DispatchService.listGlobal(): { any }
+	local s = dstore()
+	if not s then return {} end
+	local out = {}
+	local ok, items = pcall(function()
+		return s:GetRangeAsync(Enum.SortDirection.Ascending, 100)
+	end)
+	if ok and items then
+		for _, item in ipairs(items) do
+			local b = item.value
+			if type(b) == "table" and b.id and (b.seats or 0) > 0 then
+				table.insert(out, b)
+			end
+		end
+	end
+	return out
+end
+
+-- claim a seat on a beacon in ANY server. the claim is atomic and carries the responder's
+-- userId inside the beacon record — that userId IS the cross-server handshake: no message
+-- channel needed, the host server recognizes the claim when the responder arrives.
+-- returns (true, hostJobId) on success — the caller teleports the responder to hostJobId.
+function DispatchService.claimSeat(player: Player, beaconIdKey: string): (boolean, string?)
+	local s = dstore()
+	if not s then return false, nil end
+	local hostJobId = nil
+	local claimed = false
+	pcall(function()
+		s:UpdateAsync(beaconIdKey, function(record)
+			if record and (record.seats or 0) > 0 then
+				record.claims = record.claims or {}
+				if record.claims[tostring(player.UserId)] then
+					-- already claimed: idempotent retry-safe (teleport may have failed before)
+					claimed = true
+					hostJobId = record.hostJobId
+					return record
+				end
+				record.seats -= 1
+				record.claims[tostring(player.UserId)] = os.time()
+				claimed = true
+				hostJobId = record.hostJobId
+				return record
+			end
+			return nil -- full or expired: abort cleanly
+		end, BEACON_TTL)
+	end)
+	return claimed, hostJobId
+end
+
+-- arrival recognition: scan this server's own open beacons for claims whose userId is now
+-- present in the server but not yet processed as a responder. the host-side deploy flow
+-- then runs the standard pod-arrival path — cross-server responders are indistinguishable
+-- from local ones past this point, which is exactly the correct uniformity.
+local processedArrivals: { [string]: boolean } = {}
+function DispatchService.scanArrivals()
+	for _, beacon in ipairs(activeBeacons()) do
+		if not beacon.claims then continue end
+		for userIdStr, _claimedAt in pairs(beacon.claims) do
+			local arrivalKey = beacon.id .. ":" .. userIdStr
+			if processedArrivals[arrivalKey] then continue end
+			local userId = tonumber(userIdStr)
+			local player = userId and Players:GetPlayerByUserId(userId)
+			if player then
+				-- physical relocation needs a loaded character; if it is not ready yet, leave the
+				-- arrival unprocessed — the next scan retries. marking processed early would
+				-- strand the responder in the lobby while the mission waits.
+				local character = player.Character
+				local lz = workspace:GetAttribute("GF_LZ")
+				if not (character and character:FindFirstChild("HumanoidRootPart") and typeof(lz) == "Vector3") then
+					continue
+				end
+				processedArrivals[arrivalKey] = true
+				-- the local respond path minus the seat bookkeeping (already atomically done):
+				-- squad join, catch-up pay, mission insertion. wrapped so one failure strands
+				-- nobody else.
+				task.spawn(function()
+					local ok, err = pcall(function()
+						SquadService.join(player)
+						local profile = ProfileService.ensure(player)
+						if profile then
+							ProfileService.award(player, CATCHUP_CREDITS, 0)
+						end
+						table.insert(beacon.joiners, player)
+						-- insert at the mission LZ with the same offset the pod flow uses — the
+						-- responder must land in the fight, never in the lobby they teleported into
+						character:PivotTo(CFrame.new(lz + Vector3.new(0, 4, 7)))
+						player:SetAttribute("GF_MissionParticipant", true)
+					end)
+					if not ok then
+						warn("[GF] dispatch arrival processing failed: " .. tostring(err))
+					end
+				end)
+			end
+		end
+	end
+end
+
+-- periodic global maintenance: heartbeat own beacons, sweep arrivals
+task.spawn(function()
+	while true do
+		task.wait(20)
+		for _, beacon in ipairs(activeBeacons()) do
+			publishGlobal(beacon)
+		end
+		pcall(function()
+			DispatchService.scanArrivals()
+		end)
+	end
+end)
 
 function DispatchService.snapshot()
 	local beacon = activeBeacons()[1]
