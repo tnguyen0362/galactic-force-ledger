@@ -3,13 +3,14 @@
 -- Layered over the existing daylight dome (Environment deliberately destroys the Sky in missions, Spec S27):
 --   * burning horizon: a few persistent smoke columns with flickering fire glow at the edge of the fog
 --   * missile salvos: 3-5 missiles arcing across the sky with long vapour trails
---   * orbital strikes: light column + flash + smoke bloom on the far ground
+--   * orbital strikes: light column + flash + shock ring + smoke bloom on the far ground
 --   * flak bursts, high-altitude streaks, and the occasional capital ship crossing
 -- Everything lives in a client-only folder, non-collidable/non-queryable/no shadows, never touches gameplay,
 -- and sits at a fraction of Lighting.FogEnd so the biome fog dissolves it.
--- PERFORMANCE: hard cap on live effects (1 part per flak, <=2 per missile, ~5 per strike), persistent columns
--- are re-anchored to the camera only after it moves, nothing allocates per frame, and everything scales down
--- with the graphics preset (Low = fully off). Typical live part count: 15 columns + <=25 effect parts.
+-- PERFORMANCE: hard cap on live effect objects (2 parts per flak, <=2 per missile, 4 per strike, <=9 per
+-- capital ship), persistent columns are re-anchored to the camera only after it moves, nothing allocates
+-- per frame, and everything scales down with the graphics preset (Low = fully off). Typical live part
+-- count: 15 column parts + usually under 30 effect parts.
 -- Palette: Human fleet graphite #252D35 / cyan #58C8F0; Ascendancy obsidian #24212A / bronze #967854 with a
 -- restrained violet engine glow. Fire/strikes warm amber; smoke dark ash.
 local Lighting = game:GetService("Lighting")
@@ -65,6 +66,25 @@ local function mk(size: Vector3, color: Color3, neon: boolean, shape: Enum.PartT
 	return p
 end
 
+-- Angular armor wedges are reserved for the rare capital-ship pass; the high-frequency ordinance
+-- effects stay on plain parts for cost. Wedges give the distant silhouettes the controlled bevels
+-- and faceted armor language called out in the art direction without adding mesh dependencies.
+local function mkWedge(size: Vector3, color: Color3, neon: boolean): WedgePart
+	local p = Instance.new("WedgePart")
+	p.Size = size
+	p.Color = color
+	p.Material = neon and Enum.Material.Neon or Enum.Material.SmoothPlastic
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Massless = true
+	p.Locked = true
+	p.Parent = folder
+	return p
+end
+
 local function cleanAll()
 	for _, e in effects do e.destroy() end
 	table.clear(effects)
@@ -72,12 +92,22 @@ local function cleanAll()
 	shipAlive = false
 end
 
+-- Cylinder parts run along their local X axis. Build an orthonormal frame directly so the
+-- horizon smoke can lean downwind instead of standing as a row of perfectly vertical posts.
+local function cframeAlongX(position: Vector3, axis: Vector3): CFrame
+	local xAxis = axis.Unit
+	local reference = math.abs(xAxis:Dot(Vector3.yAxis)) > 0.92 and Vector3.zAxis or Vector3.yAxis
+	local zAxis = xAxis:Cross(reference).Unit
+	local yAxis = zAxis:Cross(xAxis).Unit
+	return CFrame.fromMatrix(position, xAxis, yAxis, zAxis)
+end
+
 local function add(e: Effect)
 	table.insert(effects, e)
 end
 
 ---------------------------------------------------------------- burning horizon (persistent)
-type Column = { smoke: Part, cap: Part, glow: Part, radial: Vector3, h: number, phase: number }
+type Column = { smoke: Part, cap: Part, glow: Part, radial: Vector3, lean: Vector3, h: number, phase: number, glowSize: number }
 local columns: { Column } = {}
 local lastAnchor: Vector3? = nil
 local lastColD = 0
@@ -93,6 +123,10 @@ local function buildColumns(d: number, count: number)
 	lastColD = d
 	-- spread around the full circle with jitter so there is always something burning on any heading
 	local base = rng:NextNumber(0, math.pi * 2)
+	-- one shared wind direction per horizon ring: the columns read as a battlefield weather system,
+	-- not as unrelated vertical smoke stickers
+	local windAz = base + rng:NextNumber(-0.8, 0.8)
+	local wind = Vector3.new(math.cos(windAz), 0, math.sin(windAz)) * rng:NextNumber(0.1, 0.22)
 	for i = 1, count do
 		local az = base + (i - 1) * (math.pi * 2 / count) + rng:NextNumber(-0.35, 0.35)
 		local h = d * rng:NextNumber(0.14, 0.26)
@@ -101,30 +135,46 @@ local function buildColumns(d: number, count: number)
 		smoke.Transparency = 0.38
 		local cap = mk(Vector3.one * (w * 4.2), Color3.fromRGB(70, 64, 62), false, Enum.PartType.Ball)
 		cap.Transparency = 0.55
-		local glow = mk(Vector3.one * (w * 1.8), FIRE, true, Enum.PartType.Ball)
+		local glowSize = w * 1.8
+		local glow = mk(Vector3.one * glowSize, FIRE, true, Enum.PartType.Ball)
 		glow.Transparency = 0.25
-		table.insert(columns, { smoke = smoke, cap = cap, glow = glow, radial = Vector3.new(math.cos(az), 0, math.sin(az)), h = h, phase = rng:NextNumber(0, 6.28) })
+		table.insert(columns, {
+			smoke = smoke,
+			cap = cap,
+			glow = glow,
+			radial = Vector3.new(math.cos(az), 0, math.sin(az)),
+			lean = wind * rng:NextNumber(0.8, 1.25),
+			h = h,
+			phase = rng:NextNumber(0, 6.28),
+			glowSize = glowSize,
+		})
 	end
 end
 
 local function placeColumns(o: Vector3, d: number)
 	for _, c in columns do
 		local ground = o + c.radial * d + Vector3.new(0, -d * 0.07, 0)
+		local leanOffset = Vector3.new(c.lean.X * c.h, 0, c.lean.Z * c.h)
 		c.glow.CFrame = CFrame.new(ground + Vector3.new(0, d * 0.004, 0))
-		c.smoke.CFrame = CFrame.new(ground + Vector3.new(0, c.h * 0.5, 0)) * CFrame.Angles(0, 0, math.pi / 2)
-		c.cap.CFrame = CFrame.new(ground + Vector3.new(0, c.h, 0))
+		c.smoke.CFrame = cframeAlongX(
+			ground + Vector3.new(0, c.h * 0.5, 0) + leanOffset * 0.5,
+			Vector3.new(c.lean.X, 1, c.lean.Z)
+		)
+		c.cap.CFrame = CFrame.new(ground + Vector3.new(0, c.h, 0) + leanOffset)
 	end
 	lastAnchor = o
 end
 
 local function flickerColumns(now: number)
 	for _, c in columns do
-		c.glow.Transparency = 0.2 + 0.3 * math.abs(math.sin(now * 5 + c.phase) * math.sin(now * 2.3 + c.phase * 1.7))
+		local pulse = math.abs(math.sin(now * 5 + c.phase) * math.sin(now * 2.3 + c.phase * 1.7))
+		c.glow.Transparency = 0.2 + 0.3 * pulse
+		c.glow.Size = Vector3.one * (c.glowSize * (0.9 + 0.28 * pulse))
 	end
 end
 
 ---------------------------------------------------------------- effects
--- orbital strike: a light column from the sky to the far ground, then flash + smoke bloom
+-- orbital strike: a light column from the sky to the far ground, then flash + shock ring + smoke bloom
 local function spawnStrike(origin: Vector3)
 	local d = skyDist()
 	local az = rng:NextNumber(0, math.pi * 2)
@@ -133,7 +183,9 @@ local function spawnStrike(origin: Vector3)
 	local w = d * 0.006
 	local col = mk(Vector3.new(w, 1, w), Color3.fromRGB(255, 214, 170), true)
 	local flash = mk(Vector3.one * (d * 0.01), FIRE, true, Enum.PartType.Ball)
+	local ring = mk(Vector3.new(d * 0.0015, d * 0.02, d * 0.02), WARM, true, Enum.PartType.Cylinder)
 	local smoke = mk(Vector3.one * (d * 0.01), ASH, false, Enum.PartType.Ball)
+	ring.Transparency = 1
 	local rel = base - origin
 	local life = 3.6
 	add({
@@ -149,13 +201,19 @@ local function spawnStrike(origin: Vector3)
 			flash.Size = Vector3.one * (d * (0.01 + 0.09 * f))
 			flash.CFrame = CFrame.new(pos + Vector3.new(0, d * 0.02, 0))
 			flash.Transparency = math.clamp(0.15 + f, 0, 1)
+			-- thin horizontal pressure wave: the impact reads as ordnance rather than a bare light beam
+			local rf = math.clamp((t - 0.12) / 2.35, 0, 1)
+			local ringD = d * (0.025 + 0.16 * rf)
+			ring.Size = Vector3.new(math.max(1, d * 0.0015), ringD, ringD)
+			ring.CFrame = CFrame.new(pos + Vector3.new(0, d * 0.008, 0)) * CFrame.Angles(0, 0, math.pi / 2)
+			ring.Transparency = rf <= 0 and 1 or math.clamp(0.2 + 0.78 * rf, 0, 1)
 			local s = math.clamp(t / life, 0, 1)
 			smoke.Size = Vector3.one * (d * (0.015 + 0.12 * s))
 			smoke.CFrame = CFrame.new(pos + Vector3.new(0, d * (0.03 + 0.05 * s), 0))
 			smoke.Transparency = 0.35 + 0.65 * s
 			return true
 		end,
-		destroy = function() col:Destroy() flash:Destroy() smoke:Destroy() end,
+		destroy = function() col:Destroy() flash:Destroy() ring:Destroy() smoke:Destroy() end,
 	})
 end
 
@@ -287,32 +345,55 @@ local function spawnShip(origin: Vector3)
 	local life = 75
 
 	local parts: { { part: Part, off: CFrame, baseT: number } } = {}
-	local function addPart(size: Vector3, off: CFrame, color: Color3, neon: boolean, baseT: number?)
-		local p = mk(size, color, neon)
+	local function addPart(size: Vector3, off: CFrame, color: Color3, neon: boolean, baseT: number?, wedge: boolean?)
+		local p
+		if wedge then
+			p = mkWedge(size, color, neon)
+		else
+			p = mk(size, color, neon)
+		end
 		table.insert(parts, { part = p, off = off, baseT = baseT or 0 })
 	end
 	if ascendancy then
-		local obs, bronze = Color3.fromRGB(36, 33, 42), Color3.fromRGB(150, 120, 84)
-		addPart(Vector3.new(u * 1.4, u * 1.0, u * 20), CFrame.new(), obs, false)
-		addPart(Vector3.new(u * 0.6, u * 0.5, u * 6), CFrame.new(0, u * 0.7, u * 4), Color3.fromRGB(81, 70, 94), false)
-		addPart(Vector3.new(u * 5, u * 0.3, u * 3.2), CFrame.new(0, 0, -u * 4), obs, false)
-		addPart(Vector3.new(u * 0.4, u * 0.4, u * 14), CFrame.new(0, -u * 0.65, u * 1), bronze, false)
-		addPart(Vector3.new(u * 0.9, u * 0.6, u * 0.3), CFrame.new(0, 0, -u * 10.1), Color3.fromRGB(169, 99, 233), true, 0.45)
+		-- Ascendancy silhouette: narrow monumental spine, inward/angled shoulder armor, bronze keel,
+		-- small violet drive slits. Dark broad forms first; energy stays restrained.
+		local obs = Color3.fromRGB(36, 33, 42)
+		local slate = Color3.fromRGB(81, 70, 94)
+		local bronze = Color3.fromRGB(150, 120, 84)
+		local violet = Color3.fromRGB(169, 99, 233)
+		addPart(Vector3.new(u * 1.7, u * 1.1, u * 16), CFrame.new(), obs, false)
+		addPart(Vector3.new(u * 1.7, u * 1.05, u * 4.5), CFrame.new(0, 0, -u * 9.7), obs, false, 0, true)
+		addPart(Vector3.new(u * 1.05, u * 0.42, u * 10), CFrame.new(0, u * 0.72, u * 0.8), slate, false)
+		addPart(Vector3.new(u * 3.8, u * 0.38, u * 3.1), CFrame.new(-u * 2.0, 0, -u * 2.2) * CFrame.Angles(0, math.rad(-11), 0), obs, false)
+		addPart(Vector3.new(u * 3.8, u * 0.38, u * 3.1), CFrame.new(u * 2.0, 0, -u * 2.2) * CFrame.Angles(0, math.rad(11), 0), obs, false)
+		addPart(Vector3.new(u * 0.45, u * 0.48, u * 12), CFrame.new(0, -u * 0.68, u * 1.2), bronze, false)
+		addPart(Vector3.new(u * 0.52, u * 0.42, u * 0.32), CFrame.new(-u * 0.48, 0, u * 8.15), violet, true, 0.38)
+		addPart(Vector3.new(u * 0.52, u * 0.42, u * 0.32), CFrame.new(u * 0.48, 0, u * 8.15), violet, true, 0.38)
 	else
-		local gra, steel = Color3.fromRGB(37, 45, 53), Color3.fromRGB(131, 144, 155)
-		addPart(Vector3.new(u * 3, u * 1.8, u * 14), CFrame.new(), gra, false)
-		addPart(Vector3.new(u * 3.4, u * 0.5, u * 11), CFrame.new(0, u * 1.05, -u * 0.5), steel, false)
-		addPart(Vector3.new(u * 1.6, u * 1.2, u * 3), CFrame.new(0, u * 1.8, -u * 4), Color3.fromRGB(59, 77, 96), false)
-		addPart(Vector3.new(u * 0.9, u * 0.9, u * 0.5), CFrame.new(-u * 0.9, 0, -u * 7.2), CYAN, true)
-		addPart(Vector3.new(u * 0.9, u * 0.9, u * 0.5), CFrame.new(u * 0.9, 0, -u * 7.2), CYAN, true)
-		addPart(Vector3.new(u * 0.2, u * 0.2, u * 12), CFrame.new(0, u * 1.4, u * 0.5), CYAN, true, 0.6)
+		-- GF silhouette: rectilinear armored hull, layered steel deck, swept side armor and cyan
+		-- rectangular drive blocks. Familiar military proportions, no neon hull carnival.
+		local gra = Color3.fromRGB(37, 45, 53)
+		local navy = Color3.fromRGB(59, 77, 96)
+		local steel = Color3.fromRGB(131, 144, 155)
+		addPart(Vector3.new(u * 3.0, u * 1.55, u * 13), CFrame.new(), gra, false)
+		addPart(Vector3.new(u * 2.55, u * 1.25, u * 4.0), CFrame.new(0, 0, -u * 8.1), gra, false, 0, true)
+		addPart(Vector3.new(u * 2.35, u * 0.52, u * 8.0), CFrame.new(0, u * 0.92, u * 0.4), steel, false)
+		addPart(Vector3.new(u * 1.5, u * 0.88, u * 2.35), CFrame.new(0, u * 1.38, -u * 2.1), navy, false)
+		addPart(Vector3.new(u * 0.48, u * 1.05, u * 6.4), CFrame.new(-u * 1.72, 0, -u * 0.4) * CFrame.Angles(0, math.rad(5), 0), steel, false)
+		addPart(Vector3.new(u * 0.48, u * 1.05, u * 6.4), CFrame.new(u * 1.72, 0, -u * 0.4) * CFrame.Angles(0, math.rad(-5), 0), steel, false)
+		addPart(Vector3.new(u * 0.72, u * 0.62, u * 0.45), CFrame.new(-u * 0.82, 0, u * 6.75), CYAN, true)
+		addPart(Vector3.new(u * 0.72, u * 0.62, u * 0.45), CFrame.new(u * 0.82, 0, u * 6.75), CYAN, true)
+		addPart(Vector3.new(u * 0.18, u * 0.18, u * 9.0), CFrame.new(0, u * 1.32, u * 0.9), CYAN, true, 0.64)
 	end
 	add({
 		step = function(t, o)
 			if t > life then return false end
 			local fade = math.clamp(math.min(t / 6, (life - t) / 6), 0, 1)
 			local pos = o + startRel + tangent * speed * t
-			local base = CFrame.lookAt(pos, pos + tangent)
+			-- very slight cruise pitch/bank keeps the pass readable as a massive craft rather than a
+			-- perfectly level row of blocks sliding across the skybox
+			local bank = math.rad(2.2) * math.sin(t * 0.16 + az)
+			local base = CFrame.lookAt(pos, pos + tangent) * CFrame.Angles(math.rad(-1.2), 0, bank)
 			for _, e in parts do
 				e.part.CFrame = base * e.off
 				e.part.Transparency = math.clamp(e.baseT + (1 - fade), 0, 1)
