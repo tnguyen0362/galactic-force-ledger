@@ -59,6 +59,21 @@ local IDS = {
 	Kit_Human_WarTableDais = 132856999347984,
 	Kit_Human_HoloPlanet = 72493783218850,
 	Kit_Human_HoloSlotRing = 70823226131866,
+	Kit_Human_HangarBulkhead = 111761384149237,
+	Kit_Human_HangarMouth = 101790449389240,
+	Kit_Human_ConcourseWindow = 85713375767099,
+	Kit_Human_ConcourseTerminal = 106737154685238,
+	Kit_Human_CargoStack = 110620806024823,
+	Kit_Human_DeckLightBar = 83957025602894,
+	Kit_Human_SquadBench = 110435381074739,
+	Kit_Terrain_PlanetLimb = 108848160969818,
+	Kit_Terrain_PlanetAtmo = 134039085072232,
+	Kit_Ascendancy_TurretBase = 75897332876073,
+	Kit_Ascendancy_TurretHead = 131733213303934,
+	Kit_Ascendancy_Stairs = 109096700875261,
+	Kit_Ascendancy_Beacon = 80268716113949,
+	Kit_Ascendancy_Barricade = 79110412007725,
+	Kit_Ascendancy_Crate = 99470302551969,
 }
 
 local installed, failed = 0, {}

@@ -18,7 +18,7 @@ import sys, os, math
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kitlib import *
 from gen_kit import ashlar
-import pieces_human, pieces_terrain
+import pieces_human, pieces_terrain, pieces_extra
 
 
 def poly_edges(k, r, n, w, h, z, col, per_edge=1, rot0=math.pi / 8, skip=None, alt=None):
@@ -255,6 +255,9 @@ BATCHES = {
     "HumanInfra": {"Human": list(pieces_human.PIECES)},
     "Terrain": {"Terrain": list(pieces_terrain.PIECES_TERRAIN)},
     "WarTable": {"Human": list(pieces_terrain.PIECES_WARTABLE)},
+    "Concourse": {"Human": list(pieces_extra.HUMAN_EXTRA)},
+    "Planet": {"Terrain": list(pieces_extra.PLANET)},
+    "AscExtra": {"Ascendancy": list(pieces_extra.ASC_EXTRA)},
     "Pad": {"Human": [("LandingPad", h_pad)]},
     "Gunship": {"Human": [("Gunship", h_gunship), ("GunshipRamp", h_gunship_ramp, {"origin": "center"})]},
     "Relay": {"Ascendancy": [("Relay", a_relay)]},
