@@ -6,7 +6,14 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Cinematic = require(ReplicatedStorage.GF.Shared.Configs.Cinematic)
+local Tokens = require(ReplicatedStorage.GF.Shared.UI.Tokens)
 local player = Players.LocalPlayer
+
+local COLOR = Tokens.Color
+local TYPE = Tokens.Type
+local MONO_FONT = (TYPE :: any).fontMono or TYPE.font
+local MONO_BOLD = (TYPE :: any).fontMonoBold or TYPE.fontBold
+
 -- Subtitles setting: captions are part of the accessibility contract, but a player who turned them off
 -- should not see them. One accessor so every caption path obeys it.
 local function subtitlesEnabled(): boolean
@@ -19,41 +26,179 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Enabled = false
 gui.DisplayOrder = 40
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local top = Instance.new("Frame")
-top.Size = UDim2.new(1, 0, 0, 92)
-top.BackgroundColor3 = Color3.new(0, 0, 0)
-top.BorderSizePixel = 0
-top.Parent = gui
-local bottom = Instance.new("Frame")
-bottom.Size = UDim2.new(1, 0, 0, 92)
-bottom.Position = UDim2.new(0, 0, 1, -92)
-bottom.BackgroundColor3 = Color3.new(0, 0, 0)
-bottom.BorderSizePixel = 0
-bottom.Parent = gui
+local function makeFrame(parent: Instance, name: string, size: UDim2, position: UDim2, color: Color3, transparency: number?, zindex: number?): Frame
+	local f = Instance.new("Frame")
+	f.Name = name
+	f.Size = size
+	f.Position = position
+	f.BackgroundColor3 = color
+	f.BackgroundTransparency = transparency or 0
+	f.BorderSizePixel = 0
+	f.ZIndex = zindex or 1
+	f.Parent = parent
+	return f
+end
 
-local caption = Instance.new("TextLabel")
-caption.Size = UDim2.new(0.8, 0, 0, 64)
-caption.Position = UDim2.new(0.1, 0, 1, -156)
-caption.BackgroundTransparency = 1
-caption.Font = Enum.Font.GothamMedium
-caption.TextSize = 20
+local function makeLabel(parent: Instance, name: string, text: string, size: UDim2, position: UDim2, color: Color3, textSize: number, bold: boolean?): TextLabel
+	local l = Instance.new("TextLabel")
+	l.Name = name
+	l.Size = size
+	l.Position = position
+	l.BackgroundTransparency = 1
+	l.Font = bold == true and TYPE.fontBold or TYPE.font
+	l.TextSize = textSize
+	l.TextColor3 = color
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.TextYAlignment = Enum.TextYAlignment.Center
+	l.TextTruncate = Enum.TextTruncate.AtEnd
+	l.Text = text
+	l.ZIndex = 10
+	l.Parent = parent
+	return l
+end
+
+local pulsePieces: { Frame } = {}
+local function cornerBracket(parent: Instance, corner: string, color: Color3, length: number, inset: number, zindex: number?, pulsing: boolean?)
+	local left = corner == "TL" or corner == "BL"
+	local topSide = corner == "TL" or corner == "TR"
+	local ax = left and 0 or 1
+	local ay = topSide and 0 or 1
+	local x = left and inset or -inset
+	local y = topSide and inset or -inset
+
+	local horizontal = makeFrame(parent, corner .. "_H", UDim2.new(0, length, 0, 2), UDim2.new(ax, x, ay, y), color, 0.22, zindex or 8)
+	horizontal.AnchorPoint = Vector2.new(ax, ay)
+	local vertical = makeFrame(parent, corner .. "_V", UDim2.new(0, 2, 0, length), UDim2.new(ax, x, ay, y), color, 0.22, zindex or 8)
+	vertical.AnchorPoint = Vector2.new(ax, ay)
+	local notch = makeFrame(parent, corner .. "_N", UDim2.new(0, math.max(12, length * 0.34), 0, 2), UDim2.new(ax, left and x + 13 or x - 13, ay, topSide and y + 13 or y - 13), color, 0.14, zindex or 8)
+	notch.AnchorPoint = Vector2.new(0.5, 0.5)
+	notch.Rotation = (left == topSide) and 45 or -45
+	if pulsing == true then
+		table.insert(pulsePieces, horizontal)
+		table.insert(pulsePieces, vertical)
+		table.insert(pulsePieces, notch)
+	end
+end
+
+local top = makeFrame(gui, "TopLetterbox", UDim2.new(1, 0, 0, 92), UDim2.new(0, 0, 0, 0), COLOR.panelInset, 0, 2)
+local bottom = makeFrame(gui, "BottomLetterbox", UDim2.new(1, 0, 0, 92), UDim2.new(0, 0, 1, -92), COLOR.panelInset, 0, 2)
+
+local topGradient = Instance.new("UIGradient")
+topGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, COLOR.graphite),
+	ColorSequenceKeypoint.new(1, COLOR.panelInset),
+})
+topGradient.Rotation = 90
+topGradient.Parent = top
+local bottomGradient = Instance.new("UIGradient")
+bottomGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, COLOR.panelInset),
+	ColorSequenceKeypoint.new(1, COLOR.graphite),
+})
+bottomGradient.Rotation = 90
+bottomGradient.Parent = bottom
+
+makeFrame(top, "InnerCyan", UDim2.new(1, 0, 0, 1), UDim2.new(0, 0, 1, -1), COLOR.techCyan, 0.32, 4)
+makeFrame(top, "InnerAmberL", UDim2.new(0, 112, 0, 2), UDim2.new(0, 32, 1, -5), COLOR.warning, 0.28, 4)
+makeFrame(top, "InnerAmberR", UDim2.new(0, 112, 0, 2), UDim2.new(1, -144, 1, -5), COLOR.warning, 0.28, 4)
+makeFrame(bottom, "InnerCyan", UDim2.new(1, 0, 0, 1), UDim2.new(0, 0, 0, 0), COLOR.techCyan, 0.32, 4)
+makeFrame(bottom, "InnerAmberL", UDim2.new(0, 112, 0, 2), UDim2.new(0, 32, 0, 4), COLOR.warning, 0.28, 4)
+makeFrame(bottom, "InnerAmberR", UDim2.new(0, 112, 0, 2), UDim2.new(1, -144, 0, 4), COLOR.warning, 0.28, 4)
+
+cornerBracket(top, "TL", COLOR.steel, 46, 12, 5, false)
+cornerBracket(top, "TR", COLOR.steel, 46, 12, 5, false)
+cornerBracket(bottom, "BL", COLOR.steel, 46, 12, 5, false)
+cornerBracket(bottom, "BR", COLOR.steel, 46, 12, 5, false)
+
+local archiveKicker = makeLabel(top, "ArchiveKicker", "ORBITAL ARCHIVE  //  COMMAND RECORD", UDim2.new(0, 360, 0, 16), UDim2.new(0, 32, 0, 16), COLOR.textAccent, TYPE.sizeSmall, true)
+archiveKicker.Font = MONO_BOLD
+archiveKicker.TextTransparency = 0.08
+local archiveTitle = makeLabel(top, "ArchiveTitle", string.upper(Cinematic.Title), UDim2.new(0, 520, 0, 24), UDim2.new(0, 32, 0, 40), COLOR.textPrimary, TYPE.sizeTitle, true)
+local beatReadout = makeLabel(top, "BeatReadout", "ARCHIVE STANDBY", UDim2.new(0, 210, 0, 18), UDim2.new(1, -242, 0, 38), COLOR.textSecondary, TYPE.sizeSmall, false)
+beatReadout.Font = MONO_FONT
+beatReadout.TextXAlignment = Enum.TextXAlignment.Right
+
+local progressBack = makeFrame(bottom, "ArchiveProgressBack", UDim2.new(1, -64, 0, 3), UDim2.new(0, 32, 0, 12), COLOR.graphite, 0.05, 5)
+local progressFill = makeFrame(progressBack, "ArchiveProgressFill", UDim2.new(0, 0, 1, 0), UDim2.new(0, 0, 0, 0), COLOR.techCyan, 0.08, 6)
+makeFrame(bottom, "ProgressAmberKey", UDim2.new(0, 44, 0, 3), UDim2.new(0, 32, 0, 12), COLOR.warning, 0.1, 7)
+
+local hint = makeLabel(bottom, "SkipHint", "[ SPACE / ESC ]  SKIP TRANSMISSION", UDim2.new(0, 320, 0, 20), UDim2.new(0.5, -160, 0, 42), COLOR.textSecondary, TYPE.sizeSmall, false)
+hint.Font = MONO_FONT
+hint.TextXAlignment = Enum.TextXAlignment.Center
+local hintAccentL = makeFrame(bottom, "HintAccentL", UDim2.new(0, 28, 0, 2), UDim2.new(0.5, -190, 0, 51), COLOR.techCyan, 0.18, 5)
+local hintAccentR = makeFrame(bottom, "HintAccentR", UDim2.new(0, 28, 0, 2), UDim2.new(0.5, 162, 0, 51), COLOR.techCyan, 0.18, 5)
+
+local captionPlate = makeFrame(gui, "CaptionPlate", UDim2.new(0.76, 0, 0, 76), UDim2.new(0.5, 0, 1, -174), COLOR.panelInset, 0.1, 6)
+captionPlate.AnchorPoint = Vector2.new(0.5, 0)
+captionPlate.Visible = false
+local captionConstraint = Instance.new("UISizeConstraint")
+captionConstraint.MinSize = Vector2.new(320, 76)
+captionConstraint.MaxSize = Vector2.new(920, 92)
+captionConstraint.Parent = captionPlate
+local captionStroke = Instance.new("UIStroke")
+captionStroke.Color = COLOR.border
+captionStroke.Transparency = 0.28
+captionStroke.Thickness = 1
+captionStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+captionStroke.Parent = captionPlate
+cornerBracket(captionPlate, "TL", COLOR.techCyan, 32, 7, 8, true)
+cornerBracket(captionPlate, "TR", COLOR.techCyan, 32, 7, 8, true)
+cornerBracket(captionPlate, "BL", COLOR.techCyan, 32, 7, 8, true)
+cornerBracket(captionPlate, "BR", COLOR.techCyan, 32, 7, 8, true)
+makeFrame(captionPlate, "CaptionSpine", UDim2.new(0, 3, 1, -18), UDim2.new(0, 9, 0, 9), COLOR.techCyan, 0.12, 8)
+
+local caption = makeLabel(captionPlate, "Caption", "", UDim2.new(1, -52, 1, -20), UDim2.new(0, 26, 0, 10), COLOR.textPrimary, TYPE.sizeBody, false)
 caption.TextWrapped = true
-caption.TextColor3 = Color3.fromRGB(232, 238, 244)
-caption.TextStrokeTransparency = 0.6
-if subtitlesEnabled() then caption.Text = "" end
-caption.Parent = gui
+caption.TextXAlignment = Enum.TextXAlignment.Center
+caption.TextYAlignment = Enum.TextYAlignment.Center
+caption.TextStrokeTransparency = 0.75
 
-local hint = Instance.new("TextLabel")
-hint.Size = UDim2.new(1, 0, 0, 18)
-hint.Position = UDim2.new(0, 0, 1, -30)
-hint.BackgroundTransparency = 1
-hint.Font = Enum.Font.Gotham
-hint.TextSize = 12
-hint.TextColor3 = Color3.fromRGB(120, 140, 150)
-hint.Text = "SPACE to skip"
-hint.Parent = gui
+-- Compact viewports keep the archive chrome but surrender secondary metadata before they collide.
+local function applyResponsiveLayout()
+	local width = top.AbsoluteSize.X
+	if width <= 0 and workspace.CurrentCamera then
+		width = workspace.CurrentCamera.ViewportSize.X
+	end
+	local compact = width > 0 and width < 640
+	archiveKicker.Size = UDim2.new(0, compact and 210 or 360, 0, 16)
+	archiveTitle.Size = UDim2.new(0, compact and math.max(180, width - 64) or 520, 0, 24)
+	archiveTitle.TextSize = compact and TYPE.sizeBody or TYPE.sizeTitle
+	beatReadout.Visible = not compact
+	hint.Text = compact and "[ SPACE ]  SKIP" or "[ SPACE / ESC ]  SKIP TRANSMISSION"
+	hintAccentL.Visible = not compact
+	hintAccentR.Visible = not compact
+	captionPlate.Size = UDim2.new(compact and 0.92 or 0.76, 0, 0, 76)
+end
+top:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyResponsiveLayout)
+task.defer(applyResponsiveLayout)
+
+local function setCaption(text: string)
+	if subtitlesEnabled() then
+		caption.Text = text
+		captionPlate.Visible = text ~= ""
+	else
+		caption.Text = ""
+		captionPlate.Visible = false
+	end
+end
+
+-- restrained pulse on the caption frame only; the picture itself remains the focus
+task.spawn(function()
+	while gui.Parent do
+		if gui.Enabled then
+			local pulse = 0.18 + 0.1 * (0.5 + 0.5 * math.sin(os.clock() * 2.2))
+			for _, piece in ipairs(pulsePieces) do
+				piece.BackgroundTransparency = pulse
+			end
+			hintAccentL.BackgroundTransparency = pulse
+			hintAccentR.BackgroundTransparency = pulse
+		end
+		task.wait(0.1)
+	end
+end)
 
 local playing, beatIndex, skipRequested = false, 0, false
 local savedType, savedFov = nil, nil
@@ -78,10 +223,10 @@ end
 local function stopPlayback(skipped)
 	-- Mark the intro as seen here, not only on first run: a skip used to leave IntroSeen unset, so the
 	-- next CharacterAdded replayed the whole cinematic and stole the camera with no subject.
-		persistIntroSeen()
+	persistIntroSeen()
 	playing = false
 	gui.Enabled = false
-	if subtitlesEnabled() then caption.Text = "" end
+	setCaption("")
 	setAttr("Playing", false)
 	setAttr("Beat", beatIndex)
 	setAttr("Skipped", skipped == true)
@@ -122,9 +267,12 @@ local function play()
 	savedFov = camera.FieldOfView
 	camera.CameraType = Enum.CameraType.Scriptable
 	gui.Enabled = true
+	progressFill.Size = UDim2.new(0, 0, 1, 0)
+	beatReadout.Text = "ARCHIVE RUNNING"
 	setAttr("Playing", true)
 	setAttr("Skipped", false)
-	setAttr("Total", Cinematic.totalDuration())
+	local totalDuration = Cinematic.totalDuration()
+	setAttr("Total", totalDuration)
 	local startedAt = os.clock()
 	for index, beat in ipairs(Cinematic.Beats) do
 		if skipRequested or not playing then
@@ -134,7 +282,8 @@ local function play()
 		setAttr("Beat", index)
 		setAttr("BeatText", beat.text)
 		setAttr("Elapsed", math.floor(os.clock() - startedAt))
-		if subtitlesEnabled() then caption.Text = beat.text end
+		beatReadout.Text = string.format("BEAT %02d/%02d", index, #Cinematic.Beats)
+		setCaption(beat.text)
 		local start = CFrame.lookAt(beat.from, beat.lookFrom)
 		local finish = CFrame.lookAt(beat.to, beat.lookTo)
 		camera.CFrame = start
@@ -145,6 +294,10 @@ local function play()
 			if skipRequested then
 				tween:Cancel()
 				break
+			end
+			if totalDuration > 0 then
+				local alpha = math.clamp((os.clock() - startedAt) / totalDuration, 0, 1)
+				progressFill.Size = UDim2.new(alpha, 0, 1, 0)
 			end
 			task.wait(0.1)
 		end
@@ -203,4 +356,3 @@ task.defer(function()
 end)
 
 workspace:SetAttribute("Cinematic_Ready", true)
-
