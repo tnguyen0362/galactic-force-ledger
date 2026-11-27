@@ -4,7 +4,6 @@ local Audio = require(script.Parent.GFAudio)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local Debris = game:GetService("Debris")
 
 local Weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
 local Input = require(script.Parent.Input)
@@ -27,6 +26,12 @@ local state = {
 	aiming = false,
 }
 
+-- forward declaration: muzzlePosition below reads this through the premium-muzzle branch,
+-- and the assignment lives with buildViewmodel further down. before this hoisting the local
+-- was declared AFTER the functions that referenced it, so they captured a nil global and the
+-- barrel-tip preference never fired — fx always used the hand approximation.
+local viewmodel: Model? = nil
+
 local function characterParts(): (Model?, Humanoid?, BasePart?)
 	local character = player.Character
 	if not character then
@@ -41,43 +46,6 @@ local function muzzleOrigin(head: BasePart): Vector3
 	local camera = workspace.CurrentCamera
 	local look = camera and camera.CFrame.LookVector or head.CFrame.LookVector
 	return head.Position + look * 1.6 + Vector3.new(0, -0.15, 0)
-end
-
-local function tracer(from: Vector3, to: Vector3)
-	local distance = (to - from).Magnitude
-	if distance < 1 then
-		return
-	end
-	local beam = Instance.new("Part")
-	beam.Name = "Tracer"
-	beam.Anchored = true
-	beam.CanCollide = false
-	beam.CanQuery = false
-	beam.CanTouch = false
-	beam.Material = Enum.Material.Neon
-	beam.Color = Color3.fromRGB(120, 220, 255)
-	beam.Size = Vector3.new(0.08, 0.08, distance)
-	beam.CFrame = CFrame.lookAt(from + (to - from) * 0.5, to)
-	beam.Transparency = 0.25
-	beam.Parent = workspace
-	Debris:AddItem(beam, 0.07)
-end
-
-local function muzzleFlash(head: BasePart)
-	local flash = Instance.new("Part")
-	flash.Name = "MuzzleFlash"
-	flash.Anchored = true
-	flash.CanCollide = false
-	flash.CanQuery = false
-	flash.Material = Enum.Material.Neon
-	flash.Color = Color3.fromRGB(180, 240, 255)
-	flash.Size = Vector3.new(0.35, 0.35, 0.35)
-	flash.Shape = Enum.PartType.Ball
-	local camera = workspace.CurrentCamera
-	local look = camera and camera.CFrame.LookVector or head.CFrame.LookVector
-	flash.CFrame = CFrame.new(head.Position + look * 1.7)
-	flash.Parent = workspace
-	Debris:AddItem(flash, 0.05)
 end
 
 -- Muzzle position: the flash used to be emitted at the ray origin, which is the camera, so it
@@ -132,6 +100,13 @@ local function tryFire()
 		return
 	end
 	if state.ammo <= 0 then
+		-- dry-fire tell: a dead trigger must answer. debounced — an auto trigger held through
+		-- the empty magazine would otherwise machine-gun clicks every cadence frame.
+		local now0 = os.clock()
+		if now0 - (state.lastDryClick or 0) > 0.45 then
+			state.lastDryClick = now0
+			Audio.play("reload_start", nil, 0.55, 1.5) -- thin high click: striker on an empty chamber
+		end
 		Weapon.reload()
 		return
 	end
@@ -179,12 +154,27 @@ local function tryFire()
 		-- and recovers passively (CameraController additive decay — it never fights player input,
 		-- never hides dispersion inside the aim math). Owner calibration: restrained, not a fight —
 		-- 0.004 rad base x recoil scalar puts the AR at ~0.23deg/shot, launchers ~0.6-0.75deg single
-		-- kicks. Horizontal gets a small random fraction for life — visible kick, not hidden jitter.
+		-- kicks.
+		-- Horizontal is burst-shaped rather than white noise: each burst picks a slight lean
+		-- (mean-reverting random walk), so a mag-dump reads as climb-with-a-drift instead of
+		-- in-place vibration, while any single shot still carries a small random fraction for life.
 		local ctl = require(script.Parent.CameraCtl)
 		local r = tonumber(weapon.recoil) or 1
-		local vertical = 0.004 * r
-		local horizontal = vertical * (math.random() - 0.5) * 0.4
+		if now - (state.lastShotAt or 0) > 0.3 then
+			-- burst start: reseed the lean. first-shot bias stays small so tap fire never
+			-- reads as a directional shove.
+			state.recoilBias = (math.random() - 0.5) * 0.5
+		else
+			-- mean-reverting walk: the lean evolves within the burst but cannot run away
+			state.recoilBias = math.clamp((state.recoilBias or 0) * 0.82 + (math.random() - 0.5) * 0.42, -1, 1)
+		end
+		local vertical = 0.004 * r * (0.92 + math.random() * 0.16)
+		local horizontal = vertical * ((state.recoilBias or 0) * 0.32 + (math.random() - 0.5) * 0.26)
 		ctl.recoil(vertical, horizontal)
+		-- micro-trauma layered under the coherent kick: automatic fire gets texture rather than
+		-- a metronome. amplitude is trauma² inside the controller, so these stay whispers —
+		-- and the controller's own settings gate honors reduced-motion/camera-shake toggles.
+		ctl.shake(0.022 * r)
 		state.lastShotAt = os.clock()
 	end)
 
@@ -203,12 +193,34 @@ local function tryFire()
 	local endPoint = hit and hit.Position or (origin + look * weapon.range)
 
 	local muzzle = muzzlePosition()
-	VFX.muzzle(muzzle or origin, look)
+	-- per-class muzzle presence: heavy barrels throw a swollen flash and dust cloud,
+	-- sidearms stay tight. shape-only scaling of pooled emitters — no stat coupling.
+	local cat = weapon.category
+	local muzzleScale = (cat == "Launcher" and 2.1)
+		or (cat == "Shotgun" and 1.55)
+		or (cat == "LMG" and 1.3)
+		or (cat == "Marksman" and 1.25)
+		or (cat == "Rifle" and 1.0)
+		or (cat == "SMG" and 0.8)
+		or 0.7 -- pistol
+	VFX.muzzle(muzzle or origin, look, muzzleScale)
+
+	-- brass ejection: casings toss right-up off the receiver for ballistic weapons.
+	-- launchers are tube-fed (no cycling brass at this caliber of fiction) and the visual
+	-- noise would fight their shell flight anyway. pooled inside VFX — zero allocation here.
+	if not weapon.explosive then
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+		if rootPart then
+			local receiverPos = if viewmodel and viewmodel.PrimaryPart
+				then viewmodel.PrimaryPart.Position
+				else (muzzle or origin)
+			VFX.shellEject(receiverPos, rootPart.CFrame.RightVector)
+		end
+	end
 
 	-- distinct voice per weapon class — the roster used to share one rifle crack, flattening
 	-- identity no matter what the stats said. Variants are pitch/volume-shaped in GFAudio.
 	do
-		local cat = weapon.category
 		local snd = (cat == "Shotgun" and "shotgun_fire")
 			or (cat == "Pistol" and "pistol_fire")
 			or (cat == "Marksman" and "marksman_fire")
@@ -226,7 +238,17 @@ local function tryFire()
 		HUD.setAmmo(state.ammo, state.magazine, state.reserve)
 		return
 	end
-	VFX.tracer(muzzle or origin, endPoint)
+	-- pellet weapons read as a fan, not a laser: three beams inside the authored cone.
+	-- presentation-only — the server's pellet math is untouched; the fan sits well inside it.
+	if (weapon.pellets or 1) > 1 then
+		for i = 1, 3 do
+			local jitter = Vector3.new((math.random() - 0.5) * 1.6, (math.random() - 0.5) * 1.6, (math.random() - 0.5) * 1.6)
+			local spread = jitter * math.min(8, (endPoint - (muzzle or origin)).Magnitude * 0.045)
+			VFX.tracer(muzzle or origin, endPoint + spread)
+		end
+	else
+		VFX.tracer(muzzle or origin, endPoint)
+	end
 	if hit and hit.Instance.Name == "DomeShield" then
 		-- Projectile rule: a dome shell stops bullets. The dome is queryable but not collidable, so it
 		-- blocks projectiles while players still walk through it.
@@ -295,13 +317,37 @@ function Weapon.reload()
 			if conn.Connected then conn:Disconnect() end
 		end)
 	end
+	-- timing tells inside the reload window: the magazine read is physical (it visibly travels
+	-- with the support hand), and the audio now phrases with it — release click early, seat clack
+	-- late, final rack on completion (the existing end cue). fractions ride the SERVER-published
+	-- window so augment-scaled reloads never de-sync the tell from the motion.
+	task.spawn(function()
+		local magOutDone = false
+		local seatDone = false
+		while state.reloading do
+			local char = player.Character
+			local startAt = char and char:GetAttribute("GF_ReloadStartAt")
+			local endAt = char and char:GetAttribute("GF_ReloadEndAt")
+			if type(startAt) == "number" and type(endAt) == "number" and endAt > startAt then
+				local frac = math.clamp((os.clock() - startAt) / (endAt - startAt), 0, 1)
+				if not magOutDone and frac >= 0.22 then
+					magOutDone = true
+					Audio.play("reload_start", nil, 0.9, 0.78) -- mag release: duller separation click
+				end
+				if not seatDone and frac >= 0.66 then
+					seatDone = true
+					Audio.play("reload", nil, 0.6, 1.22) -- mag seat: bright short clack under the rack
+				end
+			end
+			task.wait(0.05)
+		end
+	end)
 end
 
 -- Viewmodel: the character carried no weapon mesh at all, so the muzzle flash hung in the air and
 -- nothing in the hands read as a rifle (MICRO-025). Built from parts, welded to a root that is
 -- re-anchored to the right hand every frame, so it follows the arm through walk, aim and reload.
-local RunService = game:GetService("RunService")
-local viewmodel: Model? = nil
+-- (the viewmodel local itself is forward-declared at the top of the module — see muzzlePosition)
 
 local function clearViewmodel()
 	if viewmodel then
@@ -391,7 +437,10 @@ local function updateViewmodel(dt: number?)
 	end
 	-- ADS pose: the weapon visibly rises inward toward the shoulder line instead of staying pinned at
 	-- the hip while the camera tightens. This is presentation-only; the authoritative ray remains the reticle ray.
-	viewmodelAimLerp += ((state.aiming and 1 or 0) - viewmodelAimLerp) * math.min(1, (dt or 1/60) * 10)
+	-- asymmetric rate: snapping IN faster than relaxing OUT mirrors the camera's own tau pair
+	-- (enter 0.06 / exit 0.075) so the weapon and the zoom never argue about who arrived first.
+	local adsRate = state.aiming and 13 or 8.5
+	viewmodelAimLerp += ((state.aiming and 1 or 0) - viewmodelAimLerp) * math.min(1, (dt or 1/60) * adsRate)
 	if state.switchClock then
 		local st = os.clock() - state.switchClock
 		state.switchBlend = st < 0.55 and (st < 0.27 and (st / 0.27) or (1 - (st - 0.27) / 0.28)) or 0
@@ -465,6 +514,14 @@ function Weapon.equip(weaponId: string)
 	state.reloading = false
 	remotes.EquipWeapon:FireServer({ weaponId = weaponId })
 	buildViewmodel(weapon)
+	-- draw foley: one mechanical slip-click as the weapon comes up, then the seat as it locks
+	-- into the ready line. shaped from the reload kit — no new assets, just phrasing.
+	Audio.play("reload", nil, 0.65, 1.35)
+	task.delay(0.34, function()
+		if state.weaponId == weaponId then
+			Audio.play("reload_start", nil, 0.5, 1.12)
+		end
+	end)
 	-- publish the zoom factor for the camera's per-weapon aim FOV (adsZoom was dead config data:
 	-- every weapon aimed at the same fixed 58 FOV regardless of being a marksman or an SMG)
 	game:GetService("Players").LocalPlayer:SetAttribute("GF_AdsZoom", tonumber(weapon.adsZoom) or 1.2)
@@ -623,6 +680,20 @@ function Weapon.init()
 			HUD.showHitMarker(payload.weakPoint == true, payload.killed == true)
 			if type(payload.damage) == "number" then
 				HUD.showDamageNumber(payload.damage, payload.position, payload.weakPoint == true)
+			end
+			-- confirm layer at the shooter, separate from the positional impact voice: the hit
+			-- itself is heard AT the target, but the confirm is the weapon system's answer back
+			-- to the trigger finger. same snap family as the impact cues so the mix stays coherent
+			-- — pitched up and non-positional, it reads as interface rather than world.
+			if payload.killed then
+				-- kill confirm: the electronic ping is the one reward chime the kit owns, layered
+				-- over the meatier weakpoint tick. distinct from every hit texture in the roster.
+				Audio.play("hit_surface", nil, 1.3, 1.2)
+				Audio.play("ui_confirm", nil, 0.75, 1.1)
+			elseif payload.weakPoint then
+				Audio.play("hit_surface", nil, 1.1, 1.2) -- meatier: lower and louder than a scratch hit
+			else
+				Audio.play("hit_surface", nil, 0.9, 1.5) -- scratch hit: a tick, not an event
 			end
 		end
 	end)
