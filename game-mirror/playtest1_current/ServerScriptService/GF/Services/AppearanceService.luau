@@ -162,11 +162,19 @@ function AppearanceService.dress(character: Model, suitId: string?)
 
 	if leftArm and leftArm:IsA("BasePart") then
 		plate(leftArm, "ShoulderL", Vector3.new(0.72, 0.62, 0.9), CFrame.new(-0.12, 0.16, 0), PLATE, Enum.Material.Metal)
-		plate(leftArm, "ForearmL", Vector3.new(0.52, 0.8, 0.62), CFrame.new(0, -0.5, 0), STEEL, Enum.Material.Metal)
+		-- forearm plating must ride the LOWER arm: welded to the upper arm it stayed behind every
+		-- elbow bend (constant with weapon-grip IK) and the forearm visibly molted out of it
+		local lowerArm = character:FindFirstChild("LeftLowerArm")
+		if lowerArm and lowerArm:IsA("BasePart") then
+			plate(lowerArm, "ForearmL", Vector3.new(0.52, 0.8, 0.62), CFrame.new(0, 0, 0), STEEL, Enum.Material.Metal)
+		end
 	end
 	if rightArm and rightArm:IsA("BasePart") then
 		plate(rightArm, "ShoulderR", Vector3.new(0.72, 0.62, 0.9), CFrame.new(0.12, 0.16, 0), PLATE, Enum.Material.Metal)
-		plate(rightArm, "ForearmR", Vector3.new(0.52, 0.8, 0.62), CFrame.new(0, -0.5, 0), STEEL, Enum.Material.Metal)
+		local lowerArmR = character:FindFirstChild("RightLowerArm")
+		if lowerArmR and lowerArmR:IsA("BasePart") then
+			plate(lowerArmR, "ForearmR", Vector3.new(0.52, 0.8, 0.62), CFrame.new(0, 0, 0), STEEL, Enum.Material.Metal)
+		end
 	end
 
 	-- leg plating: thigh plates on the upper legs, knee guards and shin plates below — the kit
