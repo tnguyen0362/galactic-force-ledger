@@ -5,7 +5,7 @@ Builds collection HERO8_SRC with one object per rig part (names = Roblox rig par
 import bpy, bmesh, math, json, os, sys, importlib
 from mathutils import Vector, Matrix, Euler
 
-sys.path.insert(0, r"C:\Users\tnguy\gf-art-build\blender")
+sys.path.insert(0, r"C:\gf-art-build\blender")
 import hero_lib as H
 importlib.reload(H)
 from hero_lib import *

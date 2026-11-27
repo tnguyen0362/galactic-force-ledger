@@ -1,5 +1,5 @@
 import bpy, sys, os, io, contextlib
-BL = r"C:\Users\tnguy\gf-art-build\blender"
+BL = r"C:\gf-art-build\blender"
 if BL not in sys.path: sys.path.insert(0, BL)
 src = open(os.path.join(BL, "gen_hero_v12.py"), encoding="utf-8").read()
 XS = {"Rifleman": -7.6, "SpectreLeader": -5.7, "SpectreAssault": -4.75, "SpectreWeapons": -3.8, "SpectrePrecision": -2.85, "SpectreSupport": -1.9, "RevenantLeader": 1.9, "RevenantAssault": 2.85, "RevenantWeapons": 3.8, "RevenantPrecision": 4.75, "RevenantDefense": 5.7, "Heavy": 7.6}
