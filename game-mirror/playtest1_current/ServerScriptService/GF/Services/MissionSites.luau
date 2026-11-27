@@ -36,6 +36,46 @@ do
 	end
 end
 
+local ArtService: any = nil
+do
+	local ok, service = pcall(function()
+		return require(script.Parent.ArtService)
+	end)
+	if ok then
+		ArtService = service
+	end
+end
+
+-- Authored kit placement: pieces go through ArtService.placeKit (bottom pivot, baked palette
+-- preserved, never reskinned) with height-driven uniform scaling. Returns true when a piece
+-- was placed; every caller keeps its blockout part as the fallback when it returns false.
+local function kit(ids: { string }, x: number, y: number, z: number, yaw: number, height: number, parent: Instance, sink: number?): boolean
+	if not ArtService or type(ArtService.firstExists) ~= "function" or type(ArtService.placeKit) ~= "function" then
+		return false
+	end
+	local id = ArtService.firstExists(ids)
+	if not id then
+		return false
+	end
+	return ArtService.placeKit(id, Vector3.new(x, y, z), {
+		yaw = yaw,
+		height = height,
+		parent = parent,
+		sink = sink,
+	}) ~= nil
+end
+
+local function kitMeasure(ids: { string }): Vector3?
+	if not ArtService or type(ArtService.firstExists) ~= "function" or type(ArtService.measure) ~= "function" then
+		return nil
+	end
+	local id = ArtService.firstExists(ids)
+	if not id or string.sub(id :: string, 1, 4) ~= "Kit_" then
+		return nil
+	end
+	return ArtService.measure(id :: string)
+end
+
 local fallbackGroundY = 0
 
 local function ground(x: number, z: number): number
@@ -176,17 +216,74 @@ local function addWallRing(parent: Instance, center: Vector3, siteYaw: number, r
 	local segmentAngle = TAU / segmentCount
 	local segmentLength = TAU * radius / segmentCount + 0.45
 	local written = 0
+	local blocked: { boolean } = {}
 	for i = 0, segmentCount - 1 do
 		local angle = i * segmentAngle
-		local blocked = false
 		for _, entrance in ipairs(entrances) do
 			local threshold = entrance.width / (2 * radius) + segmentAngle * 1.05
 			if math.abs(angleDelta(angle, entrance.angle)) < threshold then
-				blocked = true
+				blocked[i] = true
 				break
 			end
 		end
-		if not blocked then
+	end
+
+	-- Authored masonry: contiguous non-entrance arcs are chained edge-to-edge with measured
+	-- wall pieces, uniformly scaled so each arc closes exactly. Height stays the gameplay
+	-- contract; the per-arc length fit wobbles height by only a few percent. Wraparound merges
+	-- a trailing run into a leading one, same as the outpost ring.
+	local wallSize = kitMeasure({ "Kit_Ascendancy_Wall" })
+	if wallSize and wallSize.Y > 0.01 then
+		local nativeLen = math.max(wallSize.X, wallSize.Z)
+		local lenAxisX = wallSize.X >= wallSize.Z
+		local lenAtHeight = nativeLen * (height / wallSize.Y)
+		local runs: { { number } } = {}
+		local run: { number } = {}
+		for i = 0, segmentCount - 1 do
+			if not blocked[i] then
+				table.insert(run, i)
+			elseif #run > 0 then
+				table.insert(runs, run)
+				run = {}
+			end
+		end
+		if #run > 0 then
+			if #runs > 0 and not blocked[0] then
+				local merged = table.clone(run)
+				for _, s in ipairs(runs[1]) do
+					table.insert(merged, s)
+				end
+				runs[1] = merged
+			else
+				table.insert(runs, run)
+			end
+		end
+		for _, segs in ipairs(runs) do
+			local arcSpan = #segs * segmentAngle
+			local arcLen = arcSpan * radius
+			local nPieces = math.max(1, math.round(arcLen / lenAtHeight))
+			local fitLen = arcLen / nPieces
+			local fitFactor = fitLen / lenAtHeight
+			local pieceH = height * fitFactor
+			local startAng = segs[1] * segmentAngle - segmentAngle * 0.5
+			for j = 1, nPieces do
+				local theta = startAng + (j - 0.5) / nPieces * arcSpan
+				local lx = math.cos(theta) * radius
+				local lz = math.sin(theta) * radius
+				local wx, wz = localXZ(center, siteYaw, lx, lz)
+				local tangent = tangentYaw(center, siteYaw, lx, lz)
+				local yaw = if lenAxisX then tangent else tangent + math.pi * 0.5
+				if kit({ "Kit_Ascendancy_Wall" }, wx, ground(wx, wz), wz, yaw, pieceH, parent) then
+					written += 1
+				end
+			end
+		end
+		return written
+	end
+
+	for i = 0, segmentCount - 1 do
+		if not blocked[i] then
+			local angle = i * segmentAngle
 			local lx = math.cos(angle) * radius
 			local lz = math.sin(angle) * radius
 			local orientation = tangentYaw(center, siteYaw, lx, lz)
@@ -209,13 +306,21 @@ local function addSandbagNest(parent: Instance, center: Vector3, siteYaw: number
 
 	local lx = ux * radius
 	local lz = uz * radius
-	partOnGround(parent, center, siteYaw, lx, lz, Vector3.new(5.6, 1.8, 1.3), baseOrientation, "Sandbag" .. index .. "C", SANDBAG, Enum.Material.Fabric, true)
+	-- Authored barricades stand in for the bag line when installed; same tangent layout, same
+	-- cover heights, so the defensive readability of the nest is unchanged.
+	local centerWx, centerWz = localXZ(center, siteYaw, lx, lz)
+	if not kit({ "Kit_Ascendancy_Barricade", "AscendancyBarricade" }, centerWx, ground(centerWx, centerWz), centerWz, baseOrientation, 1.8, parent) then
+		partOnGround(parent, center, siteYaw, lx, lz, Vector3.new(5.6, 1.8, 1.3), baseOrientation, "Sandbag" .. index .. "C", SANDBAG, Enum.Material.Fabric, true)
+	end
 
 	for _, side in ipairs({ -1, 1 }) do
 		local sideLx = ux * (radius - 1.1) + tx * side * 3.1
 		local sideLz = uz * (radius - 1.1) + tz * side * 3.1
 		local orientation = baseOrientation + side * math.rad(28)
-		partOnGround(parent, center, siteYaw, sideLx, sideLz, Vector3.new(4.4, 1.75, 1.25), orientation, "Sandbag" .. index .. (side < 0 and "L" or "R"), SANDBAG, Enum.Material.Fabric, true)
+		local sideWx, sideWz = localXZ(center, siteYaw, sideLx, sideLz)
+		if not kit({ "Kit_Ascendancy_Barricade", "AscendancyBarricade" }, sideWx, ground(sideWx, sideWz), sideWz, orientation, 1.75, parent) then
+			partOnGround(parent, center, siteYaw, sideLx, sideLz, Vector3.new(4.4, 1.75, 1.25), orientation, "Sandbag" .. index .. (side < 0 and "L" or "R"), SANDBAG, Enum.Material.Fabric, true)
+		end
 	end
 end
 
@@ -223,6 +328,10 @@ local function addSingleSandbag(parent: Instance, center: Vector3, siteYaw: numb
 	local lx = math.cos(angle) * radius
 	local lz = math.sin(angle) * radius
 	local orientation = tangentYaw(center, siteYaw, lx, lz)
+	local wx, wz = localXZ(center, siteYaw, lx, lz)
+	if kit({ "Kit_Ascendancy_Barricade", "AscendancyBarricade" }, wx, ground(wx, wz), wz, orientation, 1.8, parent) then
+		return
+	end
 	partOnGround(parent, center, siteYaw, lx, lz, Vector3.new(5.5, 1.8, 1.35), orientation, name, SANDBAG, Enum.Material.Fabric, true)
 end
 
@@ -248,6 +357,10 @@ local function crateStack(parent: Instance, center: Vector3, siteYaw: number, lx
 	local wx, wz = localXZ(center, siteYaw, lx, lz)
 	local gy = ground(wx, wz)
 	for level = 0, levels - 1 do
+		-- Authored crates stack on the same layout; bottom pivots sit at each level's base.
+		if kit({ "Kit_Ascendancy_Crate", "Kit_Human_Crate", "HumanCrate" }, wx, gy + level * (size.Y - 0.12), wz, siteYaw + crateYaw, size.Y, parent, 0.05) then
+			continue
+		end
 		local y = gy + size.Y * 0.5 - EMBED + level * (size.Y - 0.12)
 		local color = CRATE_DARK
 		if level % 2 == 0 then
@@ -284,6 +397,11 @@ local function addWatchtower(parent: Instance, center: Vector3, siteYaw: number,
 	local lz = math.sin(angle) * radius
 	local wx, wz = localXZ(center, siteYaw, lx, lz)
 	local gy = ground(wx, wz)
+	-- Authored tower replaces the five-part blockout stack when installed; the blockout roofline
+	-- sits at gy+13.7 so the piece is scaled to a 14-stud silhouette.
+	if kit({ "Kit_Ascendancy_Tower", "AscendancyWatchtower" }, wx, gy, wz, siteYaw, 14, parent) then
+		return
+	end
 	partAtWorld(parent, wx, gy + 0.53, wz, Vector3.new(7, 1.9, 7), siteYaw, "WatchtowerBase" .. index, CONCRETE, Enum.Material.Concrete, true)
 	partAtWorld(parent, wx, gy + 7.3, wz, Vector3.new(3.8, 12, 3.8), siteYaw, "WatchtowerShaft" .. index, METAL_DARK, Enum.Material.Metal, true)
 	partAtWorld(parent, wx, gy + 9.7, wz, Vector3.new(8.2, 0.8, 8.2), siteYaw, "WatchtowerDeck" .. index, METAL, Enum.Material.DiamondPlate, true)
@@ -318,7 +436,10 @@ local function buildStronghold(position: Vector3, siteYaw: number, parent: Insta
 			local tangentOffset = side * (entrance.width * 0.5 + 1.1)
 			local lx = ux * wallRadius + tx * tangentOffset
 			local lz = uz * wallRadius + tz * tangentOffset
-			partOnGround(model, position, siteYaw, lx, lz, Vector3.new(2.2, 6.2, 2.2), orientation, "GatePost" .. gateIndex .. (side < 0 and "L" or "R"), METAL_DARK, Enum.Material.Metal, true)
+			local postWx, postWz = localXZ(position, siteYaw, lx, lz)
+			if not kit({ "Kit_Ascendancy_Pier" }, postWx, ground(postWx, postWz), postWz, orientation, 6.2, model) then
+				partOnGround(model, position, siteYaw, lx, lz, Vector3.new(2.2, 6.2, 2.2), orientation, "GatePost" .. gateIndex .. (side < 0 and "L" or "R"), METAL_DARK, Enum.Material.Metal, true)
+			end
 		end
 	end
 
@@ -384,7 +505,11 @@ local function buildShieldGenerator(position: Vector3, siteYaw: number, parent: 
 
 	partOnGround(model, position, siteYaw, 0, 0, Vector3.new(12, 0.7, 12), siteYaw, "EmitterPad", METAL, Enum.Material.DiamondPlate, true, 0.15)
 	partAtLocal(model, position, siteYaw, 0, 0, gy + 0.83, Vector3.new(8, 2.5, 8), siteYaw, "EmitterBase", METAL, Enum.Material.Concrete, true)
-	partAtLocal(model, position, siteYaw, 0, 0, gy + 6.15, Vector3.new(3.8, 8.5, 3.8), siteYaw, "EmitterTower", ARMOR, Enum.Material.Metal, true)
+	-- Authored pier stands in for the emitter tower shaft; the destructible core and frame
+	-- rails above it are untouched either way.
+	if not kit({ "Kit_Ascendancy_Pier" }, position.X, gy + 2.0, position.Z, siteYaw, 8.5, model) then
+		partAtLocal(model, position, siteYaw, 0, 0, gy + 6.15, Vector3.new(3.8, 8.5, 3.8), siteYaw, "EmitterTower", ARMOR, Enum.Material.Metal, true)
+	end
 
 	-- Visible destructible emitter core. Corner rails frame it without hiding the cyan volume.
 	for _, sx in ipairs({ -1, 1 }) do
@@ -537,7 +662,9 @@ local function buildArtillery(position: Vector3, siteYaw: number, parent: Instan
 	}, "ArtilleryBerm")
 
 	partOnGround(model, position, siteYaw, 0, 0, Vector3.new(14, 0.8, 14), siteYaw, "GunPitPad", METAL, Enum.Material.DiamondPlate, true, 0.15)
-	partAtLocal(model, position, siteYaw, 0, 0, gy + 1.43, Vector3.new(6, 1.8, 6), siteYaw, "GunBase", CONCRETE, Enum.Material.Concrete, true)
+	if not kit({ "Kit_Ascendancy_TurretBase" }, position.X, gy + 0.6, position.Z, siteYaw, 1.8, model) then
+		partAtLocal(model, position, siteYaw, 0, 0, gy + 1.43, Vector3.new(6, 1.8, 6), siteYaw, "GunBase", CONCRETE, Enum.Material.Concrete, true)
+	end
 
 	-- The breech itself is the visible destruction target and carries the structure integrity contract.
 	local gun = partAtLocal(model, position, siteYaw, 0, 0, gy + 3.7, Vector3.new(4.0, 3.0, 4.0), siteYaw, "ArtilleryGun", ARMOR, Enum.Material.Metal, true)

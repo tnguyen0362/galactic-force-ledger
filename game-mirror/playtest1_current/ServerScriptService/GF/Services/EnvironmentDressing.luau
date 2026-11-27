@@ -21,6 +21,45 @@ local function groundAt(x: number, z: number, ignore: {Instance}?): (number?, Ve
 	return nil, nil
 end
 
+-- Kit scatter placement: the dressing clauses are written in scale factors, so the native
+-- height is measured once and converted. Pieces go through placeKit (authored pivot, palette
+-- preserved, correct uniform ScaleTo) and are NEVER tinted here — reskin/tint strips baked
+-- textures. Terrain pieces ship neutral and read correctly on any biome without it.
+local function kitScatter(ids: { string }, position: Vector3, scaleFactor: number, yaw: number, sink: number?, parent: Instance): Model?
+	if type(ArtService.firstExists) ~= "function" or type(ArtService.placeKit) ~= "function" then
+		return nil
+	end
+	local id = ArtService.firstExists(ids)
+	if not id then
+		return nil
+	end
+	local size = type(ArtService.measure) == "function" and ArtService.measure(id) or nil
+	if not size or size.Y < 0.01 then
+		return nil
+	end
+	return ArtService.placeKit(id, position, {
+		yaw = yaw,
+		height = size.Y * scaleFactor,
+		sink = sink,
+		parent = parent,
+	})
+end
+
+local CLIFF_VARIANTS = { "Kit_Terrain_CliffA", "Kit_Terrain_CliffB", "Kit_Terrain_CliffC", "Kit_Terrain_CliffD" }
+
+local function cliffPick(rng: Random): { string }
+	local variants = {}
+	for _, id in ipairs(CLIFF_VARIANTS) do
+		if ArtService.exists(id) then
+			table.insert(variants, id)
+		end
+	end
+	if #variants == 0 then
+		return { "RockCliff" }
+	end
+	return { variants[rng:NextInteger(1, #variants)] }
+end
+
 function EnvironmentDressing.dress(opts)
 	local seed = opts.seed or 1
 	local center = opts.center :: Vector3
@@ -40,7 +79,7 @@ function EnvironmentDressing.dress(opts)
 	local counts = { cliff = 0, flora = 0, crate = 0, barricade = 0, mountain = 0 }
 
 	-- Distant mountain backdrop: a ring beyond the playable edge, sunk into the world.
-	if ArtService.exists("MountainRidge") then
+	if ArtService.exists("MountainRidge") or ArtService.exists("Kit_Terrain_CliffA") then
 		local ring = 9
 		for i = 1, ring do
 			local ang = (i / ring) * math.pi * 2 + rng:NextNumber(-0.08, 0.08)
@@ -48,12 +87,18 @@ function EnvironmentDressing.dress(opts)
 			local x = center.X + math.cos(ang) * dist
 			local z = center.Z + math.sin(ang) * dist
 			local h = select(1, groundAt(x, z, ignore)) or center.Y
-			local m = ArtService.place("MountainRidge", Vector3.new(x, h, z), {
-				parent = folder,
-				scale = rng:NextNumber(1.5, 2.1),
-				yaw = rng:NextNumber(0, math.pi * 2),
-				sink = rng:NextNumber(24, 34),
-			})
+			local mscale = rng:NextNumber(1.5, 2.1)
+			local myaw = rng:NextNumber(0, math.pi * 2)
+			local msink = rng:NextNumber(24, 34)
+			-- scaled-up cliff formations stand in as the horizon ring; the dedicated ridge asset
+			-- never shipped, and authored rock reads as distant mountains once sunk and scaled.
+			local m = kitScatter(cliffPick(rng), Vector3.new(x, h, z), mscale, myaw, msink, folder)
+				or ArtService.place("MountainRidge", Vector3.new(x, h, z), {
+					parent = folder,
+					scale = mscale,
+					yaw = myaw,
+					sink = msink,
+				})
 			if m then
 				m.Name = "Mountain" .. i
 				counts.mountain += 1
@@ -66,7 +111,7 @@ function EnvironmentDressing.dress(opts)
 
 	-- Faceted cliff outcrops: pieces are grouped into 2-4 piece formations that
 	-- share an orientation, so they read as broken rock rather than scattered dice.
-	if ArtService.exists("RockCliff") then
+	if ArtService.exists("RockCliff") or ArtService.exists("Kit_Terrain_CliffA") then
 		local debugMaxSlope = -1
 		local attempts = 0
 		local outcrops = 0
@@ -91,17 +136,27 @@ function EnvironmentDressing.dress(opts)
 						local z = cz + math.sin(ang) * rad
 						local y = select(1, groundAt(x, z, ignore))
 						if y then
-							local m = ArtService.place("RockCliff", Vector3.new(x, y, z), {
-								parent = folder,
-								scale = rng:NextNumber(0.16, 0.38),
-								yaw = yaw + rng:NextNumber(-0.35, 0.35),
-								sink = rng:NextNumber(1.5, 4),
-							})
-							if m then
-								m.Name = "Outcrop" .. outcrops .. "_" .. piece
-								ArtService.tint(m, Color3.fromRGB(96, 100, 114), Enum.Material.Slate)
+							local cscale = rng:NextNumber(0.16, 0.38)
+							local cyaw = yaw + rng:NextNumber(-0.35, 0.35)
+							local csink = rng:NextNumber(1.5, 4)
+							local kitM = kitScatter(cliffPick(rng), Vector3.new(x, y, z), cscale, cyaw, csink, folder)
+							if kitM then
+								kitM.Name = "Outcrop" .. outcrops .. "_" .. piece
 								counts.cliff += 1
 								placed += 1
+							else
+								local m = ArtService.place("RockCliff", Vector3.new(x, y, z), {
+									parent = folder,
+									scale = cscale,
+									yaw = cyaw,
+									sink = csink,
+								})
+								if m then
+									m.Name = "Outcrop" .. outcrops .. "_" .. piece
+									ArtService.tint(m, Color3.fromRGB(96, 100, 114), Enum.Material.Slate)
+									counts.cliff += 1
+									placed += 1
+								end
 							end
 						end
 					end
@@ -154,38 +209,47 @@ function EnvironmentDressing.dress(opts)
 
 	-- Military props around the objective footprint.
 	if objective then
-		if ArtService.exists("HumanCrate") then
+		if ArtService.exists("HumanCrate") or ArtService.exists("Kit_Human_Crate") or ArtService.exists("Kit_Ascendancy_Crate") then
 			for i = 1, 6 do
 				local ang = (i / 6) * math.pi * 2
 				local x = objective.X + math.cos(ang) * rng:NextNumber(13, 22)
 				local z = objective.Z + math.sin(ang) * rng:NextNumber(13, 22)
 				local y = select(1, groundAt(x, z, ignore))
 				if y then
-					local m = ArtService.place("HumanCrate", Vector3.new(x, y, z), {
-						parent = folder,
-						scale = rng:NextNumber(1.0, 1.35),
-						yaw = rng:NextNumber(0, math.pi * 2),
-					})
+					local m = kitScatter({ "Kit_Ascendancy_Crate", "Kit_Human_Crate", "Kit_Human_Crates", "HumanCrate" },
+						Vector3.new(x, y, z), rng:NextNumber(1.0, 1.35), rng:NextNumber(0, math.pi * 2), nil, folder)
+						or ArtService.place("HumanCrate", Vector3.new(x, y, z), {
+							parent = folder,
+							scale = rng:NextNumber(1.0, 1.35),
+							yaw = rng:NextNumber(0, math.pi * 2),
+						})
 					if m then counts.crate += 1 end
 				end
 			end
 		end
-		if ArtService.exists("AscendancyBarricade") then
+		if ArtService.exists("AscendancyBarricade") or ArtService.exists("Kit_Ascendancy_Barricade") then
 			for i = 1, 6 do
 				local ang = ((i - 1) / 6) * math.pi * 2
 				local x = objective.X + math.cos(ang) * rng:NextNumber(29, 39)
 				local z = objective.Z + math.sin(ang) * rng:NextNumber(29, 39)
 				local y = select(1, groundAt(x, z, ignore))
 				if y then
-					local m = ArtService.place("AscendancyBarricade", Vector3.new(x, y, z), {
-						parent = folder,
-						scale = rng:NextNumber(0.62, 0.8),
-						yaw = ang + math.pi * 0.5,
-					})
-					if m then
-						m.Name = "Barricade" .. i
-						ArtService.tint(m, Color3.fromRGB(74, 72, 86), Enum.Material.Metal)
+					local kitM = kitScatter({ "Kit_Ascendancy_Barricade" }, Vector3.new(x, y, z),
+						rng:NextNumber(0.62, 0.8), ang + math.pi * 0.5, nil, folder)
+					if kitM then
+						kitM.Name = "Barricade" .. i
 						counts.barricade += 1
+					else
+						local m = ArtService.place("AscendancyBarricade", Vector3.new(x, y, z), {
+							parent = folder,
+							scale = rng:NextNumber(0.62, 0.8),
+							yaw = ang + math.pi * 0.5,
+						})
+						if m then
+							m.Name = "Barricade" .. i
+							ArtService.tint(m, Color3.fromRGB(74, 72, 86), Enum.Material.Metal)
+							counts.barricade += 1
+						end
 					end
 				end
 			end
