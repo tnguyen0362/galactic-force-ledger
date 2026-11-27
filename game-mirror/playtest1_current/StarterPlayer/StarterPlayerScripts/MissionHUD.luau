@@ -459,6 +459,60 @@ game:GetService("RunService").RenderStepped:Connect(function()
 	hackNeedle.Rotation = angle
 end)
 
+
+-- Capture-zone HUD. The ring in the world is the primary read (cyan/red/dim); this bar is the
+-- precision instrument — exact progress, state text, and a contested flash so a defender never
+-- has to guess why the capture stalled.
+local zoneFrame = panel(gui, UDim2.fromScale(0.3, 0.06), UDim2.fromScale(0.5, 0.135), Vector2.new(0.5, 0))
+zoneFrame.Visible = false
+local zoneTitle = label(zoneFrame, "CONTROL ZONE", UDim2.fromScale(0.96, 0.42), UDim2.fromScale(0.04, 0.04), 13, Color3.fromRGB(96, 214, 232))
+local zoneStateText = label(zoneFrame, "", UDim2.fromScale(0.96, 0.4), UDim2.fromScale(0.04, 0.42), 12)
+local zoneBarBg = Instance.new("Frame")
+zoneBarBg.Size = UDim2.fromScale(0.92, 0.1)
+zoneBarBg.Position = UDim2.fromScale(0.04, 0.86)
+zoneBarBg.BackgroundColor3 = Color3.fromRGB(40, 46, 56)
+zoneBarBg.BorderSizePixel = 0
+zoneBarBg.Parent = zoneFrame
+local zoneBarFill = Instance.new("Frame")
+zoneBarFill.Size = UDim2.fromScale(0, 1)
+zoneBarFill.BackgroundColor3 = Color3.fromRGB(96, 214, 232)
+zoneBarFill.BorderSizePixel = 0
+zoneBarFill.Parent = zoneBarBg
+
+local zoneFlash = 0
+game:GetService("RunService").RenderStepped:Connect(function(dt)
+	if zoneFlash > 0 then
+		zoneFlash = math.max(0, zoneFlash - dt)
+		zoneStateText.TextColor3 = (math.floor(zoneFlash * 6) % 2 == 0) and Color3.fromRGB(255, 96, 84) or Color3.fromRGB(226, 236, 245)
+	end
+end)
+
+Remotes.ZoneState.OnClientEvent:Connect(function(payload)
+	if type(payload) ~= "table" or payload.active ~= true then
+		zoneFrame.Visible = false
+		return
+	end
+	zoneFrame.Visible = true
+	zoneTitle.Text = string.upper(payload.label or "CONTROL ZONE")
+	local state = payload.state or "empty"
+	local pct = math.floor((payload.progress or 0) * 100)
+	if payload.paused then
+		zoneStateText.Text = string.format("PAUSED — %d%%", pct)
+		zoneBarFill.BackgroundColor3 = Color3.fromRGB(255, 198, 92)
+	elseif state == "contested" then
+		zoneStateText.Text = string.format("CONTESTED — %d%%", pct)
+		zoneBarFill.BackgroundColor3 = Color3.fromRGB(255, 96, 84)
+		zoneFlash = 1.2
+	elseif state == "capturing" then
+		zoneStateText.Text = string.format("CAPTURING — %d%%", pct)
+		zoneBarFill.BackgroundColor3 = Color3.fromRGB(96, 214, 232)
+	else
+		zoneStateText.Text = string.format("EMPTY — bleeding %d%%", pct)
+		zoneBarFill.BackgroundColor3 = Color3.fromRGB(120, 128, 140)
+	end
+	zoneBarFill.Size = UDim2.fromScale(math.clamp(payload.progress or 0, 0, 1), 1)
+end)
+
 -- interact input: keyboard E, gamepad X, touch tap on the prompt
 local function fireInteract()
 	local character = player.Character

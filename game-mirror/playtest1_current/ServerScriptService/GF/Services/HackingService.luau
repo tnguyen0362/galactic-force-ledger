@@ -14,6 +14,7 @@ local active = {}
 local nextId = 0
 
 HackingService.onComplete = nil
+HackingService.onMiss = nil
 HackingService.onCancel = nil
 
 -- A challenge is abandoned when the player leaves the console, goes down, or disconnects. Without this
@@ -62,10 +63,11 @@ local function publish(player, state)
 		arcWidth = state.arcWidth,
 		stage = state.stage,
 		startedAt = state.startedAt,
+		tag = state.tag,
 	})
 end
 
-function HackingService.begin(player: Player, difficulty: string?, anchor: Vector3?)
+function HackingService.begin(player: Player, difficulty: string?, anchor: Vector3?, tag: string?)
 	nextId += 1
 	local key = difficulty or "Normal"
 	local state = {
@@ -78,6 +80,7 @@ function HackingService.begin(player: Player, difficulty: string?, anchor: Vecto
 		startedAt = workspace:GetServerTimeNow(),
 		lastAttempt = 0,
 		anchor = anchor,
+		tag = tag,
 	}
 	active[player] = state
 	workspace:SetAttribute("GF_HackStage", 0)
@@ -98,7 +101,7 @@ function HackingService.cancel(player: Player, reason: string?)
 	workspace:SetAttribute("GF_HackCancelled", reason or "cancelled")
 	publish(player, nil)
 	if HackingService.onCancel then
-		HackingService.onCancel(player, reason or "cancelled", state.id)
+		HackingService.onCancel(player, reason or "cancelled", state.id, state.tag)
 	end
 	return true
 end
@@ -127,6 +130,9 @@ function HackingService.attempt(player: Player, id: number?)
 		state.stage = math.max(0, state.stage - 1)
 		state.misses += 1
 		workspace:SetAttribute("GF_HackMisses", state.misses)
+		if HackingService.onMiss then
+			HackingService.onMiss(player, state.id, state.tag)
+		end
 	end
 	workspace:SetAttribute("GF_LastHackDelta", math.floor(delta))
 	workspace:SetAttribute("GF_LastHackHit", hit)
@@ -136,7 +142,7 @@ function HackingService.attempt(player: Player, id: number?)
 		workspace:SetAttribute("GF_HackComplete", (workspace:GetAttribute("GF_HackComplete") or 0) + 1)
 		publish(player, nil)
 		if HackingService.onComplete then
-			HackingService.onComplete(player, state.id)
+			HackingService.onComplete(player, state.id, state.tag)
 		end
 		return true, "complete"
 	end

@@ -87,6 +87,22 @@ local function showDeliveryRing()
 	deliveryRing = ring
 end
 local defending = false
+local ZoneControlService = nil
+do
+	local ok, z = pcall(function()
+		return require(script.Parent.ZoneControlService)
+	end)
+	if ok then
+		ZoneControlService = z
+	end
+end
+-- Sabotage breach state: the relay is shielded by three field nodes that must be hacked
+-- (ring challenge per node, alarms on misses) before the core terminal accepts the charge.
+local shieldNodes: { any } = {}
+local nodesBreached = 0
+local beaconZoneDone = false
+local beaconResyncPending = false
+local beaconResynced = false
 local defendEndsAt = 0
 local hint = ""
 
@@ -217,6 +233,40 @@ local function buildRelay(position)
 		local lamp = partOf(model, Vector3.new(0.7, 0.3, 0.7), Vector3.new(stanchion.Position.X, 4.3, 15), Color3.fromRGB(255, 214, 140), Enum.Material.Neon, position)
 		lamp.Name = "StanchionLamp"
 		lamp.CanCollide = false
+	end
+	-- Breach shield nodes: three field pylons in a triangle around the relay. Each is a
+	-- hacking target (ring challenge); all three must fall before the core terminal accepts
+	-- the demolition charge. Authored kit beacon when installed, part console otherwise.
+	shieldNodes = {}
+	nodesBreached = 0
+	for i = 1, 3 do
+		local a = math.rad(30 + i * 120)
+		local nx = position.X + math.cos(a) * 17
+		local nz = position.Z + math.sin(a) * 17
+		local nodePos = Vector3.new(nx, position.Y, nz)
+		local node = Instance.new("Model")
+		node.Name = "ShieldNode" .. i
+		local console = nil
+		if ArtService.exists("Kit_Ascendancy_Beacon") then
+			console = ArtService.placeKit("Kit_Ascendancy_Beacon", nodePos, { height = 7, yaw = -a, parent = node, collide = true })
+		end
+		if not console then
+			partOf(node, Vector3.new(2.2, 1.2, 2.2), Vector3.new(0, 0.6, 0), Color3.fromRGB(44, 46, 56), Enum.Material.Metal, nodePos)
+			partOf(node, Vector3.new(1.2, 3.6, 1.2), Vector3.new(0, 2.6, 0), Color3.fromRGB(52, 56, 68), Enum.Material.Metal, nodePos)
+		end
+		-- the interactable face plate: players target this, not the sculpture
+		local plate = partOf(node, Vector3.new(1.6, 2.2, 0.6), Vector3.new(0, 1.6, 1.4), Color3.fromRGB(34, 38, 48), Enum.Material.Metal, nodePos)
+		plate.Name = "Terminal"
+		plate:SetAttribute("GFInteract", "ShieldNode")
+		plate:SetAttribute("InteractPrompt", "Breach shield node")
+		local core = partOf(node, Vector3.new(1.1, 1.1, 1.1), Vector3.new(0, 4.6, 0), Color3.fromRGB(169, 99, 233), Enum.Material.Neon, nodePos)
+		core.Name = "NodeCore"
+		core.CanCollide = false
+		local glow = Instance.new("PointLight")
+		glow.Color = Color3.fromRGB(169, 99, 233); glow.Brightness = 1.2; glow.Range = 16; glow.Shadows = false
+		glow.Parent = core
+		node.Parent = model
+		shieldNodes[i] = { model = node, core = core, glow = glow, plate = plate, breached = false, busy = nil, alarms = 0, position = nodePos }
 	end
 	model.PrimaryPart = base
 	model.Parent = ArtService.actorsFolder()
@@ -1318,6 +1368,14 @@ end
 function ObjectiveService.setup(position, template)
 	if objective then objective:Destroy() end
 	ObjectiveService.resetState()
+	shieldNodes = {}
+	nodesBreached = 0
+	beaconZoneDone = false
+	beaconResyncPending = false
+	beaconResynced = false
+	if ZoneControlService then
+		ZoneControlService.destroyAll()
+	end
 	-- A fresh mission gets its own rewards ledger, so seq restarts and claim-once is scoped per mission.
 	pcall(function()
 		require(script.Parent.RewardLedgerService).begin(template)
@@ -1397,7 +1455,7 @@ function ObjectiveService.setup(position, template)
 		objective = buildElimination(pos)
 	else
 		objective = buildRelay(pos)
-		hint = "Hold E at the console to sabotage the relay"
+		hint = "Breach the three shield nodes, then plant the charge"
 	end
 	if string.sub(templateId, 1, 5) == "ELIM_" and elimTotal > 0 and not complete then
 		elimTick()
@@ -1473,8 +1531,73 @@ local function defendTick()
 	end)
 end
 
+-- Sabotage breach flow: nodes first (tagged ring hacks), then the charge at the core terminal.
+-- Node discrimination is by proximity — the squad never has to think about which console they
+-- are standing at, only whether it still glows.
+local function sabotageRequest(player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	-- nearest unbreached node in range wins over the core terminal
+	for i, node in ipairs(shieldNodes) do
+		if not node.breached and (root.Position - node.position).Magnitude <= INTERACT_RANGE + 2 then
+			if node.busy and node.busy ~= player then
+				hint = "Node already being breached — cover your squadmate"
+				publish()
+				return
+			end
+			if node.busy == player then
+				return -- mid-hack: interacting again must not restart the challenge
+			end
+			node.busy = player
+			local difficulty = (State.getMission() or {}).difficulty or "Normal"
+			HackingService.begin(player, difficulty, node.position, "node" .. i)
+			hint = string.format("Breaching node %d of 3 — press in the green arc (%d remaining)", i, 3 - nodesBreached)
+			publish()
+			return
+		end
+	end
+	-- core terminal: blocked until the shield is down, then a 4s charge plant
+	local terminal = objective and objective:FindFirstChild("Terminal")
+	if not terminal or (root.Position - terminal.Position).Magnitude > INTERACT_RANGE then return end
+	if nodesBreached < 3 then
+		hint = string.format("Relay shielded — breach the field nodes (%d of 3 remaining)", 3 - nodesBreached)
+		publish()
+		return
+	end
+	if holding[player] then return end
+	holding[player] = true
+	local st = State.get(player)
+	if st then st.atConsole = true end
+	ObjectiveService.showScreen(true)
+	hint = "Planting the demolition charge — hold position"
+	publish()
+	task.spawn(function()
+		local started = os.clock()
+		local plantTime = 4
+		while os.clock() - started < plantTime do
+			task.wait(0.1)
+			if complete or not player.Parent or not player.Character then
+				holding[player] = nil ObjectiveService.clearScreen(player) return
+			end
+			local r = player.Character:FindFirstChild("HumanoidRootPart")
+			if not r or (r.Position - terminal.Position).Magnitude > INTERACT_RANGE + 4 then
+				holding[player] = nil ObjectiveService.clearScreen(player) return
+			end
+			progress = math.clamp(0.9 + (os.clock() - started) / plantTime * 0.1, 0, 1)
+			publish()
+		end
+		holding[player] = nil
+		ObjectiveService.clearScreen(player)
+		ObjectiveService.complete()
+	end)
+end
+
 function ObjectiveService.request(player)
 	if complete or not objective then return end
+	if templateId == "SABOTAGE_RELAY" then
+		return sabotageRequest(player)
+	end
 	if templateId == "RECOVERY_CONVOY" then
 		return convoyRequest(player)
 	end
@@ -1496,6 +1619,19 @@ function ObjectiveService.request(player)
 	if not root or not terminal then return end
 	if (root.Position - terminal.Position).Magnitude > INTERACT_RANGE then return end
 	if holding[player] then return end
+	-- desync re-sync: the capture is paused, one player runs the ring hack at the terminal
+	if templateId == "DEFEND_BEACON" and defending and beaconResyncPending then
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local terminal = objective and objective:FindFirstChild("Terminal")
+		if root and terminal and (root.Position - terminal.Position).Magnitude <= INTERACT_RANGE then
+			local difficulty = (State.getMission() or {}).difficulty or "Normal"
+			HackingService.begin(player, difficulty, terminal.Position, "beaconresync")
+			hint = "Re-syncing — press in the green arc"
+			publish()
+		end
+		return
+	end
 	if templateId == "DEFEND_BEACON" and defending then return end
 	-- RECOVER_TECH is a carry, not a hold: picking the case up is instant, and the objective only completes
 	-- when the carrier reaches the landing zone. Three templates that were only ever different hold times now
@@ -1550,8 +1686,72 @@ function ObjectiveService.request(player)
 		end
 		if templateId == "DEFEND_BEACON" then
 			defending = true
-			defendEndsAt = os.clock() + DEFEND_TIME
-			defendTick()
+			-- capture-zone defense: the perimeter must be HELD, not just survived. Progress
+			-- accrues while the squad is inside and no enemy contests; at 50% the beacon
+			-- desyncs and one player must re-sync it (ring hack) while the rest hold.
+			local beaconPos = objective and objective.PrimaryPart and objective.PrimaryPart.Position or terminal.Position
+			hint = "Hold the beacon perimeter"
+			publish()
+			if ZoneControlService then
+				ZoneControlService.create("beacon", {
+					center = beaconPos,
+					radius = 30,
+					label = "Beacon perimeter",
+					rate = 1 / 75,
+					decay = 1 / 160,
+					onComplete = function(_zone)
+						if not complete then
+							progress = 1
+							ObjectiveService.complete()
+						end
+					end,
+					onStateChange = function(_zone, state)
+						if state == "contested" then
+							hint = "Zone contested — clear the perimeter!"
+						elseif state == "capturing" then
+							hint = "Capturing the perimeter — hold it"
+						else
+							hint = "Perimeter empty — capture is bleeding"
+						end
+						publish()
+					end,
+				})
+				-- desync mix at 50%: pause the capture, demand a re-sync hack at the terminal
+				task.spawn(function()
+					while defending and not complete and not beaconResynced do
+						task.wait(0.5)
+						local zone = ZoneControlService.get("beacon")
+						if zone and zone.progress >= 0.5 then
+							beaconResyncPending = true
+							ZoneControlService.pause("beacon", true)
+							terminal:SetAttribute("InteractPrompt", "Re-sync beacon")
+							hint = "Beacon desync — one player re-sync at the terminal, the rest hold the line"
+							publish()
+							local ev = ReplicatedStorage.GF.Remotes:FindFirstChild("MissionEvent")
+							if ev then
+								ev:FireAllClients({ text = "Beacon desync! Re-sync at the terminal.", kind = "objective" })
+							end
+							break
+						end
+					end
+				end)
+				-- mirror zone progress into the objective HUD channel
+				task.spawn(function()
+					while defending and not complete do
+						task.wait(0.5)
+						local zone = ZoneControlService.get("beacon")
+						if zone then
+							progress = math.clamp(zone.progress, 0, 1)
+							publish()
+						else
+							break
+						end
+					end
+				end)
+			else
+				defendEndsAt = os.clock() + DEFEND_TIME
+				defendTick()
+			end
 		else
 			ObjectiveService.complete()
 		end
@@ -1671,14 +1871,101 @@ function ObjectiveService.getTemplate() return templateId end
 
 function ObjectiveService.start()
 	-- Cancellation is a first-class outcome: leaving the console, going down or disconnecting releases it.
-	HackingService.onCancel = function(_player, reason, _challengeId)
+	HackingService.onCancel = function(_player, reason, _challengeId, tag)
+		if templateId == "SABOTAGE_RELAY" and type(tag) == "string" then
+			local idx = tonumber(string.sub(tag, 5))
+			local node = idx and shieldNodes[idx]
+			if node and node.busy == _player then
+				node.busy = nil
+				hint = string.format("Breach interrupted (%s) — the node is still up", tostring(reason))
+				publish()
+			end
+			return
+		end
+		if templateId == "DEFEND_BEACON" and tag == "beaconresync" then
+			hint = string.format("Re-sync interrupted (%s) — the capture stays paused", tostring(reason))
+			publish()
+			return
+		end
 		if templateId == "RECOVERY_ARCHIVE" and archiveStage == 2 then
 			hint = string.format("Console lock released (%s) — break the console again", tostring(reason))
 			publish()
 		end
 	end
+	-- Alarm consequence: a missed ring press trips the node's intrusion detection and the
+	-- garrison responds. Capped per node so a struggling player is pressured, not buried.
+	HackingService.onMiss = function(player, _challengeId, tag)
+		if templateId == "SABOTAGE_RELAY" and type(tag) == "string" then
+			local idx = tonumber(string.sub(tag, 5))
+			local node = idx and shieldNodes[idx]
+			if node and not node.breached and node.alarms < 2 then
+				node.alarms += 1
+				task.defer(function()
+					local ok, EncounterDirector = pcall(function()
+						return require(script.Parent.EncounterDirector)
+					end)
+					if ok and EncounterDirector and EncounterDirector.spawnAround then
+						EncounterDirector.spawnAround(node.position, 20, 2)
+					end
+				end)
+				hint = "Alarm tripped — defenders converging on the node!"
+				publish()
+				local ev = ReplicatedStorage.GF.Remotes:FindFirstChild("MissionEvent")
+				if ev then
+					ev:FireAllClients({ text = "Alarm tripped — defenders inbound!", kind = "warning" })
+				end
+			end
+		end
+	end
 	-- The hacking challenge owns its own success; the archive objective is told, not polled.
-	HackingService.onComplete = function(_player, _challengeId)
+	HackingService.onComplete = function(_player, _challengeId, tag)
+		-- sabotage node breach: core goes dark, count toward the shield collapse
+		if templateId == "SABOTAGE_RELAY" and type(tag) == "string" then
+			local idx = tonumber(string.sub(tag, 5))
+			local node = idx and shieldNodes[idx]
+			if node and not node.breached then
+				node.breached = true
+				node.busy = nil
+				nodesBreached += 1
+				if node.core then
+					node.core.Material = Enum.Material.Metal
+					node.core.Color = Color3.fromRGB(52, 56, 68)
+				end
+				if node.glow then
+					node.glow.Enabled = false
+				end
+				if node.plate then
+					node.plate:SetAttribute("InteractPrompt", "Node breached")
+				end
+				progress = math.clamp(nodesBreached / 3 * 0.9, 0, 0.9)
+				if nodesBreached >= 3 then
+					hint = "Shield down — plant the charge at the relay console"
+					local ev = ReplicatedStorage.GF.Remotes:FindFirstChild("MissionEvent")
+					if ev then
+						ev:FireAllClients({ text = "Relay shield down. Plant the charge.", kind = "objective" })
+					end
+				else
+					hint = string.format("Node down — %d of 3 shield nodes remaining", 3 - nodesBreached)
+				end
+				publish()
+			end
+			return
+		end
+		-- beacon re-sync complete: the capture resumes
+		if templateId == "DEFEND_BEACON" and tag == "beaconresync" then
+			beaconResyncPending = false
+			beaconResynced = true
+			if ZoneControlService then
+				ZoneControlService.pause("beacon", false)
+			end
+			local terminal = objective and objective:FindFirstChild("Terminal")
+			if terminal then
+				terminal:SetAttribute("InteractPrompt", "Beacon")
+			end
+			hint = "Beacon re-synced — capture resumed, hold the perimeter"
+			publish()
+			return
+		end
 		if templateId == "RECOVERY_ARCHIVE" and archiveStage == 2 then
 			archiveStage = 3
 			workspace:SetAttribute("GF_ArchiveStage", 3)
@@ -1714,7 +2001,7 @@ function ObjectiveService.start()
 	local r = remote("InteractRequest")
 	if r then
 		r.OnServerEvent:Connect(function(player, target)
-			if target == "Relay" or target == "BlackBox" or target == "Beacon" or target == "ConquestConsole" or target == "ConquestNode" or target == "ConvoyCrate" or target == "UplinkDish" or target == "UplinkConfirm" or target == "PowerRestore" or target == "PowerStabilise" or target == "ArsenalPad" or target == "ArchiveConsole" then
+			if target == "Relay" or target == "ShieldNode" or target == "BlackBox" or target == "Beacon" or target == "ConquestConsole" or target == "ConquestNode" or target == "ConvoyCrate" or target == "UplinkDish" or target == "UplinkConfirm" or target == "PowerRestore" or target == "PowerStabilise" or target == "ArsenalPad" or target == "ArchiveConsole" then
 				if not require(script.Parent.NetGuard).allow(player, "interact") then
 					return
 				end

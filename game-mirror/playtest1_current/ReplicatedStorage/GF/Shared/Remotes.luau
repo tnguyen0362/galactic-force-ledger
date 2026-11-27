@@ -50,6 +50,7 @@ Remotes.Names = {
 	"MissionStateChanged",
 	"HackState",
 	"HackAttempt",
+	"ZoneState",
 	"MissionEvent",
 	"SalvageUpdated",
 	"RewardsGranted",
