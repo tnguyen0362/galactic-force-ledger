@@ -47,6 +47,24 @@ do
 	end
 end
 
+-- mission-place arrival control (owner report: "the world generates above you"): requiring
+-- MissionServerInit starts the hold AT MODULE EVALUATION — players are cargo above the write
+-- volume until terrain is verified, then landed on raycast ground. require-only integration:
+-- generation stays on TerrainService.build below; the orchestrator watches GF_TerrainReady.
+-- mission-place only — in any other configuration this script's legacy flow is untouched.
+do
+	local lobbyId = workspace:GetAttribute("GF_LobbyPlaceId")
+	local missionId = workspace:GetAttribute("GF_MissionPlaceId")
+	local amMissionPlace = (type(lobbyId) == "number" and lobbyId ~= game.PlaceId)
+		or (type(missionId) == "number" and missionId == game.PlaceId)
+	if amMissionPlace then
+		local ok, err = pcall(function()
+			require(script.Parent:WaitForChild("MissionServer").MissionServerInit)
+		end)
+		if not ok then warn("[GF] arrival control failed to start: " .. tostring(err)) end
+	end
+end
+
 local Players = game:GetService("Players")
 local Services = script.Parent:WaitForChild("Services")
 local State = require(Services.State)
@@ -257,27 +275,10 @@ do
 	local lobbyId = workspace:GetAttribute("GF_LobbyPlaceId")
 	if type(lobbyId) == "number" and lobbyId ~= game.PlaceId then
 		workspace:SetAttribute("GF_AmMissionPlace", true)
-		game:GetService("Players").PlayerAdded:Connect(function(plr)
-			task.spawn(function()
-				local tWait = os.clock()
-				while workspace:GetAttribute("GF_TerrainReady") ~= true and os.clock() - tWait < 40 do
-					task.wait(0.5)
-				end
-				local char = plr.Character or plr.CharacterAdded:Wait()
-				task.wait(1)
-				local lz = workspace:GetAttribute("GF_LZ")
-				local target = typeof(lz) == "Vector3" and lz or Vector3.new(0, 40, 118)
-				local hit = workspace:Raycast(target + Vector3.new(0, 200, 0), Vector3.new(0, -600, 0))
-				if hit then
-					target = hit.Position + Vector3.new(0, 4, 0)
-				end
-				local root = char and char:FindFirstChild("HumanoidRootPart")
-				if root then
-					root.CFrame = CFrame.new(target)
-					print("[GF] mission-place arrival positioned: " .. plr.Name)
-				end
-			end)
-		end)
+		-- legacy sky-drop positioning removed: MissionServerInit owns arrival (held cargo ->
+		-- ground-truthed LZ). keeping this path active raced the orchestrator and dropped players
+		-- into half-written terrain.
+		do end
 		print("[GF] mission-place boot mode active")
 	end
 end
