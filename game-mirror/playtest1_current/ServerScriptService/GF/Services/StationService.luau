@@ -732,7 +732,11 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 			-- same seed (same generated world), same template/difficulty, full squad roster so
 			-- the mission server can reconstruct membership. teleporting the whole squad in a
 			-- single TeleportAsync keeps them in the same server instance.
-			local squad = require(script.Parent.SquadService).memberList()
+			local squadOk, squad = pcall(function() return require(script.Parent.SquadService).memberList() end)
+			if not squadOk or type(squad) ~= "table" then
+				warn("[GF] place-split squad enumeration failed:", squad)
+				squad = {}
+			end
 			local travelling = {}
 			local userIds = {}
 			for _, member in ipairs(squad) do
@@ -772,17 +776,31 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 						for _, tp in ipairs(travelling) do
 							if plr == tp then
 								warn(string.format("[GF] place-split teleport FAILED for %s result=%s msg=%s", plr.Name, tostring(result), tostring(msg)))
+								-- surface the exact reason on the deploy console button itself — the
+								-- client already paints DeployStateChanged refusals as REFUSED + reason
+								pcall(function()
+									local rs = game:GetService("ReplicatedStorage")
+									local dsr = rs.GF.Remotes:FindFirstChild("DeployStateChanged")
+									if dsr and plr.Parent then
+										dsr:FireClient(plr, { ok = false, reason = "teleport " .. tostring(result) .. ": " .. tostring(msg) })
+									end
+								end)
 							end
 						end
 					end)
 				end)
-				local tpOk, tpErr = pcall(function()
-					local opts = Instance.new("TeleportOptions")
-					opts.ReservedServerAccessCode = nil
-					pcall(function() (opts :: any).TeleportData = payload end)
-					game:GetService("TeleportService"):TeleportAsync(missionPlaceId, travelling, opts)
+				-- TeleportAsync YIELDS for seconds inside the deploy handler — the client's deploy
+				-- watchdog fires "no response" at 8s while the server is still parked in the call.
+				-- Fire it in its own thread: deploy continues into the in-place path immediately
+				-- and the teleport either claims the player or doesn't, on its own clock.
+				task.spawn(function()
+					local tpOk, tpErr = pcall(function()
+						local opts = Instance.new("TeleportOptions")
+						pcall(function() (opts :: any).TeleportData = payload end)
+						game:GetService("TeleportService"):TeleportAsync(missionPlaceId, travelling, opts)
+					end)
+					print(string.format("[GF] place-split deploy attempted: squad of %d -> place %d initOk=%s err=%s", #travelling, missionPlaceId, tostring(tpOk), tostring(tpErr)))
 				end)
-				print(string.format("[GF] place-split deploy attempted: squad of %d -> place %d initOk=%s err=%s", #travelling, missionPlaceId, tostring(tpOk), tostring(tpErr)))
 			end
 		end
 	end
