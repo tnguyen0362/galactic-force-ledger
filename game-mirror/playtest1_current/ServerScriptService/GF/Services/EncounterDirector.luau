@@ -269,7 +269,19 @@ local SAFE_LANDING_RADIUS = 70
 
 local postponedSpawns: { { center: Vector3, radius: number, count: number, attempts: number } } = {}
 
+-- The station deck floats at Y~760 directly above the mission terrain. Any spawn resolved
+-- above this ceiling is physically on the station, never the mission field — reject outright
+-- regardless of which code path produced it.
+local STATION_CEILING = 400
+
+local function missionGrounded(position: Vector3): boolean
+	return position.Y < STATION_CEILING
+end
+
 function EncounterDirector.spawnAround(center: Vector3, radius: number, count: number): number
+	if not missionGrounded(center) then
+		return 0
+	end
 	-- drain postponed spawns first: each retry gets a fresh validity roll as players move
 	if #postponedSpawns > 0 then
 		local retry = table.remove(postponedSpawns, 1)
@@ -354,6 +366,9 @@ function EncounterDirector.spawnVeyr(position: Vector3, player: Player?)
 end
 
 function EncounterDirector.spawnBoss(position: Vector3)
+	if not missionGrounded(position) then
+		return nil
+	end
 	if workspace:GetAttribute("GF_BossEnabled") == false then
 		return nil
 	end
@@ -401,7 +416,10 @@ local function canSeeConsole(from: Vector3, console: Vector3): boolean
 	return hit == nil
 end
 
-function EncounterDirector.spawnPosts(center: Vector3, count: number): number
+function EncounterDirector.spawnPosts(center: Vector3, count: number)
+	if not missionGrounded(center) then
+		return 0
+	end: number
 	local console = center + Vector3.new(0, 4, 0)
 	local placed = 0
 	local tried = 0
@@ -498,6 +516,9 @@ local function zoneWatcher()
 					end
 				end
 				for _, plr in players do
+					if plr:GetAttribute("GF_MissionParticipant") ~= true then
+						continue -- station/lobby players never trip battlefield zones: the station floats above the mission terrain, so X/Z proximity alone would activate zones from the deck
+					end
 					local char = plr.Character
 					local root = char and char:FindFirstChild("HumanoidRootPart")
 					if not root then
