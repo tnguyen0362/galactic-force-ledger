@@ -973,6 +973,39 @@ function StationService.start()
 			return { ok = true, teleporting = true }
 		end
 	end
+	-- Emergency Dispatch response (Counteroffensive §83): claim a beacon seat in ANY server,
+	-- teleport the responder across. same-server beacons fall through to the local pod-arrival
+	-- path. the claim is atomic and idempotent — retry after a failed teleport loses nothing.
+	local respond = ensureRemote("RespondDispatch", "RemoteFunction")
+	if respond then
+		respond.OnServerInvoke = function(player, beaconKey)
+			if not require(script.Parent.NetGuard).allow(player, "queue") then
+				return { ok = false, reason = "rate limited" }
+			end
+			if type(beaconKey) ~= "string" then
+				return { ok = false, reason = "bad beacon" }
+			end
+			local ds = require(script.Parent.DispatchService)
+			local claimed, hostJobId = ds.claimSeat(player, beaconKey)
+			if not claimed then
+				return { ok = false, reason = "beacon full or expired" }
+			end
+			if hostJobId == game.JobId then
+				-- same server: the arrival scanner picks the claim up within seconds and runs
+				-- the standard insertion — uniform handling, no special case needed here
+				return { ok = true, local_ = true }
+			end
+			local okTp, err = pcall(function()
+				game:GetService("TeleportService"):TeleportToJobId(game.PlaceId, hostJobId, player)
+			end)
+			if not okTp then
+				warn("[GF] dispatch response teleport failed: " .. tostring(err))
+				require(script.Parent.MatchmakingService).reconcileFailedTeleport(player)
+				return { ok = false, reason = "teleport failed — retry offered" }
+			end
+			return { ok = true, teleporting = true }
+		end
+	end
 	local returnRequest = ensureRemote("RequestReturn", "RemoteEvent")
 	if returnRequest then
 		returnRequest.OnServerEvent:Connect(function(player)
