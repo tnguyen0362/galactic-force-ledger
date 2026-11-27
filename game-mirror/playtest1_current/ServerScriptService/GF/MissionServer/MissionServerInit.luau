@@ -57,7 +57,26 @@ function MissionServerInit.boot(intent: DeployIntent): ()
 	VegetationService.plant({ seed = intent.seed * 3 + 11, extent = 4900 })
 	print(string.format("MissionServer: vegetation ready %.1fs", os.clock() - vegT))
 
-	-- 3. mission sites + objective construction on the generated terrain. This reuses the shared
+	-- 3. mission anchors from terrain analysis — the fixed legacy positions (0,-120)/(0,120)
+	-- can land inside mountains on generated geography. TerrainAnalysis already scores
+	-- placement-feasible valley-floor sites with a distributed picker enforcing separation;
+	-- LZ and objective take the two best separated lowland sites, extraction the third.
+	local TerrainAnalysis = require(Services.TerrainAnalysis)
+	local analysis = GeographyService.analysis
+	if analysis and #analysis.valleyFloor >= 3 then
+		local picked = TerrainAnalysis.distributed(analysis.valleyFloor, 3, 300)
+		if #picked >= 3 then
+			Workspace:SetAttribute("GF_AnchorLZ", Vector3.new(picked[1].x, 0, picked[1].z))
+			Workspace:SetAttribute("GF_AnchorObjective", Vector3.new(picked[2].x, 0, picked[2].z))
+			Workspace:SetAttribute("GF_AnchorExtraction", Vector3.new(picked[3].x, 0, picked[3].z))
+			print(string.format("MissionServer: anchors LZ=%.0f,%.0f obj=%.0f,%.0f ext=%.0f,%.0f",
+				picked[1].x, picked[1].z, picked[2].x, picked[2].z, picked[3].x, picked[3].z))
+		end
+	else
+		warn("MissionServer: insufficient valley-floor sites — anchor consumers must tolerate missing attrs")
+	end
+
+	-- 4. mission sites + objective construction on the generated terrain. This reuses the shared
 	-- mission-build path; in the shared place today that runs inside Mission.luau boot — the
 	-- place-split extracts it here so the mission place builds nothing until terrain exists.
 	Workspace:SetAttribute("GF_TerrainReady", true)
