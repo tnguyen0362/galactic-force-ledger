@@ -435,6 +435,21 @@ function ExtractionService.finish(success: boolean, squadBonus: boolean?)
 	end)
 	-- Every soldier still in the mission when it closes returns to the station. An individually
 	-- committed players ride the ship home; everyone still in the mission zone returns here.
+	-- place-split migration (step 6): when a lobby place exists, mission close-out teleports
+	-- the squad there instead of repositioning in-place. ReturnTeleportService is inert unless
+	-- GF_LobbyPlaceId is set and differs from this place — zero behavior change in shared place.
+	pcall(function()
+		local rts = require(script.Parent.ReturnTeleportService)
+		if rts.enabled() then
+			local home = {}
+			for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
+				table.insert(home, p)
+			end
+			if rts.sendHome(home) then
+				return -- teleported: no in-place repositioning
+			end
+		end
+	end)
 	pcall(function()
 		local station = require(script.Parent.StationService)
 		for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
