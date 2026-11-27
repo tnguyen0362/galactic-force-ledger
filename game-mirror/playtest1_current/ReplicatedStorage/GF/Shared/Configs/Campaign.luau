@@ -15,6 +15,17 @@ Campaign.Territories = {
 	{ id = "FoundryBelt", biome = "iron", neighbors = { "WhiteRidge", "IronMarch" } },
 }
 
+Campaign.DisplayName = {
+	VerdantReach = "Verdant Reach",
+	ThornBasin = "Thorn Basin",
+	AshenDivide = "Ashen Divide",
+	RedMesa = "Red Mesa",
+	Frostline = "Frostline",
+	WhiteRidge = "White Ridge",
+	IronMarch = "Iron March",
+	FoundryBelt = "Foundry Belt",
+}
+
 Campaign.ById = {}
 for _, territory in ipairs(Campaign.Territories) do
 	Campaign.ById[territory.id] = territory

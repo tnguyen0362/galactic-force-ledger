@@ -14,7 +14,7 @@ local steps = {
 	{ id = "move", text = "Move to the marked deck plate", hint = "WASD / left stick" },
 	{ id = "shoot", text = "Destroy the training target", hint = "Hold left mouse / right trigger" },
 	{ id = "reload", text = "Reload your rifle", hint = "R" },
-	{ id = "dodge", text = "Dodge out of the marked zone", hint = "Left Shift / B" },
+	{ id = "dodge", text = "Dodge out of the marked zone", hint = "Ctrl / B" },
 	{ id = "ability", text = "Call an Airstrike on the range", hint = "Q" },
 }
 local progress = {}

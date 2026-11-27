@@ -13,7 +13,6 @@ local Missions = require(ReplicatedStorage.GF.Shared.Configs.Missions)
 local Difficulties = require(ReplicatedStorage.GF.Shared.Configs.Difficulties)
 
 local StationWarTable = {}
-local buildHologram -- forward declaration: start() is called before the definition body executes
 local CREW_COLORS = {
 	Assault = Color3.fromRGB(196, 214, 232),
 	Heavy = Color3.fromRGB(232, 176, 96),
@@ -140,7 +139,6 @@ local function buildSquadSlots(parent: Instance, tableCF: CFrame)
 end
 
 function StationWarTable.start()
-	buildHologram(workspace, Vector3.new(0, 2, 0))
 	local station = workspace:WaitForChild("Station", 30)
 	if not station then
 		return
@@ -202,7 +200,7 @@ function StationWarTable.start()
 		local crew = math.max(1, #Players:GetPlayers())
 		local tickets = Difficulties.ticketsFor(diffId, crew)
 		return string.format(
-			"OPERATION  %s\nPRIMARY    %s\nTHREAT     %s  ·  %d hostiles\nTICKETS    %d available  ·  %d per extra operator\nBOUNTY     credits x%.1f\nFAMILY     %s",
+			"OPERATION  %s\nPRIMARY    %s\nTHREAT     %s  ·  %d hostiles\nRESPAWNS   %d available  ·  +%d per extra operator\nBOUNTY     credits x%.1f\nFAMILY     %s",
 			mission.displayName,
 			mission.primary,
 			diff.displayName,
@@ -224,57 +222,6 @@ function StationWarTable.start()
 		end
 	end)
 	print("[GF] war table: crew, intel screens and squad slots online")
-end
-
--- S02-018: the war table projects a rotating holographic Veyra-7. Territory markers orbit the
--- hologram and their colors follow the galactic war front state — the campaign map reads off the
--- table at a glance, which is the point of putting it physically in the station.
-buildHologram = function(parent: Instance, center: Vector3)
-	local holo = Instance.new("Part")
-	holo.Name = "HoloPlanet"
-	holo.Shape = Enum.PartType.Ball
-	holo.Size = Vector3.new(6, 6, 6)
-	holo.Material = Enum.Material.Neon
-	holo.Color = Color3.fromRGB(70, 130, 200)
-	holo.Transparency = 0.45
-	holo.Anchored = true
-	holo.CanCollide = false
-	holo.CFrame = CFrame.new(center + Vector3.new(0, 4.5, 0))
-	holo.Parent = parent
-	local light = Instance.new("PointLight")
-	light.Color = Color3.fromRGB(90, 160, 255)
-	light.Brightness = 1.4
-	light.Range = 10
-	light.Parent = holo
-	-- territory nodes: colors track war front ownership as published by the war service
-	local nodes = {}
-	for i = 1, 6 do
-		local node = Instance.new("Part")
-		node.Name = "TerritoryNode" .. i
-		node.Shape = Enum.PartType.Ball
-		node.Size = Vector3.new(0.7, 0.7, 0.7)
-		node.Material = Enum.Material.Neon
-		node.Color = Color3.fromRGB(90, 200, 255)
-		node.Anchored = true
-		node.CanCollide = false
-		node.Parent = parent
-		table.insert(nodes, node)
-	end
-	task.spawn(function()
-		local spin = 0
-		while holo.Parent do
-			task.wait(0.05)
-			spin += 0.008
-			holo.CFrame = CFrame.new(center + Vector3.new(0, 4.5, 0)) * CFrame.Angles(0, spin, 0)
-			for i, node in ipairs(nodes) do
-				local angle = math.rad(i * 60) + spin
-				node.CFrame = holo.CFrame * CFrame.new(math.cos(angle) * 4.4, math.sin(angle * 1.7) * 2, math.sin(angle) * 4.4)
-				-- contested fronts burn orange; human-held glow blue
-				local front = workspace:GetAttribute("GF_WarFront" .. i)
-				node.Color = (front == "contested") and Color3.fromRGB(255, 130, 70) or Color3.fromRGB(90, 200, 255)
-			end
-		end
-	end)
 end
 
 return StationWarTable

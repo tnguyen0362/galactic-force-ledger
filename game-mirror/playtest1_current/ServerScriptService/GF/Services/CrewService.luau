@@ -17,23 +17,41 @@ local CREW = {
 
 local DECK_Y = 761.05
 
+local function hasEnemyAttributes(inst: Instance): boolean
+	return inst:GetAttribute("GFEnemy") == true
+		or inst:GetAttribute("GFEnemyRig") == true
+		or inst:GetAttribute("EnemyId") ~= nil
+		or inst:GetAttribute("Hostile") == true
+		or inst:GetAttribute("Faction") == "Ascendancy"
+end
+
+local function hasHostileName(inst: Instance): boolean
+	local lowerName = string.lower(inst.Name)
+	return string.find(lowerName, "hero_asc", 1, true) ~= nil
+		or string.find(lowerName, "ascendancy", 1, true) ~= nil
+end
+
+local function isHostileTemplate(model: Model): boolean
+	if hasHostileName(model) or hasEnemyAttributes(model) then
+		return true
+	end
+	for _, descendant in ipairs(model:GetDescendants()) do
+		if hasEnemyAttributes(descendant) or (descendant:IsA("Model") and hasHostileName(descendant)) then
+			return true
+		end
+	end
+	return false
+end
+
 local function findTemplate()
-	-- Crew must not be built from an Ascendancy rig: once the aliens got an original crest, every crew
-	-- member inherited it and the station was staffed by hostiles. Prefer the authored human rig.
+	-- Crew must only ever come from the authored human rig. Live combat actors are not templates:
+	-- falling back to them can clone Hero_Asc*/Ascendancy hostiles into the station, so there is no fallback.
 	local ServerStorage = game:GetService("ServerStorage")
 	local art = ServerStorage:FindFirstChild("GF")
 	local lib = art and art:FindFirstChild("Art")
 	local human = lib and lib:FindFirstChild("GFSoldierRig")
-	if human and human:IsA("Model") then
+	if human and human:IsA("Model") and not isHostileTemplate(human) then
 		return human
-	end
-	local actors = workspace:FindFirstChild("ActiveActors")
-	if actors then
-		for _, m in ipairs(actors:GetChildren()) do
-			if m:IsA("Model") and m:FindFirstChildWhichIsA("Humanoid", true) and not m:FindFirstChild("AscendancyTrooper", true) then
-				return m
-			end
-		end
 	end
 	return nil
 end

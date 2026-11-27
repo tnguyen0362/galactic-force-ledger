@@ -308,7 +308,7 @@ function GalacticWarService.counteroffensive(): number
 	if reopened > 0 then
 		workspace:SetAttribute("GF_WarCounteroffensive", reopened)
 		pcall(function()
-			require(script.Parent.DialogueService).say("Ascendancy counteroffensive reopening the front. Hold what we took.", "war")
+			require(script.Parent.DialogueService).say("Ascendancy counterattack reopening the front. Hold what we took.", "war")
 		end)
 		publish()
 		GalacticWarService.save()
