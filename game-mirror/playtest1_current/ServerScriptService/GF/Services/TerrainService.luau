@@ -18,6 +18,11 @@ local SEED = 1234
 local flats: { { pos: Vector3, radius: number, height: number } } = {}
 local sample: ((number, number) -> number)? = nil
 
+-- Reused read-only terrain raycast filter (the previous hot path allocated one per query).
+local terrainRayParams = RaycastParams.new()
+terrainRayParams.FilterType = Enum.RaycastFilterType.Include
+terrainRayParams.FilterDescendantsInstances = { workspace.Terrain }
+
 local function smooth(t: number): number
 	return t * t * (3 - 2 * t)
 end
@@ -107,7 +112,11 @@ function TerrainService.build(seed: number): number
 				GeographyService.generate(spec)
 				-- vegetation composition layer follows geography (stream C inside plant)
 				local VegetationService = require(script.Parent.VegetationService)
-				VegetationService.plant({ seed = seed * 3 + 11, extent = 4900 })
+				VegetationService.plant({
+					seed = seed * 3 + 11,
+					extent = 4900,
+					heightSampler = GeographyService.lastSampler,
+				})
 				workspace:SetAttribute("GF_TerrainReady", true)
 			end)
 			if not ok then
@@ -267,10 +276,7 @@ end
 -- site. Anything that must sit on the ground raycasts the real terrain; the sampler is
 -- only a fallback for points outside the built region.
 function TerrainService.groundSurface(x: number, z: number): number
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { workspace.Terrain }
-	local hit = workspace:Raycast(Vector3.new(x, 1600, z), Vector3.new(0, -2400, 0), params)
+	local hit = workspace:Raycast(Vector3.new(x, 1600, z), Vector3.new(0, -2400, 0), terrainRayParams)
 	if hit then return hit.Position.Y end
 	local s = sample or ensureSampler(SEED)
 	return (s :: any)(x, z)
@@ -350,12 +356,9 @@ end
 -- validates before gameplay begins. The server saves only the seed; the world regenerates
 -- deterministically, never storing whole terrain in profiles.
 function TerrainService.validatePOI(pos: Vector3): boolean
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Include
-	params.FilterDescendantsInstances = { workspace.Terrain }
 	-- cast down from above the expected surface
 	local origin = pos + Vector3.new(0, 50, 0)
-	local result = workspace:Raycast(origin, Vector3.new(0, -100, 0), params)
+	local result = workspace:Raycast(origin, Vector3.new(0, -100, 0), terrainRayParams)
 	return result ~= nil
 end
 
