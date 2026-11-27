@@ -704,6 +704,7 @@ Input.onPress("QuickResponse", function()
 	end)
 end)
 
+local nearTerminalNow: any = false
 local terminalOpenedMenu = false
 task.spawn(function()
 	while true do
@@ -730,6 +731,7 @@ task.spawn(function()
 			end
 		end
 		local near = anchor ~= nil
+		nearTerminalNow = near and nearTerminalRegions or false
 		-- arc pre-selection: approaching a different terminal re-filters the operation list
 		if near and type(nearTerminalRegions) == "string" and nearTerminalRegions ~= lastTerminalRegions then
 			lastTerminalRegions = nearTerminalRegions
@@ -739,22 +741,21 @@ task.spawn(function()
 				refreshOpRow()
 			end
 		end
+		-- interact-to-open: hd2 war-table behavior — nothing pops by itself, the player
+		-- presses Interact at the terminal. proximity is tracked in nearTerminalNow.
 		-- the deploy screen rework (owner directive): terminal proximity opens the full-screen
 		-- theatre surface, not the legacy cramped panel. close-ownership is tracked so a
 		-- manually summoned menu (P / DpadLeft) is never yanked away by walking off a pad.
 		do
 			local MenuController = require(game:GetService("ReplicatedStorage").GF.Shared.UI.MenuController)
-			if near then
-				if type(nearTerminalRegions) == "string" then
-					MenuController.setRegionFilter(nearTerminalRegions)
-				end
-				if not MenuController.isOpen() then
-					MenuController.open("DEPLOY")
-					terminalOpenedMenu = true
-				end
-			elseif terminalOpenedMenu then
+			if near and type(nearTerminalRegions) == "string" then
+				MenuController.setRegionFilter(nearTerminalRegions)
+			end
+			-- no auto-open: hd2 war-table behavior — the player presses the interact key at
+			-- the terminal. a menu that opens itself whenever the player walks past is the
+			-- exact pop-up harassment the owner is rejecting. interact key only.
+			if not near and terminalOpenedMenu then
 				terminalOpenedMenu = false
-				MenuController.close()
 			end
 		end
 		-- A server-set attribute force-shows the panel, so the war table can be driven and photographed.
@@ -863,3 +864,18 @@ task.spawn(function()
 	workspace:SetAttribute("GF_HoloAnim", true)
 end)
 
+-- interact-to-open wiring: press E/X at a terminal, the theatre surface opens. no auto-pop.
+do
+	local Input = require(script.Parent.Input)
+	Input.onPress('Interact', function()
+		if nearTerminalNow then
+			local MenuController = require(game:GetService('ReplicatedStorage').GF.Shared.UI.MenuController)
+			if type(nearTerminalNow) == 'string' then
+				MenuController.setRegionFilter(nearTerminalNow)
+			end
+			if not MenuController.isOpen() then
+				MenuController.open('DEPLOY')
+			end
+		end
+	end)
+end
