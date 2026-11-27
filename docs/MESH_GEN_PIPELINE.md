@@ -1,5 +1,7 @@
 # AI Mesh Generation Pipeline — discovered 2026-11-25
 
+> Working method for agents (Studio MCP + Blender MCP + procedural generators, bus rules, upload/install/verify): see `docs/MCP_PROCEDURAL_PIPELINE.md`.
+
 ## The pipeline EXISTS and works via Roblox_Studio MCP
 - `generate_mesh` (textPrompt, size{x,y,z}, maxTriangles<=20000, segmentation, async, studio_id)
   — Roblox AI text-to-3D textured mesh generation. Async returns jobId; poll with `wait_job_finished`.
