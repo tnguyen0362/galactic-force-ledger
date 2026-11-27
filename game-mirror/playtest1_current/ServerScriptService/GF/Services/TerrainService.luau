@@ -93,7 +93,10 @@ function TerrainService.build(seed: number): number
 	if workspace:GetAttribute("GF_ForceBakedTerrain") ~= true then
 		-- hybrid procedural architecture: runtime geographical generation from compressed
 		-- real-world foundations (owner directive 2026-11-25). Deterministic stream G.
-		local seed = workspace:GetAttribute("GF_GeoSeed")
+		-- the place file carries a leftover validation pin (GF_GeoSeed=424242). Honors it ONLY
+		-- in explicit pinned-validation mode — otherwise a baked-in attribute would silently
+		-- defeat per-server variety, which is the entire point of runtime generation.
+		local seed = workspace:GetAttribute("GF_PinGeoSeed") == true and workspace:GetAttribute("GF_GeoSeed") or nil
 		if type(seed) ~= "number" or seed == 0 then
 			seed = (os.time() * 997 + math.floor(os.clock() * 1000) + math.random(1, 9999)) % 900000 + 1
 		end
