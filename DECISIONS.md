@@ -264,3 +264,9 @@ back to its committed state as history. Tests: orchestrator **37/37**, goal loop
 
 ## 2026-11-26 claude: Phase 15 art direction = Helldivers 2 feel (owner)
 Gritty, hazy, large-scale war backdrop: low heavy sun through haze with god rays (BiomeLook RAYS), cosmetic orbital-war sky (SkyWar: strikes, streaks, capital ships; client-only, capped, off on Low), fortified outpost kit (Human), restrained monolithic masonry kit (Ascendancy, no spikes/crystals/horns). Asset updates go out as PATCH revisions of existing asset ids. Studio deploy is deferred to one runbook pass (tools/art/STUDIO_WINDOW_RUNBOOK.md).
+
+## 2026-11-26 — Batch 2 kit upload (Blender, offline)
+- Authored and uploaded 29 more GLB kit pieces (Human infra x22, LandingPad, Gunship, GunshipRamp; Ascendancy Relay, Tower, WallCorner, Pier). All moderation Approved; IDs in tools/art/kit/asset_manifest.csv and install_kit.luau.
+- Status: UPLOADED_UNVERIFIED. Nothing installed or placed in Studio; no save_place. Scale/pivot/texture unverified in engine; perf UNKNOWN; no LODs.
+- Integration requirements: ArtService.reskin() must be skipped for kit pieces (strips palette); ExtractionService engine-glow cube at z-14 conflicts with gunship nose -Y / ramp +Y; collision proxies needed; pivots: GunshipRamp=bbox centre, BlastDoorLeaf=hinge edge, TurretGun=yaw axis.
+- Not done: AD-005 concourse (WallWindow/FloorPlate/CeilingPanel supplied as modules only), AD-006 planet, AD-007 cliffs/rocks, AD-010 war-table dais/hologram, Ascendancy turret etc.

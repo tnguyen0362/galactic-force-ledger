@@ -1,7 +1,7 @@
 -- Phase 15: run in Studio EDIT datamodel (execute_luau) when a Studio claim is held. Idempotent. NOT YET RUN.
 -- Installs each uploaded kit asset as ServerStorage.GF.Art.<Kit_Faction_Piece> (Model with PrimaryPart "Mesh").
 -- Import facts (same as veg): 1 m = 1 stud, TextureID palette set. Kit meshes are authored at game scale
--- (metres x 3.57), so NO ScaleTo is needed. Pieces are origin-at-bottom-centre.
+-- (metres x 3.57), so NO ScaleTo is needed. Pieces are origin-at-bottom-centre EXCEPT Kit_Human_GunshipRamp (bbox centre), BlastDoorLeaf (hinge edge), TurretGun (yaw axis). ArtService.reskin() must NOT be applied to kit pieces (strips palette).
 local IS = game:GetService("InsertService")
 local SS = game:GetService("ServerStorage")
 local gf = SS:FindFirstChild("GF") or Instance.new("Folder", SS)
@@ -17,6 +17,35 @@ local IDS = {
 	Kit_Ascendancy_Monolith = 91015425713994, Kit_Ascendancy_Gate = 94664697958999,
 	Kit_Ascendancy_Bulwark = 72636059338655, Kit_Ascendancy_Spire = 78931911662518,
 	Kit_Ascendancy_Rubble = 119761555911079, Kit_Ascendancy_Wall = 137704617030736,
+	Kit_Human_LandingPad = 130364919966412,
+	Kit_Human_Gunship = 128690203609542,
+	Kit_Human_GunshipRamp = 107077273504853,
+	Kit_Ascendancy_Relay = 133828914278357,
+	Kit_Ascendancy_Tower = 88788862757244,
+	Kit_Ascendancy_WallCorner = 71779102986154,
+	Kit_Ascendancy_Pier = 85042288065460,
+	Kit_Human_FloorPlate = 97305584175693,
+	Kit_Human_FloorGrate = 127884111503109,
+	Kit_Human_CeilingPanel = 95833875302317,
+	Kit_Human_Column = 130064632448054,
+	Kit_Human_DoorFrame = 96503316734031,
+	Kit_Human_BlastDoorLeaf = 121220651296746,
+	Kit_Human_Stairs = 127524845654464,
+	Kit_Human_Ramp = 84578160809686,
+	Kit_Human_Railing = 91159395547681,
+	Kit_Human_Catwalk = 90733699554496,
+	Kit_Human_Platform = 88779171207018,
+	Kit_Human_RepairGantry = 70662674231587,
+	Kit_Human_TurretBase = 77670551074469,
+	Kit_Human_TurretGun = 100580723558746,
+	Kit_Human_PowerCore = 125177824968295,
+	Kit_Human_ShieldEmitter = 103026983945289,
+	Kit_Human_SensorTower = 78028626801649,
+	Kit_Human_Dish = 79309093127804,
+	Kit_Human_Pipe = 130382979757561,
+	Kit_Human_PipeElbow = 116667540602108,
+	Kit_Human_Vent = 126196328557725,
+	Kit_Human_WallWindow = 119351133355346,
 }
 
 local installed, failed = 0, {}
