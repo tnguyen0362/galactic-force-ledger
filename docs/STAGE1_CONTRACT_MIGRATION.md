@@ -85,3 +85,16 @@ The DAG migration partially offsets: relay/generator completions folded into man
 are inside the primary reward. Recommended: (b) pending owner decision. DECISION REQUIRED
 before Part B implementation lands. Difficulty multipliers scale all events uniformly, so
 percentages hold across difficulties.
+
+
+## DECISION (beta, owner authority delegated 2026-11-28): Part B economy = option (b)
+Owner granted full creative control with a long-term-game directive. Decided: raise primary_complete
+base 15% (300→345cr, 350→400xp) when the optional-objective removal lands. Reasoning:
+- long-term progression health favors mission-focus over poi-cleanup farming; the income flattening
+  is calibrated to typical partial completion, not completionist ceiling
+- the DAG migration (relay/generator folding into mandatory chains) recaptures part of the loss
+  inside primary reward, so net effect on focused players is near-neutral, on completionists a
+  small intentional compression — acceptable for pacing, and the economy has headroom because
+  augments/shop sinks already exist
+- the adjustment ships atomically with the removal (never before) to avoid a temporary buff window
+DECISION LOGGED — implementation proceeds without further owner input.
