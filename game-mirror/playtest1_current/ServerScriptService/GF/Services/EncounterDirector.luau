@@ -269,13 +269,21 @@ local SAFE_LANDING_RADIUS = 70
 
 local postponedSpawns: { { center: Vector3, radius: number, count: number, attempts: number } } = {}
 
--- The station deck floats at Y~760 directly above the mission terrain. Any spawn resolved
--- above this ceiling is physically on the station, never the mission field — reject outright
--- regardless of which code path produced it.
-local STATION_CEILING = 400
+-- The station deck floats at Y~760 above the terrain. Altitude alone can't separate it from
+-- legitimate high ground: generated geography has real peaks exceeding 400 studs, and a pure
+-- ceiling both mis-flagged mountain enemies in probes and blocked valid spawns. The station is
+-- a small structure centered near X0/Z22 at deck level — gate on the station VOLUME instead:
+-- high + near the deck's horizontal footprint. Terrain peaks elsewhere stay spawnable.
+local STATION_XZ = Vector2.new(0, 22)
+local STATION_DECK_Y = 700
+local STATION_VOLUME_RADIUS = 260
 
 local function missionGrounded(position: Vector3): boolean
-	return position.Y < STATION_CEILING
+	if position.Y < STATION_DECK_Y then
+		return true
+	end
+	local dxz = (Vector2.new(position.X, position.Z) - STATION_XZ).Magnitude
+	return dxz > STATION_VOLUME_RADIUS
 end
 
 function EncounterDirector.spawnAround(center: Vector3, radius: number, count: number): number
