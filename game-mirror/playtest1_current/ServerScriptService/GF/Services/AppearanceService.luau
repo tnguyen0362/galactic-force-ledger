@@ -1,68 +1,147 @@
 --!strict
--- Galactic Force soldier kit: graphite navy fatigues, off-white plates, cyan visor.
--- Proxy armour built from parts so the fiction reads without a custom mesh pipeline.
+-- Galactic Force player kit: open-face SEAL-style operator gear on a normalised R15 body.
+--  1. normalizeBody(): every player is reset to the default blocky R15 (their face, skin and body colours are kept),
+--     so bundle helmets / dynamic heads / odd proportions never fight the armour and the face is always visible.
+--  2. dress(): clones the per-limb kit meshes from ServerStorage.GF.Art.PlayerKit (built from the Blender asset by
+--     tools/art/player/install_player_kit.luau), scales them by limb.Size / reference size, welds them to the limbs
+--     and tints them by suit. Colour groups: carrier, pouch, hardware, helmet, glove, boot.
+-- MeshPart.MeshId cannot be set from a server script, so dress() only clones template MeshParts.
 local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
 
 local AppearanceService = {}
 
 local Armor = require(game:GetService("ReplicatedStorage").GF.Shared.Configs.Armor)
 local DEFAULT_SUIT = Armor.get("STANDARD")
-local suit = DEFAULT_SUIT
-local PLATE = DEFAULT_SUIT.plate
-local NAVY = DEFAULT_SUIT.fatigue
-local CYAN = DEFAULT_SUIT.accent
-local DARK = DEFAULT_SUIT.dark
-local STEEL = DEFAULT_SUIT.steel
--- The kit offsets are authored for classic R15 proportions; set from the head in dress().
-local kitScale = 1
 
-local function plate(parent: BasePart, name: string, size: Vector3, offset: CFrame, color: Color3, material: Enum.Material): Part
-	local part = Instance.new("Part")
-	part.Name = name
-	part:SetAttribute("GF_KitPart", true)
-	local sp = parent.Parent and parent.Parent:GetAttribute("GF_SuitShape") or 1
-	part.Size = size * kitScale * Vector3.new(sp, 1, sp)
-	part.Color = color
-	part.Material = material
-	part.CanCollide = false
-	part.CanQuery = false
-	part.CanTouch = false
-	part.Massless = true
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.CFrame = parent.CFrame * CFrame.new(offset.Position * kitScale)
-	part.Parent = parent.Parent
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = parent
-	weld.Part1 = part
-	weld.Parent = part
-	return part
+-- Whole-body scale applied after the reset. Classic R15 is ~5.3 studs; the old avatar bundle stood ~6.9, and
+-- hit volumes / camera / cover heights were tuned for that, so keep the same presence.
+local PLAYER_SCALE = 1.28
+local DEFAULT_FACE = 144080495
+
+-- SEAL-style base palette (coyote carrier, ranger-green pouches, gunmetal hardware, tan helmet shell).
+local PALETTE = {
+	carrier = Color3.fromRGB(108, 90, 63),
+	pouch = Color3.fromRGB(54, 62, 44),
+	hardware = Color3.fromRGB(26, 27, 30),
+	helmet = Color3.fromRGB(122, 104, 76),
+	glove = Color3.fromRGB(28, 28, 31),
+	boot = Color3.fromRGB(40, 33, 26),
+	fatigue = Color3.fromRGB(72, 78, 57),
+}
+local MATERIAL = {
+	carrier = Enum.Material.Fabric,
+	pouch = Enum.Material.Fabric,
+	hardware = Enum.Material.SmoothPlastic,
+	helmet = Enum.Material.Plastic,
+	glove = Enum.Material.Fabric,
+	boot = Enum.Material.Fabric,
+}
+-- S01-018: suit variants still change the silhouette (torso width/depth) and nudge the colours toward the suit.
+local SHAPE = {
+	STANDARD = { x = 1.0, z = 1.0 },
+	RECON = { x = 0.9, z = 0.92 },
+	SIEGE = { x = 1.14, z = 1.12 },
+	VANGUARD = { x = 1.04, z = 1.04 },
+	TROPHY = { x = 1.0, z = 1.0 },
+	BLACKSTAR = { x = 1.0, z = 1.0 },
+}
+-- how far each group is pulled toward the suit palette (carrier/helmet toward plate; pouch/fatigue toward fatigue)
+local TINT = { carrier = 0.32, helmet = 0.32, pouch = 0.45, fatigue = 0.5 }
+
+local LIMB_PART: { [string]: string } = {
+	Head = "Head", UpperTorso = "UpperTorso", LowerTorso = "LowerTorso",
+	UpperArmR = "RightUpperArm", LowerArmR = "RightLowerArm", HandR = "RightHand",
+	UpperArmL = "LeftUpperArm", LowerArmL = "LeftLowerArm", HandL = "LeftHand",
+	UpperLegR = "RightUpperLeg", LowerLegR = "RightLowerLeg", FootR = "RightFoot",
+	UpperLegL = "LeftUpperLeg", LowerLegL = "LeftLowerLeg", FootL = "LeftFoot",
+}
+
+local function kitFolder(): Folder?
+	local gf = ServerStorage:FindFirstChild("GF")
+	local art = gf and gf:FindFirstChild("Art")
+	local f = art and art:FindFirstChild("PlayerKit")
+	return if f and f:IsA("Folder") then f else nil
+end
+
+-- Reset a character to the default R15 body keeping the player's face, skin tones and body colours.
+function AppearanceService.normalizeBody(player: Player, character: Model): boolean
+	if character:GetAttribute("GF_BodyNormalized") == true then
+		return true
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+		return false
+	end
+	-- StarterPlayer.StarterCharacter is already a default blocky R15 (GF_DefaultR15): nothing to swap, just scale.
+	if character:GetAttribute("GF_DefaultR15") == true then
+		pcall(function()
+			character:ScaleTo(PLAYER_SCALE)
+		end)
+		character:SetAttribute("GF_BodyNormalized", true)
+		return true
+	end
+	local desc = Instance.new("HumanoidDescription")
+	local okSrc, src = pcall(function()
+		return Players:GetHumanoidDescriptionFromUserId(player.UserId)
+	end)
+	if okSrc and src then
+		local s = src :: HumanoidDescription
+		desc.HeadColor = s.HeadColor
+		desc.TorsoColor = s.TorsoColor
+		desc.LeftArmColor = s.LeftArmColor
+		desc.RightArmColor = s.RightArmColor
+		desc.LeftLegColor = s.LeftLegColor
+		desc.RightLegColor = s.RightLegColor
+		desc.Face = if s.Face ~= 0 then s.Face else DEFAULT_FACE
+	else
+		desc.Face = DEFAULT_FACE
+	end
+	-- part ids, clothing and accessories stay 0 (default blocky R15); scales stay neutral
+	desc.BodyTypeScale = 0
+	desc.ProportionScale = 0
+	desc.HeightScale = 1
+	desc.WidthScale = 1
+	desc.DepthScale = 1
+	desc.HeadScale = 1
+	local ok, err = pcall(function()
+		humanoid:ApplyDescription(desc)
+	end)
+	desc:Destroy()
+	if not ok then
+		warn("[AppearanceService] normalizeBody failed: " .. tostring(err))
+		return false
+	end
+	if character.Parent then
+		pcall(function()
+			character:ScaleTo(PLAYER_SCALE)
+		end)
+		character:SetAttribute("GF_BodyNormalized", true)
+	end
+	return character.Parent ~= nil
+end
+
+local function recolor(character: Model, partName: string, color: Color3, material: Enum.Material)
+	local part = character:FindFirstChild(partName)
+	if part and part:IsA("BasePart") then
+		part.Color = color
+		part.Material = material
+	end
 end
 
 function AppearanceService.dress(character: Model, suitId: string?)
-	suit = Armor.get(tostring(suitId or "")) or DEFAULT_SUIT
+	local suit = Armor.get(tostring(suitId or "")) or DEFAULT_SUIT
 	for _, existing in ipairs(character:GetDescendants()) do
 		if existing:IsA("BasePart") and (existing:GetAttribute("GF_KitPart") == true) then
 			existing:Destroy()
 		end
 	end
-	PLATE = suit.plate
-	NAVY = suit.fatigue
-	CYAN = suit.accent
-	DARK = suit.dark
-	STEEL = suit.steel
-	-- S01-018: model variants change actual plate shape, not merely labels — each suit carries a
-	-- silhouette profile scaling plate width/depth/height independently. A Bulwark reads wider and
-	-- lower-slung than a Pathfinder at a glance, before colors even register.
-	local shapeProfile = ({
-		STANDARD = { x = 1.0, y = 1.0, z = 1.0 },
-		RECON = { x = 0.82, y = 0.94, z = 0.85 },
-		HEAVY = { x = 1.28, y = 1.05, z = 1.22 },
-		ASSAULT = { x = 1.08, y = 1.0, z = 1.0 },
-		ENGINEER = { x = 1.0, y = 0.96, z = 1.1 },
-		MEDIC = { x = 0.94, y = 0.98, z = 0.95 },
-	})[suit.id] or { x = 1.0, y = 1.0, z = 1.0 }
-	character:SetAttribute("GF_SuitShape", shapeProfile.x)
+	local oldInsignia = character:FindFirstChild("GF_InsigniaGold")
+	if oldInsignia then
+		oldInsignia:Destroy()
+	end
+	local shape = (SHAPE :: any)[suit.id] or SHAPE.STANDARD
+	character:SetAttribute("GF_SuitShape", shape.x)
 	character:SetAttribute("GF_ArmorSuit", suit.id)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then
@@ -71,176 +150,155 @@ function AppearanceService.dress(character: Model, suitId: string?)
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 
-	-- Authored avatar rigs already carry their own sculpted armour and PBR textures;
-	-- stacking primitive plates on top of them would only degrade the silhouette.
-	-- Skipping authored rigs is right only while their sculpted armour actually carries texture. The
-	-- shipped soldier rig has zero textured MeshParts and renders as an untextured grey doll, so a
-	-- texture-less rig is treated as needing the kit rather than being left bare.
+	-- Authored avatar rigs carry their own sculpted armour and PBR textures; leave textured ones alone.
 	if character:GetAttribute("GF_Rigged") == true then
-		local textured = false
 		for _, d in ipairs(character:GetDescendants()) do
 			if d:IsA("MeshPart") and d.TextureID ~= "" then
-				textured = true
-				break
+				return
 			end
 		end
-		if textured then
-			return
+	end
+
+	for _, child in character:GetChildren() do
+		if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") or child:IsA("Accessory") then
+			child:Destroy()
 		end
 	end
 
-	-- recolor the base body so any gap in the kit still reads as uniform
-	local function recolor(partName: string, color: Color3)
-		local part = character:FindFirstChild(partName)
-		if part and part:IsA("BasePart") then
-			part.Color = color
-			part.Material = Enum.Material.Fabric
-		end
+	-- suit colours: the SEAL palette nudged toward the suit's own plate/fatigue colours
+	local color = {} :: { [string]: Color3 }
+	for group, base in PALETTE do
+		local toward = if group == "carrier" or group == "helmet" then suit.plate else suit.fatigue
+		color[group] = base:Lerp(toward, TINT[group] or 0)
 	end
-	for _, name in { "Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm",
+	color.hardware = PALETTE.hardware
+	color.glove = PALETTE.glove
+	color.boot = PALETTE.boot
+
+	-- the base limbs show through the gaps: combat-shirt fabric on the body, glove/boot colour on hands/feet.
+	-- Head keeps the player's own skin tone and face.
+	for _, name in { "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm",
 		"LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" } do
-		recolor(name, NAVY)
+		recolor(character, name, color.fatigue, Enum.Material.Fabric)
+	end
+	for _, name in { "LeftHand", "RightHand" } do
+		recolor(character, name, color.glove, Enum.Material.Fabric)
+	end
+	for _, name in { "LeftFoot", "RightFoot" } do
+		recolor(character, name, color.boot, Enum.Material.Fabric)
 	end
 
-	-- S01-014 boots: the feet read as plated boots, not bare avatar — darker than the leg plating
-	-- with a matte finish so the silhouette stays military through the whole body.
-	local BOOT = Color3.fromRGB(28, 30, 36)
-	for _, name in ipairs({ "LeftFoot", "RightFoot" }) do
-		recolor(name, BOOT)
-		local foot = character:FindFirstChild(name)
-		if foot and foot:IsA("BasePart") then
-			foot.Material = Enum.Material.Metal
-		end
+	local folder = kitFolder()
+	if not folder then
+		warn("[AppearanceService] ServerStorage.GF.Art.PlayerKit missing - run tools/art/player/install_player_kit.luau")
+		return
 	end
-	-- S01-009 muted gold insignia: a small rank chevron on the chest plate — the only gold on the
-	-- suit, per the insignia spec (graphite/navy/off-white body, cyan indicators, muted gold rank).
-	local chest = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-	if chest then
-		local insignia = Instance.new("Part")
-		insignia.Name = "GF_InsigniaGold"
-		insignia.Size = Vector3.new(0.24, 0.1, 0.06)
-		insignia.Color = Color3.fromRGB(176, 148, 92)
-		insignia.Material = Enum.Material.Metal
-		insignia.CanCollide = false
-		insignia.Anchored = false
-		insignia.CFrame = chest.CFrame * CFrame.new(0.45, 0.5, -0.55)
+	for _, tmpl in folder:GetChildren() do
+		if not tmpl:IsA("MeshPart") then
+			continue
+		end
+		local limb = tmpl:GetAttribute("GF_Limb") :: string
+		local side = tmpl:GetAttribute("GF_Side") :: string
+		local partName = LIMB_PART[limb .. side]
+		local target = partName and character:FindFirstChild(partName)
+		local ref = folder:GetAttribute("Ref_" .. limb) :: Vector3?
+		if not (target and target:IsA("BasePart") and ref) then
+			continue
+		end
+		local ratio = Vector3.new(target.Size.X / ref.X, target.Size.Y / ref.Y, target.Size.Z / ref.Z)
+		if limb == "UpperTorso" or limb == "LowerTorso" then
+			ratio = ratio * Vector3.new(shape.x, 1, shape.z)
+		end
+		local center = tmpl:GetAttribute("GF_Center") :: Vector3
+		local group = tmpl:GetAttribute("GF_Group") :: string
+		local part = tmpl:Clone()
+		part.Name = tmpl.Name
+		part:SetAttribute("GF_KitPart", true)
+		part:SetAttribute("GF_KitTemplate", nil)
+		part.Size = tmpl.Size * ratio
+		-- Roblox's glTF import arrives rotated 180deg about Y (same fix as the hero rigs)
+		part.CFrame = target.CFrame * CFrame.new(center * ratio) * CFrame.Angles(0, math.pi, 0)
+		part.Color = color[group] or PALETTE.carrier
+		part.Material = MATERIAL[group] or Enum.Material.Fabric
+		part.Anchored = false
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.Massless = true
+		part.Parent = character
 		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = chest
-		weld.Part1 = insignia
-		weld.Parent = insignia
-		insignia.Parent = character
+		weld.Part0 = target
+		weld.Part1 = part
+		weld.Parent = part
 	end
 
-	for _, shirt in character:GetChildren() do
-		if shirt:IsA("Shirt") or shirt:IsA("Pants") or shirt:IsA("Accessory") then
-			shirt:Destroy()
+	-- S01-009 muted gold rank chevron on the front carrier plate: the only gold on the kit.
+	local chest = character:FindFirstChild("UpperTorso")
+	if chest and chest:IsA("BasePart") then
+		local k = chest.Size.X / 2.0
+		local chevron = Instance.new("Part")
+		chevron.Name = "GF_InsigniaGold"
+		chevron:SetAttribute("GF_KitPart", true)
+		chevron.Size = Vector3.new(0.3, 0.12, 0.05) * k
+		chevron.Color = Color3.fromRGB(176, 148, 92)
+		chevron.Material = Enum.Material.Metal
+		chevron.CanCollide = false
+		chevron.CanQuery = false
+		chevron.CanTouch = false
+		chevron.Massless = true
+		chevron.CFrame = chest.CFrame * CFrame.new(-0.5 * k * shape.x, 0.5 * k, -0.74 * k * shape.z)
+		chevron.Parent = character
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = chest
+		w.Part1 = chevron
+		w.Parent = chevron
+	end
+end
+
+local function equippedSuit(player: Player): (boolean, string)
+	local ready, suitId = false, "STANDARD"
+	pcall(function()
+		local profile = require(script.Parent.ProfileService).get(player)
+		local armorId = profile and profile.selectedLoadout and profile.selectedLoadout.armor
+		if type(armorId) == "string" then
+			suitId = armorId
+			ready = true
 		end
-	end
-
-	local head = character:FindFirstChild("Head")
-	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
-	local leftArm = character:FindFirstChild("LeftUpperArm") or character:FindFirstChild("Left Arm")
-	local rightArm = character:FindFirstChild("RightUpperArm") or character:FindFirstChild("Right Arm")
-	if head and head:IsA("BasePart") then
-		kitScale = math.max(0.6, head.Size.X / 2)
-	end
-
-	if head and head:IsA("BasePart") then
-		local helmet = plate(head, "Helmet", Vector3.new(1.24, 1.14, 1.3), CFrame.new(0, 0.12, 0), PLATE, Enum.Material.Metal)
-
-		plate(head, "Visor", Vector3.new(0.94, 0.22, 0.16), CFrame.new(0, 0.06, -0.62), CYAN, Enum.Material.Neon)
-		plate(head, "Breather", Vector3.new(0.5, 0.28, 0.24), CFrame.new(0, -0.28, -0.48), STEEL, Enum.Material.Metal)
-	end
-
-	if torso and torso:IsA("BasePart") then
-		plate(torso, "ChestPlate", Vector3.new(1.72, 1.28, 0.62), CFrame.new(0, 0.16, -0.42), PLATE, Enum.Material.Metal)
-		plate(torso, "ChestSeam", Vector3.new(0.2, 1.0, 0.1), CFrame.new(0, 0.2, -0.76), CYAN, Enum.Material.Neon)
-		plate(torso, "Belt", Vector3.new(1.5, 0.28, 1.0), CFrame.new(0, -0.62, 0), DARK, Enum.Material.Fabric)
-		plate(torso, "Pack", Vector3.new(1.1, 1.3, 0.5), CFrame.new(0, 0.14, 0.66), STEEL, Enum.Material.Metal)
-		plate(torso, "PackCore", Vector3.new(0.42, 0.42, 0.12), CFrame.new(0, 0.24, 0.92), CYAN, Enum.Material.Neon)
-	end
-
-	if leftArm and leftArm:IsA("BasePart") then
-		plate(leftArm, "ShoulderL", Vector3.new(0.72, 0.62, 0.9), CFrame.new(-0.12, 0.16, 0), PLATE, Enum.Material.Metal)
-		-- forearm plating must ride the LOWER arm: welded to the upper arm it stayed behind every
-		-- elbow bend (constant with weapon-grip IK) and the forearm visibly molted out of it
-		local lowerArm = character:FindFirstChild("LeftLowerArm")
-		if lowerArm and lowerArm:IsA("BasePart") then
-			plate(lowerArm, "ForearmL", Vector3.new(0.52, 0.8, 0.62), CFrame.new(0, 0, 0), STEEL, Enum.Material.Metal)
-		end
-	end
-	if rightArm and rightArm:IsA("BasePart") then
-		plate(rightArm, "ShoulderR", Vector3.new(0.72, 0.62, 0.9), CFrame.new(0.12, 0.16, 0), PLATE, Enum.Material.Metal)
-		local lowerArmR = character:FindFirstChild("RightLowerArm")
-		if lowerArmR and lowerArmR:IsA("BasePart") then
-			plate(lowerArmR, "ForearmR", Vector3.new(0.52, 0.8, 0.62), CFrame.new(0, 0, 0), STEEL, Enum.Material.Metal)
-		end
-	end
-
-	-- leg plating: thigh plates on the upper legs, knee guards and shin plates below — the kit
-	-- stopped at the belt for its first year and every capture read as half-armoured (V2026-11).
-	local leftLeg = character:FindFirstChild("LeftUpperLeg") or character:FindFirstChild("Left Leg")
-	local rightLeg = character:FindFirstChild("RightUpperLeg") or character:FindFirstChild("Right Leg")
-	if leftLeg and leftLeg:IsA("BasePart") then
-		plate(leftLeg, "ThighL", Vector3.new(0.62, 0.7, 0.72), CFrame.new(-0.06, 0.05, 0), PLATE, Enum.Material.Metal)
-		plate(leftLeg, "ThighStrapL", Vector3.new(0.66, 0.14, 0.76), CFrame.new(-0.06, -0.28, 0), DARK, Enum.Material.Fabric)
-	end
-	if rightLeg and rightLeg:IsA("BasePart") then
-		plate(rightLeg, "ThighR", Vector3.new(0.62, 0.7, 0.72), CFrame.new(0.06, 0.05, 0), PLATE, Enum.Material.Metal)
-		plate(rightLeg, "ThighStrapR", Vector3.new(0.66, 0.14, 0.76), CFrame.new(0.06, -0.28, 0), DARK, Enum.Material.Fabric)
-	end
-	local leftShin = character:FindFirstChild("LeftLowerLeg")
-	local rightShin = character:FindFirstChild("RightLowerLeg")
-	if leftShin and leftShin:IsA("BasePart") then
-		plate(leftShin, "KneeL", Vector3.new(0.56, 0.4, 0.6), CFrame.new(0, 0.32, -0.08), STEEL, Enum.Material.Metal)
-		plate(leftShin, "ShinL", Vector3.new(0.5, 0.66, 0.56), CFrame.new(0, -0.2, -0.06), PLATE, Enum.Material.Metal)
-	end
-	if rightShin and rightShin:IsA("BasePart") then
-		plate(rightShin, "KneeR", Vector3.new(0.56, 0.4, 0.6), CFrame.new(0, 0.32, -0.08), STEEL, Enum.Material.Metal)
-		plate(rightShin, "ShinR", Vector3.new(0.5, 0.66, 0.56), CFrame.new(0, -0.2, -0.06), PLATE, Enum.Material.Metal)
-	end
+	end)
+	return ready, suitId
 end
 
 function AppearanceService.start()
 	local function hook(player: Player)
 		local function onCharacter(character: Model)
 			task.defer(function()
-				if character.Parent then
-					local equippedSuit = "STANDARD"
-		pcall(function()
-			local profile = require(script.Parent.ProfileService).get(player)
-			local armorId = profile and profile.selectedLoadout and profile.selectedLoadout.armor
-			if type(armorId) == "string" then
-				equippedSuit = armorId
-			end
-		end)
-		AppearanceService.dress(character, equippedSuit)
-		-- Retry once the profile lands: a spawn usually beats the DataStore load, and the character was
-		-- measured wearing STANDARD on a rejoin while the profile said VANGUARD.
-		task.spawn(function()
-			for _ = 1, 20 do
-				task.wait(0.5)
 				if not character.Parent then
 					return
 				end
-				local ready, suit = false, "STANDARD"
-				pcall(function()
-					local loaded = require(script.Parent.ProfileService).get(player)
-					local id = loaded and loaded.selectedLoadout and loaded.selectedLoadout.armor
-					if type(id) == "string" then
-						suit = id
-						ready = true
-					end
-				end)
-				if ready then
-					if character:GetAttribute("GF_ArmorSuit") ~= suit then
-						AppearanceService.dress(character, suit)
-					end
+				-- normalise first: ApplyDescription swaps the limb parts, which would orphan any welds made earlier
+				AppearanceService.normalizeBody(player, character)
+				if not character.Parent then
 					return
 				end
-			end
-		end)
-				end
+				local _, suitId = equippedSuit(player)
+				AppearanceService.dress(character, suitId)
+				-- Retry once the profile lands: a spawn usually beats the DataStore load, and the character was
+				-- measured wearing STANDARD on a rejoin while the profile said VANGUARD.
+				task.spawn(function()
+					for _ = 1, 20 do
+						task.wait(0.5)
+						if not character.Parent then
+							return
+						end
+						local ready, suitNow = equippedSuit(player)
+						if ready then
+							if character:GetAttribute("GF_ArmorSuit") ~= suitNow then
+								AppearanceService.dress(character, suitNow)
+							end
+							return
+						end
+					end
+				end)
 			end)
 		end
 		player.CharacterAdded:Connect(onCharacter)
@@ -255,4 +313,3 @@ function AppearanceService.start()
 end
 
 return AppearanceService
-
