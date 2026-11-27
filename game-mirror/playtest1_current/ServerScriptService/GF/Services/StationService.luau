@@ -762,18 +762,27 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 				} :: any)
 			end)
 			if payload then
+				-- TeleportAsync failure is ASYNCHRONOUS: pcall success means nothing; failure arrives
+				-- later via TeleportInitFailed. Fire the teleport AND let the legacy in-place deploy
+				-- below run regardless — if the teleport lands the squad is gone and the in-place
+				-- state is irrelevant; if it silently dies they are deployed, not stranded in the
+				-- lobby (verified broken in published game 2026-11-28: return-early stranded players).
+				pcall(function()
+					game:GetService("TeleportService").TeleportInitFailed:Connect(function(plr, result, msg)
+						for _, tp in ipairs(travelling) do
+							if plr == tp then
+								warn(string.format("[GF] place-split teleport FAILED for %s result=%s msg=%s", plr.Name, tostring(result), tostring(msg)))
+							end
+						end
+					end)
+				end)
 				local tpOk, tpErr = pcall(function()
 					local opts = Instance.new("TeleportOptions")
 					opts.ReservedServerAccessCode = nil
 					pcall(function() (opts :: any).TeleportData = payload end)
 					game:GetService("TeleportService"):TeleportAsync(missionPlaceId, travelling, opts)
 				end)
-				if tpOk then
-					print(string.format("[GF] place-split deploy: squad of %d -> mission place %d", #travelling, missionPlaceId))
-					return true, nil
-				else
-					warn("[GF] place-split deploy teleport failed, falling back in-place:", tpErr)
-				end
+				print(string.format("[GF] place-split deploy attempted: squad of %d -> place %d initOk=%s err=%s", #travelling, missionPlaceId, tostring(tpOk), tostring(tpErr)))
 			end
 		end
 	end
