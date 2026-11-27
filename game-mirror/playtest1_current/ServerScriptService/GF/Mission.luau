@@ -111,7 +111,7 @@ TerrainService.registerFlat(Vector3.new(38, 0, 26), 34)
 -- S07-006: multiple map seeds per biome — the seed rotates per mission instance instead of the fixed
 -- 1234 every deploy. Seeds are published so clients/probes can verify rotation across missions.
 -- Phase 15: biome is chosen BEFORE terrain/vegetation build so ecology and palette can follow it.
-local biomes = { "Forest", "Arid", "Tundra", "Industrial" } -- Phase 15: four approved biomes (Volcanic retired)
+local biomes = { "Forest", "Arid", "Tundra", "Industrial", "Jungle" } -- Phase 15 + Jungle (owner directive 2026-11-28)
 local biomeIdx = ((workspace:GetAttribute("GF_MissionCount") or 0)) % #biomes + 1
 local biome = biomes[biomeIdx]
 workspace:SetAttribute("GF_Biome", biome)

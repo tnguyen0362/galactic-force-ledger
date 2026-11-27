@@ -75,6 +75,18 @@ local ECO: { [string]: Eco } = {
 		},
 		tint = { stone = Color3.fromRGB(104, 98, 92), shrub = Color3.fromRGB(100, 96, 80) },
 	},
+	-- hilly jungle (owner directive 2026-11-28): wall-to-wall broadleaf canopy, heavy mid
+	-- layer and thick scrub understory — the density IS the biome. Higher treeline than
+	-- forest: jungle climbs the hills. Budgets above Forest but below 2x — streaming sheds
+	-- the far field, and the memory roadmap caps how far this can be pushed.
+	Jungle = {
+		forestScale = 520, forestK = 7, forestBase = 0.42, treeline = 520,
+		roles = {
+			Canopy = role(1900, 34, 52), Mid = role(1300, 14, 24), Scrub = role(1900, 3, 7),
+			Ground = role(1600, 1, 3), Rock = role(350, 3, 8),
+		},
+		tint = { stone = Color3.fromRGB(88, 92, 80), shrub = Color3.fromRGB(34, 108, 52) },
+	},
 }
 ECO.Volcanic = ECO.Industrial -- legacy name: never in rotation, avoid nil lookups
 
@@ -128,6 +140,12 @@ local function speciesFor(biome: string, roleName: string): { Species }
 			})
 			tpl:Destroy()
 		end
+	end
+	if #list == 0 and biome ~= "Forest" then
+		-- no authored species for this biome/role: inherit Forest assets. The biome identity
+		-- comes from ecology (density/heights/regions) + tint, not the meshes themselves —
+		-- authored jungle species replace this fallback when the art lands.
+		list = speciesFor("Forest", roleName)
 	end
 	specCache[key] = list
 	return list
