@@ -615,6 +615,25 @@ function StationService.deploy(player: Player, missionDifficulty: string?, templ
 	-- unique mission id for ledger/campaign dedup, plus difficulty for downstream consumers
 	workspace:SetAttribute("GF_MissionId", game:GetService("HttpService"):GenerateGUID(false))
 	workspace:SetAttribute("GF_MissionDifficulty", tostring(missionDifficulty or "Normal"))
+	-- Theater of War operation tagging (Counteroffensive): operations are fixed geographically,
+	-- so the deployed operation instance — not the reusable template — determines which region
+	-- the contribution lands in. callers pass operationId when the war table offered operations;
+	-- nil clears stale tags so a template-only legacy deploy can never credit the wrong region.
+	local operationId = workspace:GetAttribute("GF_PendingOperationId")
+	if type(operationId) == "string" and operationId ~= "" then
+		local regionId = nil
+		pcall(function()
+			local WarModel = require(ReplicatedStorage.GF.Shared.WarModel)
+			local opdef = WarModel.OPERATIONS[operationId]
+			regionId = opdef and opdef.region or nil
+		end)
+		workspace:SetAttribute("GF_OperationId", operationId)
+		workspace:SetAttribute("GF_RegionId", regionId or "")
+	else
+		workspace:SetAttribute("GF_OperationId", "")
+		workspace:SetAttribute("GF_RegionId", "")
+	end
+	workspace:SetAttribute("GF_PendingOperationId", "")
 	local activeMission = State.getMission()
 	workspace:SetAttribute("GF_ReinforcementTickets", activeMission and activeMission.tickets or 0)
 	-- per-player participation: reward eligibility begins at server-confirmed arrival (S09-026),

@@ -184,13 +184,22 @@ function GalacticWarService.commitPrimary(template: string?)
 	end)
 	GalacticWarService.awardCampaignPoints(missionId, difficulty, family, 1)
 	-- Theater of War contribution feed: exactly-once at primary completion, isolated so a
-	-- war-layer failure can never break mission completion. region resolution uses the
-	-- template's primary binding until the deploy flow is region-aware (WarOperations doc).
+	-- war-layer failure can never break mission completion. region resolution prefers the
+	-- deploy-time operation tag (exact — operations are fixed geographically); the template's
+	-- primary binding is the fallback for legacy template-only deploys.
 	task.defer(function()
 		local ok, err = pcall(function()
 			local WarOperations = require(ReplicatedStorage.GF.Shared.Configs.WarOperations)
 			local WarModel = require(ReplicatedStorage.GF.Shared.WarModel)
-			local opId = WarOperations.operationFor(template)
+			local opId = nil
+			local taggedOp = workspace:GetAttribute("GF_OperationId")
+			local taggedRegion = workspace:GetAttribute("GF_RegionId")
+			if type(taggedOp) == "string" and taggedOp ~= "" and type(taggedRegion) == "string" and taggedRegion ~= "" then
+				-- exact path: the operation instance deployed, so both id and region are known
+				opId = taggedOp
+			else
+				opId = WarOperations.operationFor(template)
+			end
 			if not opId then
 				return -- tutorial or unmapped: no war contribution
 			end
@@ -198,12 +207,23 @@ function GalacticWarService.commitPrimary(template: string?)
 			if not opdef then
 				return
 			end
+			local region = (type(taggedRegion) == "string" and taggedRegion ~= "" and taggedOp == opId) and taggedRegion or opdef.region
 			if missionId == "" then
 				return -- no stable id: cannot dedup, skip rather than risk double-count
 			end
-			-- squad multiplier sqrt(P): participant counting is not yet tracked through
-			-- deploy (Stage 1/3 refinement) — 1.0 floor until the ledger lands
-			require(script.Parent.WarStateService).recordOperation(opdef.region, opId, difficulty, missionId, 1.0)
+			-- squad multiplier sqrt(P) (mandate sec.31 analysis): participant count comes from
+			-- the server-confirmed participation attribute set at arrival — never lobby joins.
+			local participants = 1
+			local count = 0
+			for _, plr in game:GetService("Players"):GetPlayers() do
+				if plr:GetAttribute("GF_MissionParticipant") == true then
+					count += 1
+				end
+			end
+			if count > 0 then
+				participants = count
+			end
+			require(script.Parent.WarStateService).recordOperation(region, opId, difficulty, missionId, math.sqrt(participants))
 		end)
 		if not ok then
 			warn("[GF] war contribution feed failed: " .. tostring(err))
