@@ -891,10 +891,63 @@ local function uplinkRequest(player: Player)
 	if uplinkStage == 1 then
 		uplinkStage = 2
 		workspace:SetAttribute("GF_UplinkStage", 2)
-		uplinkEndsAt = os.clock() + 75
-		hint = "Defending the uplink: 75 s"
-		publish()
-		uplinkTick()
+		if ZoneControlService then
+			-- The uplink only transmits while the squad holds the control zone around the dish;
+			-- enemies inside freeze the upload. The 75-second passive timer becomes a perimeter
+			-- hold — same duration contract, radically different play.
+			local zoneCenter = objective and objective.PrimaryPart and objective.PrimaryPart.Position or terminal.Position
+			ZoneControlService.create("uplink", {
+				center = zoneCenter,
+				radius = 26,
+				label = "Uplink control zone",
+				rate = 1 / 75,
+				decay = 1 / 160,
+				onComplete = function(_zone)
+					if complete or uplinkStage ~= 2 then return end
+					uplinkStage = 3
+					workspace:SetAttribute("GF_UplinkStage", 3)
+					hint = "Confirm the uplink at the console"
+					local term = objective and objective:FindFirstChild("Terminal")
+					if term then
+						term:SetAttribute("GFInteract", "UplinkConfirm")
+						term:SetAttribute("InteractPrompt", "Confirm uplink")
+					end
+					publish()
+				end,
+				onStateChange = function(_zone, state)
+					if uplinkStage ~= 2 then return end
+					if state == "contested" then
+						hint = "Upload frozen — clear the control zone!"
+					elseif state == "capturing" then
+						hint = "Uploading — hold the control zone"
+					else
+						hint = "Control zone empty — upload is bleeding"
+					end
+					publish()
+				end,
+			})
+			hint = "Hold the uplink control zone"
+			publish()
+			task.spawn(function()
+				while uplinkStage == 2 and not complete do
+					task.wait(0.5)
+					local zone = ZoneControlService.get("uplink")
+					if zone then
+						progress = math.clamp(zone.progress, 0, 1)
+						workspace:SetAttribute("GF_DefenseEngaged", zone.state == "capturing")
+						workspace:SetAttribute("GF_DefensePaused", zone.state ~= "capturing")
+						publish()
+					else
+						break
+					end
+				end
+			end)
+		else
+			uplinkEndsAt = os.clock() + 75
+			hint = "Defending the uplink: 75 s"
+			publish()
+			uplinkTick()
+		end
 	elseif uplinkStage == 3 then
 		ObjectiveService.complete()
 	end
@@ -1037,7 +1090,7 @@ local function powerTick()
 				powerFail()
 				break
 			end
-			if powerStage == 2 then
+			if powerStage == 2 and not (ZoneControlService and ZoneControlService.get("power")) then
 				local occupied = false
 				for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
 					local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -1095,9 +1148,61 @@ local function powerRequest(player: Player)
 		workspace:SetAttribute("GF_PowerStage", 2)
 		powerRemaining = POWER_DURATION
 		powerAbsent = 0
-		hint = string.format("Defending generator: %d s", POWER_DURATION)
-		publish()
-		powerTick()
+		if ZoneControlService then
+			-- Zone-driven defense: the generator spins up while the squad holds the perimeter
+			-- and no enemy stands inside it. decay=0 matches the original pause-not-regress
+			-- contract; contest by enemies is the new pressure layer.
+			local generator = powerGenerator()
+			local zoneCenter = generator and generator.Position or terminal.Position
+			ZoneControlService.create("power", {
+				center = zoneCenter,
+				radius = POWER_HOLD_RADIUS,
+				label = "Generator perimeter",
+				rate = 1 / POWER_DURATION,
+				decay = 0,
+				onComplete = function(_zone)
+					if complete or powerStage ~= 2 then return end
+					powerStage = 3
+					workspace:SetAttribute("GF_PowerStage", 3)
+					local term = objective and objective:FindFirstChild("Terminal")
+					if term then
+						term:SetAttribute("GFInteract", "PowerStabilise")
+						term:SetAttribute("InteractPrompt", "Stabilise output")
+					end
+					hint = "Stabilise the generator output"
+					publish()
+				end,
+				onStateChange = function(_zone, state)
+					if powerStage ~= 2 then return end
+					if state == "contested" then
+						hint = "Generator seizing — clear the perimeter!"
+					elseif state == "capturing" then
+						hint = "Generator spinning up — hold the perimeter"
+					else
+						hint = "Perimeter empty — spin-up paused"
+					end
+					publish()
+				end,
+			})
+			hint = "Hold the generator perimeter"
+			publish()
+			task.spawn(function()
+				while powerStage == 2 and not complete and not failed do
+					task.wait(0.5)
+					local zone = ZoneControlService.get("power")
+					if zone then
+						progress = math.clamp(zone.progress, 0, 1)
+						workspace:SetAttribute("GF_DefenseEngaged", zone.state == "capturing")
+						workspace:SetAttribute("GF_DefensePaused", zone.state ~= "capturing")
+						workspace:SetAttribute("GF_DefenseRemaining", math.floor((1 - zone.progress) * POWER_DURATION))
+						publish()
+					else
+						break
+					end
+				end
+			end)
+		end
+		powerTick() -- still runs: integrity-destruction monitor in both modes, legacy countdown only without zones
 	elseif powerStage == 3 then
 		ObjectiveService.complete()
 	end
