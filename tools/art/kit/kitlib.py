@@ -25,6 +25,10 @@ PAL = {
                    ramp(hexc("#D6CBB4"), 0.6, 1.0), ramp(hexc("#A963E9"), 0.45, 0.9),
                    ramp((62, 58, 66), 0.9, 1.6), ramp((104, 84, 58), 0.55, 1.0), ramp((92, 90, 94), 0.6, 1.1)],
 }
+# Terrain: neutral rock tones; biome colour comes from MeshPart.Color tinting (multiplies the texture).
+PAL["Terrain"] = [ramp(hexc("#4A4E52"), 0.7, 1.25), ramp(hexc("#6B7075"), 0.7, 1.2), ramp(hexc("#8D8A84"), 0.7, 1.15),
+                  ramp(hexc("#B5B0A4"), 0.7, 1.1), ramp(hexc("#9A8A6E"), 0.65, 1.1), ramp(hexc("#80675A"), 0.65, 1.1),
+                  ramp(hexc("#C9C4B6"), 0.75, 1.05), ramp(hexc("#5E6358"), 0.65, 1.15)]
 G, N, ST, CE, CY, GO, RB, CO = range(8)  # human column names
 OB, VG, BR, IV, VI, DS, AB, AS = range(8)  # ascendancy column names
 

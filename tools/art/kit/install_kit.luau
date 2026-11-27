@@ -46,6 +46,19 @@ local IDS = {
 	Kit_Human_PipeElbow = 116667540602108,
 	Kit_Human_Vent = 126196328557725,
 	Kit_Human_WallWindow = 119351133355346,
+	Kit_Terrain_RockSmall = 132856641722192,
+	Kit_Terrain_RockMid = 99966241140889,
+	Kit_Terrain_RockBig = 135526172298796,
+	Kit_Terrain_RockSlab = 124492621134866,
+	Kit_Terrain_RockSpire = 98006750538159,
+	Kit_Terrain_RockCluster = 102541734725843,
+	Kit_Terrain_CliffA = 111614282873274,
+	Kit_Terrain_CliffB = 137427220698617,
+	Kit_Terrain_CliffC = 101442340061140,
+	Kit_Terrain_CliffD = 91518764273022,
+	Kit_Human_WarTableDais = 132856999347984,
+	Kit_Human_HoloPlanet = 72493783218850,
+	Kit_Human_HoloSlotRing = 70823226131866,
 }
 
 local installed, failed = 0, {}

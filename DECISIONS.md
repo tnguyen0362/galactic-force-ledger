@@ -270,3 +270,9 @@ Gritty, hazy, large-scale war backdrop: low heavy sun through haze with god rays
 - Status: UPLOADED_UNVERIFIED. Nothing installed or placed in Studio; no save_place. Scale/pivot/texture unverified in engine; perf UNKNOWN; no LODs.
 - Integration requirements: ArtService.reskin() must be skipped for kit pieces (strips palette); ExtractionService engine-glow cube at z-14 conflicts with gunship nose -Y / ramp +Y; collision proxies needed; pivots: GunshipRamp=bbox centre, BlastDoorLeaf=hinge edge, TurretGun=yaw axis.
 - Not done: AD-005 concourse (WallWindow/FloorPlate/CeilingPanel supplied as modules only), AD-006 planet, AD-007 cliffs/rocks, AD-010 war-table dais/hologram, Ascendancy turret etc.
+
+## 2026-11-26 — Batch 3 kit upload (Blender, offline): terrain + war table
+- Authored and uploaded 13 GLB pieces: Terrain RockSmall/Mid/Big/Slab/Spire/Cluster, CliffA-D (basalt-column outcrops, neutral T0-T7 palette; tint per biome via MeshPart.Color) and Human WarTableDais (33.6 studs, fits WarTableTop 34), HoloPlanet (intended Neon material), HoloSlotRing. All moderation Approved; IDs in tools/art/kit/asset_manifest.csv and install_kit.luau. Generators now in-repo (pieces_terrain.py added; gen_props.py/kitlib.py refreshed).
+- Status: UPLOADED_UNVERIFIED (AD-007 rocks/cliffs, AD-010 dais/hologram). Nothing installed or placed in Studio; no save_place. Scale/pivot/tint unverified in engine; perf UNKNOWN; no LODs (cliffs 364-640 tris each).
+- Check VegetationService/ScatterBuilder rock coverage before wiring to avoid duplicating existing Rock/Cliff scatter.
+- Still not done: AD-005 concourse beyond modules, AD-006 planet limb (existing ball-part approach likely sufficient), Ascendancy turret; rigged items (AD-001/002, weapons, vehicles) await alpha RIG_CONTRACTS; AD-009 HUD and AD-012 voice are not Blender work.
