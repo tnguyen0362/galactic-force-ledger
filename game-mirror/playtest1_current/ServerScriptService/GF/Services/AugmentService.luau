@@ -286,6 +286,10 @@ function AugmentService.forProfile(profile)
 	return out
 end
 
+-- Forward declaration: expandCapacity journals before the helper's later definition. Without the
+-- forward local, that path resolves a nil global and capacity expansion dies after charging costs.
+local journalTxn
+
 AugmentService.BASELINE_CAPACITY = 200
 AugmentService.CAPACITY_STEP = 50
 AugmentService.CAPACITY_MAX = 400
@@ -519,6 +523,25 @@ function AugmentService.isProtected(profile, uid)
 	return false
 end
 
+local OFFENSIVE_TRAIT_KEYS = {
+	healthDamage = true,
+	armorDamage = true,
+	shieldDamage = true,
+	weakPoint = true,
+	blastRadius = true,
+	supportDamage = true,
+	fireRate = true,
+}
+
+local function hasOffensiveBenefit(item): boolean
+	for _, trait in ipairs(item and item.traits or {}) do
+		if OFFENSIVE_TRAIT_KEYS[tostring(trait.key)] and (tonumber(trait.value) or 0) > 0 then
+			return true
+		end
+	end
+	return false
+end
+
 function AugmentService.equipAugment(profile, weaponId, slot, augmentRef)
 	if type(profile) ~= "table" then
 		return false, "no profile"
@@ -539,6 +562,11 @@ function AugmentService.equipAugment(profile, weaponId, slot, augmentRef)
 	end
 	if AugmentService.isPending(profile, item.uid) then
 		return false, "resolve pending reroll first"
+	end
+	-- Mastery's second socket is Auxiliary by rule: utility/handling only. It must never become a
+	-- second damage multiplier socket merely because both sockets accept item UIDs.
+	if slot == 2 and hasOffensiveBenefit(item) then
+		return false, "auxiliary socket accepts utility augments only"
 	end
 	local def = Augments.get(item.archetypeId)
 	if def then
@@ -601,6 +629,9 @@ function AugmentService.sanitiseLoadout(profile)
 						elseif def.applies == "Category" and type(def.category) == "string" then
 							fits = (weaponDef and weaponDef.category == def.category) or false
 						end
+					end
+					if tonumber(slot) == 2 and hasOffensiveBenefit(item) then
+						fits = false
 					end
 					if not fits then
 						entry[slot] = nil
@@ -672,7 +703,7 @@ end
 
 -- Uniform economic journaling (spec §96-98): effects here already have specialized idempotency;
 -- this records them into the authoritative transaction journal for evidence and versioning.
-local function journalTxn(profile, txn)
+function journalTxn(profile, txn)
 	local plr = profile and game:GetService("Players"):GetPlayerByUserId(tonumber(profile.userId) or -1)
 	if not plr then
 		return

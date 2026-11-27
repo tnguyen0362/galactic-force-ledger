@@ -75,12 +75,74 @@ function RewardsService.setKillXp(player: Player, amount: number)
 	killXpByUserId[player.UserId] = amount
 end
 
+local function currentMissionId(): string?
+	local missionKey = nil
+	pcall(function()
+		missionKey = require(script.Parent.RewardLedgerService).missionId()
+	end)
+	return type(missionKey) == "string" and missionKey or nil
+end
+
+-- Extraction returns players to the station before settlement and StationService clears the live
+-- participant attribute there. Reconstruct the roster primarily from ledger evidence captured while
+-- the mission was active; live attributes are additive for future/fixed ordering, never subtractive.
+local function missionParticipants(): ({ Player }, boolean)
+	local ids = {}
+	local hasLedgerEvidence = false
+	pcall(function()
+		local Ledger = require(script.Parent.RewardLedgerService)
+		for _, userId in ipairs(Ledger.participantUserIds()) do
+			ids[userId] = true
+			hasLedgerEvidence = true
+		end
+	end)
+	local out = {}
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player:GetAttribute("GF_MissionParticipant") == true then
+			ids[player.UserId] = true
+		end
+		if ids[player.UserId] == true then
+			table.insert(out, player)
+		end
+	end
+	return out, hasLedgerEvidence
+end
+
+-- The debrief must show the operation's war contribution. The legacy campaign publisher exposes
+-- the point award as `front+points=points/target`; WarState's aggregate attribute is preferred when
+-- present, but it is not published in every mission configuration.
+local function missionWarContribution(): number
+	local direct = tonumber(workspace:GetAttribute("GF_WarContribution"))
+	if direct and direct == direct and math.abs(direct) ~= math.huge then
+		return math.max(0, math.floor(direct + 0.5))
+	end
+	local pointsText = workspace:GetAttribute("GF_WarPoints")
+	if type(pointsText) == "string" then
+		local points = tonumber(string.match(pointsText, "%+([%d%.]+)="))
+		if points then
+			return math.max(0, math.floor(points + 0.5))
+		end
+	end
+	return 0
+end
+
 function RewardsService.grant(player: Player, difficulty: string, success: boolean, objectiveComplete: boolean, squadBonus: boolean?)
 	-- A late joiner already received a catch-up credit on accepting the dispatch. Paying them the full mission
 	-- payout as well would reward the same operation twice.
 	local joinerState = require(script.Parent.State).get(player)
 	if joinerState and joinerState.joinedLate then
 		workspace:SetAttribute("GF_DispatchLatePayout", player.Name)
+		-- Priority Dispatch assistance is still progression even though the full operation payout is
+		-- intentionally suppressed. Count the assist only when the operation actually succeeds, and
+		-- dedupe it by mission id so reconnects/retries cannot cycle commendations.
+		local commendation = nil
+		local missionKey = currentMissionId()
+		-- Late joiners are deliberately limited to dispatch-assist progression in this build; do not let
+		-- a boss kill they happened to witness bypass the full-participation reward gate.
+		ProfileService.settlePendingBossRewards(player, false, missionKey)
+		if missionKey and success == true and objectiveComplete == true and joinerState.responder == true then
+			commendation = ProfileService.recordDispatchAssist(player, missionKey, true)
+		end
 		local lateRemote = ReplicatedStorage.GF.Remotes:FindFirstChild("MissionComplete")
 		if lateRemote then
 			lateRemote:FireClient(player, {
@@ -92,7 +154,7 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 				bonusXp = 0,
 				bonusSalvage = nil,
 				fullSquad = false,
-		carriedLost = workspace:GetAttribute("GF_CarriedLost") == true,
+				carriedLost = workspace:GetAttribute("GF_CarriedLost") == true,
 				credits = 0,
 				xp = 0,
 				salvage = { scrap = 0, energyCells = 0, militaryTechnology = 0 },
@@ -102,6 +164,8 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 				end)(),
 				rankUps = 0,
 				lateJoin = true,
+				warContribution = missionWarContribution(),
+				commendation = commendation,
 			})
 		end
 		print(string.format("[GF] payout skipped for late joiner %s", player.Name))
@@ -110,10 +174,7 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 	-- Idempotent settlement: one payout per player per mission id, persisted in the profile so a retry,
 	-- double extraction call or rejoin cannot pay the same mission twice.
 	local settleProfile = ProfileService.get(player)
-	local missionKey = nil
-	pcall(function()
-		missionKey = require(script.Parent.RewardLedgerService).missionId()
-	end)
+	local missionKey = currentMissionId()
 	if settleProfile and type(missionKey) == "string" then
 		settleProfile.settledMissions = settleProfile.settledMissions or {}
 		if settleProfile.settledMissions[missionKey] then
@@ -139,9 +200,23 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 		payload.xp += killXp
 		payload.killXp = killXp
 	end
+	-- Boss rewards were only evidence when the boss died. They become persistent progression here,
+	-- inside the same settlement/critical-save window as the operation payout, and only when the team
+	-- extraction qualifies. Failed operations discard them instead of banking boss farms.
+	local bossSettlement = ProfileService.settlePendingBossRewards(player, success == true and objectiveComplete == true, missionKey)
 	local result = ProfileService.award(player, payload.credits, payload.xp)
+	if result and bossSettlement then
+		result.rankUps = (tonumber(result.rankUps) or 0) + (tonumber(bossSettlement.rankUps) or 0)
+	end
+	local careerAwards = {}
 	local profile = ProfileService.get(player)
 	if profile then
+		local liveState = State.get(player)
+		careerAwards = ProfileService.recordCareerProgress(player, {
+			kills = liveState and tonumber(liveState.kills) or 0,
+			missions = objectiveComplete and 1 or 0,
+			extractions = (success and objectiveComplete) and 1 or 0,
+		}) or {}
 		if type(profile.salvage) == "table" then
 			profile.salvage.scrap = (profile.salvage.scrap or 0) + (payload.salvage.scrap or 0)
 			profile.salvage.energyCells = (profile.salvage.energyCells or 0) + (payload.salvage.energyCells or 0)
@@ -173,20 +248,29 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 			end)
 			if ok and svc then
 				pcall(function()
+					local bossCredits, bossXp, bossEnergyCells, bossMilitaryTechnology = 0, 0, 0, 0
+					for _, bossResult in ipairs((bossSettlement and bossSettlement.results) or {}) do
+						bossCredits += tonumber(bossResult.credits) or 0
+						bossXp += tonumber(bossResult.xp) or 0
+						if type(bossResult.duplicateSalvage) == "table" then
+							bossEnergyCells += tonumber(bossResult.duplicateSalvage.energyCells) or 0
+							bossMilitaryTechnology += tonumber(bossResult.duplicateSalvage.militaryTechnology) or 0
+						end
+					end
 					svc.record(player, {
 						id = "settle:" .. missionKey,
 						type = "mission_settlement",
 						sourceId = "mission:" .. tostring(difficulty),
 						inputs = {},
 						outputs = {
-							credits = payload.credits or 0,
-							xp = payload.xp or 0,
+							credits = (payload.credits or 0) + bossCredits,
+							xp = (payload.xp or 0) + bossXp,
 							scrap = (payload.salvage and payload.salvage.scrap) or 0,
-							energyCells = (payload.salvage and payload.salvage.energyCells) or 0,
-							militaryTechnology = (payload.salvage and payload.salvage.militaryTechnology) or 0,
+							energyCells = ((payload.salvage and payload.salvage.energyCells) or 0) + bossEnergyCells,
+							militaryTechnology = ((payload.salvage and payload.salvage.militaryTechnology) or 0) + bossMilitaryTechnology,
 							warCredits = (success and objectiveComplete) and (({ Easy = 5, Normal = 10, Hard = 15, Extreme = 25 })[difficulty] or 0) or 0,
 						},
-						note = string.format("success=%s objective=%s squadBonus=%s killXp=%s", tostring(success), tostring(objectiveComplete), tostring(squadBonus == true), tostring(payload.killXp)),
+						note = string.format("success=%s objective=%s squadBonus=%s killXp=%s bossCredits=%s bossXp=%s", tostring(success), tostring(objectiveComplete), tostring(squadBonus == true), tostring(payload.killXp), tostring(bossCredits), tostring(bossXp)),
 					})
 				end)
 			end
@@ -231,8 +315,10 @@ function RewardsService.grant(player: Player, difficulty: string, success: boole
 			rank = profile and profile.rank or 1,
 			rankUps = (workspace:GetAttribute("GF_ForceRankUps") and tonumber(workspace:GetAttribute("GF_ForceRankUps"))) or result.rankUps,
 			warCredits = profile and profile.warCredits or 0,
+			warContribution = missionWarContribution(),
 			boss = bossReport,
 			mastery = masteryReport,
+			commendations = careerAwards,
 			endReason = workspace:GetAttribute("GF_MissionEndReason"),
 		})
 	end
@@ -243,7 +329,20 @@ function RewardsService.grantAll(success: boolean, difficultyOverride: string?, 
 	local mission = State.getMission()
 	local difficulty = difficultyOverride or (mission and mission.difficulty) or "Normal"
 	local objectiveComplete = if objectiveOverride ~= nil then objectiveOverride elseif mission then mission.objectiveComplete else false
-	for _, player in Players:GetPlayers() do
+	local participants = missionParticipants()
+	if #participants == 0 then
+		if objectiveComplete then
+			-- Positive mission income must never fall back to "everyone connected". If roster evidence
+			-- is absent, skip the payout loudly rather than letting station sitters bank progression.
+			warn("[GF] payout blocked: objective completed without participant ledger evidence")
+			workspace:SetAttribute("GF_PayoutBlocked", "no participant evidence")
+			return
+		end
+		-- Failed operations pay nothing; still send the zero-value debrief in legacy/test paths where
+		-- no reward events existed from which to reconstruct a roster.
+		participants = Players:GetPlayers()
+	end
+	for _, player in participants do
 		RewardsService.grant(player, difficulty, success, objectiveComplete, squadBonus)
 	end
 end

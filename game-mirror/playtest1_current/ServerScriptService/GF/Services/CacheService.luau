@@ -392,10 +392,30 @@ end
 
 -- Guaranteed mission cache: called from objective completion so a successful primary always pays.
 function CacheService.grantMission(tierId: string)
+	-- Extraction clears the live participant attribute before this grant runs. Reconstruct the roster
+	-- from the same ledger evidence RewardsService uses; a positive persistent reward must never fall
+	-- back to every connected station player.
+	local participantIds = {}
+	pcall(function()
+		local Ledger = require(script.Parent.RewardLedgerService)
+		for _, userId in ipairs(Ledger.participantUserIds()) do
+			participantIds[userId] = true
+		end
+	end)
+	if next(participantIds) == nil then
+		warn("[GF] mission cache blocked: no participant ledger evidence")
+		workspace:SetAttribute("GF_MissionCacheResult", "blocked:no participant evidence")
+		return
+	end
+	local ProfileService = require(script.Parent.ProfileService)
 	for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+		if participantIds[player.UserId] ~= true then
+			continue
+		end
 		local profile = profileOf(player)
+		local granted = CacheService.grantToInventory(player, tierId, "mission")
 		local firstMission = profile ~= nil and profile.firstMissionBonusClaimed ~= true
-		if CacheService.grantToInventory(player, tierId, "mission") and firstMission and profile then
+		if granted and firstMission and profile then
 			profile.firstMissionBonusClaimed = true
 			-- First completed mission bonus (GOAL §10): guaranteed Rare cache plus a one-time 200 Credits.
 			profile.credits = (profile.credits or 0) + 200
@@ -405,8 +425,15 @@ function CacheService.grantMission(tierId: string)
 			if inst and inst.source == "mission" then
 				inst.guaranteedRare = true
 			end
-			require(script.Parent.ProfileService).markDirty(player)
+			ProfileService.markDirty(player)
 			workspace:SetAttribute("GF_FirstMissionRare", player.Name)
+		end
+		if granted then
+			-- RewardsService settles before caches are granted, so without a second critical write the
+			-- cache/first-mission bonus could be shown and then lost to a crash before autosave.
+			ProfileService.markDirty(player)
+			local persisted = ProfileService.saveWithRetry(player)
+			workspace:SetAttribute("GF_MissionCachePersisted", player.Name .. ":" .. tostring(persisted))
 		end
 	end
 end

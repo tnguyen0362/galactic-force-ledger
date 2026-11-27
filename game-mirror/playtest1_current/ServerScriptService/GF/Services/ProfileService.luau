@@ -6,6 +6,8 @@ local RunService = game:GetService("RunService")
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Economy = require(ReplicatedStorage.GF.Shared.Configs.Economy)
+local Weapons = require(ReplicatedStorage.GF.Shared.Configs.Weapons)
+local Abilities = require(ReplicatedStorage.GF.Shared.Configs.Abilities)
 
 local ProfileService = {}
 
@@ -32,8 +34,8 @@ function ProfileService.defaults(userId: number)
 		pendingReroll = nil,
 		-- Explicit on load rather than relying on 'or BASELINE_CAPACITY' at read time (GOAL: 200 baseline, 400 cap).
 		augmentCapacity = 200,
-	ownedArmor = { STANDARD = true },
-	ownedGrenades = { Frag = true },
+		ownedArmor = { STANDARD = true },
+		ownedGrenades = { Frag = true },
 	caches = {},
 	warCredits = 0,
 	unlockedRequisitions = {},
@@ -54,7 +56,7 @@ function ProfileService.defaults(userId: number)
 			-- one support ability slot (Counteroffensive contract revision); owned abilities
 			-- are never lost — the equipment contract collapsed, not the collection
 			ability = "Airstrike",
-			armor = "Standard",
+			armor = "STANDARD",
 			weaponAugments = {},
 			abilityAugment = nil,
 		},
@@ -64,6 +66,9 @@ function ProfileService.defaults(userId: number)
 		tutorialCompleted = false,
 		introWatched = false,
 		dispatchStats = { qualifyingAssists = 0, claimedMilestones = 0 },
+		dispatchAssistMissions = {},
+		careerStats = { kills = 0, extractions = 0, missions = 0 },
+		commendations = {},
 		commandServiceStats = { missionsLed = 0 },
 		transactionJournalVersion = 1,
 		lastSaveTime = 0,
@@ -89,6 +94,72 @@ local function finiteOr(v: any, fallback: number): number
 	end
 	return n
 end
+
+local function deepCopy(value: any): any
+	if type(value) ~= "table" then
+		return value
+	end
+	local out = {}
+	for key, child in pairs(value) do
+		out[key] = deepCopy(child)
+	end
+	return out
+end
+
+-- A profile is only useful if its active/preset loadouts reference gear the profile actually owns.
+-- Corrupt or pre-fix documents degrade to the free starter build rather than equipping unpurchased
+-- equipment or failing the entire load.
+local function sanitizeLoadout(rawLoadout: any, profile: any): any
+	local out = {
+		primary = "AR01",
+		secondary = "P01",
+		grenade = "Frag",
+		ability = "Airstrike",
+		armor = "STANDARD",
+		weaponAugments = {},
+		abilityAugment = nil,
+	}
+	if type(rawLoadout) == "table" then
+		for key, value in pairs(rawLoadout) do
+			out[key] = deepCopy(value)
+		end
+	end
+	local function owns(mapName: string, id: any): boolean
+		return type(id) == "string" and type(profile[mapName]) == "table" and profile[mapName][id] == true
+	end
+	local primary = Weapons.get(out.primary)
+	if not owns("ownedWeapons", out.primary) or not primary or primary.category == "Pistol" then
+		out.primary = "AR01"
+	end
+	local secondary = Weapons.get(out.secondary)
+	if not owns("ownedWeapons", out.secondary) or not secondary or secondary.category ~= "Pistol" then
+		out.secondary = "P01"
+	end
+	local grenadeValid = false
+	for _, grenade in ipairs(Economy.Grenades or {}) do
+		if grenade.id == out.grenade then
+			grenadeValid = true
+			break
+		end
+	end
+	if not grenadeValid or not owns("ownedGrenades", out.grenade) then
+		out.grenade = "Frag"
+	end
+	if not Abilities.get(out.ability) or not owns("ownedAbilities", out.ability) then
+		out.ability = "Airstrike"
+	end
+	if type(out.armor) ~= "string" or not owns("ownedArmor", out.armor) then
+		out.armor = "STANDARD"
+	end
+	if type(out.weaponAugments) ~= "table" then
+		out.weaponAugments = {}
+	end
+	if type(out.abilityAugment) ~= "string" then
+		out.abilityAugment = nil
+	end
+	return out
+end
+
 local function migrate(raw: any, userId: number)
 	local base = ProfileService.defaults(userId)
 	if type(raw) ~= "table" then
@@ -152,6 +223,9 @@ local function migrate(raw: any, userId: number)
 	for reqId, amount in raw.requisitionSpend do
 		raw.requisitionSpend[reqId] = math.max(0, finiteOr(amount, 0))
 	end
+	if type(raw.salvage) ~= "table" then
+		raw.salvage = { scrap = 0, energyCells = 0, militaryTechnology = 0 }
+	end
 	for k, v in raw.salvage do
 		raw.salvage[k] = math.max(0, finiteOr(v, 0))
 	end
@@ -169,7 +243,8 @@ local function migrate(raw: any, userId: number)
 	if type(raw.recentTransactionIds) ~= "table" then
 		raw.recentTransactionIds = {}
 	end
-	-- Ownership maps are boolean-set tables; anything else is corrupt.
+	-- Ownership maps are boolean-set tables; anything else is corrupt. The free starter kit is then
+	-- re-asserted: a migration must never produce a profile with no valid equipable build.
 	for _, key in { "ownedWeapons", "ownedArmor", "ownedAbilities", "ownedGrenades" } do
 		if type(raw[key]) ~= "table" then
 			raw[key] = {}
@@ -178,6 +253,51 @@ local function migrate(raw: any, userId: number)
 				if type(itemId) ~= "string" or owned ~= true then
 					raw[key][itemId] = nil
 				end
+			end
+		end
+	end
+	raw.ownedWeapons.AR01 = true
+	raw.ownedWeapons.P01 = true
+	raw.ownedGrenades.Frag = true
+	raw.ownedAbilities.Airstrike = true
+	raw.ownedAbilities.DomeShield = true
+	raw.ownedArmor.STANDARD = true
+	-- Active and preset loadouts are equipment references, not a second inventory. Strip references
+	-- to unpurchased/unknown gear here so even legacy or corrupted documents cannot bypass ownership.
+	raw.selectedLoadout = sanitizeLoadout(raw.selectedLoadout, raw)
+	if type(raw.savedLoadouts) ~= "table" then
+		raw.savedLoadouts = {}
+	else
+		local cleanSaved = {}
+		for key, loadout in pairs(raw.savedLoadouts) do
+			if (key == "1" or key == "2" or key == "3") and type(loadout) == "table" then
+				cleanSaved[key] = sanitizeLoadout(loadout, raw)
+			end
+		end
+		raw.savedLoadouts = cleanSaved
+	end
+	if type(raw.dispatchStats) ~= "table" then
+		raw.dispatchStats = { qualifyingAssists = 0, claimedMilestones = 0 }
+	else
+		raw.dispatchStats.qualifyingAssists = math.max(0, math.floor(finiteOr(raw.dispatchStats.qualifyingAssists, 0)))
+		raw.dispatchStats.claimedMilestones = math.max(0, math.floor(finiteOr(raw.dispatchStats.claimedMilestones, 0)))
+	end
+	if type(raw.dispatchAssistMissions) ~= "table" then
+		raw.dispatchAssistMissions = {}
+	end
+	if type(raw.careerStats) ~= "table" then
+		raw.careerStats = { kills = 0, extractions = 0, missions = 0 }
+	else
+		for _, metric in { "kills", "extractions", "missions" } do
+			raw.careerStats[metric] = math.max(0, math.floor(finiteOr(raw.careerStats[metric], 0)))
+		end
+	end
+	if type(raw.commendations) ~= "table" then
+		raw.commendations = {}
+	else
+		for id, earned in raw.commendations do
+			if type(id) ~= "string" or earned ~= true then
+				raw.commendations[id] = nil
 			end
 		end
 	end
@@ -217,18 +337,31 @@ function ProfileService.leaseConflict(stored: any, myToken: string?, baseRevisio
 	return storedRev > (tonumber(baseRevision) or 0) and storedToken ~= nil and storedToken ~= myToken
 end
 
--- Boss rewards: credits, XP, and a blueprint with a pity floor.
--- Rank access is enforced by the caller (Veyr only accepts rank 3+).
--- The spec requires the blueprint to be guaranteed on the third qualifying clear. It was set to 5, so a
--- player could clear the major boss four times and still have no permanent unlock.
-local BossPityConfig = require(ReplicatedStorage.GF.Shared.Constants).Pity or {}
-local BOSS_PITY = tonumber(BossPityConfig.Target) or 3
-local BOSS_BLUEPRINT_CHANCE = tonumber(BossPityConfig.Chance) or 0.34
-function ProfileService.grantBossReward(player: Player, bossId: string, credits: number, xp: number): any
-	local profile = ProfileService.ensure(player)
-	if not profile then
-		return nil
-	end
+-- Boss rewards: credits, XP, and a blueprint with a pity floor. GOAL §10 fixes the protection at
+-- 25% per qualifying clear and a guarantee on the third qualifying extraction. The shared Constants
+-- table still carries the superseded 5/15% values, so these spec values are intentionally local.
+local BOSS_PITY = 3
+local BOSS_BLUEPRINT_CHANCE = 0.25
+-- Once the blueprint is owned, a repeated rare drop is converted into useful advanced research
+-- salvage rather than vanishing. The exact conversion is deliberately conservative: roughly one
+-- high-value operation's rare-material yield, not a second progression ladder.
+local DUPLICATE_BLUEPRINT_SALVAGE = { energyCells = 2, militaryTechnology = 1 }
+
+-- Boss kills happen mid-mission, but boss progression is only earned by a qualifying clear:
+-- meaningful participation, boss defeated, and successful team extraction. Queue the kill in memory
+-- and settle it from RewardsService at the same critical-write point as the operation payout. A crash
+-- or failed extraction therefore cannot bank boss credits/XP/blueprints early.
+local pendingBossRewards: { [number]: { any } } = {}
+
+local function currentLedgerMissionId(): string?
+	local missionId = nil
+	pcall(function()
+		missionId = require(script.Parent.RewardLedgerService).missionId()
+	end)
+	return type(missionId) == "string" and missionId or nil
+end
+
+local function bossResearchRecord(profile: any, bossId: string): any
 	if type(profile.bossResearch) ~= "table" then
 		profile.bossResearch = {}
 	end
@@ -237,28 +370,59 @@ function ProfileService.grantBossReward(player: Player, bossId: string, credits:
 		rec = { kills = 0, pity = 0, blueprintUnlocked = false }
 		profile.bossResearch[bossId] = rec
 	end
-	rec.kills += 1
-	rec.pity += 1
+	return rec
+end
+
+local function bossPendingResult(profile: any, bossId: string, credits: number, xp: number): any
+	local rec = bossResearchRecord(profile, bossId)
+	return {
+		kills = tonumber(rec.kills) or 0,
+		pity = tonumber(rec.pity) or 0,
+		blueprintUnlocked = rec.blueprintUnlocked == true,
+		granted = false,
+		credits = credits,
+		xp = xp,
+		pending = true,
+	}
+end
+
+local function applyBossReward(player: Player, bossId: string, credits: number, xp: number): any
+	local profile = ProfileService.ensure(player)
+	if not profile then
+		return nil
+	end
+	local rec = bossResearchRecord(profile, bossId)
+	rec.kills = (tonumber(rec.kills) or 0) + 1
+	rec.pity = (tonumber(rec.pity) or 0) + 1
 	local granted = false
+	local duplicateConverted = false
+	-- A test switch so the pity rule can be proven deterministically: with chance disabled only pity
+	-- can grant, which is what the acceptance check is about.
+	local chanceAllowed = workspace:GetAttribute("GF_ForceNoBlueprintChance") ~= true
 	if not rec.blueprintUnlocked then
-		-- A test switch so the pity rule can be proven deterministically: with the chance disabled only pity
-		-- can grant, which is what the acceptance check is about.
-		local chanceAllowed = workspace:GetAttribute("GF_ForceNoBlueprintChance") ~= true
 		if rec.pity >= BOSS_PITY or (chanceAllowed and math.random() < BOSS_BLUEPRINT_CHANCE) then
 			rec.blueprintUnlocked = true
 			rec.pity = 0
 			granted = true
+			profile.ownedBlueprints = type(profile.ownedBlueprints) == "table" and profile.ownedBlueprints or {}
+			profile.ownedBlueprints[bossId] = true
+		end
+	elseif chanceAllowed and math.random() < BOSS_BLUEPRINT_CHANCE then
+		duplicateConverted = true
+		profile.salvage = type(profile.salvage) == "table" and profile.salvage or { scrap = 0, energyCells = 0, militaryTechnology = 0 }
+		for resource, amount in pairs(DUPLICATE_BLUEPRINT_SALVAGE) do
+			profile.salvage[resource] = (tonumber(profile.salvage[resource]) or 0) + amount
 		end
 	end
-	local result = ProfileService.award(player, credits, xp)
+	local awardResult = ProfileService.award(player, credits, xp)
 	ProfileService.markDirty(player)
 	player:SetAttribute("BossKills", rec.kills)
 	player:SetAttribute("BossBlueprint", rec.blueprintUnlocked)
 	player:SetAttribute("BossPity", rec.pity)
 	player:SetAttribute("BossBlueprintGranted", granted)
 	workspace:SetAttribute("GF_LastBossReward", string.format("%s:%s:kills=%d:pity=%d:bp=%s:credits=%d", player.Name, bossId, rec.kills, rec.pity, tostring(rec.blueprintUnlocked), credits))
-	-- Stash the outcome on the profile so the mission debrief can report it. The research rule was correct but
-	-- invisible: nothing ever told the player a blueprint dropped or how many clears remained.
+	-- Stash the outcome on the profile so the mission debrief can report it. It is consumed by the
+	-- debrief and then cleared so a later ordinary mission cannot repeat old news.
 	profile.lastBossReward = {
 		bossId = bossId,
 		kills = rec.kills,
@@ -266,19 +430,94 @@ function ProfileService.grantBossReward(player: Player, bossId: string, credits:
 		pityTarget = BOSS_PITY,
 		blueprintUnlocked = rec.blueprintUnlocked,
 		granted = granted,
+		duplicateConverted = duplicateConverted,
+		duplicateSalvage = duplicateConverted and DUPLICATE_BLUEPRINT_SALVAGE or nil,
 		credits = credits,
 	}
 	-- shadow ledger: blueprint entitlement events (spec §28 BlueprintEntitlements)
 	pcall(function()
-		if granted then
+		if granted or duplicateConverted then
 			require(script.Parent.RewardLedgerService).appendEvent(
-				"blueprint_entitlement", nil,
+				duplicateConverted and "blueprint_duplicate_salvage" or "blueprint_entitlement", nil,
 				string.format("blueprint:%s:%s:%d", tostring(bossId), tostring(player and player.UserId or "unknown"), math.floor(os.clock() * 1000)),
 				player and player.UserId or nil
 			)
 		end
 	end)
-	return { kills = rec.kills, pity = rec.pity, blueprintUnlocked = rec.blueprintUnlocked, granted = granted, credits = credits, xp = xp }
+	return {
+		kills = rec.kills,
+		pity = rec.pity,
+		blueprintUnlocked = rec.blueprintUnlocked,
+		granted = granted,
+		duplicateConverted = duplicateConverted,
+		duplicateSalvage = duplicateConverted and DUPLICATE_BLUEPRINT_SALVAGE or nil,
+		credits = credits,
+		xp = xp,
+		rankUps = tonumber(awardResult and awardResult.rankUps) or 0,
+	}
+end
+
+function ProfileService.grantBossReward(player: Player, bossId: string, credits: number, xp: number): any
+	local profile = ProfileService.ensure(player)
+	if not profile then
+		return nil
+	end
+	-- Outside an operation this function is a Studio/test path and remains immediate. In a live
+	-- operation it is only evidence of a boss defeat; extraction settlement decides whether it qualifies.
+	if workspace:GetAttribute("GF_InMission") ~= true then
+		return applyBossReward(player, bossId, credits, xp)
+	end
+	local missionId = currentLedgerMissionId()
+	local list = pendingBossRewards[player.UserId]
+	if type(list) ~= "table" then
+		list = {}
+		pendingBossRewards[player.UserId] = list
+	end
+	for _, pending in ipairs(list) do
+		if pending.bossId == bossId and pending.missionId == missionId then
+			return bossPendingResult(profile, bossId, credits, xp)
+		end
+	end
+	table.insert(list, {
+		bossId = tostring(bossId),
+		credits = math.max(0, math.floor(tonumber(credits) or 0)),
+		xp = math.max(0, math.floor(tonumber(xp) or 0)),
+		missionId = missionId,
+	})
+	workspace:SetAttribute("GF_BossRewardPending", player.Name .. ":" .. tostring(bossId))
+	return bossPendingResult(profile, bossId, credits, xp)
+end
+
+-- Called once per participant during mission settlement. qualifying=false discards the in-memory
+-- evidence; qualifying=true applies it inside the same critical-write window as the payout. Entries
+-- keyed to another mission are stale crash/reset residue and are dropped rather than paid late.
+function ProfileService.settlePendingBossRewards(player: Player, qualifying: boolean, missionId: string?): any
+	local list = pendingBossRewards[player.UserId]
+	pendingBossRewards[player.UserId] = nil
+	local out = { rankUps = 0, applied = 0, dropped = 0, results = {} }
+	if type(list) ~= "table" then
+		return out
+	end
+	if qualifying == true then
+		for _, pending in ipairs(list) do
+			if pending.missionId == nil or missionId == nil or pending.missionId == missionId then
+				local result = applyBossReward(player, pending.bossId, pending.credits, pending.xp)
+				if result then
+					out.applied += 1
+					out.rankUps += tonumber(result.rankUps) or 0
+					table.insert(out.results, result)
+				end
+			else
+				out.dropped += 1
+			end
+		end
+	else
+		out.dropped = #list
+	end
+	if out.applied > 0 or out.dropped > 0 then
+		workspace:SetAttribute("GF_BossRewardSettled", string.format("%s:applied=%d:dropped=%d", player.Name, out.applied, out.dropped))
+	end
+	return out
 end
 function ProfileService.init()
 	local ok, result = pcall(function()
@@ -663,26 +902,119 @@ local COMMENDATIONS = {
 	{ id = "warhero", name = "War Hero", threshold = 50, metric = "missions" },
 }
 
-function ProfileService.awardCommendation(plr: Player, metric: string, count: number)
+function ProfileService.awardCommendation(plr: Player, metric: string, count: number): { string }
+	local profile = profiles[plr.UserId]
+	local newlyEarned = {}
+	if not profile then
+		return newlyEarned
+	end
+	profile.commendations = type(profile.commendations) == "table" and profile.commendations or {}
 	for _, comm in ipairs(COMMENDATIONS) do
 		if comm.metric == metric and count >= comm.threshold then
 			local key = "GF_Commendation_" .. comm.id
-			if not plr:GetAttribute(key) then
-				plr:SetAttribute(key, true)
-				workspace:SetAttribute("GF_CommendationAwarded", comm.name)
+			if profile.commendations[comm.id] ~= true then
+				profile.commendations[comm.id] = true
+				table.insert(newlyEarned, comm.name)
+				workspace:SetAttribute("GF_CommendationAwarded", plr.Name .. ":" .. comm.name)
+			end
+			-- Attribute mirrors are for live UI/debug only; the profile map is the durable truth.
+			plr:SetAttribute(key, true)
+		end
+	end
+	if #newlyEarned > 0 then
+		ProfileService.markDirty(plr)
+	end
+	return newlyEarned
+end
+
+-- Career stats are settled once per mission under the same settledMissions idempotency key as the
+-- payout, so retries cannot inflate kills/extraction/mission counts. The counters are persistent
+-- account progression and drive the non-spendable service medals above.
+function ProfileService.recordCareerProgress(plr: Player, deltas: any): { string }
+	local profile = profiles[plr.UserId]
+	if not profile or type(deltas) ~= "table" then
+		return {}
+	end
+	profile.careerStats = type(profile.careerStats) == "table" and profile.careerStats or { kills = 0, extractions = 0, missions = 0 }
+	local awarded = {}
+	for _, metric in { "kills", "extractions", "missions" } do
+		local delta = math.max(0, math.floor(tonumber(deltas[metric]) or 0))
+		if delta > 0 then
+			profile.careerStats[metric] = math.max(0, math.floor(tonumber(profile.careerStats[metric]) or 0)) + delta
+			plr:SetAttribute("GF_Career_" .. metric, profile.careerStats[metric])
+			for _, name in ipairs(ProfileService.awardCommendation(plr, metric, profile.careerStats[metric])) do
+				table.insert(awarded, name)
 			end
 		end
 	end
+	if awarded or deltas then
+		ProfileService.markDirty(plr)
+	end
+	return awarded
 end
 
 function ProfileService.getCommendations(plr: Player): { string }
 	local earned = {}
+	local profile = profiles[plr.UserId]
+	local persisted = profile and type(profile.commendations) == "table" and profile.commendations or {}
 	for _, comm in ipairs(COMMENDATIONS) do
-		if plr:GetAttribute("GF_Commendation_" .. comm.id) then
+		if persisted[comm.id] == true or plr:GetAttribute("GF_Commendation_" .. comm.id) then
 			table.insert(earned, comm.name)
 		end
 	end
 	return earned
+end
+
+-- Service Commendations are persistent account progression, not a spendable currency. A qualifying
+-- Priority Dispatch assist is counted once per mission id; every five successful assists completes
+-- another milestone cycle and pays the small configured Credit award.
+function ProfileService.recordDispatchAssist(player: Player, missionId: string?, qualified: boolean): any?
+	local profile = profiles[player.UserId]
+	if not profile or qualified ~= true or type(missionId) ~= "string" or missionId == "" then
+		return nil
+	end
+	profile.dispatchStats = type(profile.dispatchStats) == "table" and profile.dispatchStats or { qualifyingAssists = 0, claimedMilestones = 0 }
+	profile.dispatchAssistMissions = type(profile.dispatchAssistMissions) == "table" and profile.dispatchAssistMissions or {}
+	if profile.dispatchAssistMissions[missionId] then
+		return {
+			duplicate = true,
+			assists = tonumber(profile.dispatchStats.qualifyingAssists) or 0,
+			milestones = tonumber(profile.dispatchStats.claimedMilestones) or 0,
+			credits = 0,
+		}
+	end
+	profile.dispatchAssistMissions[missionId] = os.time()
+	local ordered = {}
+	for key, at in pairs(profile.dispatchAssistMissions) do
+		table.insert(ordered, { key = key, at = tonumber(at) or 0 })
+	end
+	table.sort(ordered, function(a, b) return a.at < b.at end)
+	while #ordered > 30 do
+		profile.dispatchAssistMissions[table.remove(ordered, 1).key] = nil
+	end
+	profile.dispatchStats.qualifyingAssists = (tonumber(profile.dispatchStats.qualifyingAssists) or 0) + 1
+	local assists = profile.dispatchStats.qualifyingAssists
+	local perMilestone = math.max(1, tonumber(Economy.ServiceCommendation and Economy.ServiceCommendation.assistsPerMilestone) or 5)
+	local milestone = assists % perMilestone == 0
+	local credits = 0
+	if milestone then
+		profile.dispatchStats.claimedMilestones = (tonumber(profile.dispatchStats.claimedMilestones) or 0) + 1
+		credits = math.max(0, math.floor(tonumber(Economy.ServiceCommendation and Economy.ServiceCommendation.creditsPerMilestone) or 150))
+		profile.credits = math.max(0, (tonumber(profile.credits) or 0) + credits)
+	end
+	ProfileService.markDirty(player)
+	player:SetAttribute("GF_DispatchAssists", assists)
+	player:SetAttribute("GF_DispatchMilestones", tonumber(profile.dispatchStats.claimedMilestones) or 0)
+	workspace:SetAttribute("GF_ServiceCommendation", string.format("%s:%d/%d%s", player.Name, assists % perMilestone, perMilestone, milestone and ":milestone" or ""))
+	return {
+		duplicate = false,
+		assists = assists,
+		milestones = tonumber(profile.dispatchStats.claimedMilestones) or 0,
+		milestone = milestone,
+		credits = credits,
+		progress = assists % perMilestone,
+		needed = perMilestone,
+	}
 end
 
 -- S14-019 durable awards: pending mission awards write before they grant — a crash between the

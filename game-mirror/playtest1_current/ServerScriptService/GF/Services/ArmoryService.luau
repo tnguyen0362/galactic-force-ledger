@@ -294,19 +294,19 @@ end
 -- three slots did not exist. A slot is a copy of the live loadout; loading restores it and re-applies
 -- the weapon so the change is visible in hand, not just in the menu.
 local function copyLoadout(source: any)
-	local out = {}
-	for key, value in pairs(source or {}) do
-		if type(value) == "table" then
-			local inner = {}
-			for innerKey, innerValue in pairs(value) do
-				inner[innerKey] = innerValue
-			end
-			out[key] = inner
-		else
-			out[key] = value
+	-- Presets must be immutable snapshots. The old one-level copy shared the nested per-weapon
+	-- augment tables, so changing the live socket afterwards silently rewrote the saved preset.
+	local function deepCopy(value: any): any
+		if type(value) ~= "table" then
+			return value
 		end
+		local out = {}
+		for key, child in pairs(value) do
+			out[key] = deepCopy(child)
+		end
+		return out
 	end
-	return out
+	return deepCopy(source or {})
 end
 
 function ArmoryService.saveLoadout(player: Player, slot: any)
@@ -467,6 +467,10 @@ function ArmoryService.equipGrenade(player: Player, id: string)
 	if not found then
 		return fail(player, "unknown grenade")
 	end
+	profile.ownedGrenades = profile.ownedGrenades or { Frag = true }
+	if profile.ownedGrenades[wanted] ~= true then
+		return fail(player, "grenade not owned")
+	end
 	profile.selectedLoadout.grenade = wanted
 	workspace:SetAttribute("GF_GrenadeEquipped", wanted)
 	ProfileService.markDirty(player)
@@ -536,15 +540,43 @@ function ArmoryService.equipArmor(player: Player, id: string)
 	push(player, { ok = true, action = "equipArmor", id = suit.id, state = ArmoryService.state(player) })
 end
 
+local function loadoutOwnershipValid(profile: any, loadout: any): (boolean, string?)
+	local primary = type(loadout.primary) == "string" and Weapons.get(loadout.primary) or nil
+	if not primary or primary.category == "Pistol" or not (profile.ownedWeapons and profile.ownedWeapons[loadout.primary]) then
+		return false, "preset primary is not owned"
+	end
+	local secondary = type(loadout.secondary) == "string" and Weapons.get(loadout.secondary) or nil
+	if not secondary or secondary.category ~= "Pistol" or not (profile.ownedWeapons and profile.ownedWeapons[loadout.secondary]) then
+		return false, "preset secondary is not owned"
+	end
+	if type(loadout.grenade) ~= "string" or not (profile.ownedGrenades and profile.ownedGrenades[loadout.grenade]) then
+		return false, "preset grenade is not owned"
+	end
+	if type(loadout.ability) ~= "string" or not (profile.ownedAbilities and profile.ownedAbilities[loadout.ability]) then
+		return false, "preset ability is not owned"
+	end
+	if type(loadout.armor) ~= "string" or not (profile.ownedArmor and profile.ownedArmor[loadout.armor]) then
+		return false, "preset armor is not owned"
+	end
+	return true, nil
+end
+
 function ArmoryService.loadLoadout(player: Player, slot: any)
 	local profile = profileOf(player)
 	if not profile then
 		return fail(player, "no profile")
 	end
 	local index = tonumber(slot) or 0
+	if index < 1 or index > 3 then
+		return fail(player, "loadout slot must be 1-3")
+	end
 	local saved = profile.savedLoadouts and profile.savedLoadouts[tostring(index)]
 	if type(saved) ~= "table" then
 		return fail(player, "loadout slot is empty")
+	end
+	local valid, why = loadoutOwnershipValid(profile, saved)
+	if not valid then
+		return fail(player, tostring(why))
 	end
 	profile.selectedLoadout = copyLoadout(saved)
 	ProfileService.markDirty(player)

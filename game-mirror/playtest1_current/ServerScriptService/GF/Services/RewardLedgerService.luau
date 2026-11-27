@@ -60,6 +60,10 @@ local ledger = {
 	missionCount = 0,
 }
 
+-- Forward-declared above begin(): reward locks are mission-scoped and must be cleared when a new
+-- ledger starts. The full declaration site below intentionally assigns this same local.
+local playerStatus: { [number]: { status: string, lockedAt: number?, extractedAt: number? } } = {}
+
 local function publish()
 	workspace:SetAttribute("GF_LedgerMission", tostring(ledger.missionId))
 	workspace:SetAttribute("GF_LedgerCount", #ledger.events)
@@ -76,6 +80,9 @@ function RewardLedgerService.begin(context: string?): string
 	ledger.seq = 0
 	ledger.events = {}
 	ledger.claimed = {}
+	-- Reward locks and reconstructed rosters are mission-scoped. If they survive into the next
+	-- operation, last mission's squad is treated as present again and can receive positive income twice.
+	table.clear(playerStatus)
 	publish()
 	return ledger.missionId
 end
@@ -210,8 +217,6 @@ end
 -- §28/§31 per-player extraction status and reward locking. One row per participant per mission;
 -- the lock timestamp is the authoritative moment their reward eligibility froze.
 -- ---------------------------------------------------------------------------
-local playerStatus: { [number]: { status: string, lockedAt: number?, extractedAt: number? } } = {}
-
 function RewardLedgerService.markParticipant(userId: number)
 	if not playerStatus[userId] then
 		playerStatus[userId] = { status = "participating" }
@@ -238,6 +243,36 @@ end
 function RewardLedgerService.isLocked(userId: number): boolean
 	local row = playerStatus[userId]
 	return row ~= nil and row.lockedAt ~= nil
+end
+
+-- Best-effort mission roster reconstructed from authoritative ledger events. Extraction currently
+-- returns players to the station before settlement (which clears GF_MissionParticipant), so reward
+-- services cannot rely on the live attribute at payout time. `eligibleUserIds` is captured while
+-- the mission is active; event userIds cover kill/cache participants even when a later event's
+-- eligibility scan was empty.
+function RewardLedgerService.participantUserIds(): { number }
+	local seen = {}
+	local out = {}
+	local function add(userId: any)
+		local id = tonumber(userId)
+		if id and not seen[id] then
+			seen[id] = true
+			table.insert(out, id)
+		end
+	end
+	for _, event in ipairs(ledger.events) do
+		add(event.userId)
+		if type(event.eligibleUserIds) == "table" then
+			for _, userId in ipairs(event.eligibleUserIds) do
+				add(userId)
+			end
+		end
+	end
+	for userId in pairs(playerStatus) do
+		add(userId)
+	end
+	table.sort(out)
+	return out
 end
 
 function RewardLedgerService.reset()
