@@ -24,6 +24,9 @@ local BINDINGS = {
 	-- most urgent distress beacon. the gamepad Y/Triangle binding is context-dependent by design:
 	-- in-mission ButtonY stays SwapWeapon, and this action must never fire outside the lobby
 	QuickResponse = { kbm = Enum.KeyCode.H, gamepad = Enum.KeyCode.ButtonY, label = { kbm = "H", gamepad = "Y" } },
+	-- squad browser: fleet-wide operations surface. lobby context; gamepad DPadLeft is free
+	-- (DpadUp map, DpadRight ping, DpadDown grenade are taken)
+	SquadBrowser = { kbm = Enum.KeyCode.P, gamepad = Enum.KeyCode.DPadLeft, label = { kbm = "P", gamepad = "Dpad <" } },
 	TacticalMap = { kbm = Enum.KeyCode.M, gamepad = Enum.KeyCode.DPadUp, label = { kbm = "M", gamepad = "Dpad ^" } },
 	Ping = { kbm = Enum.UserInputType.MouseButton3, gamepad = Enum.KeyCode.DPadRight, label = { kbm = "MMB", gamepad = "Dpad >" } },
 	ShoulderSwap = { kbm = Enum.KeyCode.V, gamepad = Enum.KeyCode.ButtonR3, label = { kbm = "V", gamepad = "RS" } },
