@@ -80,7 +80,7 @@ local LOSS_RATE = 0.8 -- q decay rate when visual contact is broken
 -- measured hitrate vs total sigma: 0.5->83% 0.7->77% 1.0->61% 1.3->24% 1.6->23%.
 -- the earlier values straddled the cliff (Easy 9% vs Normal 77% — huge low-end jump, compressed
 -- top end). these floors target a progressive ladder ~= Easy25/Normal50/Hard68/Extreme82 percent.
-local SIGMA_FLOOR = { Easy = 1.2, Normal = 1.0, Hard = 0.55, Extreme = 0.35 } -- studs at 50 studs baseline; platform-calibrated ladder (measured 8/44/42/70 at 1.35/1.1/0.8/0.45, inverted for progressive separation)
+local SIGMA_FLOOR = { Easy = 1.66, Normal = 1.10, Hard = 0.85, Extreme = 0.67 } -- studs at 50 studs baseline; MATRIX-002 analytical fit (MC noise model validated vs engine: sig0.8=83% empirical, targets 25/50/68/82 stationary @45 reference)
 local SIGMA_INITIAL = 4.2 -- acquisition dispersion at q=0, scaled by (1-q)^1.5 and range
 local HIT_RADIUS = 1.15 -- torso half-extent in studs: error inside this is a hit
 local function difficultyOf(actor: any): string
@@ -218,6 +218,15 @@ local function part(name: string, size: Vector3, color: Color3, material: Enum.M
 	return p
 end
 
+-- Baked hero squad templates (ServerStorage.GF.Art), one per Ascendancy role. Anything not listed keeps AscendancyTrooper.
+local HERO_TEMPLATE = {
+	Rifleman = "Hero_Asc_Rifleman",
+	Scout = "Hero_Asc_Scout",
+	Marksman = "Hero_Asc_Marksman",
+	Heavy = "Hero_Asc_Heavy",
+	Officer = "Hero_Asc_Officer",
+}
+
 local function buildModel(def: any, cframe: CFrame): Model
 	local palette = PALETTE[def.tier] or PALETTE.Standard
 	local scale = def.tier == "Boss" and 2.2 or (def.tier == "Elite" and 1.25 or 1)
@@ -299,9 +308,18 @@ local function buildModel(def: any, cframe: CFrame): Model
 	-- Authored character rig is the visible body; primitive parts are invisible hit volumes.
 	-- Do not make them visible: the rig replaces the block silhouette entirely.
 	local rig = nil
-	rig = ArtService.clone("AscendancyTrooper")
+	local isHero = false
+	local heroName = HERO_TEMPLATE[def.id]
+	if heroName then
+		rig = ArtService.clone(heroName)
+		isHero = rig ~= nil
+	end
+	if not rig then
+		rig = ArtService.clone("AscendancyTrooper")
+	end
 	if rig then
-		local rigScale = scale
+		-- Hero squad rigs are authored taller than the 6.87-stud player (7.3-8.4); tier scale is not stacked on them.
+		local rigScale = isHero and 1 or scale
 		rig:PivotTo(cframe * CFrame.Angles(0, math.rad(180), 0))
 		local hum = rig:FindFirstChildOfClass("Humanoid")
 		if hum then
