@@ -12,6 +12,37 @@ do
 	local missionPlaceId = workspace:GetAttribute("GF_MissionPlaceId")
 	if splitLive and type(missionPlaceId) == "number" and missionPlaceId ~= game.PlaceId then
 		print("[GF] lobby place detected (split live) — mission world generation skipped")
+		-- the gate skips WORLD generation only. the player-facing half of this script is still the
+		-- lobby's: StationService.start wires the deploy/squad-browser remotes, prompts and zone
+		-- tracking (Main's 6s fallback only calls build(), which makes geometry with no handlers),
+		-- AppearanceService dresses the armor kit, SquadService seats players. without these the
+		-- lobby had no armor and nothing interactive (owner report 2026-11-27).
+		local LobbyPlayers = game:GetService("Players")
+		local LobbyServices = script.Parent:WaitForChild("Services")
+		local function lobbyStart(label: string, fn: () -> ())
+			local ok, err = pcall(fn)
+			if not ok then
+				warn("[GF] lobby boot: " .. label .. " failed: " .. tostring(err))
+			end
+		end
+		lobbyStart("StationService", function()
+			require(LobbyServices.StationService).start()
+		end)
+		lobbyStart("AppearanceService", function()
+			require(LobbyServices.AppearanceService).start()
+		end)
+		lobbyStart("SquadService", function()
+			local LobbySquad = require(LobbyServices.SquadService)
+			local function hook(player: Player)
+				LobbySquad.join(player)
+				player.CharacterAdded:Connect(function() LobbySquad.join(player) end)
+			end
+			LobbyPlayers.PlayerAdded:Connect(hook)
+			for _, player in LobbyPlayers:GetPlayers() do
+				hook(player)
+			end
+			LobbyPlayers.PlayerRemoving:Connect(function(player) LobbySquad.leave(player) end)
+		end)
 		return
 	end
 end

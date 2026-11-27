@@ -80,11 +80,16 @@ Remotes.Names = {
 	-- the debrief RETURN TO STATION button fires this. It used to be created ad hoc inside
 	-- StationService.start, which left an unregistered remote in the folder and failed GF.Check.
 	"RequestReturn",
+	-- squad browser / dispatch (created by StationService.start; registered here so GF.Check passes)
+	"FormSquad",
 }
 
 Remotes.Functions = {
 	"RequestDeployOptions",
 	"RequestDebrief",
+	"RequestSquadBrowser",
+	"JoinSquad",
+	"RespondDispatch",
 }
 
 function Remotes.serverContainer(): Folder

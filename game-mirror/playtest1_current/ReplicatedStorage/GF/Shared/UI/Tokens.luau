@@ -24,6 +24,7 @@ Tokens.Color = {
 	panelInset = Color3.fromRGB(0x14, 0x1A, 0x20), -- wells, list rows, input fields
 	border = Color3.fromRGB(0x3B, 0x4D, 0x60),
 	borderFocus = Color3.fromRGB(0x58, 0xC8, 0xF0),
+	accentSelect = Color3.fromRGB(0xD8, 0xA8, 0x58), -- selected-state fill (SquadBrowser: "amber selection"); same hue as warning
 
 	-- text roles
 	textPrimary = Color3.fromRGB(0xD8, 0xDC, 0xD9),

@@ -261,6 +261,35 @@ shell:registerSection("DEPLOY", "\u{25bc}", function(page)
 	end
 end)
 
+-- FORM section state: these two were referenced below but never declared, which threw
+-- "attempt to index nil with 'statusLine'" inside registerSection and killed the whole script
+-- (claude hotfix 2026-11-27 — beta, keep or replace).
+local formState = {
+	operationId = nil :: string?,
+	difficulty = "Normal",
+	public = true,
+	opButtons = {} :: { [string]: TextButton },
+	diffButtons = {} :: { [string]: TextButton },
+	privButtons = {} :: { [string]: TextButton },
+	statusLine = nil :: TextLabel?,
+}
+
+local function refreshChips()
+	local function paint(b: TextButton, selected: boolean)
+		b.BackgroundColor3 = selected and Tokens.Color.accentSelect or Tokens.Color.panelRaised
+		b.TextColor3 = selected and Tokens.Color.panelInset or Tokens.Color.textPrimary
+	end
+	for id, b in pairs(formState.opButtons) do
+		paint(b, id == formState.operationId)
+	end
+	for d, b in pairs(formState.diffButtons) do
+		paint(b, d == formState.difficulty)
+	end
+	for key, b in pairs(formState.privButtons) do
+		paint(b, (key == "public") == formState.public)
+	end
+end
+
 shell:registerSection("FORM", "▲", function(page)
 	Components.text(page, "FORM OPERATION — FLEET-WIDE LISTING", "title",
 		UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 0, 0))
