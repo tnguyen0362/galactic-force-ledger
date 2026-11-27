@@ -52,6 +52,10 @@ local function publishGlobal(beacon)
 		host = beacon.host,
 		hostUserId = beacon.hostUserId,
 		hostJobId = game.JobId,
+		-- place-split: beacons originate in MISSION servers while responders sit in the LOBBY.
+		-- the responder's teleport must target the beacon's place, not their own — carrying
+		-- hostPlaceId in the record is what makes cross-place response possible at all.
+		hostPlaceId = game.PlaceId,
 		difficulty = beacon.difficulty,
 		privacy = beacon.privacy,
 		seats = beacon.seats,
@@ -394,10 +398,11 @@ end
 -- userId inside the beacon record — that userId IS the cross-server handshake: no message
 -- channel needed, the host server recognizes the claim when the responder arrives.
 -- returns (true, hostJobId) on success — the caller teleports the responder to hostJobId.
-function DispatchService.claimSeat(player: Player, beaconIdKey: string): (boolean, string?)
+function DispatchService.claimSeat(player: Player, beaconIdKey: string): (boolean, string?, number?)
 	local s = dstore()
 	if not s then return false, nil end
 	local hostJobId = nil
+	local hostPlaceId = nil
 	local claimed = false
 	pcall(function()
 		s:UpdateAsync(beaconIdKey, function(record)
@@ -407,18 +412,20 @@ function DispatchService.claimSeat(player: Player, beaconIdKey: string): (boolea
 					-- already claimed: idempotent retry-safe (teleport may have failed before)
 					claimed = true
 					hostJobId = record.hostJobId
+					hostPlaceId = record.hostPlaceId
 					return record
 				end
 				record.seats -= 1
 				record.claims[tostring(player.UserId)] = os.time()
 				claimed = true
 				hostJobId = record.hostJobId
+				hostPlaceId = record.hostPlaceId
 				return record
 			end
 			return nil -- full or expired: abort cleanly
 		end, BEACON_TTL)
 	end)
-	return claimed, hostJobId
+	return claimed, hostJobId, hostPlaceId
 end
 
 -- arrival recognition: scan this server's own open beacons for claims whose userId is now

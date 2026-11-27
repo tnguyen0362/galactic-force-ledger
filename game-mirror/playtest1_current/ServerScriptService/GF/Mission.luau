@@ -1,5 +1,21 @@
 --!strict
 -- Mission controller: wires services for a single generated operation.
+
+-- place-split role gate: when the split is LIVE and this server is provably the LOBBY
+-- place, generating a mission world here is pure cost — 5000 studs of terrain, thousands
+-- of vegetation instances, encounter director, the whole memory footprint the split
+-- exists to avoid. detection: the lobby knows the mission place id, and it is not this
+-- place. in every other configuration (split flag off, ids unconfigured, direct Studio
+-- run) the legacy shared-place behavior is preserved exactly.
+do
+	local splitLive = workspace:GetAttribute("GF_PlaceSplitLive") == true
+	local missionPlaceId = workspace:GetAttribute("GF_MissionPlaceId")
+	if splitLive and type(missionPlaceId) == "number" and missionPlaceId ~= game.PlaceId then
+		print("[GF] lobby place detected (split live) — mission world generation skipped")
+		return
+	end
+end
+
 local Players = game:GetService("Players")
 local Services = script.Parent:WaitForChild("Services")
 local State = require(Services.State)
@@ -72,6 +88,71 @@ ObjectiveService.start()
 require(Services.BoundaryService).start()
 require(Services.PerformanceTelemetry).start()
 
+-- ---------------------------------------------------------------------------
+-- PLACE-SPLIT BOOTSTRAP (the mission side of the deploy contract).
+-- when this server is a mission-place instance, the squad's intent arrives in the first
+-- player's join data: seed, template, difficulty, squad roster, lobby return address,
+-- and the war operation/region bindings. generation must not begin before the contract
+-- is read — the seed IS the world. fallback after timeout: self-generated intent, so a
+-- direct Studio run of this place still boots a playable mission.
+-- ---------------------------------------------------------------------------
+local DeployContract = require(game:GetService("ReplicatedStorage").GF.Shared.DeployContract)
+local contractIntent: any = nil
+do
+	-- place-role detection: either direction of the id pair proves the split
+	local lobbyId = workspace:GetAttribute("GF_LobbyPlaceId")
+	local missionId = workspace:GetAttribute("GF_MissionPlaceId")
+	local amMissionPlace = (type(lobbyId) == "number" and lobbyId ~= game.PlaceId)
+		or (type(missionId) == "number" and missionId == game.PlaceId)
+	if amMissionPlace then
+		workspace:SetAttribute("GF_AmMissionPlace", true)
+		local arrived = false
+		local function tryRead(player: Player)
+			if arrived then return end
+			local intent = DeployContract.fromPlayer(player)
+			if intent then
+				arrived = true
+				contractIntent = intent
+				print(string.format("[GF] deploy contract received: template=%s difficulty=%s seed=%s squad=%d",
+					tostring(intent.template), tostring(intent.difficulty), tostring(intent.seed),
+					type(intent.squadUserIds) == "table" and #intent.squadUserIds or 0))
+			end
+		end
+		-- players already present beat the PlayerAdded hook (server exists because they teleported)
+		for _, plr in ipairs(Players:GetPlayers()) do
+			tryRead(plr)
+		end
+		local conn
+		conn = Players.PlayerAdded:Connect(function(plr)
+			tryRead(plr)
+			if arrived and conn then conn:Disconnect() end
+		end)
+		-- bounded wait: generation cannot stall forever on a missing/late contract
+		local tWait = os.clock()
+		while not arrived and os.clock() - tWait < 10 do
+			task.wait(0.25)
+		end
+		if conn then conn:Disconnect() end
+		if not arrived then
+			warn("[GF] no deploy contract within 10s — falling back to self-generated intent (Studio/direct-run path)")
+		end
+		-- the contract's lobby address is authoritative for return teleports; the Studio-set
+		-- attribute is only a fallback when no contract exists (direct-run)
+		if contractIntent and type(contractIntent.lobbyPlaceId) == "number" then
+			workspace:SetAttribute("GF_LobbyPlaceId", contractIntent.lobbyPlaceId)
+		end
+		-- war bindings: contribution crediting at primary completion reads these exact tags
+		if contractIntent then
+			if type(contractIntent.operationId) == "string" and contractIntent.operationId ~= "" then
+				workspace:SetAttribute("GF_OperationId", contractIntent.operationId)
+			end
+			if type(contractIntent.regionId) == "string" and contractIntent.regionId ~= "" then
+				workspace:SetAttribute("GF_RegionId", contractIntent.regionId)
+			end
+		end
+	end
+end
+
 -- S08-006 mission timer: 15 minute default guidance — a pacing reference for the squad, never a
 -- forced playtime floor. Missions end by objective resolution, not by the clock.
 task.spawn(function()
@@ -115,8 +196,12 @@ local biomes = { "Forest", "Arid", "Tundra", "Industrial", "Jungle" } -- Phase 1
 -- owner directive 2026-11-28: everything is jungle — rotation suspended, biome pinned
 local biome = "Jungle"
 workspace:SetAttribute("GF_Biome", biome)
-local missionSeed = (os.time() * 997 + math.floor(os.clock() * 1000) + math.random(1, 99999)) % 900000 + 1
+local missionSeed = (contractIntent and type(contractIntent.seed) == "number" and contractIntent.seed)
+	or (os.time() * 997 + math.floor(os.clock() * 1000) + math.random(1, 99999)) % 900000 + 1
 workspace:SetAttribute("GF_MapSeed", missionSeed)
+if contractIntent then
+	print("[GF] world generation driven by contract seed " .. tostring(missionSeed))
+end
 local columns = TerrainService.build(missionSeed)
 -- Runtime geographical generation is now the default terrain path (owner directive 2026-11-28):
 -- generation dispatches async inside build() and takes ~7-20s behind the loading window. Every
@@ -276,12 +361,35 @@ end
 -- (MISSION_SPAWN=(0,8,118)); WorldDressing.build(relayPos, spawnPos) and
 -- ObjectiveService.setup(relayPos) both key off the OBJECTIVE first. Plan mapping:
 -- primary -> relay/objective anchor, lz -> spawn anchor.
-ObjectiveService.setup(objAnchor)
+-- contract-driven mission identity: template selects the objective mechanics, difficulty
+-- scales everything downstream. both publish as attributes AND mission context so every
+-- consumer (legacy and contract-aware) reads the same truth.
+local missionTemplate = (contractIntent and type(contractIntent.template) == "string" and contractIntent.template)
+	or "SABOTAGE_RELAY"
+local missionDifficulty = (contractIntent and type(contractIntent.difficulty) == "string" and contractIntent.difficulty)
+	or "Normal"
+workspace:SetAttribute("GF_OperationTemplate", missionTemplate)
+workspace:SetAttribute("GF_OperationDifficulty", missionDifficulty)
+do
+	local State = require(Services.State)
+	if not State.getMission() then
+		State.setMission({
+			seed = missionSeed,
+			difficulty = missionDifficulty,
+			tickets = 0,
+			startedAt = os.time(),
+			softDeadline = os.time() + 15 * 60,
+			objectiveComplete = false,
+			extractionCalled = false,
+		})
+	end
+end
+ObjectiveService.setup(objAnchor, missionTemplate)
 local dressed = require(Services.WorldDressing).build(objAnchor, lzAnchor)
 print("[GF] world dressing parts: " .. dressed)
 do
 	local missionState = require(Services.State).getMission()
-	workspace:SetAttribute("GF_Difficulty", (missionState and missionState.difficulty) or "Normal")
+	workspace:SetAttribute("GF_Difficulty", (missionState and missionState.difficulty) or missionDifficulty)
 end
 require(Services.TelemetryService).start()
 require(Services.TeleportFlowService).start()

@@ -120,6 +120,18 @@ end
 local joinOrder: { Player } = {}
 local leader: Player? = nil
 
+-- public member enumeration for squad-coherent deploys (place-split): the deploy flow
+-- teleports the whole squad with one shared intent contract
+function SquadService.memberList(): { Player }
+	local out = {}
+	for plr in pairs(members) do
+		if plr.Parent then
+			table.insert(out, plr)
+		end
+	end
+	return out
+end
+
 function SquadService.electLeader(): Player?
 	for _, plr in ipairs(joinOrder) do
 		if plr.Parent and members[plr] then

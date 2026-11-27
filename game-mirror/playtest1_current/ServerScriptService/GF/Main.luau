@@ -70,6 +70,18 @@ ArmoryService.start()
 			return
 		end
 		warn("[GF] station missing after boot; rebuilding from Main")
+		-- place-split: never rebuild the station inside a MISSION server — the orbital
+		-- station is lobby architecture; missions return by teleport, not by walking back
+		local amMission = false
+		local lobbyId = workspace:GetAttribute("GF_LobbyPlaceId")
+		local missionId = workspace:GetAttribute("GF_MissionPlaceId")
+		if (type(lobbyId) == "number" and lobbyId ~= game.PlaceId) or (type(missionId) == "number" and missionId == game.PlaceId) then
+			amMission = true
+		end
+		if amMission then
+			print("[GF] mission place detected — station rebuild skipped")
+			return
+		end
 		local ok, err = pcall(function()
 			require(ServerScriptService.GF.Services.StationService).build()
 		end)
@@ -102,6 +114,15 @@ TutorialService.start()
 require(ServerScriptService.GF.Services.SupplyService).start()
 require(ServerScriptService.GF.Services.OperationService).start()
 task.defer(function()
+	-- war table is lobby dressing — the mandate moved deployment to the four terminals, and
+	-- in a mission server neither exists. skip when provably in the mission place.
+	local amMission = false
+	local lobbyId = workspace:GetAttribute("GF_LobbyPlaceId")
+	local missionId = workspace:GetAttribute("GF_MissionPlaceId")
+	if (type(lobbyId) == "number" and lobbyId ~= game.PlaceId) or (type(missionId) == "number" and missionId == game.PlaceId) then
+		amMission = true
+	end
+	if amMission then return end
 	local ok, err = pcall(StationWarTable.start)
 	if not ok then warn("[GF] war table dressing failed: " .. tostring(err)) end
 end)
