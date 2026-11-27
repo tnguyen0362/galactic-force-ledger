@@ -57,16 +57,181 @@ local deployState = {
 	opList = nil :: ScrollingFrame?,
 }
 
-shell:registerSection("DEPLOY", "▼", function(page)
-	Components.text(page, "DEPLOY — SELECT THEATRE OF WAR", "title",
-		UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 0, 0))
+shell:registerSection("DEPLOY", "\u{25bc}", function(page)
+	-- helldivers 2 war-table structure, copied from the reference per owner directive:
+	-- theater strip across the top, operation panels with mission intel down the left,
+	-- theater status readout right (control bar = liberation-bar equivalent), difficulty
+	-- bar across the bottom in fixed order with amber selection, wide deploy confirmation
+	-- at the very bottom. no invention.
+	Components.text(page, "DEPLOYMENT", "title",
+		UDim2.new(1, 0, 0, 34), UDim2.new(0, 0, 0, 0))
 	local statusLine = Components.text(page, "", "caption",
-		UDim2.new(1, 0, 0, 18), UDim2.new(0, 0, 0, 34))
+		UDim2.new(1, 0, 0, 18), UDim2.new(0, 0, 0, 38))
 	deployState.statusLine = statusLine
 
-	-- left column: the regions, sorted deterministically
-	local regionCol = Components.list(page,
-		UDim2.new(0, 230, 1, -170), UDim2.new(0, 0, 0, 58))
+	-- theater strip: regions as a horizontal selector row across the top — hd2 picks the
+	-- theater then the operation in one read, no nested list-of-lists
+	local theaterRow = Instance.new("Frame")
+	theaterRow.Name = "TheaterRow"
+	theaterRow.Size = UDim2.new(1, 0, 0, 44)
+	theaterRow.Position = UDim2.new(0, 0, 0, 60)
+	theaterRow.BackgroundTransparency = 1
+	theaterRow.Parent = page
+	local theaterLayout = Instance.new("UIListLayout")
+	theaterLayout.FillDirection = Enum.FillDirection.Horizontal
+	theaterLayout.Padding = UDim.new(0, Tokens.Space.xs)
+	theaterLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	theaterLayout.Parent = theaterRow
+
+	-- operations column (left, wide): one panel per operation, intel visible on the row
+	local opList = Components.list(page,
+		UDim2.new(1, -290, 1, -270), UDim2.new(0, 0, 0, 112))
+	deployState.opList = opList
+
+	-- theater status panel (right, narrow): the war read for the selected region
+	local intelPanel = Components.panel(page,
+		UDim2.new(0, 280, 1, -270), UDim2.new(1, -280, 0, 112))
+	Components.text(intelPanel, "THEATER STATUS", "caption",
+		UDim2.new(1, -Tokens.Space.md * 2, 0, 18), UDim2.new(0, Tokens.Space.md, 0, Tokens.Space.sm))
+	local intelBody = Components.text(intelPanel, "", "body",
+		UDim2.new(1, -Tokens.Space.md * 2, 0, 120), UDim2.new(0, Tokens.Space.md, 0, 34))
+	intelBody.TextWrapped = true
+	intelBody.TextXAlignment = Enum.TextXAlignment.Left
+	intelBody.TextYAlignment = Enum.TextYAlignment.Top
+	-- control bar: thin sharp track, amber fill — the liberation read
+	local barTrack = Instance.new("Frame")
+	barTrack.Name = "ControlTrack"
+	barTrack.Size = UDim2.new(1, -Tokens.Space.md * 2, 0, 6)
+	barTrack.Position = UDim2.new(0, Tokens.Space.md, 0, 160)
+	barTrack.BackgroundColor3 = Tokens.Color.panelInset
+	barTrack.BorderSizePixel = 0
+	barTrack.Parent = intelPanel
+	local barFill = Instance.new("Frame")
+	barFill.Name = "Fill"
+	barFill.Size = UDim2.new(0.5, 0, 1, 0)
+	barFill.BackgroundColor3 = Tokens.Color.accentSelect
+	barFill.BorderSizePixel = 0
+	barFill.Parent = barTrack
+	local barLabel = Components.text(intelPanel, "", "caption",
+		UDim2.new(1, -Tokens.Space.md * 2, 0, 16), UDim2.new(0, Tokens.Space.md, 0, 172))
+
+	-- difficulty bar across the bottom: the reference's signature row. fixed order,
+	-- equal segments, amber selection.
+	local diffBar = Instance.new("Frame")
+	diffBar.Name = "DifficultyBar"
+	diffBar.Size = UDim2.new(1, 0, 0, 52)
+	diffBar.Position = UDim2.new(0, 0, 1, -112)
+	diffBar.BackgroundTransparency = 1
+	diffBar.Parent = page
+	local diffLayout = Instance.new("UIListLayout")
+	diffLayout.FillDirection = Enum.FillDirection.Horizontal
+	diffLayout.Padding = UDim.new(0, Tokens.Space.xs)
+	diffLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	diffLayout.Parent = diffBar
+
+	-- wide deploy confirmation at the very bottom — the hellpod-equivalent commitment
+	local deployBtn = Components.button(page, "DEPLOY", "primary")
+	deployBtn.Size = UDim2.new(1, 0, 0, 52)
+	deployBtn.Position = UDim2.new(0, 0, 1, -54)
+	deployBtn.TextSize = Tokens.Type.sizeTitle
+	deployBtn.Activated:Connect(function()
+		if not deployState.operationId then
+			statusLine.Text = "SELECT AN OPERATION"
+			return
+		end
+		remotes.RequestDeploy:FireServer({
+			difficulty = deployState.difficulty,
+			operationId = deployState.operationId,
+		})
+		shell:close()
+	end)
+
+	local function refreshDiffSelection()
+		for d, b in pairs(deployState.diffButtons) do
+			if d == deployState.difficulty then
+				b.BackgroundColor3 = Tokens.Color.accentSelect
+				b.TextColor3 = Tokens.Color.panelInset
+			else
+				b.BackgroundColor3 = Tokens.Color.panelRaised
+				b.TextColor3 = Tokens.Color.textPrimary
+			end
+		end
+	end
+	for diffIdx, diff in ipairs({ "Easy", "Normal", "Hard", "Extreme" }) do
+		local chip = Components.button(diffBar, string.upper(diff), "ghost")
+		chip.Size = UDim2.new(0.25, -Tokens.Space.xs, 1, 0)
+		chip.LayoutOrder = diffIdx
+		deployState.diffButtons[diff] = chip
+		chip.Activated:Connect(function()
+			deployState.difficulty = diff
+			refreshDiffSelection()
+		end)
+	end
+
+	local selectRegion
+	selectRegion = function(rid: string)
+		deployState.region = rid
+		deployState.operationId = nil
+		deployState.opButtons = {}
+		for _, child in ipairs(opList:GetChildren()) do
+			if child:IsA("Frame") then child:Destroy() end
+		end
+		-- theater intel: the war read, straight from the live attributes
+		local control = workspace:GetAttribute("GF_WarControl_" .. rid)
+		local front = workspace:GetAttribute("GF_WarFront_" .. rid)
+		local pct = type(control) == "number" and math.floor(control * 100 + 0.5) or nil
+		intelBody.Text = string.format(
+			"REGION %s\nCONTROL: %s\nFRONT: %s\n\nOperations in this theater feed the war effort directly. Mission success shifts control.",
+			string.upper(rid),
+			pct and (pct .. "%") or "CONTESTED",
+			front and string.upper(tostring(front)) or "ACTIVE")
+		if pct then
+			barFill.Size = UDim2.new(math.clamp(control or 0.5, 0, 1), 0, 1, 0)
+			barLabel.Text = string.format("CONTROL %d%%", pct)
+		else
+			barFill.Size = UDim2.new(0.5, 0, 1, 0)
+			barLabel.Text = "CONTROL CONTESTED"
+		end
+		for r, b in pairs(deployState.regionButtons) do
+			b.BackgroundColor3 = r == rid and Tokens.Color.accentSelect or Tokens.Color.panelRaised
+			b.TextColor3 = r == rid and Tokens.Color.panelInset or Tokens.Color.textPrimary
+		end
+		local order = 0
+		for opId, def in pairs(WarModel.OPERATIONS) do
+			if (def.region or "?") == rid then
+				order += 1
+				local name = (WarOperations.DisplayName and WarOperations.DisplayName[opId]) or opId
+				local row = Components.row(opList, string.upper(name),
+					string.format("%s — %s", string.lower(def.family or "combat operation"), string.upper(def.template or "standard engagement")))
+				row.LayoutOrder = order
+				local pick = Components.button(row, "SELECT", "ghost")
+				pick.Size = UDim2.new(0, 96, 0, Tokens.Size.buttonHeight - 12)
+				pick.Position = UDim2.new(1, -Tokens.Space.sm, 0.5, 0)
+				pick.AnchorPoint = Vector2.new(1, 0.5)
+				pick.TextSize = Tokens.Type.sizeSmall
+				deployState.opButtons[opId] = pick
+				local opName = name
+				pick.Activated:Connect(function()
+					deployState.operationId = opId
+					for id, b in pairs(deployState.opButtons) do
+						if id == opId then
+							b.BackgroundColor3 = Tokens.Color.accentSelect
+							b.TextColor3 = Tokens.Color.panelInset
+						else
+							b.BackgroundColor3 = Tokens.Color.panelRaised
+							b.TextColor3 = Tokens.Color.textPrimary
+						end
+					end
+					statusLine.Text = string.upper(string.format("%s — %s theater — %s difficulty", opName, rid, deployState.difficulty))
+				end)
+			end
+		end
+		if order == 0 then
+			statusLine.Text = "NO OPERATIONS IN THEATER"
+		end
+	end
+
+	-- theater buttons populate once; selection state rides on top
 	local regions = {}
 	for _opId, def in pairs(WarModel.OPERATIONS) do
 		local r = def.region or "?"
@@ -75,161 +240,26 @@ shell:registerSection("DEPLOY", "▼", function(page)
 		end
 	end
 	table.sort(regions)
-
-	-- region selection is one callable function: buttons and initial population share it,
-	-- so the operation list is never empty-on-open and terminal preselection is identical
-	local selectRegion
-	selectRegion = function(rid: string)
-		if not deployState.opList then return end
-		deployState.region = rid
-		deployState.operationId = nil
-		deployState.opButtons = {}
-		for _, child in ipairs(deployState.opList:GetChildren()) do
-			if child:IsA("Frame") then child:Destroy() end
-		end
-		local ops = {}
-		for opId, def in pairs(WarModel.OPERATIONS) do
-			if (def.region or "?") == rid then
-				table.insert(ops, opId)
-			end
-		end
-		table.sort(ops)
-		for order, opId in ipairs(ops) do
-			local def = WarModel.OPERATIONS[opId]
-			local name = WarOperations.DisplayName[opId] or opId
-			local row = Components.row(deployState.opList, name,
-				string.format("%s operation", string.lower(def.family or "combat")))
-			row.LayoutOrder = order
-			local pick = Components.button(row, "SELECT", "ghost")
-			pick.Size = UDim2.new(0, 96, 0, Tokens.Size.buttonHeight - 12)
-			pick.Position = UDim2.new(1, -Tokens.Space.sm, 0.5, 0)
-			pick.AnchorPoint = Vector2.new(1, 0.5)
-			pick.TextSize = Tokens.Type.sizeSmall
-			deployState.opButtons[opId] = pick
-			pick.Activated:Connect(function()
-				deployState.operationId = opId
-				for id, b in pairs(deployState.opButtons) do
-					b.BackgroundColor3 = id == opId and Tokens.Color.navy or Tokens.Color.panelRaised
-				end
-				statusLine.Text = string.format("%s — %s theatre", name, rid)
-				statusLine.TextColor3 = Tokens.Color.textSecondary
-			end)
-		end
-		for id, b in pairs(deployState.regionButtons) do
-			b.BackgroundColor3 = id == rid and Tokens.Color.navy or Tokens.Color.panelInset
-		end
-		-- live theater status at the decision point: the war is legible before you commit
-		local warStatus = workspace:GetAttribute("GF_WarState_" .. rid .. "_Status")
-		if type(warStatus) == "string" then
-			statusLine.Text = string.format("%s — theater status: %s", string.upper(rid), string.upper(string.gsub(warStatus, "_", " ")))
-			statusLine.TextColor3 = Tokens.StatusColor[warStatus] or Tokens.Color.textSecondary
-		end
-	end
-
-	for i, rid in ipairs(regions) do
-		local btn = Components.button(regionCol, string.upper(rid), "ghost")
-		btn.LayoutOrder = i
-		btn.Size = UDim2.new(1, 0, 0, Tokens.Size.buttonHeight)
-		btn.TextSize = Tokens.Type.sizeSmall
-		deployState.regionButtons[rid] = btn
+	for rIdx, r in ipairs(regions) do
+		local btn = Components.button(theaterRow, string.upper(r), "ghost")
+		btn.Size = UDim2.new(0, 150, 1, 0)
+		btn.LayoutOrder = rIdx
+		deployState.regionButtons[r] = btn
 		btn.Activated:Connect(function()
-			selectRegion(rid)
+			selectRegion(r)
 		end)
 	end
 
-	-- center: operations for the selected region
-	deployState.opList = Components.list(page,
-		UDim2.new(1, -250, 1, -170), UDim2.new(0, 246, 0, 58))
-
-	-- bottom: difficulty chips + the deploy action, thumb-sized
-	local diffRow = Instance.new("Frame")
-	diffRow.Size = UDim2.new(1, 0, 0, Tokens.Size.chipHeight + 8)
-	diffRow.Position = UDim2.new(0, 0, 1, -100)
-	diffRow.BackgroundTransparency = 1
-	diffRow.Parent = page
-	local diffLayout = Instance.new("UIListLayout")
-	diffLayout.FillDirection = Enum.FillDirection.Horizontal
-	diffLayout.Padding = UDim.new(0, Tokens.Space.sm)
-	diffLayout.Parent = diffRow
-	Components.text(diffRow, "DIFFICULTY", "caption",
-		UDim2.new(0, 110, 1, 0), UDim2.new(0, 0, 0, 0))
-	for _, diff in ipairs({ "Easy", "Normal", "Hard", "Extreme" }) do
-		local chip = Components.button(diffRow, string.upper(diff), "ghost")
-		chip.Size = UDim2.new(0, 120, 0, Tokens.Size.chipHeight)
-		chip.TextSize = Tokens.Type.sizeSmall
-		deployState.diffButtons[diff] = chip
-		chip.Activated:Connect(function()
-			deployState.difficulty = diff
-			for d, b in pairs(deployState.diffButtons) do
-				b.BackgroundColor3 = d == diff and Tokens.Color.navy or Tokens.Color.panelInset
-			end
-		end)
+	refreshDiffSelection()
+	-- initial selection: terminal preselection if set, else the first theater
+	local initial = deployState.region
+	if not table.find(regions, initial) then
+		initial = regions[1]
 	end
-	deployState.diffButtons["Normal"].BackgroundColor3 = Tokens.Color.navy
-
-	local deployBtn = Components.button(page, "DEPLOY", "primary")
-	deployBtn.Size = UDim2.new(1, 0, 0, 64)
-	deployBtn.Position = UDim2.new(0, 0, 1, -64)
-	deployBtn.TextSize = Tokens.Type.sizeTitle
-	deployBtn.Activated:Connect(function()
-		if not deployState.operationId then
-			statusLine.Text = "select an operation — the theatre list is center-screen"
-			statusLine.TextColor3 = Tokens.Color.warning
-			return
-		end
-		statusLine.Text = "DEPLOYING…"
-		statusLine.TextColor3 = Tokens.Color.textAccent
-		-- the exact legacy wire contract
-		local requestDeploy = remotes:FindFirstChild("RequestDeploy")
-		if requestDeploy then
-			requestDeploy:FireServer({ difficulty = deployState.difficulty, operationId = deployState.operationId })
-		end
-		shell:close()
-	end)
-
-	-- initial population: terminal arc preselection if present, default region otherwise
-	task.defer(function()
-		local startRegion = deployState.region
-		local terminalRegions = (shell :: any)._terminalRegions
-		if type(terminalRegions) == "string" then
-			local first = string.split(terminalRegions, ",")[1]
-			if first and deployState.regionButtons[first] then
-				startRegion = first
-			end
-		end
-		selectRegion(startRegion)
-	end)
+	if initial then
+		selectRegion(initial)
+	end
 end)
-
--- ---------------------------------------------------------------------------
--- FORM section: declare an operation publicly and the listing goes fleet-wide.
--- operation picker is region-grouped from the shared war roster — the same source the
--- deploy terminals use, so what you form is exactly what you deploy. after forming, the
--- leader physically reports to their region's terminal to launch when the squad fills.
--- ---------------------------------------------------------------------------
-
-local formState = {
-	operationId = nil :: string?,
-	difficulty = "Normal",
-	public = true,
-	statusLine = nil :: TextLabel?,
-	opButtons = {} :: { [string]: TextButton },
-	diffButtons = {} :: { [string]: TextButton },
-	privButtons = {} :: { [string]: TextButton },
-}
-
-local function refreshChips()
-	for opId, btn in pairs(formState.opButtons) do
-		local sel = opId == formState.operationId
-		btn.BackgroundColor3 = sel and Tokens.Color.navy or Tokens.Color.panelInset
-	end
-	for diff, btn in pairs(formState.diffButtons) do
-		btn.BackgroundColor3 = diff == formState.difficulty and Tokens.Color.navy or Tokens.Color.panelInset
-	end
-	for key, btn in pairs(formState.privButtons) do
-		btn.BackgroundColor3 = (key == "public") == formState.public and Tokens.Color.navy or Tokens.Color.panelInset
-	end
-end
 
 shell:registerSection("FORM", "▲", function(page)
 	Components.text(page, "FORM OPERATION — FLEET-WIDE LISTING", "title",

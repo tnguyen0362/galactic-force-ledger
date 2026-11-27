@@ -91,6 +91,13 @@ local function interactiveUiOpen(): boolean
 	if armoryPanel and armoryPanel.Visible then
 		return true
 	end
+	-- menu-shell architecture: any shell gui frees the cursor while open. the shell toggles
+	-- gui.Enabled on open/close, so detection is one child scan — no per-menu wiring.
+	for _, child in ipairs(playerGui:GetChildren()) do
+		if child:IsA("ScreenGui") and child.Enabled and child.Name:sub(1, 8) == "GF_Squad" then
+			return true
+		end
+	end
 	local settings = playerGui:FindFirstChild("GF_Settings")
 	if settings and settings.Enabled then
 		return true
