@@ -10,57 +10,334 @@ local State = require(script.Parent.State)
 local EnemyService = require(script.Parent.EnemyService)
 local BastionWalker = require(script.Parent.Parent.BastionWalker)
 local Veyr = require(script.Parent.Parent.Veyr)
+local MissionSites = require(script.Parent.MissionSites)
+local Missions = require(ReplicatedStorage.GF.Shared.Configs.Missions)
+local Constants = require(ReplicatedStorage.GF.Shared.Constants)
 
 local ObjectiveService = {}
 local SABOTAGE_HOLD = 2.5
-local RECOVER_HOLD = 7.0
 local DEFEND_ACTIVATE = 2.5
 local DEFEND_TIME = 60
 local INTERACT_RANGE = 9 -- spec: interact instant on valid range <=9 studs
+
+-- Template tuning is data-driven through Missions.luau (`objective` subtable). Every key is
+-- optional; these accessors supply the family defaults so a template that declares nothing
+-- still plays exactly the mechanics, just with stock numbers.
+local function ocfg(): any
+	local def = Missions.get(templateId)
+	return (def and def.objective) or {}
+end
+local function cfgNum(key: string, fallback: number): number
+	local v = ocfg()[key]
+	return type(v) == "number" and v or fallback
+end
+local function cfgList(key: string): { any }
+	local v = ocfg()[key]
+	return type(v) == "table" and v or {}
+end
 
 local objective: Model? = nil
 local templateId = "SABOTAGE_RELAY"
 local progress = 0
 local complete = false
 local holding = {}
-local carrying: { [Player]: boolean } = {}
+-- Forward declarations. Lua resolves names lexically at the reference site, so the mechanic
+-- closures below (case system, wave scheduler, family handlers) would bind these as globals
+-- without an early local in scope: hint/publish are defined after currentMarker, and the zone
+-- service loads defensively because test harnesses may not carry it.
+local hint = ""
+local publish
+local ZoneControlService = nil
+do
+	local ok, z = pcall(function()
+		return require(script.Parent.ZoneControlService)
+	end)
+	if ok then
+		ZoneControlService = z
+	end
+end
+local HackingService = require(script.Parent.HackingService)
+
+-- ============ carry system ============
+-- The mission object is a physical thing the squad hauls: it is welded to the carrier (who is
+-- slowed below sprint and cannot pretend otherwise), it drops where the carrier falls, any
+-- squadmate can recover the drop, and it only scores at its destination. This is the difference
+-- between "escort the object" pressure and a timer with extra steps.
+--
+-- cases[caseId] = {
+--   id, label, state = "site"|"carried"|"dropped"|"delivered", part (world pickup part),
+--   carrier, destType = "lz"|"point", destPos, destRadius, color, prompt,
+--   lastPos (carrier's last healthy footing — the drop spot when they go down or vanish),
+--   onPickup, onDeliver (per-template hooks, fire exactly once per event)
+-- }
+local cases: { [string]: any } = {}
+local carrying: { [Player]: string } = {}
 local carryModels: { [Player]: Model } = {}
 local deliveryRing: Part? = nil
+local blackboxHackRunning = false
+
+local function missionEvent(text: string, kind: string?)
+	local ev = ReplicatedStorage.GF.Remotes:FindFirstChild("MissionEvent")
+	if ev then
+		ev:FireAllClients({ text = text, kind = kind or "objective" })
+	end
+end
+
+local function voss(text: string, kind: string?)
+	pcall(function()
+		require(script.Parent.DialogueService).say(text, kind or "objective")
+	end)
+end
+
+local function carryCap(): number
+	return cfgNum("carrySpeed", 15)
+end
+
+-- Re-resolve the stance speed the movement layer would have chosen. applyStance is private to
+-- MovementService, so releasing a carry re-derives the same truth from the same attributes
+-- (downed / aiming / sprinting); the next genuine stance change re-asserts it exactly anyway.
+local function restoreSpeed(player: Player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then
+		return
+	end
+	local st = State.get(player)
+	if st and st.downed then
+		humanoid.WalkSpeed = Constants.Movement.DownedSpeed
+	elseif character and character:GetAttribute("Aiming") == true then
+		humanoid.WalkSpeed = Constants.Movement.AdsSpeed
+	elseif character and character:GetAttribute("Sprinting") == true then
+		humanoid.WalkSpeed = Constants.Movement.SprintSpeed
+	else
+		humanoid.WalkSpeed = Constants.Movement.WalkSpeed
+	end
+end
+
+-- The world pickup part: what players see, walk up to and grab. Re-created every time the case
+-- hits the ground (site or drop), destroyed while carried so the interact scan cannot offer a
+-- ghost pickup at the wreck while the case is physically on a squadmate's back.
+local function caseSpawnWorldPart(record)
+	if record.part and record.part.Parent then
+		record.part:Destroy()
+	end
+	local part = Instance.new("Part")
+	part.Name = "MissionCase_" .. record.id
+	part.Size = Vector3.new(1.9, 1.3, 1.3)
+	part.Color = record.color
+	part.Material = Enum.Material.Metal
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CFrame = CFrame.new(record.homePos) * CFrame.Angles(0, math.rad((record.seed or 0) * 137), 0)
+	part:SetAttribute("GFInteract", "MissionCase")
+	part:SetAttribute("InteractPrompt", record.prompt)
+	local stripe = Instance.new("Part")
+	stripe.Name = "Lid"
+	stripe.Size = Vector3.new(1.7, 0.22, 1.1)
+	stripe.Color = Color3.fromRGB(120, 210, 255)
+	stripe.Material = Enum.Material.Neon
+	stripe.CanCollide = false
+	stripe.CanQuery = false
+	stripe.Anchored = true
+	stripe.CFrame = part.CFrame * CFrame.new(0, 0.72, 0)
+	stripe.Parent = part
+	local glow = Instance.new("PointLight")
+	glow.Color = record.color
+	glow.Brightness = 1.1
+	glow.Range = 14
+	glow.Shadows = false
+	glow.Parent = part
+	part.Parent = workspace
+	record.part = part
+	return part
+end
+
+-- Register a carry object. homePos is where it first sits; destType "lz" scores at the landing
+-- zone ring, destType "point" scores at destPos within destRadius.
+local function caseRegister(id: string, homePos: Vector3, opts: any)
+	local record = {
+		id = id,
+		label = (opts and opts.label) or "case",
+		state = "site",
+		homePos = homePos,
+		color = (opts and opts.color) or Color3.fromRGB(255, 176, 64),
+		prompt = (opts and opts.prompt) or ocfg().carryPrompt or "Take the case",
+		destType = (opts and opts.destType) or "lz",
+		destPos = opts and opts.destPos,
+		destRadius = (opts and opts.destRadius) or ((opts and opts.destType) == "point" and 10 or 18),
+		seed = math.random(0, 359),
+		lastPos = homePos,
+		part = nil,
+		carrier = nil,
+		onPickup = opts and opts.onPickup,
+		onDeliver = opts and opts.onDeliver,
+	}
+	cases[id] = record
+	if opts and opts.part then
+		-- adopt a baked world part (convoy crates, archive canisters): the prop itself becomes the
+		-- pickup. Pickup destroys it like any case part; a later drop respawns the standard shell.
+		record.part = opts.part
+		opts.part:SetAttribute("GFInteract", "MissionCase")
+		opts.part:SetAttribute("InteractPrompt", record.prompt)
+	elseif opts and opts.hidden then
+		-- the case exists in state but not yet in the world; caseReveal spawns the physical part
+		record.state = "sealed"
+	else
+		caseSpawnWorldPart(record)
+	end
+	return record
+end
+
+-- Reveal a sealed case into the world (the decrypt/open beat that precedes the carry).
+local function caseReveal(id: string)
+	local record = cases[id]
+	if record and record.state == "sealed" then
+		record.state = "site"
+		caseSpawnWorldPart(record)
+	end
+end
 
 -- The carried case and the delivery patch are what make a fetch-and-carry readable. Without them the only
 -- feedback was one line of text, which is not a mechanic a player can perceive.
-local function attachCase(player: Player)
+local function attachCase(player: Player, record)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not root or carryModels[player] then
-		return
+		return false
 	end
 	local model = Instance.new("Model")
 	model.Name = "CarriedCase"
 	local case = Instance.new("Part")
 	case.Name = "Case"
 	case.Size = Vector3.new(1.6, 1.1, 0.7)
-	case.Color = Color3.fromRGB(255, 176, 64)
+	case.Color = record.color
 	case.Material = Enum.Material.Metal
 	case.CanCollide = false
 	case.CanQuery = false
 	case.Massless = true
 	case.CFrame = root.CFrame * CFrame.new(0, -0.2, 1.1)
 	case.Parent = model
+	local stripe = Instance.new("Part")
+	stripe.Name = "Lid"
+	stripe.Size = Vector3.new(1.45, 0.18, 0.55)
+	stripe.Color = Color3.fromRGB(120, 210, 255)
+	stripe.Material = Enum.Material.Neon
+	stripe.CanCollide = false
+	stripe.CanQuery = false
+	stripe.Massless = true
+	stripe.CFrame = case.CFrame * CFrame.new(0, 0.62, 0)
+	stripe.Parent = model
 	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = root
-	weld.Part1 = case
-	weld.Parent = case
+	weld.Part0 = case
+	weld.Part1 = stripe
+	weld.Parent = stripe
+	local weldRoot = Instance.new("WeldConstraint")
+	weldRoot.Part0 = root
+	weldRoot.Part1 = case
+	weldRoot.Parent = case
 	model.PrimaryPart = case
 	model.Parent = character
 	carryModels[player] = model
+	return true
 end
 
-local function dropCase(player: Player)
+local function dropCaseVisual(player: Player)
 	local model = carryModels[player]
 	if model then
 		model:Destroy()
 		carryModels[player] = nil
+	end
+end
+
+-- Pick up a case off the ground. Instant: the carry itself is the cost, so the grab stays snappy.
+local function casePickup(player: Player, record): boolean
+	if not record or record.carrier or (record.state ~= "site" and record.state ~= "dropped") then
+		return false
+	end
+	if carrying[player] then
+		return false -- one object per pair of hands
+	end
+	if not attachCase(player, record) then
+		return false
+	end
+	if record.part then
+		record.part:Destroy()
+		record.part = nil
+	end
+	record.state = "carried"
+	record.carrier = player
+	carrying[player] = record.id
+	if record.onPickup then
+		task.spawn(record.onPickup, player, record)
+	end
+	return true
+end
+
+-- Drop the case where the carrier last had healthy footing. The drop is a physical object again:
+-- same pickup contract, same light, recoverable by anyone including the player who lost it.
+local function caseDrop(player: Player)
+	local caseId = carrying[player]
+	if not caseId then
+		return
+	end
+	carrying[player] = nil
+	dropCaseVisual(player)
+	restoreSpeed(player)
+	local record = cases[caseId]
+	if not record then
+		return
+	end
+	record.carrier = nil
+	record.state = "dropped"
+	record.homePos = record.lastPos
+	caseSpawnWorldPart(record)
+end
+
+-- Deliver at the destination. Visuals die; the per-template hook decides what the objective does.
+local function caseDeliver(record)
+	if record.state == "delivered" then
+		return
+	end
+	local player = record.carrier
+	if player then
+		carrying[player] = nil
+		dropCaseVisual(player)
+		restoreSpeed(player)
+	end
+	record.carrier = nil
+	record.state = "delivered"
+	if record.part then
+		record.part:Destroy()
+		record.part = nil
+	end
+	if record.onDeliver then
+		task.spawn(record.onDeliver, player, record)
+	end
+end
+
+-- Recovery interact: nearest live case part in range wins, same discrimination pattern as the
+-- relay shield nodes — the squad never thinks about which object the prompt means.
+local function caseRequest(player: Player)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local best, bestDist = nil, INTERACT_RANGE + 2
+	for _, record in pairs(cases) do
+		if (record.state == "site" or record.state == "dropped") and record.part then
+			local d = (root.Position - record.part.Position).Magnitude
+			if d <= bestDist then
+				best = record
+				bestDist = d
+			end
+		end
+	end
+	if best then
+		if casePickup(player, best) then
+			hint = string.format("%s secured — haul it to the %s", best.label, best.destType == "lz" and "landing zone" or "sled")
+			publish()
+		end
 	end
 end
 
@@ -86,16 +363,173 @@ local function showDeliveryRing()
 	ring.Parent = workspace
 	deliveryRing = ring
 end
-local defending = false
-local ZoneControlService = nil
-do
-	local ok, z = pcall(function()
-		return require(script.Parent.ZoneControlService)
-	end)
-	if ok then
-		ZoneControlService = z
-	end
+
+-- ============ assault telegraphing ============
+-- A wave you cannot read is noise; a wave you can read is a fight. Every scripted assault is
+-- announced by compass direction, marked with a flare column at the massing point, and given a
+-- few seconds of warning before the hostiles actually materialize — the squad can choose to
+-- reposition, not just react.
+local function compassOf(dx: number, dz: number): string
+	local angle = math.atan2(dx, -dz)
+	local names = { "north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west" }
+	local idx = math.floor((angle + math.pi / 8) / (math.pi / 4)) % 8
+	return names[idx + 1]
 end
+
+local function flareAt(position: Vector3, seconds: number?)
+	local flare = Instance.new("Part")
+	flare.Name = "AssaultFlare"
+	flare.Shape = Enum.PartType.Cylinder
+	flare.Size = Vector3.new(42, 2.6, 2.6)
+	flare.CFrame = CFrame.new(position + Vector3.new(0, 21, 0)) * CFrame.Angles(0, 0, math.rad(90))
+	flare.Material = Enum.Material.Neon
+	flare.Color = Color3.fromRGB(255, 96, 84)
+	flare.Transparency = 0.25
+	flare.Anchored = true
+	flare.CanCollide = false
+	flare.CanQuery = false
+	flare.CastShadow = false
+	flare.Parent = workspace
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 96, 84)
+	light.Brightness = 2
+	light.Range = 30
+	light.Shadows = false
+	light.Parent = flare
+	local life = seconds or 7
+	TweenService:Create(flare, TweenInfo.new(life), { Transparency = 1 }):Play()
+	task.delay(life + 0.2, function()
+		if flare.Parent then
+			flare:Destroy()
+		end
+	end)
+	return flare
+end
+
+-- Telegraph-then-spawn: direction first, flare second, hostiles last. `close` waves mass inside
+-- the perimeter lip instead of out on the approach — the "they're already here" beat.
+local function telegraphWave(center: Vector3, count: number, close: boolean?)
+	task.spawn(function()
+		local bearing = math.random() * math.pi * 2
+		local dir = Vector3.new(math.cos(bearing), 0, math.sin(bearing))
+		local dist = close and 30 or 58
+		local spawnPos = center + dir * dist
+		local compass = compassOf(dir.X, dir.Z)
+		flareAt(spawnPos, 7)
+		if close then
+			voss("Contacts inside the perimeter — close defense, now!", "warning")
+			missionEvent("Hostiles inside the perimeter!", "warning")
+		else
+			voss(string.format("Contacts massing %s of your position. Stand by.", compass), "warning")
+			missionEvent(string.format("Hostiles massing %s — assault inbound", compass), "warning")
+		end
+		workspace:SetAttribute("GF_WaveTelegraph", string.format("%s:%d:%d", compass, count, math.floor(os.clock())))
+		task.wait(4.5)
+		if complete then
+			return
+		end
+		local ok, EncounterDirector = pcall(function()
+			return require(script.Parent.EncounterDirector)
+		end)
+		if ok and EncounterDirector and EncounterDirector.spawnAround then
+			EncounterDirector.spawnAround(spawnPos, close and 10 or 14, count)
+		end
+	end)
+end
+
+-- Scripted reaction squad: spawned from the template's responseRoster after a telegraphed delay.
+-- Unlike director waves these are exact compositions — the pursuit squad, the hunter team, the
+-- depot reaction force — because their size IS the tuning.
+local function spawnResponseSquad(center: Vector3, label: string)
+	local roster = cfgList("responseRoster")
+	if #roster == 0 then
+		return {}
+	end
+	local spawned = {}
+	for index, enemyId in ipairs(roster) do
+		local angle = (index / #roster) * math.pi * 2
+		local pos = center + Vector3.new(math.cos(angle) * 10, 0, math.sin(angle) * 10)
+		local model = EnemyService.spawn(enemyId, pos)
+		if model then
+			table.insert(spawned, model)
+		end
+	end
+	if #spawned > 0 then
+		voss(label, "warning")
+	end
+	return spawned
+end
+
+-- Wave escalation scheduler: hold stages arm a plan keyed to live zone progress; each trigger
+-- fires exactly once. The plan dies when the zone completes or the stage ends.
+local waveWatch: any = { zoneId = nil, center = nil, waves = nil }
+
+local function armWaves(zoneId: string, center: Vector3)
+	local defs = cfgList("waves")
+	if #defs == 0 or not ZoneControlService then
+		waveWatch.zoneId = nil
+		waveWatch.waves = nil
+		return
+	end
+	local plan = {}
+	for _, w in ipairs(defs) do
+		if type(w) == "table" and type(w.at) == "number" and type(w.count) == "number" then
+			table.insert(plan, { at = w.at, count = w.count, close = w.close == true, fired = false })
+		end
+	end
+	table.sort(plan, function(a, b)
+		return a.at < b.at
+	end)
+	waveWatch.zoneId = zoneId
+	waveWatch.center = center
+	waveWatch.waves = plan
+end
+
+local function disarmWaves()
+	waveWatch.zoneId = nil
+	waveWatch.waves = nil
+end
+
+task.spawn(function()
+	while true do
+		task.wait(0.75)
+		if waveWatch.zoneId and waveWatch.waves and not complete and ZoneControlService then
+			local zone = ZoneControlService.get(waveWatch.zoneId)
+			if zone then
+				for _, w in ipairs(waveWatch.waves) do
+					if not w.fired and zone.progress >= w.at then
+						w.fired = true
+						telegraphWave(waveWatch.center or zone.center, w.count, w.close)
+					end
+				end
+			else
+				disarmWaves()
+			end
+		end
+	end
+end)
+
+-- Alarm consequences: a missed hack press trips intrusion detection and the garrison responds.
+-- Capped per site key so a struggling player is pressured, not buried.
+local alarmTrips: { [string]: number } = {}
+local function tripAlarm(key: string, position: Vector3, count: number, cap: number?)
+	alarmTrips[key] = (alarmTrips[key] or 0)
+	if alarmTrips[key] >= (cap or 2) then
+		return false
+	end
+	alarmTrips[key] += 1
+	task.defer(function()
+		local ok, EncounterDirector = pcall(function()
+			return require(script.Parent.EncounterDirector)
+		end)
+		if ok and EncounterDirector and EncounterDirector.spawnAround then
+			EncounterDirector.spawnAround(position, 20, count)
+		end
+	end)
+	missionEvent("Alarm tripped — defenders converging!", "warning")
+	return true
+end
+local defending = false
 -- Sabotage breach state: the relay is shielded by three field nodes that must be hacked
 -- (ring challenge per node, alarms on misses) before the core terminal accepts the charge.
 local shieldNodes: { any } = {}
@@ -104,25 +538,46 @@ local beaconZoneDone = false
 local beaconResyncPending = false
 local beaconResynced = false
 local defendEndsAt = 0
-local hint = ""
 
 local function remote(name) return ReplicatedStorage.GF.Remotes:FindFirstChild(name) end
 
--- Marker source. Elimination points at the nearest living target (it changes as they die); every
--- other template points at its own objective. Clients decide whether that reads as approximate or
--- exact from their own distance.
+-- Marker source. Elimination points at the nearest living REVEALED target (it changes as they
+-- die and as identities confirm); while the hunt is still blind the marker stays on the sweep
+-- area. During a carry the marker tracks the object — the case is the objective now. Everything
+-- else points at the objective site. Clients decide whether that reads as approximate or exact
+-- from their own distance.
 -- Declared here because currentMarker (defined above the family builders) needs the same table.
-local elimTargets: { [Model]: boolean } = {}
+local elimTargets: { [Model]: any } = {}
 
 local function currentMarker(): (Vector3?, string)
+	-- a carried or dropped mission object outranks everything: while carried the squad needs the
+	-- destination, and once the object is on the ground recovering it IS the current play
+	for _, record in pairs(cases) do
+		if record.state == "carried" and record.carrier then
+			if record.destType == "point" and typeof(record.destPos) == "Vector3" then
+				return record.destPos, "DELIVER"
+			end
+			local lz = workspace:GetAttribute("GF_LZ")
+			if typeof(lz) == "Vector3" then
+				return lz, "DELIVER"
+			end
+		elseif record.state == "dropped" and record.part and record.part.Parent then
+			return record.part.Position, "CASE"
+		end
+	end
 	if templateId == "ELIM_COMMANDER" or templateId == "ELIM_WALKER" or templateId == "ELIM_TALON" then
-		for model in pairs(elimTargets) do
-			if model.Parent and model:GetAttribute("Dead") ~= true then
+		for model, record in pairs(elimTargets) do
+			if type(record) == "table" and record.revealed and model.Parent and model:GetAttribute("Dead") ~= true then
 				local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
 				if part then
 					return part.Position, "TARGET"
 				end
 			end
+		end
+		-- hunt still blind: the marker stays on the sweep area, labelled honestly
+		local part = objective and objective.PrimaryPart
+		if part then
+			return part.Position, "SWEEP"
 		end
 	end
 	local part = objective and objective.PrimaryPart
@@ -132,7 +587,7 @@ local function currentMarker(): (Vector3?, string)
 	return nil, ""
 end
 
-local function publish()
+publish = function()
 	local r = remote("ObjectiveProgress")
 	if r then
 		local spot, label = currentMarker()
@@ -304,6 +759,30 @@ local function buildBlackBox(position)
 	terminal.Name = "Terminal"
 	terminal:SetAttribute("GFInteract", "BlackBox")
 	terminal:SetAttribute("InteractPrompt", "Extract Black Box")
+	-- the flight recorder starts sealed inside the encryption: the ring hack cracks it, and only then
+	-- does the case physically exist to be grabbed. Delivered at the landing zone, it completes the op.
+	blackboxHackRunning = false
+	caseRegister("blackboxcase", crate.Position, {
+		label = "Flight recorder",
+		prompt = ocfg().carryPrompt or "Take the flight recorder",
+		color = Color3.fromRGB(232, 168, 64),
+		destType = "lz",
+		hidden = true,
+		onPickup = function()
+			showDeliveryRing()
+			progress = 0.5
+			hint = "Carry the flight recorder to the landing zone"
+			publish()
+			missionEvent("Flight recorder secured. Get it to the landing zone.", "objective")
+		end,
+		onDeliver = function()
+			if deliveryRing then
+				deliveryRing:Destroy()
+				deliveryRing = nil
+			end
+			ObjectiveService.complete()
+		end,
+	})
 	model.PrimaryPart = crate
 	model.Parent = ArtService.actorsFolder()
 	OutpostService.build(position)
@@ -351,23 +830,99 @@ local function buildBeacon(position)
 	return model
 end
 
--- Elimination family. Three variants that all end in a body rather than a hold: a commander with
--- guards, a siege walker that must die here, and three named operatives. Only tagged models count,
--- so patrols from the EncounterDirector cannot stall or fake completion.
+-- Elimination family — hunt structure. Three variants that all end in a body rather than a hold,
+-- but the body has to be FOUND first: priority targets deploy unidentified (the HUD marks the
+-- sweep area, not the target) until the squad either closes to proximity-scan range or slices
+-- the battle-net intel post at the site. Escorts fight for their target but are never required
+-- kills, and the window after first contact is what the clean-hunt commendation measures. Only
+-- tagged models count, so patrols from the EncounterDirector cannot stall or fake completion.
 elimTargets = {}
 local elimTotal = 0
 local elimKilled = 0
 local elimRunning = false
 local elimRunId = 0
 local elimLabel = "Hostiles"
+local elimHuntStartedAt = 0
+local elimIntelUsed = false
+local elimIntelConsole: BasePart? = nil
 
-local function elimAdd(model: Model?)
-	if not model then
+local function elimReveal(model: Model, reason: string)
+	local record = elimTargets[model]
+	if type(record) ~= "table" or record.revealed then
 		return
 	end
+	record.revealed = true
+	model:SetAttribute("GF_ElimRevealed", true)
+	if elimHuntStartedAt == 0 then
+		elimHuntStartedAt = os.clock()
+	end
+	-- armor matrix strip: the scan is what makes the walker fight fair. Damage already dealt into
+	-- the matrix is not refunded — the strip removes up to `matrix` of what remains.
+	local matrix = cfgNum("matrix", 0)
+	if matrix > 0 then
+		local current = tonumber(model:GetAttribute("Shield")) or 0
+		model:SetAttribute("Shield", math.max(0, current - matrix))
+		voss(string.format("%s — armor matrix down. Weapons free.", record.label), "objective")
+		missionEvent("Armor matrix collapsed — target vulnerable", "objective")
+	else
+		voss(string.format("Target identity confirmed: %s. Weapons free.", record.label), "objective")
+		missionEvent(string.format("Target confirmed — %s", record.label), "objective")
+	end
+	workspace:SetAttribute("GF_ElimRevealedCount", (workspace:GetAttribute("GF_ElimRevealedCount") or 0) + 1)
+end
+
+local function elimRevealAll(reason: string)
+	for model in pairs(elimTargets) do
+		if model.Parent and model:GetAttribute("Dead") ~= true then
+			elimReveal(model, reason)
+		end
+	end
+end
+
+local function elimAdd(model: Model?, label: string)
+	if not model then
+		return nil
+	end
+	-- GF_ObjectiveTarget protects the model from mission-reset boss sweeps; it is NOT the reveal.
+	-- Reveal state lives in the record and the GF_ElimRevealed attribute.
 	model:SetAttribute("GF_ObjectiveTarget", true)
-	elimTargets[model] = true
+	elimTargets[model] = { revealed = false, scan = 0, label = label }
 	elimTotal += 1
+	return model
+end
+
+-- Hardcoded fallback rosters mirror the pre-config missions exactly, so a template whose config
+-- block was stripped still plays the same hunt.
+local function elimRoster(): ({ string }, { string })
+	local targets = cfgList("targets")
+	local escorts = cfgList("escorts")
+	if #targets > 0 then
+		return targets, escorts
+	end
+	if templateId == "ELIM_COMMANDER" then
+		return { "Officer" }, { "Rifleman", "Rifleman" }
+	elseif templateId == "ELIM_WALKER" then
+		return { "BastionWalker" }, { "Rifleman", "Heavy" }
+	end
+	return { "Marksman", "Heavy", "Officer" }, {}
+end
+
+local function elimLabelFor(enemyId: string, index: number): string
+	if enemyId == "BastionWalker" then
+		return "the Bastion Walker"
+	elseif templateId == "ELIM_COMMANDER" then
+		return "the Ascendancy commander"
+	elseif templateId == "ELIM_TALON" then
+		return string.format("Talon operative %d", index)
+	end
+	return enemyId
+end
+
+local function elimSpawnOne(enemyId: string, position: Vector3): Model?
+	if enemyId == "BastionWalker" then
+		return BastionWalker.spawn(position)
+	end
+	return EnemyService.spawn(enemyId, position)
 end
 
 local function elimTick()
@@ -384,6 +939,37 @@ local function elimTick()
 			if not objective or not objective.Parent then
 				break
 			end
+			-- proximity scan: continuous exposure inside scanRange confirms identity. Progress
+			-- bleeds at half rate when the squad backs off — commitment is rewarded, tag-ins
+			-- are not free.
+			local scanRange = cfgNum("scanRange", 45)
+			local scanTime = cfgNum("scanTime", 4)
+			local bestScan = 0
+			for model, record in pairs(elimTargets) do
+				if type(record) == "table" and not record.revealed and model.Parent and model:GetAttribute("Dead") ~= true then
+					local part = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
+					local near = false
+					if part then
+						for _, player in ipairs(game:GetService("Players"):GetPlayers()) do
+							local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+							local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+							if root and humanoid and humanoid.Health > 0 and (root.Position - part.Position).Magnitude <= scanRange then
+								near = true
+								break
+							end
+						end
+					end
+					if near then
+						record.scan = math.min(scanTime, record.scan + 0.5)
+					else
+						record.scan = math.max(0, record.scan - 0.25)
+					end
+					bestScan = math.max(bestScan, record.scan / math.max(0.1, scanTime))
+					if record.scan >= scanTime then
+						elimReveal(model, "scan")
+					end
+				end
+			end
 			local gone = {}
 			for model in pairs(elimTargets) do
 				if model.Parent == nil or model:GetAttribute("Dead") == true then
@@ -393,16 +979,38 @@ local function elimTick()
 			for _, model in ipairs(gone) do
 				elimTargets[model] = nil
 				elimKilled += 1
+				if elimHuntStartedAt == 0 then
+					elimHuntStartedAt = os.clock()
+				end
 				pcall(function()
 					require(script.Parent.CacheService).onBossKilled(model)
 				end)
 			end
 			if elimTotal > 0 then
 				progress = math.clamp(elimKilled / elimTotal, 0, 1)
-				hint = string.format("%s %d / %d down", elimLabel, elimKilled, elimTotal)
+				if bestScan > 0 and bestScan < 1 then
+					hint = string.format("Scanning target identity — %d%%", math.floor(bestScan * 100))
+				elseif elimKilled == 0 and elimHuntStartedAt == 0 then
+					hint = "Sweep the outpost — identify the priority target (scan or slice the intel post)"
+				else
+					hint = string.format("%s %d / %d down", elimLabel, elimKilled, elimTotal)
+				end
 				publish()
 			end
 			if elimTotal > 0 and elimKilled >= elimTotal then
+				-- clean-hunt commendation: everything dead inside the window measured from first
+				-- contact (first reveal OR first kill). Recorded as an optional_task ledger event —
+				-- settlement still belongs to RewardsService, the ledger is the audit trail.
+				local window = cfgNum("cleanWindow", 120)
+				if elimHuntStartedAt > 0 and (os.clock() - elimHuntStartedAt) <= window then
+					local difficulty = (State.getMission() or {}).difficulty or "Normal"
+					pcall(function()
+						require(script.Parent.RewardLedgerService).appendEvent("optional_task", difficulty, "cleanhunt:" .. tostring(templateId))
+					end)
+					voss("Clean hunt. Command notes the efficiency.", "objective")
+					missionEvent("Clean hunt — commendation recorded", "objective")
+					workspace:SetAttribute("GF_CleanHunt", true)
+				end
 				ObjectiveService.complete()
 				break
 			end
@@ -410,6 +1018,25 @@ local function elimTick()
 		end
 		elimRunning = false
 	end)
+end
+
+-- Intel slice interact: the battle-net post is the deliberate-reveal path. Hacking it confirms
+-- every living target at once; a miss trips the alarm and the post stays live for another try.
+local function elimIntelRequest(player: Player)
+	if elimIntelUsed then
+		return
+	end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root or not elimIntelConsole or not elimIntelConsole.Parent then
+		return
+	end
+	if (root.Position - elimIntelConsole.Position).Magnitude > INTERACT_RANGE then
+		return
+	end
+	local difficulty = (State.getMission() or {}).difficulty or "Normal"
+	HackingService.begin(player, difficulty, elimIntelConsole.Position, "elimintel")
+	hint = "Slicing the battle-net — press in the green arc"
+	publish()
 end
 
 local function elimSite(position, accent)
@@ -442,39 +1069,85 @@ end
 
 local function buildElimination(position)
 	local site = elimSite(position, Color3.fromRGB(226, 108, 72))
+	elimHuntStartedAt = 0
+	elimIntelUsed = false
+	workspace:SetAttribute("GF_CleanHunt", false)
+	workspace:SetAttribute("GF_ElimRevealedCount", 0)
+	local targets, escorts = elimRoster()
+	local spread = cfgNum("spread", 0)
+	local matrix = cfgNum("matrix", 0)
+	-- target layout: clustered honor guard when spread is zero, otherwise an even scatter around
+	-- the sweep area — the multi-target variants are the ones that make the squad choose a direction
+	local targetPositions = {}
+	for index, enemyId in ipairs(targets) do
+		local offset
+		if #targets > 1 and spread > 0 then
+			local angle = (index / #targets) * math.pi * 2 + math.rad(30)
+			offset = Vector3.new(math.cos(angle) * spread, 0, math.sin(angle) * spread)
+		else
+			offset = Vector3.new((index - 1) * 6 - (#targets - 1) * 3, 0, -6)
+		end
+		local spawnPos = position + offset
+		local model = elimSpawnOne(enemyId, spawnPos)
+		local added = elimAdd(model, elimLabelFor(enemyId, index))
+		if added then
+			table.insert(targetPositions, spawnPos)
+			if matrix > 0 then
+				local base = tonumber(added:GetAttribute("Shield")) or 0
+				added:SetAttribute("Shield", base + matrix)
+				added:SetAttribute("MaxShield", base + matrix)
+				added:SetAttribute("GF_ArmorMatrix", matrix)
+			end
+		end
+	end
+	-- escorts fight for the targets but are deliberately untagged: killing them is tactics, not
+	-- objective. Round-robin across target positions so every knot of resistance has structure.
+	for index, enemyId in ipairs(escorts) do
+		local anchor = targetPositions[((index - 1) % math.max(1, #targetPositions)) + 1] or position
+		local angle = math.random() * math.pi * 2
+		EnemyService.spawn(enemyId, anchor + Vector3.new(math.cos(angle) * 7, 0, math.sin(angle) * 7))
+	end
+	-- the battle-net intel post: the deliberate-reveal path, tucked at the site edge where reaching
+	-- it is a small infiltration problem of its own
+	local intelPos = position + Vector3.new(10, 0, 12)
+	local _, console = MissionSites.buildIntelPost(intelPos, {
+		interact = "IntelConsole",
+		prompt = "Slice battle-net terminal",
+		parent = workspace:FindFirstChild("ActiveActors") or workspace,
+	})
+	elimIntelConsole = console
 	if templateId == "ELIM_COMMANDER" then
-		elimLabel = "Guards"
-		elimAdd(EnemyService.spawn("Officer", position + Vector3.new(0, 0, -6)))
-		elimAdd(EnemyService.spawn("Rifleman", position + Vector3.new(7, 0, 4)))
-		elimAdd(EnemyService.spawn("Rifleman", position + Vector3.new(-7, 0, 4)))
-		hint = "Eliminate the commander and his guards"
+		elimLabel = "Commander"
 	elseif templateId == "ELIM_WALKER" then
 		elimLabel = "Walker"
-		elimAdd(BastionWalker.spawn(position + Vector3.new(0, 0, -8)))
-		hint = "Destroy the Bastion Walker"
 	else
-		elimLabel = "Talon"
-		elimAdd(EnemyService.spawn("Marksman", position + Vector3.new(9, 0, -6)))
-		elimAdd(EnemyService.spawn("Heavy", position + Vector3.new(-9, 0, -6)))
-		elimAdd(EnemyService.spawn("Officer", position + Vector3.new(0, 0, 10)))
-		hint = "Eliminate the three Talon operatives"
+		elimLabel = "Talon operatives"
+	end
+	if matrix > 0 then
+		hint = "Sweep the area — scan the walker's armor matrix or slice the intel post"
+	else
+		hint = "Sweep the outpost — identify the priority target (scan or slice the intel post)"
 	end
 	workspace:SetAttribute("GF_ElimTargets", elimTotal)
 	if elimTotal == 0 then
 		warn("[GF] elimination roster empty for " .. tostring(templateId))
 		hint = "Objective error: no hostile targets spawned"
-		publish()
 	end
+	publish()
 	return site
 end
 
--- Conquest family. One stage machine, three variants: clear or disable, capture, then hold.
--- Transitions are server-owned; interactive stages are driven by ObjectiveService.request, so a
--- player cannot advance by firing the remote twice.
+-- Conquest family. One stage machine, three variants: clear or slice, capture, then hold.
+-- The capture stage is the multi-point seize: simultaneous presence-zones spread across the
+-- base, every one of which must be held to completion — a squad that stacks captures fast but
+-- serially, a squad that splits captures in parallel but thin. The final hold is zone-owned
+-- too: enemies inside the perimeter stall it, and the assault waves are telegraphed by
+-- direction. Transitions are server-owned; interactive stages are server-authoritative hack
+-- slices driven by ObjectiveService.request, so a player cannot advance by firing the remote twice.
 local CONQUEST = {
-	CONQUEST_DOMINION = { defend = 45, stage1 = "clear", roster = { "Rifleman", "Rifleman", "Marksman", "Rifleman" } },
-	CONQUEST_FOUNDRY = { defend = 60, stage1 = "interact" },
-	CONQUEST_THRONEFALL = { defend = 0, stage1 = "clear", roster = { "Heavy", "Marksman", "Officer" }, boss = true },
+	CONQUEST_DOMINION = { defend = 45, stage1 = "clear", roster = { "Rifleman", "Rifleman", "Marksman", "Rifleman" }, capturePoints = 2 },
+	CONQUEST_FOUNDRY = { defend = 60, stage1 = "interact", capturePoints = 2 },
+	CONQUEST_THRONEFALL = { defend = 0, stage1 = "clear", roster = { "Heavy", "Marksman", "Officer" }, boss = true, capturePoints = 1 },
 }
 
 local conqStage = 0
@@ -482,9 +1155,31 @@ local conqEndsAt = 0
 local conqTagged: { [Model]: boolean } = {}
 local conqTotal = 0
 local conqRunId = 0
+local conqPointPositions: { Vector3 } = {}
+local conqPointsDone = 0
+local conqPointsTotal = 0
+local conqHoldZoneUsed = false
 
+local POINT_NAMES = { "Alpha", "Bravo", "Charlie" }
+
+-- Config first, hardcoded table as the exact pre-config fallback: strip a template's objective
+-- block and it plays precisely the mission it shipped with.
 local function conqConfig()
-	return CONQUEST[templateId]
+	local fallback = CONQUEST[templateId] or {}
+	local cfg = ocfg()
+	local merged = {}
+	for key, value in pairs(fallback) do
+		merged[key] = value
+	end
+	for _, key in ipairs({ "stage1", "roster", "boss", "defend", "capturePoints" }) do
+		if cfg[key] ~= nil then
+			merged[key] = cfg[key]
+		end
+	end
+	if merged.capturePoints == nil then
+		merged.capturePoints = 1
+	end
+	return merged
 end
 
 local function conqKilled()
@@ -529,9 +1224,6 @@ local function conqEnterStage(stage: number)
 	end
 	conqStage = stage
 	local cfg = conqConfig()
-	if not cfg then
-		return
-	end
 	progress = 0
 	if stage >= 1 and stage <= 2 then
 		conqTagged = {}
@@ -539,8 +1231,8 @@ local function conqEnterStage(stage: number)
 	end
 	if stage == 1 then
 		if cfg.stage1 == "interact" then
-			conqTerminal("Cut turret power", "ConquestConsole")
-			hint = "Cut the turret power coupling"
+			conqTerminal("Slice turret power coupling", "ConquestConsole")
+			hint = "Slice the turret power coupling at the console"
 		else
 			conqTerminal("", "None")
 			local centre = conqCentre()
@@ -555,39 +1247,139 @@ local function conqEnterStage(stage: number)
 			local player = game:GetService("Players"):GetPlayers()[1]
 			conqTag(Veyr.spawn(conqCentre() + Vector3.new(0, 0, -16), player))
 			hint = "Defeat High Marshal Veyr"
+		elseif ZoneControlService and #conqPointPositions > 0 then
+			-- multi-point seize: every pylon zone must independently complete. Contested points
+			-- freeze, empty points bleed — the squad reads the rings and decides where to be.
+			conqTerminal("", "None")
+			conqPointsDone = 0
+			conqPointsTotal = #conqPointPositions
+			for index, pointPos in ipairs(conqPointPositions) do
+				local zoneId = "conq" .. index
+				local pointName = POINT_NAMES[index] or ("Point " .. index)
+				ZoneControlService.create(zoneId, {
+					center = pointPos,
+					radius = 14,
+					label = "Point " .. pointName,
+					rate = 1 / 28,
+					decay = 1 / 70,
+					onComplete = function(_zone)
+						if complete or conqStage ~= 2 then
+							return
+						end
+						conqPointsDone += 1
+						workspace:SetAttribute("GF_ConquestPoints", conqPointsDone)
+						if conqPointsDone >= conqPointsTotal then
+							conqEnterStage(3)
+						else
+							hint = string.format("Point %s secured — %d of %d points", pointName, conqPointsDone, conqPointsTotal)
+							missionEvent(string.format("Point %s secured", pointName), "objective")
+							publish()
+						end
+					end,
+					onStateChange = function(_zone, state)
+						if conqStage ~= 2 then
+							return
+						end
+						if state == "contested" then
+							hint = string.format("Point %s contested — clear it out!", pointName)
+							publish()
+						end
+					end,
+				})
+			end
+			hint = string.format("Seize the capture points (0 / %d) — hold every pylon", conqPointsTotal)
+			voss("Capture points marked. Split the difference or stack the points — your call.", "objective")
 		else
+			-- no zone service: the capture degrades to the legacy single-console interact
 			conqTerminal("Capture control point", "ConquestConsole")
 			hint = "Capture the control point"
 		end
 	elseif stage == 3 then
 		if cfg.boss then
-			conqTerminal("Capture command node", "ConquestNode")
-			hint = "Capture the command node"
+			conqTerminal("Slice command node", "ConquestNode")
+			hint = "Slice the command node at the console"
 		else
 			conqTerminal("", "None")
-			conqEndsAt = os.clock() + (cfg.defend or 45)
-			hint = string.format("Hold the position: %d s", cfg.defend or 45)
+			local defend = cfg.defend or 45
+			if ZoneControlService then
+				-- zone-owned hold: the perimeter must be HELD, not just survived. Enemies inside
+				-- stall the clock, empty bleeds — and the assault waves are telegraphed inbound.
+				conqHoldZoneUsed = true
+				local centre = conqCentre()
+				ZoneControlService.create("conqhold", {
+					center = centre,
+					radius = 30,
+					label = "Facility perimeter",
+					rate = 1 / defend,
+					decay = 1 / (defend * 2),
+					onComplete = function(_zone)
+						if not complete then
+							disarmWaves()
+							ObjectiveService.complete()
+						end
+					end,
+					onStateChange = function(_zone, state)
+						if conqStage ~= 3 then
+							return
+						end
+						if state == "contested" then
+							hint = "Perimeter contested — clear it out!"
+						elseif state == "capturing" then
+							hint = "Holding the facility — stay inside the perimeter"
+						else
+							hint = "Perimeter empty — the hold is bleeding"
+						end
+						publish()
+					end,
+				})
+				armWaves("conqhold", centre)
+				hint = string.format("Hold the facility perimeter — %d s", defend)
+			else
+				conqEndsAt = os.clock() + defend
+				hint = string.format("Hold the position: %d s", defend)
+			end
 		end
 	end
 	workspace:SetAttribute("GF_ConquestStage", stage)
 	publish()
 end
 
+-- Interactive stages are hack slices now: the foundry power coupling and Thronefall's command
+-- node both run the ring challenge. Capture stages are presence zones and never interactable.
 local function conqInteractive(): boolean
 	local cfg = conqConfig()
-	if not cfg then
-		return false
-	end
 	if conqStage == 1 and cfg.stage1 == "interact" then
-		return true
-	end
-	if conqStage == 2 and not cfg.boss then
 		return true
 	end
 	if conqStage == 3 and cfg.boss then
 		return true
 	end
+	-- degraded-capture fallback only: with no zone service the control point is a console hold,
+	-- so the interact must stay live or the stage cannot advance
+	if conqStage == 2 and not cfg.boss and not ZoneControlService then
+		return true
+	end
 	return false
+end
+
+-- Interact on a conquest console: starts the ring hack for the active slice stage. The generic
+-- hold path must not run for these — a 2.5 s channel is not how you slice a battle network.
+local function conqRequest(player: Player)
+	if not conqInteractive() then
+		return
+	end
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local terminal = objective and objective:FindFirstChild("Terminal")
+	if not root or not terminal then
+		return
+	end
+	if (root.Position - terminal.Position).Magnitude > INTERACT_RANGE then
+		return
+	end
+	local difficulty = (State.getMission() or {}).difficulty or "Normal"
+	HackingService.begin(player, difficulty, terminal.Position, "conqhack")
+	hint = "Slicing the network — press in the green arc"
+	publish()
 end
 
 local function conqTick()
@@ -603,15 +1395,36 @@ local function conqTick()
 					conqEnterStage(2)
 				elseif conqStage == 2 and cfg.boss and conqTotal > 0 and conqKilled() >= conqTotal then
 					conqEnterStage(3)
-				elseif conqStage == 3 and not cfg.boss then
-					local duration = cfg.defend or 45
-					local left = conqEndsAt - os.clock()
-					progress = math.clamp(1 - left / duration, 0, 1)
-					hint = string.format("Holding position: %d s", math.max(0, math.ceil(left)))
+				elseif conqStage == 2 and not cfg.boss and ZoneControlService and conqPointsTotal > 0 then
+					-- aggregate capture progress: secured points count whole, active points their fraction
+					local sum = conqPointsDone
+					for index = 1, conqPointsTotal do
+						local zone = ZoneControlService.get("conq" .. index)
+						if zone then
+							sum += math.clamp(zone.progress, 0, 1)
+						end
+					end
+					progress = math.clamp(sum / conqPointsTotal, 0, 1)
 					publish()
-					if left <= 0 then
-						ObjectiveService.complete()
-						break
+				elseif conqStage == 3 and not cfg.boss then
+					if conqHoldZoneUsed and ZoneControlService then
+						local zone = ZoneControlService.get("conqhold")
+						if zone then
+							progress = math.clamp(zone.progress, 0, 1)
+							workspace:SetAttribute("GF_DefenseEngaged", zone.state == "capturing")
+							workspace:SetAttribute("GF_DefensePaused", zone.state ~= "capturing")
+							publish()
+						end
+					else
+						local duration = cfg.defend or 45
+						local left = conqEndsAt - os.clock()
+						progress = math.clamp(1 - left / duration, 0, 1)
+						hint = string.format("Holding position: %d s", math.max(0, math.ceil(left)))
+						publish()
+						if left <= 0 then
+							ObjectiveService.complete()
+							break
+						end
 					end
 				end
 			end
@@ -636,6 +1449,27 @@ local function buildConquest(position)
 	terminal:SetAttribute("InteractPrompt", "Use console")
 	local core = partOf(model, Vector3.new(3.4, 4.4, 3.4), Vector3.new(-6, 2.8, -4), Color3.fromRGB(56, 60, 68), Enum.Material.Metal, position)
 	core.Name = "FacilityCore"
+	-- capture pylons: the physical anchors of the multi-point seize, spread wide enough that one
+	-- pair of eyes cannot cover two of them — spreading the squad thin is the point of the stage
+	conqPointPositions = {}
+	conqPointsDone = 0
+	conqPointsTotal = 0
+	conqHoldZoneUsed = false
+	local cfg = conqConfig()
+	local pointCount = math.max(1, math.floor(cfg.capturePoints or 1))
+	if not cfg.boss then
+		local actors = workspace:FindFirstChild("ActiveActors") or workspace
+		for index = 1, pointCount do
+			local angle = math.rad(60) + (index - 1) * (math.pi * 2 / pointCount)
+			local radius = pointCount > 1 and 17 or 8
+			local pointPos = position + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+			MissionSites.buildCapturePylon(pointPos, {
+				name = "CapturePylon" .. (POINT_NAMES[index] or index),
+				parent = actors,
+			})
+			table.insert(conqPointPositions, pointPos)
+		end
+	end
 	model.PrimaryPart = pad
 	model.Parent = workspace:FindFirstChild("ActiveActors") or workspace
 	OutpostService.build(position)
@@ -655,6 +1489,7 @@ end
 -- kills enemies also breaks them (CombatService.damageStructure), and their state is polled here.
 local aegisStage = 0
 local aegisRunId = 0
+local aegisRetaliation = false
 
 local function aegisPart(model, name, size, offset, color, material, position, integrity)
 	local p = partOf(model, size, offset, color, material, position)
@@ -701,6 +1536,28 @@ local function aegisTick(model)
 				end
 				if aegisDown(model, "GeneratorB") then
 					down += 1
+				end
+				-- first generator down is the loud part: the aegis network registers the loss and a
+				-- telegraphed retaliator squad converges while the second generator is still up
+				if down == 1 and not aegisRetaliation then
+					aegisRetaliation = true
+					local center = model.PrimaryPart and model.PrimaryPart.Position or Vector3.zero
+					voss("Generator loss registered — retaliators inbound. Finish the other one fast.", "warning")
+					missionEvent("Retaliator squad inbound!", "warning")
+					flareAt(center + Vector3.new(14, 0, 10), 7)
+					task.delay(cfgNum("responseDelay", 12), function()
+						if complete then
+							return
+						end
+						local roster = cfgList("responseRoster")
+						if #roster == 0 then
+							roster = { "Rifleman", "Heavy", "Scout" }
+						end
+						for index, enemyId in ipairs(roster) do
+							local angle = (index / #roster) * math.pi * 2
+							EnemyService.spawn(enemyId, center + Vector3.new(math.cos(angle) * 15, 0, math.sin(angle) * 15))
+						end
+					end)
 				end
 				progress = down / 2
 				hint = string.format("Destroy the shield generators (%d / 2)", down)
@@ -763,14 +1620,18 @@ local function buildAegis(position)
 	return model
 end
 
--- Recovery | Fallen Convoy and Defense | Last Transmission. Both reuse the machinery that already
--- works: tagged finite rosters for the pursuit squad, and the same 0.5 s timer the beacon defend
--- uses. Neither adds a second interaction system.
+-- Recovery | Fallen Convoy. The crates are physical hauls now: grabbed off the wreck, carried at
+-- a speed cost, dropped where the carrier falls, and only scored on the salvage sled. The pursuit
+-- squad is telegraphed the moment the first crate moves — loading the second crate under inbound
+-- pressure is the mission, not a timer with extra clicks.
 local convoyStage = 0
 local convoyRecovered = 0
 local convoyRunId = 0
 local convoyTagged: { [Model]: boolean } = {}
 local convoyTotal = 0
+local convoyPursuitSpawned = false
+local convoyPursuitAt = 0
+local convoySledBed: BasePart? = nil
 
 local uplinkStage = 0
 local uplinkEndsAt = 0
@@ -783,7 +1644,34 @@ local function pursuitTick()
 			if not objective or not objective.Parent then
 				break
 			end
-			if convoyStage == 2 then
+			-- the pursuit lands on its telegraphed timer whether or not the loading is done —
+			-- the warning is the pressure, not the kill count
+			if not convoyPursuitSpawned and convoyPursuitAt > 0 and os.clock() >= convoyPursuitAt then
+				convoyPursuitSpawned = true
+				local centre = objective and objective.PrimaryPart and objective.PrimaryPart.Position or Vector3.zero
+				local roster = cfgList("responseRoster")
+				if #roster == 0 then
+					roster = { "Rifleman", "Scout", "Heavy" }
+				end
+				convoyTagged = {}
+				convoyTotal = 0
+				for index, enemyId in ipairs(roster) do
+					local angle = (index / #roster) * math.pi * 2
+					local model = EnemyService.spawn(enemyId, centre + Vector3.new(math.cos(angle) * 14, 0, math.sin(angle) * 14))
+					if model then
+						model:SetAttribute("GF_ObjectiveTarget", true)
+						convoyTagged[model] = true
+						convoyTotal += 1
+					end
+				end
+				flareAt(centre + Vector3.new(0, 0, 14), 6)
+				voss("Pursuit squad on the ground. Finish loading or fight — pick fast.", "warning")
+				if convoyStage == 2 then
+					hint = string.format("Defeat the pursuit squad (0 / %d)", convoyTotal)
+					publish()
+				end
+			end
+			if convoyStage == 2 and convoyPursuitSpawned then
 				local dead = 0
 				for model in pairs(convoyTagged) do
 					if model.Parent == nil or model:GetAttribute("Dead") == true then
@@ -803,49 +1691,52 @@ local function pursuitTick()
 	end)
 end
 
-local function spawnPursuit()
-	convoyTagged = {}
-	convoyTotal = 0
-	local centre = objective and objective.PrimaryPart and objective.PrimaryPart.Position or Vector3.zero
-	for _, enemyId in ipairs({ "Rifleman", "Scout", "Heavy" }) do
-		local model = EnemyService.spawn(enemyId, centre + Vector3.new(math.random(-12, 12), 0, math.random(-12, 12)))
-		if model then
-			model:SetAttribute("GF_ObjectiveTarget", true)
-			convoyTagged[model] = true
-			convoyTotal += 1
-		end
+-- First-crate pickup trigger: the pursuit clock starts here, announced, so the squad knows the
+-- price of the grab before they pay it.
+local function convoyPursuitTrigger()
+	if convoyPursuitAt > 0 or convoyPursuitSpawned then
+		return
 	end
+	local delay = cfgNum("responseDelay", 18)
+	convoyPursuitAt = os.clock() + delay
+	voss(string.format("Ascendancy recovery team is inbound — %d seconds out. Load and move.", delay), "warning")
+	missionEvent("Pursuit squad inbound — finish loading!", "warning")
+	hint = "Pursuit inbound — haul the crates to the sled"
+	publish()
 end
 
-local function convoyRequest(player: Player)
-	if convoyStage ~= 1 then
-		return
+-- Crate delivery onto the sled bed: the crate physically seats on the flatbed, visible proof
+-- instead of a vanishing counter.
+local function convoyDeliverCrate(player, record)
+	convoyRecovered += 1
+	workspace:SetAttribute("GF_ConvoyCrates", convoyRecovered)
+	if convoySledBed and record.part == nil then
+		-- re-seat the physical crate on the sled bed as squad-visible proof of the load
+		local seated = Instance.new("Part")
+		seated.Name = "SledCrate" .. convoyRecovered
+		seated.Size = Vector3.new(2.2, 1.7, 1.8)
+		seated.Color = Color3.fromRGB(214, 170, 96)
+		seated.Material = Enum.Material.WoodPlanks
+		seated.Anchored = true
+		seated.CanCollide = false
+		seated.CanQuery = false
+		seated.CFrame = convoySledBed.CFrame * CFrame.new((convoyRecovered - 1.5) * 2.4, 1.35, 0)
+		seated.Parent = workspace
 	end
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not root then
-		return
-	end
-	for _, crateName in ipairs({ "CrateA", "CrateB" }) do
-		local crate = objective and objective:FindFirstChild(crateName)
-		if crate and crate:GetAttribute("GFRecovered") ~= true and (root.Position - crate.Position).Magnitude <= INTERACT_RANGE then
-			crate:SetAttribute("GFRecovered", true)
-			crate.Transparency = 1
-			crate.CanCollide = false
-			crate.CanQuery = false
-			convoyRecovered += 1
-			progress = convoyRecovered / 2
-			hint = string.format("Recover the convoy crates (%d / 2)", convoyRecovered)
-			publish()
-			if convoyRecovered >= 2 then
-				convoyStage = 2
-				workspace:SetAttribute("GF_ConvoyStage", 2)
-				spawnPursuit()
-				hint = string.format("Defeat the pursuit squad (0 / %d)", convoyTotal)
-				publish()
-			end
-			workspace:SetAttribute("GF_ConvoyCrates", convoyRecovered)
-			return
+	progress = convoyRecovered / 2 * 0.5
+	if convoyRecovered >= 2 then
+		convoyStage = 2
+		workspace:SetAttribute("GF_ConvoyStage", 2)
+		if convoyPursuitSpawned then
+			hint = string.format("Defeat the pursuit squad (0 / %d)", convoyTotal)
+		else
+			hint = "Crates secured — the pursuit is still inbound. Dig in."
 		end
+		publish()
+	else
+		hint = "Crate loaded — one more to the sled"
+		publish()
+		missionEvent("Crate secured on the sled — one remaining", "objective")
 	end
 end
 
@@ -904,6 +1795,7 @@ local function uplinkRequest(player: Player)
 				decay = 1 / 160,
 				onComplete = function(_zone)
 					if complete or uplinkStage ~= 2 then return end
+					disarmWaves()
 					uplinkStage = 3
 					workspace:SetAttribute("GF_UplinkStage", 3)
 					hint = "Confirm the uplink at the console"
@@ -928,6 +1820,9 @@ local function uplinkRequest(player: Player)
 			})
 			hint = "Hold the uplink control zone"
 			publish()
+			-- telegraphed trace assaults: the uplink is a beacon the Ascendancy triangulates, and
+			-- every wave is announced by compass bearing before it lands
+			armWaves("uplink", zoneCenter)
 			task.spawn(function()
 				while uplinkStage == 2 and not complete do
 					task.wait(0.5)
@@ -949,6 +1844,7 @@ local function uplinkRequest(player: Player)
 			uplinkTick()
 		end
 	elseif uplinkStage == 3 then
+		disarmWaves()
 		ObjectiveService.complete()
 	end
 end
@@ -964,19 +1860,46 @@ local function buildConvoy(position)
 	hull.CFrame = CFrame.new(position + Vector3.new(-6, 3, -6)) * CFrame.Angles(math.rad(-8), math.rad(14), math.rad(6))
 	local wing = partOf(model, Vector3.new(9, 1, 6), Vector3.new(4, 1.4, -10), Color3.fromRGB(58, 54, 50), Enum.Material.Metal, position)
 	wing.Name = "Wing"
+	-- crates carry no interact of their own — the case registry owns them as physical hauls
 	local crateA = partOf(model, Vector3.new(3, 2.4, 2.6), Vector3.new(6, 1.8, 6), Color3.fromRGB(214, 170, 96), Enum.Material.WoodPlanks, position)
 	crateA.Name = "CrateA"
-	crateA:SetAttribute("GFInteract", "ConvoyCrate")
-	crateA:SetAttribute("InteractPrompt", "Recover crate")
 	local crateB = partOf(model, Vector3.new(3, 2.4, 2.6), Vector3.new(10, 1.8, 1), Color3.fromRGB(214, 170, 96), Enum.Material.WoodPlanks, position)
 	crateB.Name = "CrateB"
-	crateB:SetAttribute("GFInteract", "ConvoyCrate")
-	crateB:SetAttribute("InteractPrompt", "Recover crate")
+	-- salvage sled parked beside the wreck: the delivery destination, its flatbed large enough
+	-- that a carrier can step on and the crates visibly seat on it
+	local actors = workspace:FindFirstChild("ActiveActors") or workspace
+	local sledPos = position + Vector3.new(2, 0, 14)
+	local sled, bed = MissionSites.buildSalvageSled(sledPos, { parent = actors })
+	convoySledBed = bed
+	if convoySledBed then
+		convoySledBed:SetAttribute("GFInteract", "ConvoySled")
+		convoySledBed:SetAttribute("InteractPrompt", "Load crate onto sled")
+	end
+	convoyPursuitSpawned = false
+	convoyPursuitAt = 0
+	convoyRecovered = 0
+	for index, crate in ipairs({ crateA, crateB }) do
+		local caseId = "convcase" .. index
+		caseRegister(caseId, crate.Position, {
+			part = crate,
+			label = "Supply crate",
+			prompt = "Haul crate",
+			destType = "point",
+			destPos = convoySledBed and convoySledBed.Position or sledPos,
+			destRadius = 11,
+			onPickup = function()
+				convoyPursuitTrigger()
+			end,
+			onDeliver = function(player, record)
+				convoyDeliverCrate(player, record)
+			end,
+		})
+	end
 	local smoke = partOf(model, Vector3.new(2, 2, 2), Vector3.new(-2, 7, -8), Color3.fromRGB(40, 40, 44), Enum.Material.Slate, position)
 	smoke.Name = "Smoke"
 	smoke.Transparency = 0.4
 	model.PrimaryPart = pad
-	model.Parent = workspace:FindFirstChild("ActiveActors") or workspace
+	model.Parent = actors
 	OutpostService.build(position)
 	-- S07-030: small outposts carry 2-4 defenders staggered in cover positions — a garrison, not a
 	-- wave. Site-locked inside the spawn cap, distinct from director waves.
@@ -1162,6 +2085,7 @@ local function powerRequest(player: Player)
 				decay = 0,
 				onComplete = function(_zone)
 					if complete or powerStage ~= 2 then return end
+					disarmWaves()
 					powerStage = 3
 					workspace:SetAttribute("GF_PowerStage", 3)
 					local term = objective and objective:FindFirstChild("Terminal")
@@ -1186,11 +2110,34 @@ local function powerRequest(player: Player)
 			})
 			hint = "Hold the generator perimeter"
 			publish()
+			-- the spin-up is loud: telegraphed assault waves hit the perimeter on the vent schedule
+			armWaves("power", zoneCenter)
 			task.spawn(function()
+				-- the vent beat: partway through spin-up the generator must vent pressure. The
+				-- capture freezes, the perimeter fills with steam, and the squad holds blind for a
+				-- few seconds — the defense mission's mid-hold mixup, on a telegraphed schedule.
+				local vented = false
 				while powerStage == 2 and not complete and not failed do
 					task.wait(0.5)
 					local zone = ZoneControlService.get("power")
 					if zone then
+						local ventAt = cfgNum("ventAt", 0)
+						if not vented and ventAt > 0 and zone.progress >= ventAt then
+							vented = true
+							ZoneControlService.pause("power", true)
+							hint = "Generator venting — spin-up frozen, hold the perimeter blind!"
+							publish()
+							missionEvent("Generator venting — hostiles closing in!", "warning")
+							voss("Pressure vent. They'll hit you now — hold fast.", "warning")
+							flareAt(zoneCenter, 8)
+							task.delay(7, function()
+								if powerStage == 2 and not complete and not failed and ZoneControlService then
+									ZoneControlService.pause("power", false)
+									hint = "Vent complete — spin-up resumed"
+									publish()
+								end
+							end)
+						end
 						progress = math.clamp(zone.progress, 0, 1)
 						workspace:SetAttribute("GF_DefenseEngaged", zone.state == "capturing")
 						workspace:SetAttribute("GF_DefensePaused", zone.state ~= "capturing")
@@ -1204,6 +2151,7 @@ local function powerRequest(player: Player)
 		end
 		powerTick() -- still runs: integrity-destruction monitor in both modes, legacy countdown only without zones
 	elseif powerStage == 3 then
+		disarmWaves()
 		ObjectiveService.complete()
 	end
 end
@@ -1257,6 +2205,59 @@ local arsenalRunId = 0
 
 local ARSENAL_WARNING = 8
 
+-- Depot sabotage: each pad is a plant channel, not a touch. The planter is committed for the
+-- duration — moving or going down interrupts the plant — and the first charge going in tripped
+-- the depot's silent alarm: a telegraphed reaction squad converges while the second pad is armed.
+local arsenalReactionAt = 0
+local arsenalReactionSpawned = false
+
+local function arsenalArmPad(pad, padName)
+	pad:SetAttribute("GFCharged", true)
+	pad.Color = Color3.fromRGB(255, 150, 70)
+	arsenalPads += 1
+	progress = arsenalPads / 2 * 0.8
+	workspace:SetAttribute("GF_ArsenalPads", arsenalPads)
+	if arsenalPads >= 2 then
+		arsenalStage = 2
+		arsenalEndsAt = os.clock() + ARSENAL_WARNING
+		workspace:SetAttribute("GF_ArsenalStage", 2)
+		hint = "Charges armed — clear the blast radius!"
+		missionEvent("Depot charges armed — get clear!", "warning")
+	else
+		hint = string.format("Charge the depot pads (%d / 2)", arsenalPads)
+		missionEvent("First charge planted — the depot is alerting. Expect company.", "warning")
+	end
+	publish()
+end
+
+local function arsenalReactionTrigger(center)
+	if arsenalReactionAt > 0 or arsenalReactionSpawned then
+		return
+	end
+	local delay = cfgNum("responseDelay", 16)
+	arsenalReactionAt = os.clock() + delay
+	voss(string.format("Depot silent alarm is out — reaction squad %d seconds out.", delay), "warning")
+	task.delay(delay, function()
+		if complete or arsenalStage ~= 1 then
+			-- stage 2 means both charges are already in: the reaction squad still comes, the blast
+			-- countdown does not wait for them
+		end
+		if complete then
+			return
+		end
+		arsenalReactionSpawned = true
+		local roster = cfgList("responseRoster")
+		if #roster == 0 then
+			roster = { "Rifleman", "Rifleman", "Scout" }
+		end
+		flareAt(center, 7)
+		for index, enemyId in ipairs(roster) do
+			local angle = (index / #roster) * math.pi * 2
+			EnemyService.spawn(enemyId, center + Vector3.new(math.cos(angle) * 16, 0, math.sin(angle) * 16))
+		end
+	end)
+end
+
 local function arsenalRequest(player: Player)
 	if arsenalStage ~= 1 then
 		return
@@ -1268,18 +2269,34 @@ local function arsenalRequest(player: Player)
 	for _, padName in ipairs({ "ChargePadA", "ChargePadB" }) do
 		local pad = objective and objective:FindFirstChild(padName)
 		if pad and pad:GetAttribute("GFCharged") ~= true and (root.Position - pad.Position).Magnitude <= INTERACT_RANGE then
-			pad:SetAttribute("GFCharged", true)
-			pad.Color = Color3.fromRGB(255, 150, 70)
-			arsenalPads += 1
-			progress = arsenalPads / 2
-			hint = string.format("Charge the depot pads (%d / 2)", arsenalPads)
-			publish()
-			if arsenalPads >= 2 then
-				arsenalStage = 2
-				arsenalEndsAt = os.clock() + ARSENAL_WARNING
-				workspace:SetAttribute("GF_ArsenalStage", 2)
+			if holding[player] then
+				return
 			end
-			workspace:SetAttribute("GF_ArsenalPads", arsenalPads)
+			holding[player] = true
+			local plantTime = cfgNum("plantSeconds", 4)
+			hint = string.format("Arming the depot charge — hold position (%d s)", plantTime)
+			publish()
+			-- the first plant starts the reaction clock: the second pad is armed under pressure
+			arsenalReactionTrigger(pad.Position)
+			task.spawn(function()
+				local started = os.clock()
+				while os.clock() - started < plantTime do
+					task.wait(0.1)
+					if complete or not player.Parent or not player.Character then
+						holding[player] = nil
+						return
+					end
+					local r = player.Character:FindFirstChild("HumanoidRootPart")
+					if not r or (r.Position - pad.Position).Magnitude > INTERACT_RANGE + 4 then
+						holding[player] = nil
+						hint = "Arming interrupted — the pad is still live"
+						publish()
+						return
+					end
+				end
+				holding[player] = nil
+				arsenalArmPad(pad, padName)
+			end)
 			return
 		end
 	end
@@ -1371,12 +2388,10 @@ local function buildArsenal(position)
 	return model
 end
 
--- Recovery | Silent Archive. Three authored stages: reach the intel room, break the console with the
--- server-authoritative hacking challenge, then recover the archive by interaction.
+-- Recovery | Silent Archive. Three authored stages: reach the intel room, break the console with
+-- the server-authoritative hacking challenge, then haul the decrypted canister back to the landing zone.
 local archiveStage = 0
 local archiveRunId = 0
-
-local HackingService = require(script.Parent.HackingService)
 
 local function archiveRequest(player: Player)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -1392,13 +2407,6 @@ local function archiveRequest(player: Player)
 		HackingService.begin(player, difficulty, terminal.Position)
 		hint = "Breaking the console — press " .. "E" .. " in the green arc"
 		publish()
-	elseif archiveStage == 3 then
-		local intel = objective and objective:FindFirstChild("IntelCase")
-		if intel and intel:IsA("BasePart") then
-			intel.Transparency = 0
-			intel.CanCollide = false
-		end
-		ObjectiveService.complete()
 	end
 end
 
@@ -1507,6 +2515,7 @@ function ObjectiveService.setup(position, template)
 	conqRunId += 1
 	aegisStage = 0
 	aegisRunId += 1
+	aegisRetaliation = false
 	convoyStage = 0
 	convoyRecovered = 0
 	convoyTagged = {}
@@ -1521,10 +2530,44 @@ function ObjectiveService.setup(position, template)
 	powerRunId += 1
 	arsenalStage = 0
 	arsenalPads = 0
+	arsenalReactionAt = 0
+	arsenalReactionSpawned = false
 	arsenalEndsAt = 0
 	arsenalRunId += 1
 	archiveStage = 0
 	archiveRunId += 1
+	-- carry system: every case, carrier weld and delivery patch belongs to the mission that made it
+	for player in pairs(carrying) do
+		dropCaseVisual(player)
+		restoreSpeed(player)
+	end
+	carrying = {}
+	for _, record in pairs(cases) do
+		if record.part and record.part.Parent then
+			record.part:Destroy()
+		end
+	end
+	cases = {}
+	if deliveryRing and deliveryRing.Parent then
+		deliveryRing:Destroy()
+	end
+	deliveryRing = nil
+	blackboxHackRunning = false
+	-- elimination hunt state
+	elimHuntStartedAt = 0
+	elimIntelUsed = false
+	elimIntelConsole = nil
+	workspace:SetAttribute("GF_CleanHunt", false)
+	-- conquest multi-point state
+	conqPointPositions = {}
+	conqPointsDone = 0
+	conqPointsTotal = 0
+	conqHoldZoneUsed = false
+	-- convoy pursuit state
+	convoyPursuitSpawned = false
+	convoyPursuitAt = 0
+	convoySledBed = nil
+	disarmWaves()
 	failed = false
 	workspace:SetAttribute("GF_ObjectiveFailed", false)
 	workspace:SetAttribute("GF_DefenseStructure", nil)
@@ -1538,7 +2581,7 @@ function ObjectiveService.setup(position, template)
 	local pos = ground(position)
 	if templateId == "RECOVER_TECH" then
 		objective = buildBlackBox(pos)
-		hint = "Hold E at the black box to extract the flight recorder"
+		hint = "Decrypt the black box at the crash-site terminal"
 	elseif templateId == "DEFEND_BEACON" then
 		objective = buildBeacon(pos)
 		hint = "Activate the beacon, then hold the position"
@@ -1596,7 +2639,7 @@ function ObjectiveService.setup(position, template)
 	if templateId == "RECOVERY_CONVOY" and not complete then
 		convoyStage = 1
 		workspace:SetAttribute("GF_ConvoyStage", 1)
-		hint = "Recover the convoy crates (0 / 2)"
+		hint = "Haul the convoy crates to the salvage sled (0 / 2)"
 		pursuitTick()
 		publish()
 	end
@@ -1698,13 +2741,18 @@ local function sabotageRequest(player)
 	end)
 end
 
-function ObjectiveService.request(player)
+function ObjectiveService.request(player, target)
 	if complete or not objective then return end
+	-- case grabs and the battle-net post are self-discriminating interactions: they bypass the
+	-- template terminal flow entirely and resolve against their own registries
+	if target == "MissionCase" or target == "ConvoySled" then
+		return caseRequest(player)
+	end
+	if target == "IntelConsole" then
+		return elimIntelRequest(player)
+	end
 	if templateId == "SABOTAGE_RELAY" then
 		return sabotageRequest(player)
-	end
-	if templateId == "RECOVERY_CONVOY" then
-		return convoyRequest(player)
 	end
 	if templateId == "DEFENSE_UPLINK" then
 		return uplinkRequest(player)
@@ -1738,14 +2786,35 @@ function ObjectiveService.request(player)
 		return
 	end
 	if templateId == "DEFEND_BEACON" and defending then return end
-	-- RECOVER_TECH is a carry, not a hold: picking the case up is instant, and the objective only completes
-	-- when the carrier reaches the landing zone. Three templates that were only ever different hold times now
-	-- have three different interactions (hold / carry / survive).
-	if templateId == "RECOVER_TECH" and carrying[player] then
+	-- RECOVER_TECH: the black box is encrypted — the terminal runs a ring hack to crack it, and only
+	-- then does the flight recorder physically exist in the world to be grabbed and hauled. The
+	-- decrypt is the infiltration beat; the carry is the extraction beat.
+	if templateId == "RECOVER_TECH" then
+		local blackbox = cases["blackboxcase"]
+		if blackbox and blackbox.state == "sealed" then
+			if blackboxHackRunning then
+				hint = "Decryption already running — cover your squadmate"
+				publish()
+				return
+			end
+			blackboxHackRunning = true
+			local difficulty = (State.getMission() or {}).difficulty or "Normal"
+			HackingService.begin(player, difficulty, terminal.Position, "blackbox")
+			hint = "Decrypting the black box — press in the green arc"
+			publish()
+		end
 		return
 	end
-	if string.sub(templateId, 1, 8) == "CONQUEST" and not conqInteractive() then
-		return
+	if string.sub(templateId, 1, 8) == "CONQUEST" then
+		if not conqInteractive() then
+			return
+		end
+		local cfg = conqConfig()
+		local isHackStage = (conqStage == 1 and cfg.stage1 == "interact") or (conqStage == 3 and cfg.boss)
+		if isHackStage then
+			return conqRequest(player)
+		end
+		-- otherwise: the no-zone-service capture fallback, which stays a console hold below
 	end
 	holding[player] = true
 	local st = State.get(player)
@@ -1772,19 +2841,6 @@ function ObjectiveService.request(player)
 		end
 		holding[player] = nil
 		ObjectiveService.clearScreen(player)
-		if templateId == "RECOVER_TECH" then
-			carrying[player] = true
-			attachCase(player)
-			showDeliveryRing()
-			progress = 0.5
-			hint = "Carry the case to the landing zone"
-			publish()
-			local ev = ReplicatedStorage.GF.Remotes:FindFirstChild("MissionEvent")
-			if ev then
-				ev:FireAllClients({ text = "Case secured. Get it to the landing zone.", kind = "objective" })
-			end
-			return
-		end
 		if string.sub(templateId, 1, 8) == "CONQUEST" then
 			conqEnterStage(conqStage + 1)
 			return
@@ -1863,23 +2919,67 @@ function ObjectiveService.request(player)
 	end)
 end
 
--- Delivery check for RECOVER_TECH, driven from the same 0.5s tick the defend timer uses.
+-- The carry-system heartbeat. Every half second it does the four jobs that make a carried object
+-- physical: caps the carrier's speed (the cost), remembers their last healthy footing (the drop
+-- spot), drops the case when the carrier goes down, dies or leaves (the squad-recoverable beat),
+-- and scores the delivery when a carrier stands inside the destination (the payoff).
 task.spawn(function()
 	while true do
 		task.wait(0.5)
-		if templateId == "RECOVER_TECH" and not complete then
+		if not complete then
 			local lz = workspace:GetAttribute("GF_LZ")
-			for player in pairs(carrying) do
-				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				if root and typeof(lz) == "Vector3" and (root.Position - lz).Magnitude < 18 then
-					carrying[player] = nil
-					dropCase(player)
-					if deliveryRing then
-						deliveryRing:Destroy()
-						deliveryRing = nil
+			for player, caseId in pairs(carrying) do
+				local record = cases[caseId]
+				local character = player.Character
+				local root = character and character:FindFirstChild("HumanoidRootPart")
+				local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+				if not record or not root or not humanoid then
+					-- carrier left the game or reset without a character: the case drops where they were
+					if record then
+						carrying[player] = nil
+						carryModels[player] = nil
+						record.carrier = nil
+						record.state = "dropped"
+						caseSpawnWorldPart(record)
+						hint = string.format("The %s was dropped — recover it", record.label)
+						publish()
+					else
+						carrying[player] = nil
 					end
-					ObjectiveService.complete()
-					break
+				elseif humanoid.Health <= 0 or humanoid:GetState() == Enum.HumanoidStateType.Dead then
+					caseDrop(player)
+					hint = string.format("%s down — the %s is on the ground. Recover it!", player.Name, record.label)
+					publish()
+					missionEvent(string.format("%s dropped the %s!", player.Name, record.label), "warning")
+				elseif player:GetAttribute("GF_Downed") == true then
+					caseDrop(player)
+					hint = string.format("%s is down — the %s is on the ground. Recover it!", player.Name, record.label)
+					publish()
+					missionEvent(string.format("%s dropped the %s!", player.Name, record.label), "warning")
+				else
+					-- speed cap: stance systems re-derive WalkSpeed constantly, so the cap is re-asserted,
+					-- not set once — the carrier is slow no matter what they press
+					local cap = carryCap()
+					if humanoid.WalkSpeed > cap then
+						humanoid.WalkSpeed = cap
+					end
+					-- last healthy footing: only refreshed while standing on the ground, so a drop never
+					-- teleports the case mid-air or inside geometry the carrier fell out of
+					if humanoid.FloorMaterial ~= Enum.Material.Air then
+						record.lastPos = root.Position
+					end
+					-- delivery: inside the destination ring, the case is scored
+					local destPos, destRadius
+					if record.destType == "lz" then
+						destPos = typeof(lz) == "Vector3" and lz or nil
+						destRadius = record.destRadius or 18
+					else
+						destPos = record.destPos
+						destRadius = record.destRadius or 10
+					end
+					if destPos and (root.Position - destPos).Magnitude <= destRadius then
+						caseDeliver(record)
+					end
 				end
 			end
 		end
@@ -1977,6 +3077,22 @@ function ObjectiveService.getTemplate() return templateId end
 function ObjectiveService.start()
 	-- Cancellation is a first-class outcome: leaving the console, going down or disconnecting releases it.
 	HackingService.onCancel = function(_player, reason, _challengeId, tag)
+		if templateId == "RECOVER_TECH" and tag == "blackbox" then
+			blackboxHackRunning = false
+			hint = string.format("Decryption interrupted (%s) — the black box is still sealed", tostring(reason))
+			publish()
+			return
+		end
+		if tag == "elimintel" then
+			hint = string.format("Slice interrupted (%s) — the battle-net post stays live", tostring(reason))
+			publish()
+			return
+		end
+		if tag == "conqhack" then
+			hint = string.format("Slice interrupted (%s) — try the console again", tostring(reason))
+			publish()
+			return
+		end
 		if templateId == "SABOTAGE_RELAY" and type(tag) == "string" then
 			local idx = tonumber(string.sub(tag, 5))
 			local node = idx and shieldNodes[idx]
@@ -2000,6 +3116,21 @@ function ObjectiveService.start()
 	-- Alarm consequence: a missed ring press trips the node's intrusion detection and the
 	-- garrison responds. Capped per node so a struggling player is pressured, not buried.
 	HackingService.onMiss = function(player, _challengeId, tag)
+		if tag == "elimintel" and string.sub(templateId, 1, 5) == "ELIM_" then
+			-- a fumbled slice lights up the battle-net: the garrison converges on the post
+			if elimIntelConsole and elimIntelConsole.Parent then
+				task.defer(function()
+					local ok, EncounterDirector = pcall(function()
+						return require(script.Parent.EncounterDirector)
+					end)
+					if ok and EncounterDirector and EncounterDirector.spawnAround then
+						EncounterDirector.spawnAround(elimIntelConsole.Position, 18, 2)
+					end
+				end)
+				missionEvent("Slice failed — hostiles converging on the intel post!", "warning")
+			end
+			return
+		end
 		if templateId == "SABOTAGE_RELAY" and type(tag) == "string" then
 			local idx = tonumber(string.sub(tag, 5))
 			local node = idx and shieldNodes[idx]
@@ -2024,6 +3155,43 @@ function ObjectiveService.start()
 	end
 	-- The hacking challenge owns its own success; the archive objective is told, not polled.
 	HackingService.onComplete = function(_player, _challengeId, tag)
+		-- black box decrypt: the recorder materialises in the world, ready to be grabbed and hauled
+		if templateId == "RECOVER_TECH" and tag == "blackbox" then
+			blackboxHackRunning = false
+			caseReveal("blackboxcase")
+			local crate = objective and objective:FindFirstChild("BlackBox")
+			if crate then crate.Transparency = 1 crate.CanQuery = false end
+			local lid = objective and objective:FindFirstChild("Lid")
+			if lid then lid.Material = Enum.Material.Metal end
+			progress = 0.25
+			hint = "Black box decrypted — grab the flight recorder"
+			publish()
+			missionEvent("Black box decrypted — take the flight recorder", "objective")
+			return
+		end
+		-- battle-net slice: every living target is confirmed at once — the deliberate-reveal path
+		if tag == "elimintel" and string.sub(templateId, 1, 5) == "ELIM_" then
+			elimIntelUsed = true
+			elimRevealAll("intel")
+			if elimIntelConsole and elimIntelConsole.Parent then
+				elimIntelConsole:SetAttribute("InteractPrompt", "Battle-net sliced")
+				elimIntelConsole:SetAttribute("GFInteract", "None")
+			end
+			missionEvent("Battle-net sliced — all targets confirmed", "objective")
+			return
+		end
+		-- conquest slices: the foundry power coupling advances the assault, the thronefall command
+		-- node ends the operation
+		if tag == "conqhack" and string.sub(templateId, 1, 8) == "CONQUEST" then
+			local cfg = conqConfig()
+			if conqStage == 1 and cfg.stage1 == "interact" then
+				missionEvent("Turret power cut — push into the base", "objective")
+				conqEnterStage(2)
+			elseif conqStage == 3 and cfg.boss then
+				conqEnterStage(4)
+			end
+			return
+		end
 		-- sabotage node breach: core goes dark, count toward the shield collapse
 		if templateId == "SABOTAGE_RELAY" and type(tag) == "string" then
 			local idx = tonumber(string.sub(tag, 5))
@@ -2074,12 +3242,39 @@ function ObjectiveService.start()
 		if templateId == "RECOVERY_ARCHIVE" and archiveStage == 2 then
 			archiveStage = 3
 			workspace:SetAttribute("GF_ArchiveStage", 3)
+			-- the console spill decrypts the archive canister: it materialises as a carry object
+			-- and the extraction is the walk back to the landing zone, not a second console click
+			local intel = objective and objective:FindFirstChild("IntelCase")
+			if intel and intel:IsA("BasePart") then
+				intel.Transparency = 0
+				caseRegister("archivecase", intel.Position, {
+					part = intel,
+					label = "Archive canister",
+					prompt = ocfg().carryPrompt or "Take the archive canister",
+					color = Color3.fromRGB(230, 200, 120),
+					destType = "lz",
+					onPickup = function()
+						showDeliveryRing()
+						progress = 0.6
+						hint = "Carry the archive canister to the landing zone"
+						publish()
+						missionEvent("Archive secured. Get it to the landing zone.", "objective")
+					end,
+					onDeliver = function()
+						if deliveryRing then
+							deliveryRing:Destroy()
+							deliveryRing = nil
+						end
+						ObjectiveService.complete()
+					end,
+				})
+			end
 			local terminal = objective and objective:FindFirstChild("Terminal")
 			if terminal then
-				terminal:SetAttribute("GFInteract", "ArchiveConsole")
-				terminal:SetAttribute("InteractPrompt", "Recover archive")
+				terminal:SetAttribute("GFInteract", "None")
+				terminal:SetAttribute("InteractPrompt", "Console broken")
 			end
-			hint = "Recover the archive"
+			hint = "Take the archive canister"
 			publish()
 		end
 	end
@@ -2106,11 +3301,11 @@ function ObjectiveService.start()
 	local r = remote("InteractRequest")
 	if r then
 		r.OnServerEvent:Connect(function(player, target)
-			if target == "Relay" or target == "ShieldNode" or target == "BlackBox" or target == "Beacon" or target == "ConquestConsole" or target == "ConquestNode" or target == "ConvoyCrate" or target == "UplinkDish" or target == "UplinkConfirm" or target == "PowerRestore" or target == "PowerStabilise" or target == "ArsenalPad" or target == "ArchiveConsole" then
+			if target == "Relay" or target == "ShieldNode" or target == "BlackBox" or target == "Beacon" or target == "ConquestConsole" or target == "ConquestNode" or target == "UplinkDish" or target == "UplinkConfirm" or target == "PowerRestore" or target == "PowerStabilise" or target == "ArsenalPad" or target == "ArchiveConsole" or target == "MissionCase" or target == "IntelConsole" or target == "ConvoySled" then
 				if not require(script.Parent.NetGuard).allow(player, "interact") then
 					return
 				end
-				ObjectiveService.request(player)
+				ObjectiveService.request(player, target)
 			end
 		end)
 	end

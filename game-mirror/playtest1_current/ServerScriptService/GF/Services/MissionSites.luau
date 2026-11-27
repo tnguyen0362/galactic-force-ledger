@@ -692,6 +692,118 @@ local function buildArtillery(position: Vector3, siteYaw: number, parent: Instan
 	return finishSite(model, parent, gun)
 end
 
+-- ============ objective-depth prop library ============
+-- Small terrain-conforming props the objective mechanics use as physical anchors. Unlike the
+-- full site builders these are exported one at a time: ObjectiveService composes them into its
+-- own compounds (capture points, recovery sleds, hunt intel posts) rather than instantiating a
+-- whole site. Every prop individually settles onto the terrain probe, so they read grounded on
+-- the slopes a multi-point capture spread inevitably crosses.
+
+-- Capture pylon: the visible anchor of one capture point in a multi-point seize. A squat armored
+-- base, a mast, and a cyan holo-lamp on top — the zone ring does the radius work, the pylon is
+-- what players orient on at battlefield range. No interaction contract: capture is presence-based.
+function MissionSites.buildCapturePylon(position: Vector3, opts: any?): Model
+	local parent: Instance = Workspace
+	local label = "CapturePylon"
+	if type(opts) == "table" then
+		if typeof(opts.parent) == "Instance" then
+			parent = opts.parent
+		end
+		if type(opts.name) == "string" then
+			label = opts.name
+		end
+	end
+	fallbackGroundY = position.Y
+	local gy = ground(position.X, position.Z)
+	local model = Instance.new("Model")
+	model.Name = label
+	local yaw = 0
+	if type(opts) == "table" and type(opts.yaw) == "number" then
+		yaw = opts.yaw
+	end
+	-- armored base skirt, three feet visible so the pylon reads as emplaced equipment, not a stick
+	partAtWorld(model, position.X, gy + 0.35, position.Z, Vector3.new(3.4, 1.1, 3.4), yaw, "PylonBase", METAL_DARK, Enum.Material.Metal, true)
+	partAtWorld(model, position.X, gy + 0.9, position.Z, Vector3.new(2.4, 0.5, 2.4), yaw, "PylonCollar", ARMOR, Enum.Material.DiamondPlate, true)
+	for index, angle in ipairs({ math.rad(30), math.rad(150), math.rad(270) }) do
+		local fx = math.cos(angle) * 1.9
+		local fz = math.sin(angle) * 1.9
+		partAtWorld(model, position.X + fx, gy + 0.5, position.Z + fz, Vector3.new(0.8, 1.4, 0.8), yaw + angle, "PylonFoot" .. index, CONCRETE, Enum.Material.Concrete, true)
+	end
+	if not kit({ "Kit_Ascendancy_Pier" }, position.X, gy + 1.0, position.Z, yaw, 5.4, model) then
+		partAtWorld(model, position.X, gy + 3.7, position.Z, Vector3.new(1.0, 5.4, 1.0), yaw, "PylonMast", METAL, Enum.Material.Metal, true)
+	end
+	local lamp = partAtWorld(model, position.X, gy + 6.7, position.Z, Vector3.new(1.5, 1.5, 1.5), yaw, "PylonLamp", CYAN, Enum.Material.Neon, false)
+	addPointLight(lamp, CYAN, 18, 1.1)
+	-- short range antenna whip: gives the silhouette a vertical read against sky
+	partAtWorld(model, position.X, gy + 8.2, position.Z, Vector3.new(0.22, 2.6, 0.22), yaw, "PylonWhip", METAL_DARK, Enum.Material.Metal, false)
+	local base = model:FindFirstChild("PylonBase")
+	return finishSite(model, parent, if base and base:IsA("BasePart") then base else nil)
+end
+
+-- Salvage sled: the recovery family's loading target — a low gravitic flatbed with side rails
+-- and a beacon post. Crates carried back by the squad are stacked onto its bed. The bed surface
+-- is part of the return so ObjectiveService can seat delivered crates without guessing heights.
+function MissionSites.buildSalvageSled(position: Vector3, opts: any?): (Model, BasePart?)
+	local parent: Instance = Workspace
+	if type(opts) == "table" and typeof(opts.parent) == "Instance" then
+		parent = opts.parent
+	end
+	fallbackGroundY = position.Y
+	local gy = ground(position.X, position.Z)
+	local yaw = 0
+	if type(opts) == "table" and type(opts.yaw) == "number" then
+		yaw = opts.yaw
+	end
+	local model = Instance.new("Model")
+	model.Name = "SalvageSled"
+	-- hover bed: low slab with a neon underglow strip so it reads as powered equipment at night
+	local bed = partAtWorld(model, position.X, gy + 1.0, position.Z, Vector3.new(7.2, 0.7, 4.6), yaw, "SledBed", METAL, Enum.Material.DiamondPlate, true)
+	partAtWorld(model, position.X, gy + 0.45, position.Z, Vector3.new(6.4, 0.3, 3.8), yaw, "SledGlow", CYAN, Enum.Material.Neon, false)
+	-- side rails keep the silhouette industrial and give carried crates a visible destination
+	for _, side in ipairs({ -1, 1 }) do
+		local rx, rz = rotateXZ(0, side * 2.1, yaw)
+		partAtWorld(model, position.X + rx, gy + 1.85, position.Z + rz, Vector3.new(7.2, 1.0, 0.35), yaw, "SledRail" .. (side < 0 and "L" or "R"), METAL_DARK, Enum.Material.Metal, true)
+	end
+	-- beacon post at the bed nose: the amber lamp is the "load here" read across the wreck site
+	local bx, bz = rotateXZ(3.2, 0, yaw)
+	partAtWorld(model, position.X + bx, gy + 2.4, position.Z + bz, Vector3.new(0.5, 2.6, 0.5), yaw, "SledPost", METAL_DARK, Enum.Material.Metal, true)
+	local lamp = partAtWorld(model, position.X + bx, gy + 3.9, position.Z + bz, Vector3.new(1.0, 1.0, 1.0), yaw, "SledLamp", AMBER, Enum.Material.Neon, false)
+	addPointLight(lamp, AMBER, 16, 1.2)
+	return finishSite(model, parent, bed), bed
+end
+
+-- Intel post: the elimination family's battle-net terminal — a kneeling-height console with a
+-- canted screen, tagged for the intel slice interaction when opts.interact is provided. Physically
+-- small on purpose: finding it is part of the sweep, so it reads as equipment, not architecture.
+function MissionSites.buildIntelPost(position: Vector3, opts: any?): (Model, BasePart?)
+	local parent: Instance = Workspace
+	if type(opts) == "table" and typeof(opts.parent) == "Instance" then
+		parent = opts.parent
+	end
+	fallbackGroundY = position.Y
+	local gy = ground(position.X, position.Z)
+	local yaw = 0
+	if type(opts) == "table" and type(opts.yaw) == "number" then
+		yaw = opts.yaw
+	end
+	local model = Instance.new("Model")
+	model.Name = "IntelPost"
+	local console = partAtWorld(model, position.X, gy + 1.4, position.Z, Vector3.new(2.2, 2.6, 1.3), yaw, "IntelConsole", METAL_DARK, Enum.Material.Metal, true)
+	if type(opts) == "table" and type(opts.interact) == "string" then
+		console:SetAttribute("GFInteract", opts.interact)
+		console:SetAttribute("InteractPrompt", type(opts.prompt) == "string" and opts.prompt or "Slice battle-net terminal")
+	end
+	-- canted amber screen: Ascendancy battle-net reads amber, human tech reads cyan
+	local fx, fz = rotateXZ(0, 0.72, yaw)
+	local screen = partAtWorld(model, position.X + fx, gy + 2.1, position.Z + fz, Vector3.new(1.7, 0.95, 0.14), yaw, "IntelScreen", AMBER, Enum.Material.Neon, false)
+	screen.CFrame = screen.CFrame * CFrame.Angles(math.rad(-18), 0, 0)
+	addPointLight(screen, AMBER, 12, 0.9)
+	-- field-expedient power cell and cabling at the base: the console is clearly spliced in
+	partAtWorld(model, position.X + 1.1, gy + 0.45, position.Z + 0.6, Vector3.new(0.9, 0.9, 0.9), yaw, "IntelCell", ARMOR, Enum.Material.Metal, true)
+	partAtWorld(model, position.X + 0.5, gy + 0.2, position.Z + 0.3, Vector3.new(1.6, 0.22, 0.22), yaw + 0.5, "IntelCable", METAL_DARK, Enum.Material.Metal, false)
+	return finishSite(model, parent, console), console
+end
+
 local builders: { [string]: (Vector3, number, Instance) -> Model } = {
 	stronghold = buildStronghold,
 	shield_generator = buildShieldGenerator,
