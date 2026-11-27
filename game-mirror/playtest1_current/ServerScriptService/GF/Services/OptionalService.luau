@@ -1,9 +1,11 @@
 --!strict
--- Optional objective sites (S08-044/S08-045). Each mission spawns 1-3 small optional sites near the
--- fight: proximity discovery (~80 studs) reveals them squad-wide, interaction completes them, and
--- each applies its authored effect: relay cuts future reinforcements x0.75, generator disables
--- linked turrets/field barriers, supply outpost grants shared resources. Completion feeds the
--- reward ledger as an optional objective event.
+-- Environmental interaction sites (Counteroffensive contract revision — formerly the optional
+-- objective system). These are NOT objectives: no contract states, no reward-ledger events, no
+-- HUD/debrief framing. They are informal tactical texture — small sites near the fight whose
+-- interaction applies an in-mission effect: relay cuts future reinforcements x0.75, generator
+-- disables linked turrets/field barriers, supply outpost grants shared resources. In operation
+-- mode this service does not spawn at all: the operation DAG carries its own supply cache node
+-- and relay/generator prerequisites, and double-spawning was a latent bug.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -88,11 +90,9 @@ local function complete(site: Site, player: Player?)
 	elseif site.siteType == "supply" then
 		applySupplyGrant()
 	end
-	-- optional completion is a ledger event so settlement can pay the authored bonus
-	pcall(function()
-		require(ServerScriptService.GF.Services.RewardLedgerService).appendEvent("optionalComplete",
-			workspace:GetAttribute("GF_MissionDifficulty") or "Normal", site.siteType, player and player.UserId or nil)
-	end)
+	-- no reward-ledger event: environmental interactions are not objectives and pay nothing
+	-- (Counteroffensive contract revision — and the legacy append used a mismatched event key
+	-- against a ledger settlement never read, so it was doubly dead)
 	if site.part.Parent then
 		local prompt = site.part:FindFirstChildOfClass("ProximityPrompt")
 		if prompt then
@@ -120,7 +120,8 @@ local function spawnSite(siteType: string, position: Vector3): Site
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = siteType == "relay" and "Sabotage relay" or siteType == "generator" and "Disable generator" or "Collect supplies"
-	prompt.ObjectText = "Optional: " .. siteType
+	-- environmental framing, not an objective: no "Optional:" contract label
+	prompt.ObjectText = siteType == "relay" and "Ascendancy relay" or siteType == "generator" and "Field generator" or "Supply cache"
 	prompt.HoldDuration = 1.5
 	prompt.MaxActivationDistance = 9
 	prompt.Parent = part
@@ -204,6 +205,11 @@ end
 function OptionalService.start()
 	workspace:GetAttributeChangedSignal("GF_InMission"):Connect(function()
 		if workspace:GetAttribute("GF_InMission") == true then
+			-- operation mode carries its own DAG supply cache and relay/generator prerequisites —
+			-- spawning here too was a latent double-spawn bug. legacy-mode missions only.
+			if workspace:GetAttribute("GF_OperationMode") == true then
+				return
+			end
 			-- place around the squad insertion once deployment lands
 			task.delay(2, function()
 				local lz = workspace:GetAttribute("GF_LZ")

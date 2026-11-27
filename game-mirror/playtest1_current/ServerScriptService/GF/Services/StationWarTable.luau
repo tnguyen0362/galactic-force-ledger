@@ -202,7 +202,7 @@ function StationWarTable.start()
 		local crew = math.max(1, #Players:GetPlayers())
 		local tickets = Difficulties.ticketsFor(diffId, crew)
 		return string.format(
-			"OPERATION  %s\nPRIMARY    %s\nTHREAT     %s  ·  %d hostiles\nTICKETS    %d available  ·  %d per extra operator\nBOUNTY     credits x%.1f\nINTEL      %d secondary points",
+			"OPERATION  %s\nPRIMARY    %s\nTHREAT     %s  ·  %d hostiles\nTICKETS    %d available  ·  %d per extra operator\nBOUNTY     credits x%.1f\nFAMILY     %s",
 			mission.displayName,
 			mission.primary,
 			diff.displayName,
@@ -210,7 +210,7 @@ function StationWarTable.start()
 			tickets,
 			diff.ticketPerPlayer,
 			diff.rewardMultiplier,
-			mission.optionalPois
+			mission.family or "?"
 		)
 	end
 	local function refreshAll()

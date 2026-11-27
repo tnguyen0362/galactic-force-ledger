@@ -994,9 +994,13 @@ function OperationService.publishProgress(player: Player?)
 	local completedCount = 0
 	local totalRequired = 0
 	for _, n in current.objectives do
-		if n.state == "Completed" then completedCount += 1 end
+		-- optional nodes are informal environmental interactions (Counteroffensive contract
+		-- revision): they never count toward required-progress math and never appear in the
+		-- objective hint — otherwise a completed supply cache would inflate the fraction and
+		-- the tracker would frame environmental texture as contract work
+		if n.state == "Completed" and not n.optional then completedCount += 1 end
 		if not n.optional then totalRequired += 1 end
-		if n.state == "Available" or n.state == "Active" then
+		if (n.state == "Available" or n.state == "Active") and not n.optional then
 			table.insert(available, n)
 		end
 	end

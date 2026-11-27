@@ -98,3 +98,22 @@ base 15% (300→345cr, 350→400xp) when the optional-objective removal lands. R
   augments/shop sinks already exist
 - the adjustment ships atomically with the removal (never before) to avoid a temporary buff window
 DECISION LOGGED — implementation proceeds without further owner input.
+
+
+## DECISION CORRECTION (beta, 2026-11-28 — supersedes the 15% raise)
+Deeper tracing invalidated the quantification's premise. The reward ledger is a SHADOW system —
+its own header states "settlement does not read this ledger yet" — and OptionalService appends
+event type "optionalComplete" while the EVENTS table keys it "optional_task", so even the shadow
+entries are no-ops. The live payment path (RewardsService.computePayout) contains zero optional
+component: base-by-difficulty + 25% full-completion bonus only.
+
+**Measured truth: formal optional objectives pay 0 credits / 0 xp today.** Removal is
+economy-neutral in practice — no offsetting adjustment is warranted, and the 15% primary raise
+is CANCELLED (it would have been a pure uncalibrated buff). The in-mission tactical effects
+(relay reinforcement cut, generator disable, supply scrap grant) are gameplay texture, not income.
+
+Implementation consequences:
+- OptionalService stripped to pure environmental interactions: no ledger append, no contract
+  framing, no objective HUD rows; spawn skipped in operation mode (fixes the latent double-spawn
+  where the DAG supply_cache and the legacy spawner both fire)
+- no economy change ships with Part B

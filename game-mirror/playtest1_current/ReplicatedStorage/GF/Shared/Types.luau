@@ -80,7 +80,7 @@ export type MissionDef = {
 	displayName: string,
 	durationClass: "Short" | "Standard" | "Extended",
 	primary: string,
-	optionalPois: number,
+	-- formal optional objectives removed (Counteroffensive contract revision)
 }
 
 export type Loadout = {
