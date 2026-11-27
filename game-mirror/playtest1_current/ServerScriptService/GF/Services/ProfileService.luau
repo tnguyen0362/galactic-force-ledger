@@ -113,9 +113,12 @@ local function migrate(raw: any, userId: number)
 		if type(loadout) ~= "table" then
 			return
 		end
-		if loadout.ability == nil then
-			loadout.ability = loadout.ability1 or loadout.ability2 or "Airstrike"
-		end
+		-- legacy fields win when present: the defaults-fill above injects ability="Airstrike"
+		-- into pre-migration saves before this transform runs, so testing ability == nil here
+		-- would never fire and the player's real slot-1 choice would be silently flattened to
+		-- the default. legacy ability1/ability2 only exist in old saves, so preferring them is
+		-- exactly the migration semantic; fresh profiles never carry them.
+		loadout.ability = loadout.ability1 or loadout.ability2 or loadout.ability or "Airstrike"
 		loadout.ability1 = nil
 		loadout.ability2 = nil
 	end
