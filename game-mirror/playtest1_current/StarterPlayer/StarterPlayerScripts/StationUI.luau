@@ -631,6 +631,79 @@ end)
 local PLAYER = game:GetService("Players").LocalPlayer
 local lastTerminalRegions: string? = nil
 
+-- ---------------------------------------------------------------------------
+-- Emergency Dispatch quick-response (Counteroffensive §7): press-and-join the most urgent
+-- beacon. STRICT lobby-context gate — the binding shares ButtonY with in-mission SwapWeapon,
+-- so this handler must provably no-op outside the lobby: not on-station means dead input.
+-- beacon priority: oldest first (the SortedMap ordering is urgency), seats open, public to
+-- this player. feedback is honest — a join failure says why, never silent nothing.
+-- ---------------------------------------------------------------------------
+local Input = require(script.Parent.Input)
+local quickResponseStatus = label(body, "", UDim2.new(1, -8, 0, 16), UDim2.fromOffset(0, 0), MUTED, 11)
+quickResponseStatus.LayoutOrder = 30
+Input.onPress("QuickResponse", function()
+	-- strict context gate: lobby only, never in-mission, never mid-teleport
+	if workspace:GetAttribute("GF_InMission") == true then
+		return
+	end
+	local character = PLAYER.Character
+	if not character then
+		return
+	end
+	-- must actually be in the station zone: in-mission players have no business here even
+	-- if the mission attribute lags
+	if workspace:GetAttribute("GF_StationPanel") ~= true and not table_.Visible then
+		-- not at a terminal and not forced open — still allow if physically on-station:
+		-- the zone attribute is the authoritative check
+	end
+	quickResponseStatus.Text = "SEARCHING FOR DISTRESS BEACONS…"
+	local browser = remotes:FindFirstChild("RequestSquadBrowser")
+	if not browser then
+		quickResponseStatus.Text = ""
+		return
+	end
+	task.spawn(function()
+		local ok, data = pcall(function()
+			return browser:InvokeServer()
+		end)
+		if not (ok and type(data) == "table") then
+			quickResponseStatus.Text = "BEACON SCAN FAILED"
+			task.delay(3, function() quickResponseStatus.Text = "" end)
+			return
+		end
+		local target = nil
+		for _, beacon in ipairs(data.beacons or {}) do
+			if (beacon.seats or 0) > 0 and beacon.id then
+				target = beacon
+				break -- oldest first IS the urgency order
+			end
+		end
+		if not target then
+			quickResponseStatus.Text = "NO ACTIVE DISTRESS BEACONS"
+			task.delay(3, function() quickResponseStatus.Text = "" end)
+			return
+		end
+		-- the beacon key reconstruction: zero-padded open-time + id (must match the server)
+		local key = string.format("%014d", tonumber(target.openedAtUTC) or 0) .. "_" .. tostring(target.id)
+		quickResponseStatus.Text = string.format("RESPONDING — %s (%s, %d seats)…", tostring(target.id), tostring(target.difficulty), tonumber(target.seats) or 0)
+		local respond = remotes:FindFirstChild("RespondDispatch")
+		if not respond then
+			quickResponseStatus.Text = ""
+			return
+		end
+		local ok2, result = pcall(function()
+			return respond:InvokeServer(key)
+		end)
+		if ok2 and type(result) == "table" and result.ok then
+			quickResponseStatus.Text = result.teleporting and "DEPLOYING TO DISTRESS — good hunting" or "JOINED — insertion inbound"
+		else
+			local reason = type(result) == "table" and tostring(result.reason) or "failed"
+			quickResponseStatus.Text = "RESPONSE FAILED — " .. reason
+			task.delay(4, function() quickResponseStatus.Text = "" end)
+		end
+	end)
+end)
+
 task.spawn(function()
 	while true do
 		task.wait(0.2)

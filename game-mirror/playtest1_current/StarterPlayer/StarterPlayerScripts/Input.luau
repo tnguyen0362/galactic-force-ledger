@@ -20,6 +20,10 @@ local BINDINGS = {
 	-- one support ability (Counteroffensive contract revision). the freed F/R1 binding is
 	-- RESERVED for Emergency Dispatch quick-response (Stage 6) — do not reassign casually
 	SupportAbility = { kbm = Enum.KeyCode.Q, gamepad = Enum.KeyCode.ButtonL1, label = { kbm = "Q", gamepad = "LB" } },
+	-- Emergency Dispatch quick-response (Counteroffensive §7): LOBBY CONTEXT ONLY — joins the
+	-- most urgent distress beacon. the gamepad Y/Triangle binding is context-dependent by design:
+	-- in-mission ButtonY stays SwapWeapon, and this action must never fire outside the lobby
+	QuickResponse = { kbm = Enum.KeyCode.H, gamepad = Enum.KeyCode.ButtonY, label = { kbm = "H", gamepad = "Y" } },
 	TacticalMap = { kbm = Enum.KeyCode.M, gamepad = Enum.KeyCode.DPadUp, label = { kbm = "M", gamepad = "Dpad ^" } },
 	Ping = { kbm = Enum.UserInputType.MouseButton3, gamepad = Enum.KeyCode.DPadRight, label = { kbm = "MMB", gamepad = "Dpad >" } },
 	ShoulderSwap = { kbm = Enum.KeyCode.V, gamepad = Enum.KeyCode.ButtonR3, label = { kbm = "V", gamepad = "RS" } },
