@@ -18,6 +18,13 @@ Research was thin on tech (no public trim-sheet/perf breakdown found); this is m
 Blender: hi-poly (bevels, panel cuts) -> low-poly (weighted normals) -> bake normal/AO/curvature-wear to a shared 1K trim/atlas per faction -> Roblox `SurfaceAppearance` (Color/Normal/Roughness/Metalness). Gate: confirm Edit-DM `execute_luau` can set SurfaceAppearance maps on an uploaded MeshPart. Hero piece = Ascendancy rifleman (most visible), A/B captured in-engine on High from the same camera, owner reviews before scaling.
 Rocks/trees: evaluate CC0 scanned assets (Poly Haven via search_assets), decimated + baked to budget, license checked.
 
+## Pipeline update (gate result, 2026-11-28 1150Z)
+Faster route found and PROVEN in Edit: Studio MCP `generate_material` creates engine-native PBR `MaterialVariant`s (Color/Normal/Roughness/Metalness, no upload pipeline) and they render on our existing kit MeshParts via `Material` + `MaterialVariant` + `Color` tint + `StudsPerTile`.
+- Prompt lesson: "restrained" wins. GF_Ascendancy_Plate (busy panels/streaks) read as marble/camo = rejected; GF_Asc_Matte ("uniform dark gunmetal, matte, very low contrast, fine scratches") reads as clean cold charcoal armour = keep. GF_Rock_Scorched (Basalt, Organic) has ember cracks = keep for rocks/ground.
+- Limit: a kit mesh has one material, so a variant replaces the palette (violet/bronze accent colours are lost). Fix: split accents into separate emissive parts (Neon) per kit piece, or use vertex-colour-free accent meshes.
+- Variants live in MaterialService (UNSAVED in Studio). Need persistence (save or recreate script) - see WORK_STATE.
+- `SurfaceAppearance` creation also works from Edit luau (MeshId is NotAccessible; keep using installer/CreateMeshPartAsync for meshes).
+
 ## Order of work
 1. Atmosphere/lighting/particle pass (client, BiomeLook-adjacent; no gameplay impact).
 2. PBR hero piece (rifleman) + feasibility gate.
