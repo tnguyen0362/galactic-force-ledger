@@ -90,12 +90,12 @@ function TerrainService.build(seed: number): number
 	-- place offline. Runtime writes are skipped entirely — terrain cost at boot is zero.
 	-- Localized gameplay deformations (LZ pads, installation foundations) still write
 	-- small regions later; the foundation itself is static.
-	if workspace:GetAttribute("GF_HybridGen") == true then
+	if workspace:GetAttribute("GF_ForceBakedTerrain") ~= true then
 		-- hybrid procedural architecture: runtime geographical generation from compressed
 		-- real-world foundations (owner directive 2026-11-25). Deterministic stream G.
 		local seed = workspace:GetAttribute("GF_GeoSeed")
 		if type(seed) ~= "number" or seed == 0 then
-			seed = math.floor(os.clock() * 1000) % 100000 + 1
+			seed = (os.time() * 997 + math.floor(os.clock() * 1000) + math.random(1, 9999)) % 900000 + 1
 		end
 		task.spawn(function()
 			local ok, err = pcall(function()
@@ -107,10 +107,16 @@ function TerrainService.build(seed: number): number
 				VegetationService.plant({ seed = seed * 3 + 11, extent = 4900 })
 				workspace:SetAttribute("GF_TerrainReady", true)
 			end)
-			if not ok then warn("GeographyService failed:", err) end
+			if not ok then
+				warn("GeographyService failed:", err)
+				-- generation is the default path now; a failure here must never hang mission boot
+				-- waiting on GF_TerrainReady. Baked terrain survives a load-time failure (clear
+				-- happens after decode), so the world is still playable — just not varied.
+				workspace:SetAttribute("GF_TerrainReady", true)
+			end
 		end)
 		TerrainService.currentPlan = nil
-		print("HybridGen: geographical generation dispatched, seed=" .. tostring(seed))
+		print("GeoGen: runtime geographical generation dispatched, seed=" .. tostring(seed))
 		return 0
 	end
 	if workspace:GetAttribute("GF_BakedTerrain") == true then

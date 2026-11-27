@@ -100,9 +100,23 @@ local biomes = { "Forest", "Arid", "Tundra", "Industrial" } -- Phase 15: four ap
 local biomeIdx = ((workspace:GetAttribute("GF_MissionCount") or 0)) % #biomes + 1
 local biome = biomes[biomeIdx]
 workspace:SetAttribute("GF_Biome", biome)
-local missionSeed = math.floor(os.clock() * 1000) % 100000 + math.random(1, 9999)
+local missionSeed = (os.time() * 997 + math.floor(os.clock() * 1000) + math.random(1, 99999)) % 900000 + 1
 workspace:SetAttribute("GF_MapSeed", missionSeed)
 local columns = TerrainService.build(missionSeed)
+-- Runtime geographical generation is now the default terrain path (owner directive 2026-11-28):
+-- generation dispatches async inside build() and takes ~7-20s behind the loading window. Every
+-- mission-world construction below grounds objects by raycast, so it must not run before the
+-- terrain exists. Baked/fallback paths set GF_TerrainReady near-instantly, so this wait is a
+-- no-op there; the timeout guarantees boot can never hang even if generation is killed.
+do
+	local tWait = os.clock()
+	while workspace:GetAttribute("GF_TerrainReady") ~= true and os.clock() - tWait < 35 do
+		task.wait(0.25)
+	end
+	if workspace:GetAttribute("GF_TerrainReady") ~= true then
+		warn("Mission: terrain not ready after 35s — proceeding anyway (generation failure?)")
+	end
+end
 print("[GF] terrain columns: " .. columns)
 -- S07-009: nonhostile alien wildlife at the mission site — 3 ambient creatures that flee gunfire.
 local WildlifeService = require(Services.WildlifeService)
