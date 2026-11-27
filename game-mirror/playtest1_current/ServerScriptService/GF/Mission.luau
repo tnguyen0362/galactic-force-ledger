@@ -160,7 +160,16 @@ do
 		p.Material = material
 		p.Anchored = true
 		p.CanCollide = true
-		p.CFrame = CFrame.new(pos) * CFrame.Angles(0, math.rad((pos.X * 7 + pos.Z * 13) % 360), 0)
+		-- generated geography: fixed legacy Y buries props in slopes or floats them in air
+		-- (authored for the flat baked site). Ground to terrain by raycast; sky dressing keeps altitude.
+		local grounded = pos
+		if name ~= "DistantMoon" and name ~= "SmokeColumn" then
+			local hit = workspace:Raycast(Vector3.new(pos.X, 800, pos.Z), Vector3.new(0, -1000, 0))
+			if hit then
+				grounded = Vector3.new(pos.X, hit.Position.Y + size.Y * 0.5 - 0.5, pos.Z)
+			end
+		end
+		p.CFrame = CFrame.new(grounded) * CFrame.Angles(0, math.rad((pos.X * 7 + pos.Z * 13) % 360), 0)
 		p.Parent = workspace
 		return p
 	end
