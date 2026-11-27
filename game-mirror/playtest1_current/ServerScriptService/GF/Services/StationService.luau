@@ -258,6 +258,36 @@ function StationService.build()
 		statusLine.TextWrapped = true
 		statusLine.Parent = gui
 	end
+	-- live theater status on every terminal face: the war is visible before any interaction.
+	-- reads the WarStateService region attributes; degrades to silent-empty before the first
+	-- publish rather than showing stale-future text
+	task.spawn(function()
+		local SHORT = {
+			ascendancy_dominance = "ASC",
+			contested_theater = "CTD",
+			human_infiltration = "INF",
+			gf_offensive = "OFF",
+			established_superiority = "SUP",
+		}
+		while station.Parent do
+			for _, term in ipairs(TERMINALS) do
+				local screen = station:FindFirstChild("TerminalScreen_" .. term.id)
+				local gui = screen and screen:FindFirstChild("TerminalGui")
+				local line = gui and gui:FindFirstChild("TheaterStatus")
+				if line then
+					local parts = {}
+					for _, rid in ipairs(string.split(term.regions, ",")) do
+						local s = workspace:GetAttribute("GF_WarState_" .. rid .. "_Status")
+						if type(s) == "string" then
+							table.insert(parts, string.format("%s %s", rid, SHORT[s] or s))
+						end
+					end
+					line.Text = table.concat(parts, "\n")
+				end
+			end
+			task.wait(4)
+		end
+	end)
 	local light = Instance.new("PointLight")
 	light.Shadows = false
 	light.Color = CYAN
