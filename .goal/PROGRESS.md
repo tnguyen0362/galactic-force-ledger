@@ -441,3 +441,24 @@ Still dark in the corner — recorded as the open defect rather than papered ove
 - Real rendered captures identified the armory as a black pocket. Added local pendant practicals,
   strengthened the alcove fill, and made the player rim subtly visible. Post-fix capture shows the armory
   rack wall, mannequin, bench and floor clearly. This is visual polish only; no gameplay contract changed.
+
+## 2026-11-26/27 — art kit pipeline: batches 2-4 uploaded, v2 review pass (multi-agent)
+- 57 GLB kit pieces authored in Blender + uploaded, all moderation Approved: Human infra/gunship/hangar/concourse, Ascendancy turret/beacon/walls, terrain rocks/cliffs, war-table dais/hologram, planet limb. IDs in `tools/art/kit/asset_manifest.csv`. Owner critique pass (cliffs organ-pipe, violet stone, boxy gunship, pixelated planet) fixed in generators and re-uploaded. Status UPLOADED_UNVERIFIED — placement/install in Studio remains.
+
+## 2026-11-28 — war table rebuilt + dropped (claude/delta, owner-directed)
+- GalaxyMap rebuilt: angular region plates on the single planet face (no more mini-planet circles), liberation as bars not percents, overlap math fixed (ring 0.68R), live replication verified (`MILITARY RANK 15` in capture). Owner then dropped the war table as a workstream — no further work.
+
+## 2026-11-28 — lobby rework + mobile input fixes (claude-art/delta, owner-directed)
+- Pods moved to back with hanging 01-04 numbers; war table + crew actors removed behind `GF_KeepWarTable`/`GF_KeepLobbyCrew` attrs. StationHangar navy/orange recolor, LobbyLoadoutBar. SquadRecruit, walk-in pod entry + deploy wiring (end-to-end UNVERIFIED).
+- Mobile: dead-button root cause found — `MouseButton1Click` drops touch input; replaced with `Activated` (runtime-verified). Lobby shell compaction for touch/narrow viewports. OPEN blocking gap: reload/dodge/abilities have no touch bindings at all; camera sensitivity untuned. NOTE: owner tests on mobile — the published build never reflects Edit-DM work until published.
+
+## 2026-11-28 — GF_CargoShip built + installed (delta)
+- Faithful C-130J per owner reference, 82m span/59m length. Parametric generator `gf-art-build/blender/build_cargoship.py`. assetId 133889290183506 installed `ServerStorage.GF.Art.GF_CargoShip` in Missions Edit DM (unsaved). Spin contract proven numerically (local Z axis). 7,450 tris. No flight/spawn system — design decision open.
+
+## 2026-11-28 — GF_Boss_Bastion built, rigged, uploaded, integration written (delta, owner-directed)
+- Merged Bastion/ZeroSpace mini-boss from forensic pixel-study of both owner references. Parametric `build_bastion.py`, 186 rigid parts, 15 bones, rig pose-verified (waist twist, pod pitch, gatling spin). War Machine GAU-17 rotary cannon (case study) on boss-right shoulder w/ independent `turret.R`+`gatspin.R` bones; M270-informed missile pods w/ owner-specified 3x2 spread dark cutouts. assetId 137515304103831 approved.
+- `BastionWalker.luau` visual swap written: clone template scaled 1.35x + invisible gameplay overlay, zero-regression fallback to legacy procedural walker. UNTESTED: needs template install (Missions Edit DM), movement wiring (visual static until then), deploy, in-game verification.
+- pi's parallel boss attempt was autopsied and abandoned (all parts at origin = un-riggable; ball-head = forbidden element); pi wreckage collections deleted per owner. Key lesson banked: viewport renders show foreign collections — hide_viewport required for honest inspection; orphan scene-root mesh (PBRTEST_Hand) polluted renders for hours.
+
+## 2026-11-28 — Missions: orange-haze look + SiteDressing + enemy AI tactics (claude-art, owner-directed)
+- BiomeLook Jungle v2.1 orange haze (HD2 feel), SiteDressing service (FOB + approach story beats), GFGodMode Studio dev panel. All 15 ObjectiveService templates surveyed booting clean. Enemy AI formation-movement pass (crouch/cover/fire-and-maneuver) IN FLIGHT at time of writing. All unsaved in Missions Edit DM — owner publishes.

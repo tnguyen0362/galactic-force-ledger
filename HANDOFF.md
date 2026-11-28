@@ -1,63 +1,78 @@
-# GALACTIC FORCE — session handoff (2026-11-25, place 587)
+# GALACTIC FORCE — session handoff (updated 2026-11-28)
 
-Continuation instructions for a LOCAL Devin Desktop session on the Mac. Read this first, then
-`WORK_STATE.md`, `.goal/GOAL_2026-11-24.md` and `REQUIREMENT_COVERAGE.csv` in this repo.
+Read this first, then `WORK_STATE.md`, `DECISIONS.md`, `.goal/GOAL.md`.
 
-## What this project is
+## What this project is NOW
 
-A Roblox game built inside the live Studio place `Playtest1` (placeId 120646942844931, universeId
-10778576038). The game code lives in the place, NOT in git. This repo is the ledger: GOAL, the
-requirement CSV and per-version evidence. Rules from `.goal/`: one thing at a time, finish or stop
-never half, evidence first, never invent tool outputs or playtest evidence, no public release or
-monetization.
+A Roblox Helldivers-like built across TWO live Studio places on one universe (universeId 10778576038):
 
-## The harness (already on the Mac)
+- **Playtest1** (placeId 120646942844931) — the station/lobby: armory, war table, drop pods, squad recruiting, lobby UI.
+- **Missions** (placeId 13785118418) — the battlefield: objectives, enemy AI, extraction, biome looks, bosses.
 
-- Working copy: `~/gf/playtest1_current/` (Luau extraction/working tree; keep it in sync with the place
-  by deploying changed files after edits).
-- Deploy/probe runner: `~/gf/gf_deploy.py`:
-  `python3 ~/gf/gf_deploy.py <tgz|-> <probe.lua|-> <MARKER>` env: `NOSAVE=1` to test without saving,
-  `POLLS=n` for longer probes. It compiles changed files into Studio via MCP (`loadstring` check),
-  saves the place, creates a temp server Script probe, starts/stops play and prints marker lines.
-- Tar changed files from `~/gf` with paths beginning `playtest1_current/` and exclude macOS AppleDouble
-  files (`COPYFILE_DISABLE=1 tar --exclude='._*' ...`); `._*.luau` files crash the deployer's UTF-8 decode.
-- Harness limitation: it can overwrite existing scripts but cannot create new instances. If adding a new
-  module/script, first create the empty shell in Studio with `execute_luau`, then deploy its source.
-- Roblox Studio MCP tools: `list_roblox_studios` (always first for the studio id),
-  `execute_luau{code,datamodel_type:Edit|Client|Server,studio_id}`, `start_stop_play{is_start}`,
-  `get_console_output{studio_id}`, `save_place`, `screen_capture`, `user_mouse_input`. During playtests
-  `Edit` is rejected; use `Client` or `Server`.
-- Do NOT resurrect extra MCP keepalive processes. Devin CLI already spawns its own StudioMCP from the
-  user-level config; duplicate clients confuse the connection list.
+The game code lives in the places, NOT in git. This repo (`C:\Users\tnguy\galactic-force`) is the ledger
+plus a Luau mirror at `game-mirror/playtest1_current/` (shared GF codebase — both places draw from the
+same module tree). **The owner publishes; agents never save or publish places.** Unsaved work accumulates
+in the Edit DataModels — check the bus before assuming what state a place is in.
 
-## Verification pattern
+## Multi-agent coordination — READ THIS BEFORE TOUCHING ANYTHING
 
-Compile-check every edited file, save, then prove behavior with a temporary real-server probe printing
-`[GF_XXX] PASS/FAIL`, poll console, stop play, destroy the temp script, clean up every test artifact
-(use isolated synthetic data — a broad dismantle probe once ate two real test-profile items). Boot must
-print `[GF] boot: config check PASS (689 assertions)`. Test profile userId 1889759131.
+Multiple Devin instances work this project in parallel (delta, pi, claude-art, deepseek).
+Coordination is mandatory and lives in `C:\Users\tnguy\devin-comms\`:
 
-## State at handoff
+- `messages.log` — append-only bus. Post claims, releases, findings, integration notes. Read the tail
+  before starting any work.
+- `claims.md` — resource claims (blender, roblox-studio-control per place). NEVER use Blender or a
+  Studio place without holding the claim. Release with a note when done. Do not clobber another agent's
+  active claim; if blocked, post to the bus and work something else.
+- Use the devin-comms skill scripts if present; otherwise append directly.
 
-- Place version **587**. Ledger branch in progress: `devin/1764027600-requisitions` unless already merged.
-- Requisitions are implemented and probed: permanent Frontline Arsenal (free) and Siege Division
-  (1000 War Credits), 3 tiers each, 600/1600 per-catalog spend thresholds, any-order buying, preview,
-  rank/tier locks, shared ownership/spend ledgers, once-only resource/cache entries, premium access and
-  premium tier gates in plain-Armory paths. Probe: `[GF_REQ] PASS credits=4650 frontSpend=2050
-  siegeSpend=3300 scrap=44 cells=26`; evidence `evidence/v587-requisitions/EVIDENCE.md`.
-- Important owner-acceptance flag: GOAL §12 does not specify the premium tier3 one-time Rare cache price;
-  it is implemented as a free once-only claim, not an invented price.
-- Premium armor canonical prices are GF-05 500 / GF-06 750. Internal ids TROPHY/BLACKSTAR remain for save
-  compatibility; display names now match GF-05 Ash Sentinel / GF-06 Frost Warden.
-- S12-015 and S12-018 are now verified (`evidence/v587-premium-weapon-comparison/EVIDENCE.md`,
-  `evidence/v588-monetization-boundary/EVIDENCE.md`). Remaining requisition-adjacent gap: armor
-  plate-shape variant audit. Real Robux products remain disabled/uncreated pending owner approval.
-- Broader known gaps: 2-client tests (friendly hitscan, split extraction), UI click-path evidence,
-  canonical augment catalog identity S11-048 variants, Monte Carlo cache validation, crash-mid-payout
-  recovery, boss rows, and the long UNKNOWN tail — audit by area.
-- CSV discipline: update rows by exact requirement_id only, never write another row's fields (a script
-  once clobbered S10-016; restored in PR #7).
+## The harness (Windows machine, current)
 
-## Owner directive 2026-11-25
+- **Studio MCP**: `list_roblox_studios` first for studio ids. `execute_luau` (Edit rejected during play —
+  use Client/Server), `start_stop_play`, `get_console_output`, `screen_capture`, `search_game_tree`,
+  `inspect_instance`, `insert_asset` (Edit mode only). Do NOT `save_place` — owner publishes.
+- **Asset uploads**: `open_cloud_invoke` POST `/assets/v1/assets` (multipart, field `fileContent`),
+  then poll `GET /assets/v1/operations/{id}` until done. Files must be inside owner-approved upload
+  directories — currently `gf-art-build\out_dropship` is approved; staging anything there works.
+  Creator userId 1889759131.
+- **Blender MCP**: live Blender 5.x session. `execute_blender_code`, `look` (renders views — USE IT,
+  pixel-level inspection is the owner's quality bar). CRITICAL LESSONS:
+  - The session file `dropship_interior_wip.blend` is dirty/unsaved — NEVER save it.
+  - Viewport `look` renders show foreign collections even when hide_render=True — set
+    `coll.hide_viewport` for clean inspection, and check the scene root for orphan objects.
+  - Never negative-scale mirror (flips verts to wrong side). Bake rotations into mesh vertices, never
+    object-level rotation for placed parts. Blender 5.x removed legacy action API (slotted actions).
+- **Art pipeline**: parametric Python generators in `gf-art-build/blender/` are the source of truth
+  (build_cargoship.py, build_bastion.py) — rerunnable, no .blend snapshots needed. GLBs export to
+  `gf-art-build\out_*`, staged copies go to `out_dropship` for upload.
+- Art templates install as `ServerStorage.GF.Art.<name>` in the Missions Edit DM: strip `_mesh.NNN`
+  suffixes, remove PackageLink, anchor parts, visual-verify with a Workspace test copy then delete it.
 
-Continue autonomously through the entire requirement ledger: all UNKNOWN and PARTIAL rows, not only requisitions. Do not stop for reprompting after each milestone. Use GOAL.md/SPEC_RAW as authority, preserve working systems, verify in live playtests where applicable, and escalate only for genuine permission/payment/destructive/product-conflict blockers. Graphics/final art remain later in the severity order; the place-589 armory lighting fix was incidental, not the start of the full art pass.
+## Verification culture (owner-enforced)
+
+Pixel-level visual inspection, honest critique, no overclaiming. The owner catches defects agents miss
+("wtf r u deadass") — look at renders meticulously before declaring anything done. Numeric verification
+(bbox measurements, bone-parenting counts) beats assuming. Owner is frequently on MOBILE — mobile
+input/scaling is a first-class concern, and remember: players on the published build never see Edit-DM
+work until the owner publishes.
+
+## State snapshot (2026-11-28)
+
+- **GF_CargoShip**: assetId 133889290183506, INSTALLED in Missions Edit DM `ServerStorage.GF.Art`
+  (unsaved). 82m span heavy lifter, spin-contract props (local Z axis), 7,450 tris. No flight system yet.
+- **GF_Boss_Bastion**: assetId 137515304103831, uploaded+approved, NOT yet installed. Rigged mini-boss:
+  15 bones (waist/pod.L/pod.R/turret.R/gatspin.R + legs). `BastionWalker.luau` visual-swap integration
+  written in mirror with zero-regression fallback — UNTESTED, needs template install + movement wiring
+  + deploy + verification. Full integration analysis in messages.log [10:35Z 2026-11-28].
+- **Unsaved Edit-DM work awaiting owner publish**: Playtest1 (lobby pods/hangar/UI/mobile fixes),
+  Missions (cargo ship install, orange-haze biome pass, SiteDressing, GFGodMode dev panel, enemy AI
+  tactics pass by claude-art in flight).
+- **Mobile**: dead-button fix shipped (MouseButton1Click→Activated) + compaction. BIGGEST GAP: reload/
+  dodge/abilities have NO touch bindings at all. Camera touch sensitivity untuned.
+- **Enemy AI**: claude-art owns formation-movement pass (crouch/cover/fire-and-maneuver) in Missions.
+
+## Owner directives standing
+
+Pixel-level inspection, meticulous case studies before building (reference images sacred), autonomous
+continuation without reprompting, escalate only genuine permission/payment/destructive blockers.
+Owner plays on mobile. Owner quality bar is absolute — "there is no context budget".

@@ -289,3 +289,17 @@ Owner critique: cliffs read as organ pipes, Ascendancy stone too violet, gunship
 - **Gunship**: silhouette pass added to `h_gunship`. Ramp and hinge strip unchanged. Still blocky; engine wiring (scale 1, ramp hinge, engine glow cube) pending.
 - **Planet limb**: per-cell colour blocks replaced by a clean ocean dome plus draped low-poly continent patches and cloud wisps (`_patch`). Atmosphere cap smoothed (12 rings x 64 sides).
 - **Evidence status**: UPLOADED_UNVERIFIED. Nothing is installed or placed in Studio; scale, pivot, tint and in-engine perf remain unverified. Perf UNKNOWN, no LODs.
+
+## 2026-11-28 — Bastion/ZeroSpace mini-boss design decisions (delta, owner-directed)
+- **Merge rule**: Bastion visor and ZeroSpace canopy are the same idea — amber glass canopy shape with glowing chevron lines inside, recessed below the shoulder line in the shell valley. NO head — both references are explicit; a ball-head is the forbidden failure mode.
+- **Palette**: navy-purple armor + light-gray frame edges + amber glow (matches UI language). Green ZeroSpace joint-vents dropped in favor of amber coherence. Owner did not object when flagged.
+- **Construction system** (from forensic study `gf-art-build/bastion-zerospace-study.md`): rigid angular shells / dark ribbed flex at every joint / TWIN silver pistons as actuation — repeated everywhere with discipline, never mixed randomly.
+- **Weapon decisions by case study**: (1) missile pods copied from M270 MLRS study — rectangular casing, tube-grid faces; owner final call: 3x2 spread dark CUTOUTS, nothing protruding. (2) shoulder cannon copied from War Machine GAU-17/A case study — six-barrel rotary cluster + two clamp rings + hub into receiver, articulated mount ABOVE the shell crown on boss-RIGHT only; independent `turret.R` aim bone (film canon: gun tracks independently of body) and `gatspin.R` cluster-spin bone for fire FX.
+- **Rig philosophy**: rigid parts, every part origin at its joint, bone-parented — not skinned. Bones: root/waist/chest/thigh/calf/foot x2/shoulder x2/pod x2/turret.R/gatspin.R. Pose-tested in Blender before export (waist twist + pod pitch + cluster spin all verified visually).
+- **Integration pattern**: zero-regression fallback — `BastionWalker.luau` clones the art template ONLY if installed, else legacy procedural walker. Invisible gameplay overlay (hitbox/armor/weakpoints/weapon hardpoints) preserved so combat logic never depends on visual mesh names.
+- **Measurement-driven placement lesson**: blind offset math failed repeatedly because joint constants drifted across tuning passes. Generator now measures built geometry world bboxes and derives placement from measured truth. Any future parametric builder should measure, not assume.
+
+## 2026-11-28 — Cargo ship decisions (delta)
+- Faithful C-130J photocopy per owner directive ("photocopy 1-1"), 1.5x then 1.35x upscale baked = 82m span / 59m length ("make sure its big"). Sci-fi greeble pass explicitly declined by owner ("no its fine").
+- Props as separate axis-centered meshes so game code spins them with one-line rotation; spin axis proven numerically in-engine (thin axis = local Z). Contrails are separate meshes so they can be swapped for particles.
+- 7,450 triangles total — 10x headroom for future greebles. Materials import pale in Roblox lighting — accepted as known polish gap pending a flight-system integration pass.
