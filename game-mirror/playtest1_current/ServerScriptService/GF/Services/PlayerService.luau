@@ -29,6 +29,8 @@ local function setupCharacter(player: Player, character: Model)
 	humanoid.WalkSpeed = Constants.Movement.WalkSpeed
 	humanoid.JumpPower = Constants.Movement.JumpPower
 	humanoid.UseJumpPower = true
+	-- rocks/cliff faces must read as solid: stock 89 deg lets a soldier scale any hull side like stairs
+	humanoid.MaxSlopeAngle = 55
 	-- Roblox's stock character Health script regenerates health independently of the authored
 	-- shield/health model and, worse, keeps healing a downed soldier during the redeploy countdown.
 	-- VitalsService owns all regeneration; remove the stock script rather than tuning two systems.

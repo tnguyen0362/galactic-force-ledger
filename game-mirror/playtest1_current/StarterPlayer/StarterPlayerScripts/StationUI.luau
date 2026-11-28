@@ -966,7 +966,7 @@ task.spawn(function()
 				local arc = anchor and anchor:GetAttribute("TerminalArc")
 				interactPromptText.Text = Input.glyph("Interact") .. "  OPEN " .. tostring(arc or "DEPLOYMENT") .. " TERMINAL"
 			end
-			interactPrompt.Visible = near == true and not MenuController.isOpen()
+			interactPrompt.Visible = false -- superseded by native ProximityPrompts on the terminals
 			-- no auto-open: hd2 war-table behavior — the player presses the interact key at
 			-- the terminal. a menu that opens itself whenever the player walks past is the
 			-- exact pop-up harassment the owner is rejecting. interact key only.
@@ -1080,6 +1080,59 @@ task.spawn(function()
 	workspace:SetAttribute("GF_HoloAnim", true)
 end)
 
+-- native ProximityPrompts on the deploy terminals: the owner directive is the Roblox default
+-- interact, not a custom panel. created once per terminal part, client-local is fine because
+-- prompting is per-player; trigger runs the exact same open path as the Interact key.
+local function openTerminalMenu(regions: any)
+	local MenuController = require(game:GetService('ReplicatedStorage').GF.Shared.UI.MenuController)
+	if type(regions) == 'string' then
+		MenuController.setRegionFilter(regions)
+	end
+	if not MenuController.isOpen() then
+		MenuController.open('WAR TABLE')
+	end
+end
+
+task.spawn(function()
+	local tagged = {}
+	while true do
+		task.wait(1)
+		local station = workspace:FindFirstChild("Station")
+		if station then
+			for _, inst in ipairs(station:GetChildren()) do
+				if inst:IsA("BasePart") and string.find(inst.Name, "^DeployTerminal_") and not tagged[inst] then
+					tagged[inst] = true
+					local prompt = Instance.new("ProximityPrompt")
+					prompt.ActionText = "Open"
+					prompt.ObjectText = tostring(inst:GetAttribute("TerminalArc") or "Deployment") .. " Terminal"
+					prompt.MaxActivationDistance = 10
+					prompt.RequiresLineOfSight = false
+					prompt.HoldDuration = 0
+					prompt.Parent = inst
+					prompt.Triggered:Connect(function()
+						openTerminalMenu(inst:GetAttribute("TerminalRegions"))
+					end)
+				end
+				-- the war table itself is the natural helm of the station (hd2 contract): walk up
+				-- to the hologram table, open the full theatre — no region filter, unlike terminals
+				if inst:IsA("BasePart") and inst.Name == "WarTableBase" and not tagged[inst] then
+					tagged[inst] = true
+					local prompt = Instance.new("ProximityPrompt")
+					prompt.ActionText = "Open"
+					prompt.ObjectText = "Galactic War Table"
+					prompt.MaxActivationDistance = 12
+					prompt.RequiresLineOfSight = false
+					prompt.HoldDuration = 0
+					prompt.Parent = inst
+					prompt.Triggered:Connect(function()
+						openTerminalMenu(nil)
+					end)
+				end
+			end
+		end
+	end
+end)
+
 -- interact-to-open wiring: press E/X at a terminal, the theatre surface opens. no auto-pop.
 do
 	local Input = require(script.Parent:WaitForChild("Input"))
@@ -1090,7 +1143,7 @@ do
 				MenuController.setRegionFilter(nearTerminalNow)
 			end
 			if not MenuController.isOpen() then
-				MenuController.open('DEPLOY')
+				MenuController.open('WAR TABLE')
 			end
 		end
 	end)

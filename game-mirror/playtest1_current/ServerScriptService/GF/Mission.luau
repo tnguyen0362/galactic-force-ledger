@@ -245,6 +245,17 @@ local biomes = { "Forest", "Arid", "Tundra", "Industrial", "Jungle" } -- Phase 1
 -- owner directive 2026-11-28: everything is jungle — rotation suspended, biome pinned
 local biome = "Jungle"
 workspace:SetAttribute("GF_Biome", biome)
+-- The mission place never ran Environment.apply("mission") (only the lobby's deploy path did), so the
+-- biome look (Jungle haze/grade/terrain palette) was never written and the place file's cold grey
+-- lighting showed through. Apply it now; WeatherService below snapshots it as its baseline.
+do
+	local okEnv, errEnv = pcall(function()
+		require(Services.Environment).apply("mission")
+	end)
+	if not okEnv then
+		warn("[GF] Environment.apply(mission) failed: " .. tostring(errEnv))
+	end
+end
 local missionSeed = (contractIntent and type(contractIntent.seed) == "number" and contractIntent.seed)
 	or (os.time() * 997 + math.floor(os.clock() * 1000) + math.random(1, 99999)) % 900000 + 1
 workspace:SetAttribute("GF_MapSeed", missionSeed)
@@ -375,8 +386,21 @@ for i = 1, 8 do
 end
 -- Finalize mission anchors: battlefield mode substitutes plan nodes (lz/primary) for the
 -- legacy compact positions; every downstream consumer receives the scaled coordinates.
-local lzAnchor = Vector3.new(0, 0, -120)
-local objAnchor = Vector3.new(0, 0, 120)
+-- Legacy compact layout: objective/relay at z=-120, drop zone at z=+120 (MISSION_SPAWN=(0,8,118)).
+-- These were swapped, which put the objective directly on the landing zone. Generated geography
+-- publishes GF_Anchor* (TerrainService) and wins over the legacy points.
+local lzAnchor = Vector3.new(0, 0, 120)
+local objAnchor = Vector3.new(0, 0, -120)
+do
+	local aLZ = workspace:GetAttribute("GF_AnchorLZ")
+	local aObj = workspace:GetAttribute("GF_AnchorObjective")
+	if typeof(aLZ) == "Vector3" and typeof(aObj) == "Vector3" then
+		lzAnchor = Vector3.new(aLZ.X, 0, aLZ.Z)
+		objAnchor = Vector3.new(aObj.X, 0, aObj.Z)
+		print(string.format("[GF] terrain-analysis anchors: lz=(%.0f,%.0f) objective=(%.0f,%.0f)",
+			lzAnchor.X, lzAnchor.Z, objAnchor.X, objAnchor.Z))
+	end
+end
 do
 	local plan = TerrainService.currentPlan
 	if workspace:GetAttribute("GF_BattlefieldGen") == true and plan and plan.nodes then

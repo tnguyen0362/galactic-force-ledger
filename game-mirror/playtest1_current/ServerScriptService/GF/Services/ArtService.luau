@@ -94,6 +94,8 @@ end
 -- authored palette textures that reskin() would strip. `opts.height` uniformly scales the
 -- model to a target height (ScaleTo about the bottom pivot, so the base stays grounded);
 -- omit it for native scale. `opts.spin` freely rotates around Y for scatter variety.
+ArtService.WEATHER_TINT = Color3.fromRGB(176, 190, 142)
+
 function ArtService.placeKit(id: string, position: Vector3, opts: {[string]: any}?): Model?
 	local copy = ArtService.clone(id)
 	if not copy then return nil end
@@ -112,11 +114,18 @@ function ArtService.placeKit(id: string, position: Vector3, opts: {[string]: any
 	local yaw = opts.yaw or 0
 	local sink = opts.sink or 0.35 -- slight embed so sloped ground never leaves floating edges
 	copy:PivotTo(CFrame.new(position - Vector3.new(0, sink, 0)) * CFrame.Angles(0, yaw, 0))
+	-- Jungle weathering: the Ascendancy kit bakes pale grey-lavender plastic that read as an icy
+	-- blue wash under jungle haze. Color multiplies the baked palette (never strips it), pulling
+	-- stone toward olive moss without touching Neon glow parts.
+	local weather = string.find(id, "^Kit_Ascendancy") ~= nil and opts.weather ~= false
 	for _, d in copy:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.Anchored = true
 			if opts.collide ~= nil then
 				d.CanCollide = opts.collide :: boolean
+			end
+			if weather and d:IsA("MeshPart") and d.Material ~= Enum.Material.Neon then
+				d.Color = ArtService.WEATHER_TINT
 			end
 		end
 	end

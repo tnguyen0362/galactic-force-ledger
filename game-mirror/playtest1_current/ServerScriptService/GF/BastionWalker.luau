@@ -41,7 +41,7 @@ local function weakpoint(model, name, size, cf, mult)
 	p:SetAttribute("WeakGlow", true)
 	return p
 end
-function Bastion.build(position)
+local function buildLegacy(position)
 	local model = Instance.new("Model")
 	model.Name = "BastionWalker"
 	local base = CFrame.new(position)
@@ -525,6 +525,74 @@ local function step(state, dt)
 			leg.foot.CFrame = root.CFrame * CFrame.new(ox * 1.3, -10.1 - lift, oz * 1.2 + swing * 1.9)
 		end
 	end
+end
+function Bastion.build(position)
+	-- VISUAL SWAP (owner directive): use the Blender-built GF_Boss_Bastion art template.
+	-- ZERO-REGRESSION DESIGN: if the template is not installed in ServerStorage.GF.Art,
+	-- falls back to the legacy procedural walker — production cannot break.
+	-- TODO(verify-in-studio): step() leg animation still references legacy part names;
+	-- the art-model visual rides the core until bone wiring is done.
+	local ss = game:GetService("ServerStorage")
+	local art = ss:FindFirstChild("GF") and ss.GF:FindFirstChild("Art")
+	local template = art and art:FindFirstChild("GF_Boss_Bastion")
+	if not template then
+		return buildLegacy(position)
+	end
+	local model = template:Clone()
+	model.Name = "BastionWalker"
+	pcall(function() model:ScaleTo(1.35) end) -- ~23 studs, legacy presence
+	model:PivotTo(CFrame.new(position))
+	for _, d in ipairs(model:GetDescendants()) do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+		end
+	end
+	-- invisible gameplay overlay: hitbox + armor
+	local base = CFrame.new(position)
+	local core = part(model, "Core", Vector3.new(9, 15, 9), base * CFrame.new(0, 11.5, 0), DARK)
+	core.Transparency = 1
+	core:SetAttribute("Armor", 0.35)
+	core:SetAttribute("ArmorFactor", 0.65)
+	model.PrimaryPart = core
+	-- weapon hardpoints (invisible anchors the attack code reads): pods=mortar, turret=laser
+	local rack = part(model, "MortarRack", Vector3.new(4, 1.5, 3), base * CFrame.new(0, 17.5, -1), RUST)
+	rack.Transparency = 1
+	rack:SetAttribute("ComponentHP", 600)
+	rack:SetAttribute("ComponentId", "Mortar")
+	for i = -1, 1 do
+		local t = part(model, "MortarTube" .. tostring(i), Vector3.new(1.2, 1.2, 3), base * CFrame.new(i * 1.7, 18.2, 2.5), DARK)
+		t.Transparency = 1
+	end
+	local emitter = part(model, "Emitter", Vector3.new(2, 2, 2), base * CFrame.new(-4.5, 19.5, 3.5), AMBER, Enum.Material.Neon)
+	emitter.Transparency = 1
+	emitter:SetAttribute("ComponentHP", 450)
+	emitter:SetAttribute("ComponentId", "Laser")
+	-- weakpoints: the amber canopy face is the natural crit + rear joint, per design study
+	weakpoint(model, "WeakPoint_Rear", Vector3.new(4, 3, 1), base * CFrame.new(0, 13, -3.6), 2.0)
+	weakpoint(model, "WeakPoint_JointL", Vector3.new(1.9, 1.9, 1.9), base * CFrame.new(-2.6, 8.5, 0), 2.0)
+	weakpoint(model, "WeakPoint_JointR", Vector3.new(1.9, 1.9, 1.9), base * CFrame.new(2.6, 8.5, 0), 2.0)
+	model:SetAttribute("Health", 3600)
+	model:SetAttribute("MaxHealth", 3600)
+	model:SetAttribute("Shield", 0)
+	model:SetAttribute("Dead", false)
+	model:SetAttribute("Boss", true)
+	model:SetAttribute("Phase", 1)
+	model:SetAttribute("Stagger", 0)
+	model:SetAttribute("WeakDamage", 0)
+	model:SetAttribute("GFEnemy", true)
+	model:SetAttribute("EnemyId", "BastionWalker")
+	model:SetAttribute("Tier", "Boss")
+	do
+		local folder = workspace:FindFirstChild("ActiveActors")
+		if not folder then
+			folder = Instance.new("Folder")
+			folder.Name = "ActiveActors"
+			folder.Parent = workspace
+		end
+		model.Parent = folder
+	end
+	return model, {}
 end
 function Bastion.spawn(position)
 	local model, legs = Bastion.build(position)

@@ -434,6 +434,9 @@ function HUD.init()
 		ring.Position = UDim2.fromOffset(27, 27)
 		ring.BackgroundTransparency = 1
 		ring.Parent = crosshair
+		local ringCorner = Instance.new("UICorner") -- ReticleRound: centre ring is a circle, not a square
+		ringCorner.CornerRadius = UDim.new(0.5, 0)
+		ringCorner.Parent = ring
 		local stroke = Instance.new("UIStroke")
 		stroke.Name = "RingStroke"
 		stroke.Color = INK
@@ -560,6 +563,25 @@ function HUD.init()
 	promptLabel.BackgroundColor3 = PANEL
 	promptLabel.BackgroundTransparency = 0.42
 	addStroke(promptLabel, EDGE, 0.72, 1)
+
+	-- combat chrome is mission-only. owner direction, expert-ui reasoning: the station is safe —
+	-- nothing can hurt you there, so combat vitals are noise, and the reference lobby shows none.
+	-- ability bar, dodge charges, ammo, crosshair, controls hint AND the vitals plate all hide
+	-- unless GF_InMission is set. the minimap remains — navigation is useful everywhere.
+	-- (lobby interactions are native ProximityPrompts now, so the prompt label has no lobby role.)
+	do
+		local combatChrome = { abilityBar, dodgeLabel, ammoBox, crosshair, promptLabel, vitals }
+		local function applyMissionVisibility()
+			local inMission = workspace:GetAttribute("GF_InMission") == true
+			for _, element in ipairs(combatChrome) do
+				if element then
+					element.Visible = inMission
+				end
+			end
+		end
+		workspace:GetAttributeChangedSignal("GF_InMission"):Connect(applyMissionVisibility)
+		applyMissionVisibility()
+	end
 
 	-- downed overlay: a restrained red theater dim plus a central angular casualty plate.
 	downedFrame = newFrame(gui, {

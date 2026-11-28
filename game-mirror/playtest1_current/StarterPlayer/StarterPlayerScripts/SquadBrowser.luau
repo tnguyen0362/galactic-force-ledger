@@ -1465,63 +1465,62 @@ shell:registerSection("WAR TABLE", "\u{25bc}", function(page)
 			end
 		end
 	end)
+
+	-- GalaxyMap overlay (HD2 overhaul — built but never wired): mount on this page. The overlay
+	-- is a full-screen ScreenGui that shows itself only while this page is visible inside the
+	-- open shell; it owns the deploy flow visually end to end (planet select, mission cards,
+	-- difficulty, DEPLOY) and reads shell._terminalRegions for terminal preselection.
+	do
+		local ok, err = pcall(function()
+			local GalaxyMap = require(game:GetService("ReplicatedStorage").GF.Shared.UI.GalaxyMap)
+			GalaxyMap.mount(page, { shell = shell, remotes = remotes })
+		end)
+		if not ok then
+			warn("[GF] GalaxyMap mount failed: " .. tostring(err))
+		end
+	end
 end)
-
--- Current Components.row composes its text manually and marks it with GFRowText
--- ("primary"/"caption") instead of offering a stable child-name contract. Action rows only
--- need to reserve horizontal space for the right-side control; the defensive layout cleanup
--- remains for legacy rows created before that contract change.
-local function prepareActionRow(row: Frame, rightReserve: number)
-	local rowLayout = row:FindFirstChildOfClass("UIListLayout")
-	if rowLayout then
-		rowLayout:Destroy()
-	end
-	local rowPadding = row:FindFirstChildOfClass("UIPadding")
-	if rowPadding then
-		rowPadding:Destroy()
-	end
-	local textWidthOffset = -(rightReserve + Tokens.Space.md)
-	local primary = findRowText(row, "primary")
-	if primary then
-		primary.Position = UDim2.new(0, Tokens.Space.md, 0, 5)
-		primary.Size = UDim2.new(1, textWidthOffset, 0, Tokens.Type.sizeBody + Tokens.Space.xs)
-		primary.TextXAlignment = Enum.TextXAlignment.Left
-	end
-	local caption = findRowText(row, "caption")
-	if caption then
-		caption.Position = UDim2.new(0, Tokens.Space.md, 0, 29)
-		caption.Size = UDim2.new(1, textWidthOffset, 0, Tokens.Type.sizeSmall + Tokens.Space.xs)
-		caption.TextXAlignment = Enum.TextXAlignment.Left
-	end
-end
-
--- FORM section state: these two were referenced below but never declared, which threw
--- "attempt to index nil with 'statusLine'" inside registerSection and killed the whole script
--- (claude hotfix 2026-11-27 — beta, keep or replace).
+-- form state for the FORM section below. this table used to exist and was lost in an edit
+-- shuffle — its absence crashed registerSection every boot ("attempt to index nil with
+-- 'statusLine'"), killing everything after it: the input wiring, the keybinds, the works.
 local formState = {
+	statusLine = nil :: any,
 	operationId = nil :: string?,
 	difficulty = "Normal",
 	public = true,
-	opButtons = {} :: { [string]: TextButton },
-	diffButtons = {} :: { [string]: TextButton },
-	privButtons = {} :: { [string]: TextButton },
-	statusLine = nil :: TextLabel?,
+	opButtons = {} :: { [string]: any },
+	diffButtons = {} :: { [string]: any },
+	privButtons = {} :: { [string]: any },
 }
 
+-- helpers the FORM section and join rows depend on — also lost in the same shuffle.
+-- prepareActionRow: rows from Components.row are caption-first; action rows carry a right-side
+-- button, so the row gets a fixed height and the text column yields the action zone.
+local function prepareActionRow(row: any, height: number)
+	row.Size = UDim2.new(1, 0, 0, height)
+	for _, child in ipairs(row:GetChildren()) do
+		if child:IsA("TextLabel") then
+			child.Size = UDim2.new(1, -170, 0, child.Size.Y.Offset)
+		end
+	end
+end
+
+-- refreshChips: repaint FORM-section selection state across operation/difficulty/visibility.
 local function refreshChips()
-	local function paint(b: TextButton, selected: boolean)
-		-- The design-system selection painter owns the angular state machine now; manual
-		-- amber painting is only the compatibility fallback for legacy surfaces.
-		Components.setButtonSelected(b, selected)
+	for opId, btn in pairs(formState.opButtons) do
+		local selected = opId == formState.operationId
+		btn.BackgroundColor3 = selected and Tokens.Color.accentSelect or Tokens.Color.panelInset
+		btn.TextColor3 = selected and Tokens.Color.textOnAccent or Tokens.Color.textPrimary
 	end
-	for id, b in pairs(formState.opButtons) do
-		paint(b, id == formState.operationId)
+	for diff, btn in pairs(formState.diffButtons) do
+		local selected = diff == formState.difficulty
+		btn.BackgroundColor3 = selected and Tokens.Color.accentSelect or Tokens.Color.panelInset
+		btn.TextColor3 = selected and Tokens.Color.textOnAccent or Tokens.Color.textPrimary
 	end
-	for d, b in pairs(formState.diffButtons) do
-		paint(b, d == formState.difficulty)
-	end
-	for key, b in pairs(formState.privButtons) do
-		paint(b, (key == "public") == formState.public)
+	for key, btn in pairs(formState.privButtons) do
+		local selected = (key == "public") == formState.public
+		btn.BackgroundColor3 = selected and Tokens.Color.accentSelect or Tokens.Color.panelInset
+		btn.TextColor3 = selected and Tokens.Color.textOnAccent or Tokens.Color.textPrimary
 	end
 end
 
@@ -1837,6 +1836,19 @@ end)
 -- close on menu-back when open
 Input.onPress("MenuBack", function()
 	if shell.visible then
+		shell:close()
+	end
+end)
+
+-- deterministic open hook: a server-set attribute opens the war table directly (QA, forced
+-- onboarding, the Emergency Dispatch flow) without depending on input simulation or proximity.
+-- same contract as the armory's GF_ArmoryOpen.
+workspace:GetAttributeChangedSignal("GF_DeployOpen"):Connect(function()
+	local want = workspace:GetAttribute("GF_DeployOpen") == true
+	if want and not shell.visible then
+		shell:open()
+		shell:setActive("WAR TABLE")
+	elseif not want and shell.visible and shell.active == "WAR TABLE" then
 		shell:close()
 	end
 end)

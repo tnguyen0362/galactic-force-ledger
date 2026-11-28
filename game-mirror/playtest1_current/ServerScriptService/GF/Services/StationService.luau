@@ -647,6 +647,77 @@ function StationService.build()
 			part(station, "WarTableCornerCap", Vector3.new(3.8, 0.9, 3.8), tableCF * CFrame.new(sx * 15.3, 4.15, sz * 15.3), STEEL, Enum.Material.Metal)
 		end
 	end
+	-- blender-built hex war-table mesh: replaces the primitive slab/rib/bezel visuals. The
+	-- primitive parts stay in place (WarTableBase/Top/WarHolo/WarPlanet are module contracts —
+	-- the prompt hosts on WarTableBase and the hologram reads WarPlanet) but the boxy construction
+	-- pieces go invisible; WarTableBase keeps its collision as a guaranteed walk-stopper even if
+	-- mesh collision is imperfect.
+	do
+		local art = game:GetService("ServerStorage"):FindFirstChild("GF")
+		art = art and art:FindFirstChild("Art")
+		local template = art and art:FindFirstChild("GF_WarTable")
+		if template then
+			for _, n in ipairs({ "WarTableRib", "WarTableTop", "WarTableBezel", "WarTableCornerCap" }) do
+				for _, d in ipairs(station:GetChildren()) do
+					if d.Name == n and d:IsA("BasePart") then
+						d.Transparency = 1
+						d.CanCollide = false
+						d.CastShadow = false
+					end
+				end
+			end
+			local basePart = station:FindFirstChild("WarTableBase")
+			if basePart and basePart:IsA("BasePart") then
+				basePart.Transparency = 1
+			end
+			local mesh = template:Clone()
+			mesh.Name = "GF_WarTableMesh"
+			-- the glb import lands the blender XY plane on roblox XY — the table arrives standing
+			-- on its face, thin dimension along Z. rotating -90deg about X stands it upright
+			-- (verified against piece stacking: projector at +Z must end up highest).
+			mesh:PivotTo(mesh:GetPivot() * CFrame.Angles(math.rad(-90), 0, 0))
+			-- glb materials import white — paint by piece name (names are the blender contract)
+			local GUNMETAL = Color3.fromRGB(38, 44, 54)
+			local STEELDARK = Color3.fromRGB(26, 30, 38)
+			local TRIMSTEEL = Color3.fromRGB(64, 72, 86)
+			for _, d in ipairs(mesh:GetDescendants()) do
+				if d:IsA("BasePart") then
+					d.Anchored = true
+					d.CastShadow = true
+					local n = d.Name
+					if n:find("HoloPlate") then
+						d.Color = Color3.fromRGB(30, 120, 150)
+						d.Material = Enum.Material.SmoothPlastic
+					elseif n:find("Projector") then
+						d.Color = Color3.fromRGB(150, 110, 40)
+						d.Material = Enum.Material.Metal
+					elseif n:find("Trim") or n:find("Bezel") or n:find("Rail") then
+						d.Color = TRIMSTEEL
+						d.Material = Enum.Material.Metal
+					elseif n:find("Slab") or n:find("Console") then
+						d.Color = STEELDARK
+						d.Material = Enum.Material.Metal
+					else
+						d.Color = GUNMETAL
+						d.Material = Enum.Material.Metal
+					end
+				end
+			end
+			-- scale to fill the hex contract footprint (~27 studs across, inside the 30-stud
+			-- collision base) — height follows the mesh's own proportions; centering below keeps
+			-- it grounded on the deck. the hologram assembly above is untouched
+			local _, rawSize = mesh:GetBoundingBox()
+			local footprint = math.max(rawSize.X, rawSize.Z)
+			if footprint > 0.1 then
+				mesh:ScaleTo(27 / footprint)
+			end
+			local cf2, size2 = mesh:GetBoundingBox()
+			local center = cf2.Position
+			local target = tableCF.Position + Vector3.new(0, size2.Y / 2, 0)
+			mesh:PivotTo(mesh:GetPivot() + (target - center))
+			mesh.Parent = station
+		end
+	end
 	local holo = part(station, "WarHolo", Vector3.new(23, 0.3, 23), tableCF * CFrame.new(0, 4.25, 0), Color3.fromRGB(20, 64, 96), Enum.Material.Neon)
 	holo.Transparency = 0.82
 	local planet = part(station, "WarPlanet", Vector3.new(7.5, 7.5, 7.5), tableCF * CFrame.new(0, 8, 0), Color3.fromRGB(52, 128, 190), Enum.Material.Neon)
@@ -1158,6 +1229,51 @@ function StationService.build()
 	end)
 	sign("DEPARTURE PAD", 22, 3.6, base * CFrame.new(0, 25.5, 72.8), Enum.NormalId.Front, AMBER)
 	sign("WAR TABLE", 18, 3.2, base * CFrame.new(0, 12, -34) * CFrame.Angles(0, math.rad(180), 0), Enum.NormalId.Front, CYAN)
+
+	-- mood grade v4 (owner visual review: "not impressive — everything washed-out white").
+	-- v4 replicates the client-side experiment that produced the reference-adjacent look
+	-- (cap_experiment.png): uniform albedo grade on every opaque surface, no chroma or size
+	-- exemptions — accents survive because saturation is relative. v1-v3 under-delivered
+	-- because they swept only the Station model: the deck floor lives in Concourse and the
+	-- pod cradles in DropPods. the deferred pass catches those roots after all builders run.
+	do
+		local Lighting = game:GetService("Lighting")
+		Lighting.ClockTime = 0.2
+		Lighting.OutdoorAmbient = Color3.fromRGB(20, 26, 38)
+		Lighting.Ambient = Color3.fromRGB(34, 40, 54)
+		local function luminance(c)
+			return 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
+		end
+		local function grade(container)
+			if not container then return end
+			for _, d in ipairs(container:GetDescendants()) do
+				if d:IsA("BasePart") and not d:GetAttribute("GFGraded") then
+					d:SetAttribute("GFGraded", true)
+					local c = d.Color
+					if d.Material == Enum.Material.Neon then
+						d.Color = Color3.new(c.R * 0.45, c.G * 0.45, c.B * 0.45)
+					elseif d.Material ~= Enum.Material.Glass and d.Material ~= Enum.Material.ForceField then
+						if d.Name == "CeilingPanel" then
+							-- the 9x5 ceiling grid is the lightbox glare source even at mid
+							-- luminance: ceiling goes near-black so fixtures read as accents
+							d.Color = Color3.new(c.R * 0.22, c.G * 0.24, c.B * 0.3)
+						else
+							d.Color = Color3.new(c.R * 0.55, c.G * 0.56, c.B * 0.62)
+						end
+					end
+				end
+			end
+		end
+		grade(station)
+		task.delay(2, function()
+			-- DropPods is parented inside station and built by a later service, so the
+			-- initial sweep misses it; the GFGraded guard makes re-grading station a
+			-- strict no-op on already-graded parts, catching only late additions.
+			grade(station)
+			grade(workspace:FindFirstChild("Concourse"))
+			grade(workspace:FindFirstChild("DropPods"))
+		end)
+	end
 
 	return station
 end

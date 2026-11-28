@@ -279,7 +279,7 @@ local function button(parent: Instance, text: string, rightOffset: number, width
 		stroke.Color = BORDER
 		stroke.Transparency = 0.48
 	end)
-	b.MouseButton1Click:Connect(onClick)
+	b.Activated:Connect(onClick)
 	return b
 end
 

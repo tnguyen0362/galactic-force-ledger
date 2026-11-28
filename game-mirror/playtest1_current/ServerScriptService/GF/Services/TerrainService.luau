@@ -110,6 +110,37 @@ function TerrainService.build(seed: number): number
 				local GeographyService = require(script.Parent.GeographyService)
 				local spec = GeographyService.specFromSeed(seed)
 				GeographyService.generate(spec)
+				-- mission anchors from terrain analysis, published BEFORE vegetation (density
+				-- follows the corridor) and BEFORE GF_TerrainReady (arrival reads them at release).
+				-- Without this the LZ fell back to the legacy z=118 spot, which was also the objective.
+				pcall(function()
+					local TerrainAnalysis = require(script.Parent.TerrainAnalysis)
+					local tA = os.clock()
+					while GeographyService.analysis == nil and os.clock() - tA < 12 do
+						task.wait(0.25)
+					end
+					local analysis = GeographyService.analysis
+					local picked = analysis and TerrainAnalysis.missionAnchors(analysis)
+					if picked then
+						workspace:SetAttribute("GF_AnchorLZ", Vector3.new(picked.lz.x, 0, picked.lz.z))
+						workspace:SetAttribute("GF_AnchorObjective", Vector3.new(picked.objective.x, 0, picked.objective.z))
+						workspace:SetAttribute("GF_AnchorExtraction", Vector3.new(picked.extraction.x, 0, picked.extraction.z))
+						-- extraction LZ = the generated extraction site (grounded). Without this the gunship fell back to
+						-- GF_LZ, i.e. the drop zone, and nothing ever told the squad where to extract.
+						pcall(function()
+							local exY = TerrainService.groundSurface(picked.extraction.x, picked.extraction.z)
+							if type(exY) == "number" and exY == exY then
+								workspace:SetAttribute("GF_ExtractionLZ", Vector3.new(picked.extraction.x, exY, picked.extraction.z))
+							end
+						end)
+						print(string.format("GeoGen: anchors LZ=%.0f,%.0f obj=%.0f,%.0f ext=%.0f,%.0f sep=%.0f",
+							picked.lz.x, picked.lz.z, picked.objective.x, picked.objective.z,
+							picked.extraction.x, picked.extraction.z,
+							math.sqrt((picked.objective.x - picked.lz.x) ^ 2 + (picked.objective.z - picked.lz.z) ^ 2)))
+					else
+						warn("GeoGen: analysis could not supply mission anchors - legacy anchors in use")
+					end
+				end)
 				-- vegetation composition layer follows geography (stream C inside plant)
 				local VegetationService = require(script.Parent.VegetationService)
 				VegetationService.plant({

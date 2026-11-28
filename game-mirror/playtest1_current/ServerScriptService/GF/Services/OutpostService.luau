@@ -15,7 +15,7 @@ local TOWER_RADIUS = 44
 
 local DECK = Color3.fromRGB(62, 62, 72)
 local HULL = Color3.fromRGB(44, 44, 54)
-local AMBER = Color3.fromRGB(104, 208, 226) -- Ascendancy energy signature: cold cyan, not hazard orange
+local AMBER = Color3.fromRGB(255, 150, 56) -- Ascendancy glow: warm amber (matches the troop charcoal+amber theme; cold cyan clashed with the jungle)
 
 -- Deterministic 32-bit LCG: layout must not change between sessions for the same seed.
 local function rng(seed: number)
@@ -37,13 +37,97 @@ local function ignoreList(extra: Instance?): { Instance }
 	return list
 end
 
-local function groundY(position: Vector3, ignore: { Instance }): number
+-- Terrain-only ground height. Excluding just ActiveActors/Dressing used to let the ray land on
+-- vegetation meshes, rocks and earlier-placed kit pieces, which floated or sank whatever was
+-- being placed. `ignore` is kept for call-site compatibility; the filter is Include = Terrain.
+local function groundY(position: Vector3, _ignore: { Instance }?): number
 	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterType = Enum.RaycastFilterType.Include
 	params.IgnoreWater = true
-	params.FilterDescendantsInstances = ignore
+	params.FilterDescendantsInstances = { workspace.Terrain }
 	local hit = workspace:Raycast(position + Vector3.new(0, 140, 0), Vector3.new(0, -300, 0), params)
 	return hit and hit.Position.Y or position.Y
+end
+
+-- Terrain voxels are 4 studs and a fill's visible top lands at ceil4(top) + ~1.9 (measured). The
+-- old pad carve filled to the raw ground height AFTER the relay and site models were placed, so
+-- the surface jumped up to ~6 studs and swallowed gates, towers and plinths. level() carves the
+-- pad ONCE, snapped to the nearest voxel step (error <= 2 studs), waits for the raycast to see it,
+-- and returns the true surface so callers place everything on the final ground.
+local VOXEL = 4
+local VOXEL_LIP = 1.9
+local PAD_RADIUS = WALL_RADIUS + 14
+local levelCache: { [string]: number } = {}
+
+local function levelKey(position: Vector3): string
+	return string.format("%d_%d", math.round(position.X), math.round(position.Z))
+end
+
+function OutpostService.level(position: Vector3): number
+	local key = levelKey(position)
+	local cached = levelCache[key]
+	if cached then
+		return cached
+	end
+	local terrain = workspace.Terrain
+	local ground = groundY(position)
+	local step = math.round((ground - VOXEL_LIP) / VOXEL)
+	local top = step * VOXEL - 1 -- inside (step*4-4, step*4] so ceil4 -> step*4
+	local cx, cz = position.X, position.Z
+	-- lowest natural ground under and around the pad: on a mountain flank the downhill side can drop
+	-- far below the centre, which used to leave the pad hanging as a 36-stud drum (or fully in the air)
+	local minG = ground
+	for _, r in { 26, PAD_RADIUS, PAD_RADIUS + 14 } do
+		for k = 0, 11 do
+			local a = k / 12 * math.pi * 2
+			local y = groundY(Vector3.new(cx + math.cos(a) * r, position.Y, cz + math.sin(a) * r))
+			if y < minG then
+				minG = y
+			end
+		end
+	end
+	local depth = math.max(36, top - minG + 10)
+	terrain:FillCylinder(CFrame.new(cx, step * VOXEL + 36, cz), 80, PAD_RADIUS, Enum.Material.Air)
+	terrain:FillCylinder(CFrame.new(cx, top - depth * 0.5, cz), depth, PAD_RADIUS, Enum.Material.Rock)
+	terrain:FillCylinder(CFrame.new(cx, top - 3, cz), 6, PAD_RADIUS, Enum.Material.Ground)
+	-- embankment: stepped skirt (4 high, 5 wide per step) from the pad edge down to the natural
+	-- ground, so the pad grows out of the mountain instead of floating off it. Layers only fill
+	-- voxels below `top - 4i`, so uphill ground (already higher) is untouched.
+	local drop = top - minG
+	if drop > 2 then
+		local steps = math.min(16, math.ceil(drop / VOXEL))
+		for i = 1, steps do
+			terrain:FillCylinder(CFrame.new(cx, top - VOXEL * i - 6, cz), 12, PAD_RADIUS + 5 * i, Enum.Material.Rock)
+		end
+		terrain:FillCylinder(CFrame.new(cx, top - 3, cz), 6, PAD_RADIUS + 5, Enum.Material.Ground)
+	end
+	-- raycasts lag voxel writes by a few frames; poll until the surface settles near the target
+	local want = step * VOXEL + VOXEL_LIP
+	local surface = groundY(position)
+	-- the whole pad must read flat before callers place anything: sample the centre plus rings at
+	-- r=24 and r=46 (raycasts at off-centre points lagged the centre one and floated crates ~4 studs)
+	local function settled(): boolean
+		surface = groundY(position)
+		if math.abs(surface - want) > 0.9 then
+			return false
+		end
+		for _, r in { 24, 46 } do
+			for k = 0, 5 do
+				local a = k / 6 * math.pi * 2
+				local y = groundY(Vector3.new(cx + math.cos(a) * r, position.Y, cz + math.sin(a) * r))
+				if math.abs(y - want) > 1.6 then
+					return false
+				end
+			end
+		end
+		return true
+	end
+	local t0 = os.clock()
+	while not settled() and os.clock() - t0 < 3 do
+		task.wait(0.2)
+	end
+	levelCache[key] = surface
+	return surface
 end
 
 local function plate(parent: Instance, position: Vector3, size: Vector3, yaw: number, color: Color3, material: Enum.Material): Part
@@ -125,17 +209,11 @@ function OutpostService.build(center: Vector3, seed: number?): Model
 	folder:SetAttribute("OutpostSeed", seed or 20260621)
 
 	local ignore = ignoreList(folder)
-	local base = Vector3.new(center.X, groundY(center, ignore), center.Z)
+	-- Level the compound: a plateau under the ring, so the wall modules sit on one plane instead
+	-- of stepping down the hillside. Carved once (cached) and measured, never raised after placement.
+	local base = Vector3.new(center.X, OutpostService.level(center), center.Z)
 	local random = rng(seed or 20260621)
 	local pieces = 0
-
-	-- Level the compound: a plateau under the ring, so the wall modules sit on one
-	-- plane instead of stepping down the hillside like scattered blocks.
-	local terrain = workspace.Terrain
-	local padRadius = WALL_RADIUS + 14
-	local padCenter = Vector3.new(base.X, base.Y, base.Z)
-	terrain:FillCylinder(CFrame.new(padCenter + Vector3.new(0, 8, 0)), 40, padRadius, Enum.Material.Air)
-	terrain:FillCylinder(CFrame.new(padCenter - Vector3.new(0, 18, 0)), 36, padRadius, Enum.Material.Rock)
 
 	-- Perimeter: authored masonry walls chained edge-to-edge along the ring's wall arcs, with
 	-- monumental gates closing the two entrance sockets. Piece length is measured at runtime

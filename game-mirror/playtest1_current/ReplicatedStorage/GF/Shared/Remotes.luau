@@ -73,6 +73,7 @@ Remotes.Names = {
 	"SettingsChanged",
 	"RequestIntroReplay",
 	"IntroReplay",
+	"ArrivalCineStart",
 	"ExtractionState",
 	"MissionComplete",
 	"SalvageChanged",

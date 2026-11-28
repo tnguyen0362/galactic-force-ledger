@@ -476,14 +476,50 @@ local function buildDropship(position: Vector3): Model
 		return p
 	end
 
+	-- the real dropship: painted, scaled, interior bay. Server-side static during boarding —
+	-- the visual is the model itself; walking surfaces are an invisible collision proxy below.
 	local ship = nil
-	if ArtService.exists("Kit_Human_Gunship") then
+	local usingRealShip = false
+	local ssGF = game:GetService("ServerStorage"):FindFirstChild("GF")
+	local ssArt = ssGF and ssGF:FindFirstChild("Art")
+	local template = ssArt and ssArt:FindFirstChild("GF_Dropship")
+	if template then
+		ship = template:Clone()
+	end
+	if not ship and ArtService.exists("Kit_Human_Gunship") then
 		ship = ArtService.placeKit("Kit_Human_Gunship", position + Vector3.new(0, 6, 0), { parent = model, collide = false })
 	end
-	if not ship then
-		ship = ArtService.place("Dropship", position + Vector3.new(0, 11, 0), { scale = 1.7, sink = 0 })
-	end
-	if ship then
+	if ship and template then
+		usingRealShip = true
+		ship.Name = "Hull"
+		-- ground the hull: bounding box bottom sits on the terrain, rear ramp faces +Z.
+		for _, descendant in ipairs(ship:GetDescendants()) do
+			if descendant:IsA("BasePart") then
+				descendant.CanCollide = false
+				descendant.Anchored = true
+				descendant.CanQuery = false
+				descendant.CanTouch = false
+			end
+		end
+		ship.Parent = model
+		local cf, size = ship:GetBoundingBox()
+		local bottomY = cf.Position.Y - size.Y / 2
+		ship:PivotTo(CFrame.new(position + Vector3.new(0, cf.Position.Y - bottomY + size.Y * 0.02, 0)) * (cf - cf.Position))
+		-- open the ramp. Roblox positions imported MeshParts by bounding centre, NOT by mesh
+		-- origin — so rotation must happen about the measured hinge line (the door's bottom edge
+		-- in closed pose), exactly like the arrival cinematic does. Negative X rotation swings
+		-- the free edge outward toward the rear (-Z in template space) and down: verified by
+		-- measurement 2026-11-28.
+		for _, descendant in ipairs(ship:GetDescendants()) do
+			if descendant:IsA("BasePart") and string.sub(descendant.Name, 1, 7) == "DS_Ramp" then
+				local hinge = descendant.CFrame.Position - descendant.CFrame.UpVector * (descendant.Size.Y / 2)
+				local rel = descendant.CFrame.Position - hinge
+				local rot = CFrame.Angles(math.rad(-72), 0, 0)
+				local newPos = hinge + rot * rel
+				descendant.CFrame = CFrame.new(newPos) * rot * (descendant.CFrame - descendant.CFrame.Position)
+			end
+		end
+	elseif ship then
 		ship.Name = "Hull"
 		ship.Parent = model
 		for _, descendant in ipairs(ship:GetDescendants()) do
@@ -498,10 +534,51 @@ local function buildDropship(position: Vector3): Model
 		part("Nose", Vector3.new(10, 4, 7), Vector3.new(0, 8.5, -16), Color3.fromRGB(205, 209, 204), Enum.Material.Metal)
 	end
 
-	local ramp = part("Ramp", Vector3.new(8, 0.8, 12), Vector3.new(0, 4.5, 13), Color3.fromRGB(58, 64, 72), Enum.Material.DiamondPlate)
-	for index = 1, 4 do
-		local angle = math.rad(index * 90 + 45)
-		part("GearStrut" .. index, Vector3.new(0.7, 4.5, 0.7), Vector3.new(math.cos(angle) * 6, -2.5, math.sin(angle) * 6), Color3.fromRGB(50, 55, 62), Enum.Material.Metal)
+	local ramp
+	if usingRealShip then
+		-- invisible walk-in collision, MEASURED off the grounded clone at runtime: the bay floor
+		-- walk surface is the top of the lowest DS_Interior part (+slab thickness), and the door
+		-- mouth z comes off the ramp part itself. Nothing is guessed — the numbers survive resizes.
+		local floorSurf, mouthZ = nil, nil
+		for _, d in ipairs(ship:GetDescendants()) do
+			if d:IsA("BasePart") then
+				if string.sub(d.Name, 1, 11) == "DS_Interior" then
+					local bottom = d.Position.Y - d.Size.Y / 2
+					if not floorSurf or bottom < floorSurf then
+						floorSurf = bottom
+					end
+				end
+				if string.sub(d.Name, 1, 7) == "DS_Ramp" then
+					mouthZ = d.Position.Z - position.Z
+				end
+			end
+		end
+		floorSurf = (floorSurf or (position.Y + 16.3)) + 2.1 -- slab thickness off the measured bottom
+		mouthZ = mouthZ or -47
+		local relFloor = floorSurf - position.Y -- height to climb from the ground
+		-- bay floor slab: spans the interior forward of the mouth
+		local proxyFloor = part("BayFloorProxy", Vector3.new(16, 1, 40), Vector3.new(0, relFloor - 0.5, mouthZ + 22), Color3.new(0, 0, 0), Enum.Material.SmoothPlastic)
+		proxyFloor.Transparency = 1
+		proxyFloor.CanCollide = true
+		-- ramp slope: ground up to the bay lip, extending outward past the mouth (-Z rear)
+		local run = math.max(24, relFloor * 1.8) -- ~29deg slope
+		local slopeAngle = math.atan2(relFloor, run)
+		local slopeLen = math.sqrt(relFloor * relFloor + run * run)
+		local bottomPoint = position + Vector3.new(0, 0.4, mouthZ - run)
+		local topPoint = position + Vector3.new(0, relFloor - 0.4, mouthZ + 2) -- lip tucks inside the mouth
+		local mid = (bottomPoint + topPoint) / 2
+		local slopeLen2 = (topPoint - bottomPoint).Magnitude
+		local rampProxy = part("RampProxy", Vector3.new(13, 0.8, slopeLen2), mid - position, Color3.new(0, 0, 0), Enum.Material.SmoothPlastic)
+		rampProxy.Transparency = 1
+		rampProxy.CanCollide = true
+		rampProxy.CFrame = CFrame.lookAt(mid, topPoint)
+		ramp = rampProxy
+	else
+		ramp = part("Ramp", Vector3.new(8, 0.8, 12), Vector3.new(0, 4.5, 13), Color3.fromRGB(58, 64, 72), Enum.Material.DiamondPlate)
+		for index = 1, 4 do
+			local angle = math.rad(index * 90 + 45)
+			part("GearStrut" .. index, Vector3.new(0.7, 4.5, 0.7), Vector3.new(math.cos(angle) * 6, -2.5, math.sin(angle) * 6), Color3.fromRGB(50, 55, 62), Enum.Material.Metal)
+		end
 	end
 	local dust = Instance.new("Part")
 	dust.Name = "LandingDust"
@@ -518,9 +595,11 @@ local function buildDropship(position: Vector3): Model
 			TweenService:Create(dust, TweenInfo.new(1.4), { Size = Vector3.new(34, 5, 34), Transparency = 1 }):Play()
 		end
 	end)
-	local rampCenter = position + Vector3.new(0, 4.5, 13)
-	local hingeWorld = rampCenter + Vector3.new(0, 0, -6)
-	ramp.CFrame = CFrame.new(hingeWorld) * CFrame.Angles(math.rad(-75), 0, 0) * CFrame.new(0, 0, 6)
+	if not usingRealShip then
+		local rampCenter = position + Vector3.new(0, 4.5, 13)
+		local hingeWorld = rampCenter + Vector3.new(0, 0, -6)
+		ramp.CFrame = CFrame.new(hingeWorld) * CFrame.Angles(math.rad(-75), 0, 0) * CFrame.new(0, 0, 6)
+	end
 	model:SetAttribute("GFRampDeployed", false)
 	local engine = part("Engine", Vector3.new(3, 3, 3), Vector3.new(0, 9, -14), Color3.fromRGB(120, 210, 255), Enum.Material.Neon)
 	engine.CanCollide = false
@@ -539,8 +618,10 @@ local function buildDropship(position: Vector3): Model
 	floodLight.Face = Enum.NormalId.Bottom
 	floodLight.Parent = flood
 
-	local board = part("BoardingZone", Vector3.new(12, 1, 12), Vector3.new(0, 0.8, 11), Color3.fromRGB(120, 210, 255), Enum.Material.ForceField)
-	board.Transparency = 0.72
+	local boardOffset = usingRealShip and Vector3.new(0, 19.4, -32) or Vector3.new(0, 0.8, 11)
+	local boardSize = usingRealShip and Vector3.new(14, 1, 26) or Vector3.new(12, 1, 12)
+	local board = part("BoardingZone", boardSize, boardOffset, Color3.fromRGB(120, 210, 255), Enum.Material.ForceField)
+	board.Transparency = usingRealShip and 0.9 or 0.72
 	board.CanCollide = false
 	board:SetAttribute("GFInteract", "Extract")
 	board:SetAttribute("InteractPrompt", "BOARD TRANSPORT")

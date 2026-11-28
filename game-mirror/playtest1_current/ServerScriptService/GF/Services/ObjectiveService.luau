@@ -2579,6 +2579,9 @@ function ObjectiveService.setup(position, template)
 		return type(m) == "table" and m.objectiveTemplate or nil
 	end)() or "SABOTAGE_RELAY"
 	local pos = ground(position)
+	-- carve + measure the compound pad BEFORE anything is placed, so every builder (and the
+	-- outpost kit) sits on the final voxel surface instead of being swallowed by a later carve
+	pos = Vector3.new(pos.X, OutpostService.level(pos) + 0.4, pos.Z)
 	if templateId == "RECOVER_TECH" then
 		objective = buildBlackBox(pos)
 		hint = "Decrypt the black box at the crash-site terminal"

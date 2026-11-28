@@ -50,6 +50,20 @@ BiomeLook.LOOKS = {
 			Mud = c(70, 58, 44), Rock = c(112, 106, 96), Slate = c(70, 76, 78), Sand = c(150, 138, 108),
 		},
 	},
+	-- Jungle (owner directive 2026-11-28, the only live biome): hot humid air, golden-green haze, warm
+	-- shafts of low sun, deep olive shadow. Forest's cyan-green atmosphere and (176,196,184) fog read
+	-- as an icy blue wash over the pale Ascendancy kit; this keeps haze and grade in the olive/amber range.
+	Jungle = {
+		clock = 15.4, brightness = 2.2,
+		ambient = c(104, 114, 84), outdoor = c(134, 140, 104), envDiffuse = 0.6, exposure = 0,
+		fogStart = 140, fogEnd = 4600, fogColor = c(170, 178, 128),
+		atmoDensity = 0.3, atmoHaze = 1.6, atmoColor = c(182, 192, 138), atmoDecay = c(226, 188, 124),
+		gradeTint = c(252, 246, 222), gradeSat = 0.1, gradeContrast = 0.08, bloomIntensity = 0.22,
+		terrain = {
+			Grass = c(70, 108, 50), LeafyGrass = c(56, 94, 44), Ground = c(92, 76, 54),
+			Mud = c(66, 52, 38), Rock = c(104, 98, 84), Slate = c(68, 74, 68), Sand = c(150, 134, 100),
+		},
+	},
 	-- Mountain / frozen: cold clear air, blue shadow, bright snow with a pale blue-white haze.
 	Tundra = {
 		clock = 14.5, brightness = 2.0,
@@ -100,7 +114,7 @@ BiomeLook.LOOKS = {
 	},
 } :: { [string]: Look }
 
-BiomeLook.RAYS = { Forest = 0.12, Tundra = 0.08, Arid = 0.18, Industrial = 0.1, Volcanic = 0.1 } :: { [string]: number }
+BiomeLook.RAYS = { Jungle = 0.14, Forest = 0.12, Tundra = 0.08, Arid = 0.18, Industrial = 0.1, Volcanic = 0.1 } :: { [string]: number }
 
 function BiomeLook.current(): string
 	local b = workspace:GetAttribute("GF_Biome")

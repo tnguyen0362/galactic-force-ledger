@@ -174,6 +174,19 @@ local LEG_SCALE = {
 	SpectreLeader = 1.16, SpectreAssault = 1.11, SpectreWeapons = 1.19, SpectrePrecision = 1.12, SpectreSupport = 1.09,
 	RevenantLeader = 1.19, RevenantAssault = 1.13, RevenantWeapons = 1.19, RevenantPrecision = 1.15, RevenantDefense = 1.19,
 }
+-- thigh/shin lengths measured from the rig's own joint frames (works for any proportions; the table above is the fallback)
+local function legLengths(J: any, fallbackT: number, fallbackS: number): (number, number)
+	local hip, knee, ankle = J.HipR, J.KneeR, J.AnkleR
+	if hip and knee and ankle then
+		local T = (knee.motor.C0.Position - hip.motor.C1.Position).Magnitude
+		local S = (ankle.motor.C0.Position - knee.motor.C1.Position).Magnitude
+		if T > 0.5 and S > 0.5 then
+			return T, S
+		end
+	end
+	return fallbackT, fallbackS
+end
+
 -- sign of pelvis roll toward the swing side (verify in Play: hip should drop on the swing-leg side)
 local ROLL_SIGN = 1
 
@@ -258,7 +271,7 @@ local function heroPose(model: Model, state: RigState, dt: number, c: any)
 	end
 	local dirSign: number = st.hDirSign
 	local alphaFold = dirSign > 0 and alpha or (alpha - math.pi * (alpha > 0 and 1 or -1))
-	local pYawTarget = -math.clamp(alphaFold, -1.2, 1.2) * 0.65 * w
+	local pYawTarget = -math.clamp(alphaFold, -1.3, 1.3) * 0.9 * w
 	st.pYaw = blend(st.pYaw, pYawTarget, dt, 0.18)
 
 	-- ---- stance targets by authoritative AI state
@@ -288,8 +301,11 @@ local function heroPose(model: Model, state: RigState, dt: number, c: any)
 	st.ready = blend(st.ready or dT, dT, dt, 0.15)
 
 	-- ---- gait clock: cadence from speed, direction from travel
-	local ls = LEG_SCALE[c.enemyId] or 1
-	local T, S = THIGH * ls, SHIN * ls
+	if not st.legT then
+		local ls0 = LEG_SCALE[c.enemyId] or 1
+		st.legT, st.legS = legLengths(J, THIGH * ls0, SHIN * ls0)
+	end
+	local T, S = st.legT, st.legS
 	local freq = (0.75 + 0.07 * v) * prof.freqMul
 	if v > 0.3 then
 		st.hPhase += dirSign * 2 * math.pi * freq * dt
@@ -359,12 +375,50 @@ local function heroPose(model: Model, state: RigState, dt: number, c: any)
 	setJoint(J, "ShoulderR", CFrame.Angles(delta, 0, 0))
 	setJoint(J, "ShoulderL", CFrame.Angles(delta, 0, 0))
 	setJoint(J, "ElbowR", CFrame.Angles(recoil * 0.12, 0, 0))
-	setJoint(J, "ElbowL", CFrame.Angles(recoil * 0.05, 0, 0))
+	setJoint(J, "ElbowL", CFrame.Angles(recoil * 0.12, 0, 0)) -- identical to ElbowR: support hand must ride the foregrip through recoil
 	setJoint(J, "WristR", CFrame.Angles(0, 0, 0))
 	setJoint(J, "WristL", CFrame.Angles(0, 0, 0))
 end
 
+-- SNAPSHOT INTERPOLATION.  The server moves each enemy's anchored logic root by CFrame writes, and a moving
+-- anchored part replicates as discrete property updates with NO client-side smoothing.  Legs animate at render
+-- rate, so a body that advances in network steps makes planted feet judder and drag ("sliding").  We treat every
+-- replicated root CFrame as a snapshot and render the root one snapshot behind, easing A -> B over the measured
+-- inter-snapshot interval.  The only cost is ~one network interval of visual latency; hit volumes/AI stay authoritative.
+local SNAP_TELEPORT = 14 -- studs: a larger jump is a reposition/teleport, show it instantly
+local function smoothMotion(model: Model, state: any, now: number)
+	local root = model.PrimaryPart
+	if not root then
+		return
+	end
+	local cur = root.CFrame
+	if state.snapB == nil then
+		state.snapA, state.snapB, state.tB, state.snapInterval = cur, cur, now, 0.05
+		state.lastWritten = cur
+		return
+	end
+	if cur ~= state.lastWritten then
+		-- new server snapshot arrived (our own write reads back identical, so this only fires on replication)
+		if (cur.Position - state.snapB.Position).Magnitude > SNAP_TELEPORT then
+			state.snapA, state.snapInterval = cur, 0.05
+		else
+			local gap = now - state.tB
+			state.snapInterval = math.clamp(blend(state.snapInterval, gap, 1, 0.5), 0.03, 0.2)
+			-- start the new leg from where we are being displayed, not from the stale snapshot: no pops on late/early packets
+			state.snapA = state.lastWritten
+		end
+		state.snapB, state.tB = cur, now
+	end
+	local a = math.clamp((now - state.tB) / state.snapInterval, 0, 1)
+	local shown = state.snapA:Lerp(state.snapB, a)
+	root.CFrame = shown
+	state.lastWritten = root.CFrame -- read back: float32 rounding must not look like a new snapshot
+end
+
 local function poseRig(model: Model, state: RigState, dt: number)
+	if model:GetAttribute("Dead") ~= true then
+		smoothMotion(model, state, os.clock())
+	end
 	local pivot = model:GetPivot()
 	local pos = pivot.Position
 

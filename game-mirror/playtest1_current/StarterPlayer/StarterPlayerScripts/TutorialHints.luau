@@ -218,7 +218,7 @@ task.spawn(function()
 		if isFirstMission() then
 			local dist = workspace:GetAttribute("GF_RelayDist") or 999
 			if dist < 30 then
-				hintOnce("hack", "Relay ahead — hold E at the console to hack it. Stay close, it takes a moment.")
+				hintOnce("hack", "Relay ahead — press E at a shield node, then press E (or click) when the needle crosses the green arc.")
 			end
 		end
 	end

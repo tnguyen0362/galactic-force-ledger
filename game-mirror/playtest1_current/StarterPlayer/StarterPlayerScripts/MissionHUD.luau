@@ -391,6 +391,12 @@ end)
 Remotes.ExtractionState.OnClientEvent:Connect(setExtraction)
 
 Remotes.MissionComplete.OnClientEvent:Connect(function(payload)
+	-- the debrief is mission-place chrome: in the lobby nothing may summon it — extraction
+	-- verdicts only exist mid-mission, so a lobby display is definitionally a leak (owner review:
+	-- the return-to-station window was popping in playtest1).
+	if workspace:GetAttribute("GF_InMission") ~= true then
+		return
+	end
 	banner.Visible = false
 	prompt.Visible = false
 	debrief.Visible = true
@@ -511,84 +517,9 @@ game:GetService("RunService").RenderStepped:Connect(function()
 	markerText.Text = string.format("%s%s  %d m", string.upper(tostring(markerKind)), behind and " (BEHIND)" or "", distance)
 end)
 
--- Hacking overlay. The server owns the challenge, the arc and the hit test; this only draws the
--- needle and reports the press. Both sides derive the angle from workspace:GetServerTimeNow(), so
--- the arc the player sees is the arc the server scores.
-local hack = nil
-local hackFrame = Instance.new("Frame")
-hackFrame.Size = UDim2.fromOffset(220, 220)
-hackFrame.Position = UDim2.new(0.5, -110, 0.5, 30)
-hackFrame.BackgroundColor3 = Tokens.Color.panelInset
-hackFrame.BackgroundTransparency = 0.12
-hackFrame.BorderSizePixel = 0
-hackFrame.Visible = false
-hackFrame.Parent = gui
-addAngularChrome(hackFrame, Tokens.Color.techCyan)
-local hackMarks = {}
-for index = 1, 24 do
-	local mark = Instance.new("Frame")
-	mark.Size = UDim2.fromOffset(4, 14)
-	mark.AnchorPoint = Vector2.new(0.5, 0.5)
-	mark.BorderSizePixel = 0
-	mark.BackgroundColor3 = Tokens.Color.textDisabled
-	mark.ZIndex = 2
-	mark.Parent = hackFrame
-	hackMarks[index] = mark
-end
-local hackNeedle = Instance.new("Frame")
-hackNeedle.Size = UDim2.new(0, 3, 0, 84)
-hackNeedle.AnchorPoint = Vector2.new(0.5, 1)
-hackNeedle.Position = UDim2.new(0.5, 0, 0.5, 0)
-hackNeedle.BackgroundColor3 = Tokens.Color.warning
-hackNeedle.BorderSizePixel = 0
-hackNeedle.ZIndex = 5
-hackNeedle.Parent = hackFrame
-local hackPivot = Instance.new("Frame")
-hackPivot.Size = UDim2.fromOffset(12, 12)
-hackPivot.AnchorPoint = Vector2.new(0.5, 0.5)
-hackPivot.Position = UDim2.new(0.5, 0, 0.5, 0)
-hackPivot.BackgroundColor3 = Tokens.Color.warning
-hackPivot.BorderSizePixel = 0
-hackPivot.Rotation = 45
-hackPivot.ZIndex = 6
-hackPivot.Parent = hackFrame
-local hackLabel = label(hackFrame, "", UDim2.fromOffset(216, 20), UDim2.new(0, 2, 1, -25), 14, Tokens.Color.warning)
-hackLabel.TextXAlignment = Enum.TextXAlignment.Center
-
-local function paintHack(payload)
-	local arcStart = payload.arcStart or 0
-	local arcWidth = payload.arcWidth or 90
-	for index, mark in ipairs(hackMarks) do
-		local angle = (index - 1) / #hackMarks * 360
-		local delta = math.abs((angle - arcStart + 180) % 360 - 180)
-		mark.BackgroundColor3 = (delta <= arcWidth / 2) and Tokens.Color.success or Tokens.Color.textDisabled
-		mark.Rotation = angle
-		local radians = math.rad(angle - 90)
-		mark.Position = UDim2.new(0.5, math.cos(radians) * 82, 0.5, math.sin(radians) * 82)
-	end
-	hackLabel.Text = string.format("HACK  %d / 3   %s", payload.stage or 1, interactKey())
-end
-
-Remotes.HackState.OnClientEvent:Connect(function(payload)
-	if type(payload) ~= "table" or payload.active ~= true then
-		hack = nil
-		hackFrame.Visible = false
-		return
-	end
-	hack = payload
-	hackFrame.Visible = true
-	paintHack(payload)
-end)
-
-game:GetService("RunService").RenderStepped:Connect(function()
-	if not hack then
-		return
-	end
-	local period = hack.period or 1.3
-	local angle = ((workspace:GetServerTimeNow() - (hack.startedAt or 0)) / period * 360) % 360
-	hackNeedle.Rotation = angle
-end)
-
+-- Hacking overlay moved to HackOverlay.luau (own non-inset ScreenGui, off-centre skill-check ring).
+-- `hack` stays declared because fireInteract() below still guards on it; HackOverlay sinks E/RMB while a hack is live.
+local hack: any = nil
 
 -- Capture-zone HUD. The ring in the world is the primary read (cyan/red/dim); this bar is the
 -- precision instrument — exact progress, state text, and a contested flash so a defender never

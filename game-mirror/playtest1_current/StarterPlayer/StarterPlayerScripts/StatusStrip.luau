@@ -190,6 +190,9 @@ task.spawn(function()
 		else
 			timerLabel.Visible = false
 		end
+		-- the squad respawn budget is mission chrome like the clock and grenades — it printed
+		-- permanently in the lobby (owner review: SQUAD 1 RESPAWNS 0 visible at spawn)
+		squadLabel.Visible = participant
 		local charges = player:GetAttribute("GrenadeCharges")
 		local chargeCount = tonumber(charges) or 0
 		grenadeLabel.Visible = participant

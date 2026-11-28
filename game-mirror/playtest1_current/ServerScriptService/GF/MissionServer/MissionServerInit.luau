@@ -40,7 +40,7 @@ local ARRIVAL_TIMEOUT_SECONDS = 40 -- measured generation is ~18s; 40 is generou
 local STREAM_TIMEOUT_SECONDS = 3.5
 local GROUND_SETTLE_SECONDS = 3 -- matches the streaming evidence that multi-kilometre terrain needs seconds, not frames
 local CHARACTER_WAIT_SECONDS = 6
-local FALLBACK_GROUND_Y = 36 -- emergency failure pad only; normal release always uses raycast terrain
+local FALLBACK_GROUND_Y = 36 -- emergency failure height only; normal release always uses raycast terrain
 
 type ArrivalRecord = {
 	slot: number,
@@ -57,6 +57,7 @@ local arrivalReleaseStarted = false
 local arrivalFinalized = false
 local arrivalPhase = "idle"
 local releaseReason = "terrain-ready"
+local releaseHeading = 0 -- nose axis of the arrival dropship; bay interior lies along it
 local arrivalClockStart = 0
 local nextArrivalSlot = 0
 local arrivalRecords: { [Player]: ArrivalRecord } = {}
@@ -149,17 +150,9 @@ local function ensureHoldingWorld()
 	local model = Instance.new("Model")
 	model.Name = "GF_ArrivalHoldingPen"
 
-	local platform = Instance.new("Part")
-	platform.Name = "Platform"
-	platform.Size = Vector3.new(180, 2, 180)
-	platform.CFrame = CFrame.new(0, HOLD_Y, 0)
-	platform.Anchored = true
-	platform.CanCollide = true
-	platform.CanQuery = false
-	platform.CanTouch = false
-	platform.Transparency = 1
-	platform.Parent = model
-
+	-- No platform, no island: the hold is a capture beacon, not a place. Characters anchor within
+	-- fractions of a second of materialising (captureCharacterInHold), so there is nothing to
+	-- stand on and nothing to fall onto — the wait happens inside the dropship theatre.
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "ArrivalHoldSpawn"
 	spawn.Size = Vector3.new(16, 1, 16)
@@ -202,9 +195,8 @@ local function removeHoldingWorld()
 	if holdSpawn then
 		holdSpawn.Enabled = false
 	end
-	-- Keep the invisible high platform in place. It costs one part, cannot intersect gameplay at
-	-- y=4200, and remains a physical backstop for the rare player whose first landing attempt is
-	-- interrupted by a death/character reload and needs a retry after the initial cohort finishes.
+	-- The spawn beacon stays (disabled): a player whose first landing attempt is interrupted by a
+	-- death/character reload re-enters through the mission LZ spawn or the positioning retry.
 	holdSpawn = nil
 
 	-- The shared-place validation path must not eat the station spawn. In a real mission place the
@@ -245,24 +237,6 @@ local function ensureMissionSpawn(ground: Vector3)
 	spawn.Enabled = true
 end
 
-local function ensureEmergencyPad(ground: Vector3)
-	local existing = Workspace:FindFirstChild("GF_ArrivalEmergencyPad")
-	local pad: Part
-	if existing and existing:IsA("Part") then
-		pad = existing
-	else
-		pad = Instance.new("Part")
-		pad.Name = "GF_ArrivalEmergencyPad"
-		pad.Size = Vector3.new(96, 2, 96)
-		pad.Color = Color3.fromRGB(54, 62, 72)
-		pad.Material = Enum.Material.Metal
-		pad.Anchored = true
-		pad.CanCollide = true
-		pad.Transparency = 0.15
-		pad.Parent = Workspace
-	end
-	pad.CFrame = CFrame.new(ground - Vector3.new(0, 1.05, 0))
-end
 
 local function terrainSurfaceAt(x: number, z: number): Vector3?
 	local hit = Workspace:Raycast(Vector3.new(x, 1800, z), Vector3.new(0, -3000, 0), terrainOnlyParams)
@@ -317,13 +291,19 @@ local function objectiveXZ(fallbackX: number, fallbackZ: number): (number, numbe
 end
 
 local function slotOffset(slot: number): (number, number)
+	-- Inside the dropship bay: the ship lands nose-past so its ramp mouth ends at the LZ anchor,
+	-- and the interior volume extends from there along the nose axis. Players are cargo — staggered
+	-- depth puts the point man deepest (first out), lateral spread keeps shoulders apart. The hull
+	-- hides everyone until the ramp opens; nobody is visible standing outside at touchdown.
+	-- noseXZ for lzCF = Angles(0, heading, 0) is (-sin h, -cos h); a perpendicular is (cos h, -sin h).
+	local nx, nz = -math.sin(releaseHeading), -math.cos(releaseHeading)
+	local px, pz = math.cos(releaseHeading), -math.sin(releaseHeading)
+	local depth = 7 + ((slot - 1) % 4) * 2.4 + math.floor((slot - 1) / 4) * 1.2
+	local lateral = ((slot % 2 == 0) and 1 or -1) * (1.6 + ((slot - 1) % 3) * 1.3)
 	if slot <= 1 then
-		return 0, 0
+		lateral = 0
 	end
-	-- Golden-angle spread keeps squadmates apart without a grid-looking teleport line.
-	local angle = (slot - 1) * 2.39996322972865332
-	local radius = 5 + math.min(15, math.floor((slot - 2) / 8) * 3)
-	return math.cos(angle) * radius, math.sin(angle) * radius
+	return nx * depth + px * lateral, nz * depth + pz * lateral
 end
 
 local function landingPointForSlot(slot: number): (Vector3, boolean)
@@ -343,10 +323,9 @@ local function landingPointForSlot(slot: number): (Vector3, boolean)
 		return centerSurface + Vector3.new(0, 4, 0), true
 	end
 
-	-- Timeout/failure path: never strand a player in the sky forever. The pad is small, visible,
-	-- and only exists when there is no terrain surface to stand on at all.
-	local fallbackGround = Vector3.new(centerX, FALLBACK_GROUND_Y, centerZ)
-	ensureEmergencyPad(fallbackGround)
+	-- Timeout/failure path: no pad, no island. By the time this path runs the generation write has
+	-- finished or timed out, so real voxels exist below in practice; worst case is a short fall
+	-- onto actual ground. A failure this deep should read as a failure, not hide under a pad.
 	return Vector3.new(x, FALLBACK_GROUND_Y + 4, z), false
 end
 
@@ -444,6 +423,23 @@ local function positionPlayerOnGround(player: Player, rec: ArrivalRecord, reason
 				root.Anchored = false
 				neutralizePart(root)
 				rec.state = "released"
+				for _, part in ipairs(character:GetDescendants()) do
+					local saved = part:GetAttribute("GFArrivalHidden")
+					if saved ~= nil and (part:IsA("BasePart") or part:IsA("Decal")) then
+						part.Transparency = tonumber(saved) or 0
+						part:SetAttribute("GFArrivalHidden", nil)
+					end
+				end
+				-- end of spawn protection: brief step-out grace so the first moments outside the
+				-- hull are not instant death, then the shield comes off for real play
+				task.delay(3, function()
+					if character.Parent then
+						local ff = character:FindFirstChild("GFArrivalShield")
+						if ff then
+							ff:Destroy()
+						end
+					end
+				end)
 				-- Timeout landings remain recoverable even when the raycast found partial terrain:
 				-- if the slow writer later completes, a player who has not moved off the landing
 				-- point is re-seated onto the final surface. Normal ready landings never are.
@@ -472,6 +468,32 @@ local function positionPlayerOnGround(player: Player, rec: ArrivalRecord, reason
 	end
 end
 
+-- One watcher per player for the whole hold. The capture below anchors the root once, but a rebuilt
+-- character (appearance swap, respawn race, Studio direct-run) can hand back an unanchored root at
+-- hold height; it then free-falls ~4000 studs and the landing is lethal fall damage. The guard keeps
+-- whatever root currently exists anchored at the hold until release.
+local holdGuardActive: { [Player]: boolean } = {}
+local function startHoldGuard(player: Player, rec: ArrivalRecord)
+	if holdGuardActive[player] then
+		return
+	end
+	holdGuardActive[player] = true
+	task.spawn(function()
+		while player.Parent and rec.state == "holding" and not arrivalReleaseStarted do
+			local ch = player.Character
+			local r = ch and ch:FindFirstChild("HumanoidRootPart")
+			if ch and r and r:IsA("BasePart") and not r.Anchored then
+				neutralizePart(r)
+				r.Anchored = true
+				ch:PivotTo(holdCFrame(rec.slot))
+				Workspace:SetAttribute("GF_ArrivalReanchors", (Workspace:GetAttribute("GF_ArrivalReanchors") or 0) + 1)
+			end
+			task.wait(0.1)
+		end
+		holdGuardActive[player] = nil
+	end)
+end
+
 local function captureCharacterInHold(player: Player, rec: ArrivalRecord, character: Model)
 	if rec.state ~= "holding" or arrivalReleaseStarted then
 		return
@@ -493,10 +515,32 @@ local function captureCharacterInHold(player: Player, rec: ArrivalRecord, charac
 			return
 		end
 		-- Anchor first, then move: even a player who slipped in before the pen scan stops falling
-		-- immediately. The platform underneath is the second layer of protection.
+		-- immediately. The anchor IS the floor.
 		neutralizePart(root)
 		root.Anchored = true
 		character:PivotTo(holdCFrame(rec.slot))
+		startHoldGuard(player, rec)
+		-- hide immediately: the spawn flash/falling-body window reads as a glitch. The hull hides
+		-- the cargo anyway, but nothing should render before the ramp-drop reveal either.
+		for _, part in ipairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part:SetAttribute("GFArrivalHidden", part.Transparency)
+				part.Transparency = 1
+			elseif part:IsA("Decal") then
+				part:SetAttribute("GFArrivalHidden", part.Transparency)
+				part.Transparency = 1
+			end
+		end
+		-- spawn protection: the player is helpless cargo through the whole descent — they cannot
+		-- see, move, or fight while the cinematic owns the camera, so LZ enemies must not be able
+		-- to engage them. Shield holds until after the ramp-drop handoff plus a short step-out
+		-- grace; removed in the release path below.
+		if not character:FindFirstChildOfClass("ForceField") then
+			local ff = Instance.new("ForceField")
+			ff.Name = "GFArrivalShield"
+			ff.Visible = false
+			ff.Parent = character
+		end
 		player:SetAttribute("GF_ArrivalState", "holding")
 		updateArrivalCounts()
 	end)
@@ -506,6 +550,7 @@ local function handleArrivalCharacter(player: Player, rec: ArrivalRecord, charac
 	rec.characterVersion += 1
 	if rec.state == "holding" and not arrivalReleaseStarted and not terrainReadyForArrival() then
 		captureCharacterInHold(player, rec, character)
+		startHoldGuard(player, rec)
 	elseif rec.state == "positioning" and not rec.positioningActive then
 		task.spawn(positionPlayerOnGround, player, rec, "character-ready")
 	end
@@ -582,9 +627,6 @@ local function releaseAllArrivals(reason: string)
 	local centerX, centerZ = lzAnchorXZ()
 	local centerSurface = terrainSurfaceNear(centerX, centerZ)
 	local publishedGround = centerSurface or Vector3.new(centerX, FALLBACK_GROUND_Y, centerZ)
-	if not centerSurface then
-		ensureEmergencyPad(publishedGround)
-	end
 	Workspace:SetAttribute("GF_LZ", publishedGround)
 	ensureMissionSpawn(publishedGround)
 	-- From this point any death/respawn must use the verified LZ spawn, never the sky pen.
@@ -598,7 +640,7 @@ local function releaseAllArrivals(reason: string)
 
 	if reason == "timeout" then
 		setArrivalPhase("landing", reason)
-		warn("MissionServer: terrain wait timed out — releasing arrivals onto verified ground or the emergency pad")
+		warn("MissionServer: terrain wait timed out — releasing arrivals onto verified or fallback ground")
 	else
 		setArrivalPhase("landing", reason)
 	end
@@ -615,11 +657,53 @@ local function releaseAllArrivals(reason: string)
 		return
 	end
 
+	-- Dropship arrival theatre: on the healthy path the descent cinematic covers the transition.
+	-- The ship screams in, flares, touches down nose-past the LZ so its ramp mouth ends at the
+	-- squad; players materialize at their slots exactly when the ramp drops (T+10.4s). The
+	-- transition overlay clears as the cinematic fades in — the theatre IS the loading screen.
+	-- Timeout/degraded arrivals skip the theatre and land immediately: emergencies get no ceremony.
+	local cinematicDelay = 0
+	if reason ~= "timeout" then
+		cinematicDelay = 10.4
+		local heading = 0
+		local objX, objZ = xzFromVectorAttribute("GF_AnchorObjective")
+		if objX and objZ then
+			local dx, dz = objX - centerX, objZ - centerZ
+			if dx * dx + dz * dz > 1 then
+				heading = math.atan2(-dx, -dz)
+			end
+		end
+		releaseHeading = heading
+		local cineRemote = game:GetService("ReplicatedStorage"):FindFirstChild("GF")
+		cineRemote = cineRemote and cineRemote:FindFirstChild("Remotes")
+		cineRemote = cineRemote and cineRemote:FindFirstChild("ArrivalCineStart")
+		if cineRemote and cineRemote:IsA("RemoteEvent") then
+			for _, player in ipairs(pending) do
+				-- streaming must cover the LZ before the dive looks down at it: the cinematic's
+				-- first ten seconds ARE the stream-in window, so request it now, not at touchdown.
+				task.spawn(function()
+					pcall(function()
+						player:RequestStreamAroundAsync(publishedGround + Vector3.new(0, 40, 0), 20)
+					end)
+				end)
+				cineRemote:FireClient(player, publishedGround, heading)
+			end
+		else
+			-- Remote missing means the client cannot play the theatre: fall back to instant landing.
+			cinematicDelay = 0
+		end
+		-- The overlay guarded the unstreamed-terrain window; the cinematic now covers it instead.
+		Workspace:SetAttribute("GF_Teleporting", false)
+	end
+
 	local finished = 0
 	for _, player in ipairs(pending) do
 		local rec = arrivalRecords[player]
 		if rec then
 			task.spawn(function()
+				if cinematicDelay > 0 then
+					task.wait(cinematicDelay)
+				end
 				positionPlayerOnGround(player, rec, reason)
 				finished += 1
 				if finished >= #pending then
@@ -637,8 +721,8 @@ end
 
 local function recoverTimeoutArrivalsOnLateTerrain()
 	-- If the 40s fail-safe fired while a slow generator eventually continued, only recover players
-	-- who are still on the emergency pad. Anyone who managed to leave it is already playing and
-	-- must never be yanked back across the map.
+	-- who are still standing at their fallback landing point. Anyone who managed to move off is
+	-- already playing and must never be yanked back across the map.
 	if releaseReason ~= "timeout" then
 		return
 	end
@@ -799,21 +883,7 @@ function MissionServerInit.boot(intent: DeployIntent): ()
 		GeographyService.generate(spec)
 		print(string.format("MissionServer: geography ready %.1fs (foundation=%s)", os.clock() - t0, tostring(Workspace:GetAttribute("GF_GeoFoundation"))))
 
-		-- 2. vegetation composition over the generated foundation. Vegetation failure is serious
-		-- visually, but it is not a reason to strand a squad: terrain itself is already standable.
-		local vegT = os.clock()
-		local VegetationService = require(Services.VegetationService)
-		local vegOk, vegErr = pcall(function()
-			VegetationService.plant({ seed = intent.seed * 3 + 11, extent = 4900 })
-		end)
-		if vegOk then
-			print(string.format("MissionServer: vegetation ready %.1fs", os.clock() - vegT))
-		else
-			Workspace:SetAttribute("GF_VegetationError", tostring(vegErr))
-			warn("MissionServer: vegetation failed; continuing with terrain-only world: " .. tostring(vegErr))
-		end
-
-		-- 3. mission anchors from terrain analysis — the fixed legacy positions (0,-120)/(0,120)
+		-- 2. mission anchors (moved ahead of vegetation so planting can concentrate on the play corridor) from terrain analysis — the fixed legacy positions (0,-120)/(0,120)
 		-- can land inside mountains on generated geography. TerrainAnalysis already scores
 		-- placement-feasible valley-floor sites with a distributed picker enforcing separation;
 		-- LZ and objective take the two best separated lowland sites, extraction the third.
@@ -821,7 +891,7 @@ function MissionServerInit.boot(intent: DeployIntent): ()
 		-- the anchor write is important enough to allow a small bounded catch-up window.
 		local TerrainAnalysis = require(Services.TerrainAnalysis)
 		local analysisWaitStart = os.clock()
-		while GeographyService.analysis == nil and os.clock() - analysisWaitStart < 4 do
+		while GeographyService.analysis == nil and os.clock() - analysisWaitStart < 12 do
 			task.wait(0.25)
 		end
 		local analysis = GeographyService.analysis
@@ -837,6 +907,21 @@ function MissionServerInit.boot(intent: DeployIntent): ()
 		else
 			warn("MissionServer: insufficient valley-floor sites — arrival falls back to legacy LZ coordinates")
 		end
+
+		-- 3. vegetation composition over the generated foundation. Vegetation failure is serious
+		-- visually, but it is not a reason to strand a squad: terrain itself is already standable.
+		local vegT = os.clock()
+		local VegetationService = require(Services.VegetationService)
+		local vegOk, vegErr = pcall(function()
+			VegetationService.plant({ seed = intent.seed * 3 + 11, extent = 4900 })
+		end)
+		if vegOk then
+			print(string.format("MissionServer: vegetation ready %.1fs", os.clock() - vegT))
+		else
+			Workspace:SetAttribute("GF_VegetationError", tostring(vegErr))
+			warn("MissionServer: vegetation failed; continuing with terrain-only world: " .. tostring(vegErr))
+		end
+
 	end)
 
 	if not generationOk then

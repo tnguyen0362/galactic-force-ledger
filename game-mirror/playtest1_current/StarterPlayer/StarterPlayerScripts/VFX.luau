@@ -663,6 +663,15 @@ do
 				end
 				local origin = root.Position + Vector3.new(0, 2.6, 0)
 				local dir = root.CFrame.LookVector
+				local rifle = model:FindFirstChild("Rifle", true)
+				if rifle and rifle:IsA("BasePart") then
+					-- telegraph line starts at the muzzle too
+					local look = rifle.CFrame.LookVector
+					local half = rifle.Size.Z * 0.5
+					local a = rifle.Position + look * half
+					local b = rifle.Position - look * half
+					origin = ((a - root.Position).Magnitude >= (b - root.Position).Magnitude) and a or b
+				end
 				local len = isHeavy and 90 or 40
 				beam.Size = Vector3.new(isHeavy and 0.09 or 0.06, isHeavy and 0.09 or 0.06, len)
 				beam.CFrame = CFrame.lookAt(origin, origin + dir) * CFrame.new(0, 0, -len / 2)
@@ -680,7 +689,17 @@ do
 			if typeof(targetPos) ~= "Vector3" then return end
 			local root = model and model:FindFirstChild("HumanoidRootPart") or (model and model.PrimaryPart)
 			if not root then return end
+			-- shots leave the rifle muzzle, not the head (root + 2.5 studs was head height on the
+			-- R15-fit hero rigs). Rigs without a Rifle part (sentries, constructs) keep the old origin.
 			local origin = root.Position + Vector3.new(0, 2.5, 0)
+			local rifle = model:FindFirstChild("Rifle", true)
+			if rifle and rifle:IsA("BasePart") then
+				local look = rifle.CFrame.LookVector
+				local half = rifle.Size.Z * 0.5
+				local a = rifle.Position + look * half
+				local b = rifle.Position - look * half
+				origin = ((a - root.Position).Magnitude >= (b - root.Position).Magnitude) and a or b
+			end
 			-- tracer: a thin violet beam part living 90ms along the shot line
 			local dist = (targetPos - origin).Magnitude
 			if dist < 1 or dist > 300 then return end

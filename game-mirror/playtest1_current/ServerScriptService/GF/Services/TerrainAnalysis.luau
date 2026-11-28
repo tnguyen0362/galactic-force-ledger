@@ -134,6 +134,54 @@ function TerrainAnalysis.distributed(sites: { Site }, count: number, minSeparati
 	return chosen
 end
 
+-- Mission anchors: LZ on the best lowland site, objective 620-950 studs away (HD2-style push from
+-- the drop to the objective), extraction on a third site apart from both. Falls back to wider bands
+-- instead of failing. Returns nil when the analysis has too few sites.
+function TerrainAnalysis.missionAnchors(analysis: Analysis): { lz: Site, objective: Site, extraction: Site }?
+	-- keep the operation away from the world edge: prefer sites well inside the generated extent
+	local function inner(list: { Site }): { Site }
+		local out = {}
+		for _, s in list do
+			if math.max(math.abs(s.x), math.abs(s.z)) <= analysis.halfExtent * 0.62 then
+				table.insert(out, s)
+			end
+		end
+		return if #out >= 12 then out else list
+	end
+	local sites = inner(analysis.sites)
+	local valley = inner(analysis.valleyFloor)
+	local pool = valley
+	if #pool < 1 then pool = sites end
+	if #pool < 1 or #sites < 3 then
+		return nil
+	end
+	local lz = pool[1]
+	local objective = TerrainAnalysis.nearest(valley, lz.x, lz.z, 620, 950)
+		or TerrainAnalysis.nearest(sites, lz.x, lz.z, 620, 950)
+		or TerrainAnalysis.nearest(sites, lz.x, lz.z, 450, 1500)
+		or TerrainAnalysis.nearest(sites, lz.x, lz.z, 250, nil)
+	if not objective then
+		return nil
+	end
+	local extraction: Site? = nil
+	local bestD = math.huge
+	for _, s in sites do
+		local dl = math.sqrt((s.x - lz.x) ^ 2 + (s.z - lz.z) ^ 2)
+		local dobj = math.sqrt((s.x - objective.x) ^ 2 + (s.z - objective.z) ^ 2)
+		if dl >= 350 and dobj >= 450 and dl < bestD then
+			extraction = s
+			bestD = dl
+		end
+	end
+	if not extraction then
+		extraction = TerrainAnalysis.nearest(analysis.sites, objective.x, objective.z, 250, nil)
+	end
+	if not extraction then
+		return nil
+	end
+	return { lz = lz, objective = objective, extraction = extraction }
+end
+
 -- find a site nearest to a target position meeting constraints
 function TerrainAnalysis.nearest(sites: { Site }, x: number, z: number, minDist: number?, maxDist: number?): Site?
 	local best: Site? = nil

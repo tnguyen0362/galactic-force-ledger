@@ -591,6 +591,14 @@ function ProfileService.load(player: Player): any
 		end
 	end)
 
+	-- rank/xp replication: the lobby shell, deploy surface and nameplates all read these
+	-- attributes, but nothing published them — every rank readout printed "--" (owner review).
+	pcall(function()
+		player:SetAttribute("GF_Rank", tonumber(migrated.rank) or 1)
+		player:SetAttribute("GF_XP", tonumber(migrated.xp) or 0)
+		player:SetAttribute("GF_Credits", tonumber(migrated.credits) or 0)
+	end)
+
 	-- A returning player who has seen the intro but never finished First Spear still owes the tutorial;
 	-- without this they would never be offered it, because the cinematic is what used to start it.
 	if migrated.introWatched == true and migrated.tutorialCompleted ~= true then
@@ -752,6 +760,9 @@ function ProfileService.award(player: Player, credits: number, xp: number): { ra
 	profile.xp = math.max(0, profile.xp + math.max(0, math.floor(xp)))
 	local before = profile.rank
 	profile.rank = math.max(profile.rank, Economy.rankForXp(profile.xp))
+	player:SetAttribute("GF_Rank", profile.rank)
+	player:SetAttribute("GF_XP", math.floor(profile.xp))
+	player:SetAttribute("GF_Credits", math.floor(profile.credits))
 	ProfileService.markDirty(player)
 	return { rankUps = profile.rank - before }
 end

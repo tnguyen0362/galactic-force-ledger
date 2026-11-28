@@ -33,6 +33,7 @@ local AbilityService = require(ServerScriptService.GF.Services.AbilityService)
 local PlayerService = require(ServerScriptService.GF.Services.PlayerService)
 local ArmoryService = require(ServerScriptService.GF.Services.ArmoryService)
 local StationWarTable = require(ServerScriptService.GF.Services.StationWarTable)
+local StationPods = require(ServerScriptService.GF.Services.StationPods)
 local TacticalMapService = require(ServerScriptService.GF.Services.TacticalMapService)
 local DispatchService = require(ServerScriptService.GF.Services.DispatchService)
 local TutorialService = require(ServerScriptService.GF.Services.TutorialService)
@@ -62,6 +63,10 @@ task.defer(function()
 	if not ok then warn("[GF] tactical map failed: " .. tostring(err)) end
 end)
 ArmoryService.start()
+task.defer(function()
+	local ok, err = pcall(StationPods.start)
+	if not ok then warn("[GF] station pods failed: " .. tostring(err)) end
+end)
 	-- Safety net: one boot produced no Station at all because Mission errored before its build call.
 	-- If the shell is still missing after boot settles, build it here rather than shipping an empty
 	-- galaxy to the player.

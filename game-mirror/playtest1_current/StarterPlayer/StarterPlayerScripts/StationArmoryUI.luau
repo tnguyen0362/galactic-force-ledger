@@ -1782,6 +1782,37 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	end
 end)
 
+-- native ProximityPrompts on the armory racks (owner directive: every lobby interactable uses
+-- the Roblox default prompt, not a custom panel). client-local prompts are fine because the
+-- interaction is per-player; the trigger runs the exact same open path as the E key.
+task.spawn(function()
+	local tagged = {}
+	while true do
+		task.wait(1)
+		local station = workspace:FindFirstChild("Station")
+		if station then
+			for _, d in ipairs(station:GetDescendants()) do
+				if d:IsA("BasePart") and d.Name == "ArmoryRack" and not tagged[d] and not d:FindFirstChildOfClass("ProximityPrompt") then
+					tagged[d] = true
+					local pr = Instance.new("ProximityPrompt")
+					pr.ActionText = "Access"
+					pr.ObjectText = "Armory"
+					pr.MaxActivationDistance = 10
+					pr.RequiresLineOfSight = false
+					pr.HoldDuration = 0
+					pr.Parent = d
+					pr.Triggered:Connect(function()
+						if not isOpen then
+							setOpen(true)
+							requestLoadout:FireServer()
+						end
+					end)
+				end
+			end
+		end
+	end
+end)
+
 RunService.Heartbeat:Connect(function()
 	if not anchor or not anchor.Parent then
 		anchor = findAnchor()
@@ -1797,7 +1828,7 @@ RunService.Heartbeat:Connect(function()
 	if workspace:GetAttribute("GF_ArmoryOpen") == true and not isOpen then
 		setOpen(true)
 	end
-	prompt.Visible = near and not isOpen
+	prompt.Visible = false -- superseded by native ProximityPrompts on the racks
 	-- A forced open (QA / scripted onboarding) must not be closed by walking away, otherwise the panel
 	-- flickers shut on the next frame whenever the character is not standing at the rack.
 	if not near and isOpen and workspace:GetAttribute("GF_ArmoryOpen") ~= true then
